@@ -1,44 +1,35 @@
 # Design-System
 
-Status: **vorläufig freigegeben (C)** – im autonomen Modus entschieden (E16–E22), Nutzer kann jederzeit ändern. Mockups in `mockups/`.
+Status: **v2 (E36), vorläufig freigegeben (C)** – im autonomen Modus entschieden (E16–E22), Nutzer kann jederzeit ändern. Mockups in `mockups/`.
 
 Grundidee: hell, warm, ruhig, viel Luft. Das Essen ist die Farbe. Akzent ist ein frisches Limettengrün, Hauptaktionen sind schwarz.
 
-## Farben
+## Farben (v2, E36 – Quelle der Wahrheit: `ios/Sources/Essenapp/Theme.swift`)
 
-| Token | Hell | Verwendung |
+| Token | Wert | Verwendung |
 |---|---|---|
-| `bg` | `#ECEBE7` | Seitenhintergrund (warmes Hellgrau) |
-| `surface` | `#F6F5F2` | Flächen, Eingabefelder, Kachelhintergrund |
-| `card` | `#FFFFFF` → `#F3F2EE` (Verlauf von oben nach unten) | Karten |
-| `textPrimary` | `#111111` | Überschriften, Werte |
-| `textSecondary` | `#8C8C8C` | 2. Zeile der großen Überschrift, Untertitel |
-| `textTertiary` | `#B8B8B4` | Platzhalter, Einheiten |
-| `action` | `#111111` | Primär-Buttons, Mittel-Button der Tab-Bar |
-| `onAction` | `#FFFFFF` | Text/Icon auf `action` |
-| `accent` | `#9FE05A` | Auswahlrahmen, aktive Markierung, Fortschritt |
-| `accentDeep` | `#3E7B1F` | Text/Icons auf hellem Grund in Grün |
-| `deal` | `#FF5A36` | Rabatt-Badge, „Im Angebot“ (E17) |
-| `success` | `#3E7B1F` | Ersparnis, abgehakt |
-| `warning` | `#F5A623` | Budget knapp |
-| `danger` | `#E5483B` | Fehler, Allergie-Warnung |
-| `tabInactive` | `#A3A3A0` | Inaktive Tab-Icons |
-| `scrim` | `#ECEBE7` mit 60 % + Blur 8 | Hintergrund hinter Schnell-Aktionen und Sheets |
+| `bg` | `#F5F4F0` | Seitenhintergrund |
+| `surface` | `#EDECE7` | Flächen, Nebenbuttons, Skeleton |
+| `card` | `#FFFFFF` + Haarlinie `line` (Schwarz 6 %) | Karten |
+| `text1` / `text2` / `text3` | `#14161A` / `#6E7178` / `#A9ACB2` | Text, 2. Zeile der Überschrift = `text3` |
+| `action` | `#14161A` | Primär-Buttons |
+| `accent` / `accentSoft` / `accentDeep` | `#22B573` / `#DDF5E8` / `#15804F` | Marke, Auswahl (Tab-Pille), Fortschritt, Ersparnis |
+| `highlight` | `#C6F36B` | Limette: „auf der Liste“, Willkommens-Akzent |
+| `deal` | `#FF5A36` | Rabatt |
+| Nährwerte | kcal `#FF8A3D`, Protein `#FF5A5F`, KH `#3DBE6B`, Fett `#F7B731` | Icons in getönten Quadraten |
 
-Listen-Pastelltöne `listTints` (E18), in dieser Reihenfolge an Läden vergeben: `#F6DDD2`, `#DDE9D3`, `#E6DFF3`, `#F7EBC4`, `#D8E6F1`, `#F2DCE6`.
+Kategorie-Farben (`Theme.hue`): Obst & Gemüse Grün + 🥦, Fleisch & Fisch Tomate + 🥩, Kühlung Himmelblau + 🧀, Vorrat Sonnengelb + 🥫, Getränke Türkis + 🥤, Drogerie Lavendel + 🧴, Haushalt Pink + 🧽, Sonstiges Grau + 🛒. Die Tönung ist der Hintergrund der Produktbilder.
+Laden-Farben (`Theme.storeColor`): feste Palette je Kette, keine Markenfarben (E18).
 
-Produktbild-Tönungen in `OfferCard`: gleiche Palette wie `listTints`, nach Kategorie (Fleisch `#F6DDD2`, Obst & Gemüse `#DDE9D3`, Drogerie `#E6DFF3`, Vorrat `#F7EBC4`, Fisch/Kühlung `#D8E6F1`).
+Dark Mode: **nicht in v1** (E15), hell erzwungen.
 
-Nährwert-Farben (kleines Icon in getöntem Quadrat, wie Referenz 01):
+## Animationen (v2)
 
-| Nährwert | Farbe | SF Symbol |
-|---|---|---|
-| Kalorien | `#111111` | `flame.fill` |
-| Protein | `#E5483B` | `cube.fill` |
-| Kohlenhydrate | `#6BBF3A` | `leaf.fill` |
-| Fett | `#F5A623` | `drop.fill` |
-
-Dark Mode: **nicht in v1** (E15). Trotzdem nur Tokens verwenden, damit er später nachrüstbar ist.
+- Standard-Feder `Theme.spring` (response 0.38, damping 0.78) für alle Zustandswechsel.
+- Antippen: `PressableStyle` (Skalierung 0.96). Auswahl: gleitende Pille (`matchedGeometryEffect`) in Tab-Bar und Tagesleiste.
+- Listen erscheinen gestaffelt (`.appear(delay:)`), Zahlen mit `.contentTransition(.numericText())`, Symbole mit `.symbolEffect`.
+- Laden: Schimmer-Skeleton; Plan-Generator: drehender Teller + Schritt-Häkchen. Haptik (`sensoryFeedback`) bei Auswahl, Haken, Hinzufügen.
+- Schatten klein halten (Radius ≤ 12), damit Scrollen flüssig bleibt; Bilder über großen `URLCache`.
 
 ## Schrift
 

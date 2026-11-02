@@ -91,6 +91,11 @@ Mockups: `mockups/weitere-screens-v1.html`.
 - Optionale Notiz (einzeilig, wächst).
 - `PrimaryButton` „Speichern“. Nach dem Speichern: kurzer Haken-Toast „Gespeichert – kommt öfter“ (bei 4–5 Sternen).
 
+### S14 Läden & Umkreis (Karte)
+- Karte (MapKit) mit Umkreis-Kreis um die PLZ, Pins pro Laden (Farbe der Kette, Anfangsbuchstabe), Tippen wählt aus.
+- Regler 1–30 km; nach Loslassen neue Suche (`GET /stores/nearby`). Liste darunter mit Entfernung, Adresse, Haken.
+- „X Läden übernehmen“ speichert Läden + Umkreis und lädt Angebote neu. Erreichbar aus Onboarding (Schritt 2), Angebote-Kopf und Einstellungen.
+
 ### S9 Angebotsdetail (Push-Screen)
 - Oben großes Produktbild auf getönter Fläche (Radius 36), `DealBadge` oben links, Herz (Merkliste) oben rechts.
 - Name (`title`), Marke + Menge (`caption`).

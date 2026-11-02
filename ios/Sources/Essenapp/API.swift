@@ -273,7 +273,8 @@ final class AppStore {
     }
 
     /// Onboarding ist erst fertig, wenn alle Schritte durch sind (Haushalt entsteht schon in Schritt 1).
-    var onboarded: Bool = UserDefaults.standard.bool(forKey: "onboarded") {
+    // Bestehende Installationen (Token schon da, Flag noch nicht) gelten als fertig eingerichtet.
+    var onboarded: Bool = UserDefaults.standard.object(forKey: "onboarded") as? Bool ?? (Keychain.read() != nil) {
         didSet { UserDefaults.standard.set(onboarded, forKey: "onboarded") }
     }
 
