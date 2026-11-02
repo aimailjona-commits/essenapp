@@ -1,0 +1,693 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Essenapp Mockups weitere</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+/* Tokens = docs/ui/design-system.md (gleicher Block in beiden Mockup-Dateien) */
+/* Tokens = docs/ui/design-system.md */
+:root{
+  --bg:#ECEBE7; --surface:#F6F5F2; --card-top:#FFFFFF; --card-bottom:#F3F2EE;
+  --text1:#111111; --text2:#8C8C8C; --text3:#B8B8B4;
+  --action:#111111; --on-action:#FFFFFF; --accent:#9FE05A; --accent-deep:#3E7B1F;
+  --deal:#FF5A36; --success:#3E7B1F; --warning:#F5A623; --danger:#E5483B;
+  --kcal:#111111; --protein:#E5483B; --carbs:#6BBF3A; --fat:#F5A623;
+  --r-chip:14px; --r-tile:20px; --r-card:28px; --r-sheet:36px;
+  --shadow-soft:0 12px 32px rgba(0,0,0,.07); --shadow-float:0 18px 40px rgba(0,0,0,.12);
+  --page:#D9D8D3;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,"SF Pro Text","Inter",system-ui,sans-serif;background:var(--page);color:var(--text1);-webkit-font-smoothing:antialiased}
+button{font:inherit;color:inherit;border:0;background:none;cursor:pointer}
+svg.i{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:none}
+svg.f{width:16px;height:16px;fill:currentColor;flex:none}
+
+/* Seite */
+.page-head{max-width:1300px;margin:0 auto;padding:40px 20px 8px}
+.page-head h1{font-size:28px;font-weight:800;letter-spacing:-.5px}
+.page-head p{color:#666;margin-top:6px;max-width:760px;line-height:1.5}
+.swatches{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px}
+.sw{display:flex;align-items:center;gap:8px;background:#fff;border-radius:999px;padding:4px 12px 4px 4px;font-size:12px;color:#444}
+.sw i{width:22px;height:22px;border-radius:50%;display:block;border:1px solid rgba(0,0,0,.08)}
+.open{margin-top:16px;background:#fff;border-radius:16px;padding:14px 18px;max-width:760px;font-size:14px;line-height:1.6}
+.open b{display:block;margin-bottom:4px}
+.screens{display:flex;flex-wrap:wrap;gap:40px 32px;justify-content:center;padding:32px 16px 80px;max-width:1500px;margin:0 auto}
+.screen{width:390px;max-width:100%}
+.caption{margin-top:14px;font-size:13px;color:#555;line-height:1.5}
+.caption b{display:block;color:#111;font-size:15px;margin-bottom:2px}
+
+/* Telefon */
+.phone{position:relative;width:390px;max-width:100%;height:844px;background:var(--bg);border-radius:52px;overflow:hidden;box-shadow:0 30px 60px rgba(0,0,0,.18),0 0 0 10px #111}
+.status{position:absolute;top:0;left:0;right:0;height:50px;display:flex;align-items:center;justify-content:space-between;padding:6px 32px 0;font-weight:600;font-size:16px;z-index:5}
+.status .batt{width:26px;height:12px;border:1.5px solid #111;border-radius:4px;position:relative}
+.status .batt::after{content:"";position:absolute;inset:1.5px;right:5px;background:#111;border-radius:2px}
+.island{position:absolute;top:11px;left:50%;transform:translateX(-50%);width:120px;height:34px;background:#000;border-radius:20px;z-index:6}
+.content{position:absolute;inset:0;overflow-y:auto;padding:62px 20px 130px;scrollbar-width:none}
+.content::-webkit-scrollbar{display:none}
+
+/* Bausteine */
+.topbar{display:flex;align-items:center;gap:10px;margin-bottom:18px}
+.spacer{flex:1}
+.round{width:44px;height:44px;border-radius:50%;background:var(--card-top);display:grid;place-items:center;box-shadow:var(--shadow-soft);position:relative}
+.round.dark{background:var(--action);color:var(--on-action)}
+.round .dot{position:absolute;top:10px;right:11px;width:8px;height:8px;border-radius:50%;background:var(--deal);border:2px solid #fff}
+.avatar{width:44px;height:44px;border-radius:50%;display:grid;place-items:center;font-weight:700;color:#fff;font-size:15px;border:3px solid #fff;box-shadow:var(--shadow-soft)}
+.avatar.sm{width:30px;height:30px;font-size:12px;border-width:2px;box-shadow:none}
+.a1{background:#4A6B3A}.a2{background:#C9733F}.a3{background:#6A5ACD}
+.display{font-size:34px;font-weight:800;line-height:1.05;letter-spacing:-.8px;margin-bottom:18px}
+.display span{color:var(--text2)}
+.searchrow{display:flex;gap:10px;margin-bottom:24px}
+.search{flex:1;height:48px;border-radius:999px;background:var(--card-top);display:flex;align-items:center;gap:10px;padding:0 18px;color:var(--text3);font-size:15px;box-shadow:var(--shadow-soft)}
+.section-head{display:flex;align-items:center;justify-content:space-between;margin:6px 0 14px}
+.section-head h2{font-size:18px;font-weight:700}
+.section-head a{font-size:13px;color:var(--text2);font-weight:500}
+.chip{display:inline-flex;align-items:center;gap:6px;height:30px;padding:0 12px;border-radius:999px;background:var(--card-top);font-size:12px;font-weight:600;white-space:nowrap}
+.chip.dark{background:var(--action);color:var(--on-action)}
+.chip.store{height:22px;padding:0 9px;font-size:11px;background:var(--surface);color:#555}
+.badge{display:inline-flex;align-items:center;height:22px;padding:0 8px;border-radius:999px;background:var(--deal);color:#fff;font-size:11px;font-weight:700}
+.badge.soft{background:rgba(255,90,54,.12);color:var(--deal)}
+.badge.ok{background:rgba(62,123,31,.12);color:var(--accent-deep)}
+.card{background:linear-gradient(180deg,var(--card-top),var(--card-bottom));border-radius:var(--r-card);box-shadow:var(--shadow-soft)}
+.hscroll{display:flex;gap:14px;overflow-x:auto;margin:0 -20px;padding:40px 20px 16px;scrollbar-width:none}
+.hscroll::-webkit-scrollbar{display:none}
+.primary{height:56px;border-radius:999px;background:var(--action);color:var(--on-action);font-weight:600;font-size:16px;display:flex;align-items:center;justify-content:center;gap:10px;width:100%}
+
+/* Teller-Platzhalter (später KI-Tellerfoto, E13) */
+.plate{--s:120px;width:var(--s);height:var(--s);border-radius:50%;background:radial-gradient(circle,#fff 0 60%,#EDECE8 61% 63%,#fff 64%);box-shadow:var(--shadow-float);position:relative;flex:none}
+.plate .food{position:absolute;inset:15%;border-radius:50%;display:grid;place-items:center;font-size:calc(var(--s)*.32);background:var(--food)}
+.f-tikka{--food:radial-gradient(circle at 35% 35%,#F6B26B,#D0602A 55%,#9A3D14)}
+.f-dal{--food:radial-gradient(circle at 40% 35%,#FFD27A,#E59A2F 60%,#B86E14)}
+.f-shak{--food:radial-gradient(circle at 40% 40%,#FFE9A8 0 18%,#E8573A 30%,#B8361F)}
+.f-bowl{--food:radial-gradient(circle at 30% 30%,#FFB49A,#9CCB6B 50%,#F3E8D2 80%)}
+.f-pasta{--food:radial-gradient(circle at 40% 40%,#FBE29B,#E9A84F 55%,#D9542F)}
+.f-oats{--food:radial-gradient(circle at 40% 40%,#F4EBDC,#D9C7A8 60%,#6F5BA8)}
+.f-veg{--food:radial-gradient(circle at 40% 40%,#F2F2E6 0 15%,#E07A3F 35%,#7FAF4A 70%)}
+.f-skyr{--food:radial-gradient(circle at 40% 40%,#FFFFFF,#F1EDE6 55%,#FFB547)}
+
+/* Nährwerte */
+.stats{display:flex;justify-content:space-between;gap:6px}
+.ns{display:flex;flex-direction:column;align-items:center;gap:4px;flex:1}
+.ni{--c:var(--kcal);width:30px;height:30px;border-radius:10px;display:grid;place-items:center;color:var(--c);background:color-mix(in srgb,var(--c) 14%,transparent)}
+.ni.protein{--c:var(--protein)}.ni.carbs{--c:var(--carbs)}.ni.fat{--c:var(--fat)}
+.ns b{font-size:14px;font-variant-numeric:tabular-nums}
+.ns small{font-size:11px;color:var(--text2)}
+
+/* Gericht-Karten */
+.meal-big{position:relative;margin-top:80px;padding:112px 18px 18px;text-align:center}
+.meal-big .plate{position:absolute;top:-78px;left:50%;transform:translateX(-50%)}
+.meal-big h3{font-size:20px;font-weight:700;letter-spacing:-.3px}
+.meta{font-size:13px;color:var(--text2);margin:4px 0 16px}
+.meal-big .foot{display:flex;justify-content:space-between;align-items:center;margin-top:16px;padding-top:14px;border-top:1px solid rgba(0,0,0,.05)}
+.meal-sm{position:relative;width:150px;flex:none;padding:68px 14px 14px;text-align:center}
+.meal-sm .plate{position:absolute;top:-36px;left:50%;transform:translateX(-50%)}
+.meal-sm .day{position:absolute;top:12px;left:12px;font-size:11px;font-weight:700;color:var(--text2)}
+.meal-sm h4{font-size:14px;font-weight:700;line-height:1.2;min-height:34px}
+.meal-sm p{font-size:12px;color:var(--text2);margin-top:4px}
+.meal-sm.today{outline:2px solid var(--accent)}
+.meal-sm.done{opacity:.55}
+
+/* Budget */
+.budget{padding:18px;margin-top:10px}
+.budget .row{display:flex;justify-content:space-between;align-items:baseline}
+.budget .big{font-size:30px;font-weight:800;letter-spacing:-.6px;font-variant-numeric:tabular-nums}
+.budget .big span{font-size:15px;color:var(--text2);font-weight:600}
+.bar{height:10px;border-radius:999px;background:var(--surface);overflow:hidden;margin:12px 0}
+.bar i{display:block;height:100%;border-radius:999px;background:var(--accent)}
+.saved{display:flex;align-items:center;gap:8px;color:var(--success);font-weight:600;font-size:14px}
+.hint{display:flex;align-items:center;gap:14px;padding:16px;margin-top:14px;background:var(--action);color:#fff;border-radius:var(--r-card)}
+.hint h4{font-size:15px}
+.hint p{font-size:12px;color:#BDBDBD;margin-top:3px;line-height:1.35}
+.hint .stack{display:flex}
+.hint .stack .plate{--s:44px;margin-left:-14px;box-shadow:none;border:2px solid #111}
+.hint .stack .plate:first-child{margin-left:0}
+
+/* Tab-Bar */
+.tabbar{position:absolute;left:16px;right:16px;bottom:26px;height:72px;background:#fff;border-radius:32px;box-shadow:var(--shadow-float);display:flex;align-items:center;justify-content:space-around;padding:0 6px;z-index:4}
+.tab{display:flex;flex-direction:column;align-items:center;gap:4px;color:#A3A3A0;font-size:10px;font-weight:600;width:56px}
+.tab.on{color:var(--text1)}
+.tab.on::after{content:"";width:5px;height:5px;border-radius:50%;background:var(--accent)}
+.tab:not(.on)::after{content:"";width:5px;height:5px}
+.fab{width:64px;height:64px;border-radius:50%;background:var(--action);color:#fff;display:grid;place-items:center;margin-top:-34px;box-shadow:0 12px 24px rgba(0,0,0,.25);border:5px solid var(--bg)}
+.fab svg.i{width:26px;height:26px;stroke-width:2.2}
+
+/* Schnell-Aktionen */
+.scrim{position:absolute;inset:0;background:rgba(236,235,231,.6);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);z-index:3}
+.quick{position:absolute;left:16px;right:16px;bottom:118px;z-index:4;background:#fff;border-radius:var(--r-sheet);padding:14px;box-shadow:var(--shadow-float)}
+.quick h3{font-size:13px;color:var(--text2);font-weight:600;padding:4px 8px 12px}
+.qgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.qa{background:var(--surface);border-radius:24px;padding:16px;display:flex;flex-direction:column;gap:22px;min-height:124px;text-align:left}
+.qa .ico{width:42px;height:42px;border-radius:14px;background:#fff;display:grid;place-items:center}
+.qa b{font-size:15px;display:block}
+.qa small{font-size:12px;color:var(--text2)}
+.qa.main{background:var(--action);color:#fff}
+.qa.main .ico{background:var(--accent);color:#111}
+.qa.main small{color:#BDBDBD}
+
+/* Wochenplan */
+.seg{display:flex;background:#fff;border-radius:999px;padding:4px;box-shadow:var(--shadow-soft);flex:1}
+.seg span{flex:1;text-align:center;height:36px;line-height:36px;border-radius:999px;font-size:13px;font-weight:600;color:var(--text2)}
+.seg span.on{background:var(--action);color:#fff}
+.sum{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:18px}
+.sum div{background:#fff;border-radius:var(--r-tile);padding:12px;box-shadow:var(--shadow-soft)}
+.sum b{font-size:17px;font-weight:800;display:block;font-variant-numeric:tabular-nums}
+.sum small{font-size:11px;color:var(--text2)}
+.days{display:flex;gap:8px;margin-bottom:20px}
+.days span{flex:1;height:64px;border-radius:20px;background:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:11px;color:var(--text2);font-weight:600}
+.days span b{font-size:17px;color:var(--text1)}
+.days span.on{background:var(--action);color:#BDBDBD}.days span.on b{color:#fff}
+.days span.past{opacity:.5}
+.slot{font-size:12px;font-weight:700;color:var(--text2);margin:14px 4px 8px;display:flex;justify-content:space-between}
+.mrow{display:flex;align-items:center;gap:14px;padding:12px;border-radius:24px}
+.mrow .plate{--s:76px;box-shadow:0 8px 18px rgba(0,0,0,.1)}
+.mrow .txt{flex:1;min-width:0}
+.mrow h4{font-size:15px;font-weight:700;line-height:1.2}
+.mrow p{font-size:12px;color:var(--text2);margin:3px 0 6px}
+.mrow .acts{display:flex;flex-direction:column;gap:6px}
+.mini{width:34px;height:34px;border-radius:50%;background:var(--surface);display:grid;place-items:center}
+.mini svg.i{width:17px;height:17px}
+.mini.on{background:var(--action);color:#fff}
+.goal{padding:16px;margin-top:18px}
+.goal h4{font-size:14px;margin-bottom:10px}
+.gl{display:grid;grid-template-columns:90px 1fr 74px;align-items:center;gap:10px;font-size:12px;margin:8px 0}
+.gl .bar{margin:0;height:8px}
+.gl em{font-style:normal;text-align:right;font-variant-numeric:tabular-nums;color:var(--text2)}
+
+/* Rezeptdetail */
+.hero{position:relative;display:grid;place-items:center;margin:4px 0 18px}
+.hero .plate{--s:236px}
+.frame{position:absolute;width:276px;height:276px}
+.frame i{position:absolute;width:42px;height:42px;border:4px solid var(--accent)}
+.frame i:nth-child(1){top:0;left:0;border-right:0;border-bottom:0;border-top-left-radius:22px}
+.frame i:nth-child(2){top:0;right:0;border-left:0;border-bottom:0;border-top-right-radius:22px}
+.frame i:nth-child(3){bottom:0;left:0;border-right:0;border-top:0;border-bottom-left-radius:22px}
+.frame i:nth-child(4){bottom:0;right:0;border-left:0;border-top:0;border-bottom-right-radius:22px}
+.r-title{text-align:center;font-size:24px;font-weight:800;letter-spacing:-.4px}
+.r-meta{text-align:center;font-size:13px;color:var(--text2);margin:4px 0 18px}
+.tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:22px}
+.tile{background:#fff;border-radius:var(--r-tile);padding:12px 4px;display:flex;flex-direction:column;align-items:center;gap:6px;box-shadow:var(--shadow-soft)}
+.tile b{font-size:16px;font-weight:800;font-variant-numeric:tabular-nums}
+.tile small{font-size:11px;color:var(--text2)}
+.bloom{display:block;margin:0 auto 10px}
+.stepper{display:flex;align-items:center;gap:12px;background:#fff;border-radius:999px;padding:4px;font-size:13px;font-weight:700}
+.stepper button{width:30px;height:30px;border-radius:50%;background:var(--surface);font-size:16px;font-weight:700}
+.ing{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid rgba(0,0,0,.05)}
+.ing .em{width:44px;height:44px;border-radius:14px;background:#fff;display:grid;place-items:center;font-size:22px}
+.ing .txt{flex:1}
+.ing b{font-size:15px;font-weight:600;display:block}
+.ing .tags{display:flex;gap:6px;margin-top:4px}
+.ing em{font-style:normal;font-size:14px;color:var(--text2);font-variant-numeric:tabular-nums}
+.steps{counter-reset:s;margin-top:4px}
+.steps li{list-style:none;display:flex;gap:12px;padding:10px 0;font-size:15px;line-height:1.45}
+.steps li::before{counter-increment:s;content:counter(s);flex:none;width:28px;height:28px;border-radius:50%;background:var(--action);color:#fff;font-size:13px;font-weight:700;display:grid;place-items:center}
+.bottom-cta{position:absolute;left:0;right:0;bottom:0;padding:24px 20px 34px;background:linear-gradient(180deg,rgba(236,235,231,0),var(--bg) 35%);z-index:4}
+
+/* Angebote */
+.loc{display:flex;align-items:center;gap:8px;background:#fff;height:44px;border-radius:999px;padding:0 16px;font-size:14px;font-weight:600;box-shadow:var(--shadow-soft)}
+.chips{display:flex;gap:8px;overflow-x:auto;margin:0 -20px 10px;padding:0 20px;scrollbar-width:none}
+.chips::-webkit-scrollbar{display:none}
+.chips .chip span{color:var(--text2);font-weight:500}
+.chips .chip.dark span{color:#BDBDBD}
+.chips.cat .chip{background:transparent;border:1.5px solid rgba(0,0,0,.08)}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:8px}
+.offer{background:#fff;border-radius:24px;padding:8px 8px 12px;box-shadow:var(--shadow-soft)}
+.offer .img{position:relative;height:118px;border-radius:18px;background:var(--tint);display:grid;place-items:center;font-size:56px}
+.offer .img .badge{position:absolute;top:8px;left:8px}
+.offer .add{position:absolute;right:8px;bottom:8px;width:36px;height:36px;border-radius:50%;background:var(--action);color:#fff;display:grid;place-items:center}
+.offer .add.ok{background:var(--accent);color:#111}
+.offer .add svg.i{width:18px;height:18px;stroke-width:2.4}
+.offer h4{font-size:14px;font-weight:700;margin:10px 4px 2px;line-height:1.2}
+.offer .unit{font-size:11px;color:var(--text2);margin:0 4px}
+.offer .price{display:flex;align-items:baseline;gap:6px;margin:8px 4px 6px}
+.offer .price b{font-size:18px;font-weight:800;font-variant-numeric:tabular-nums}
+.offer .price s{font-size:12px;color:var(--text3)}
+.offer .chip.store{margin-left:4px}
+
+/* Einkauf */
+.save{padding:18px;display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+.save small{font-size:12px;color:var(--text2);display:block}
+.save b{font-size:30px;font-weight:800;color:var(--success);letter-spacing:-.6px;font-variant-numeric:tabular-nums}
+.lcard{position:relative;border-radius:var(--r-card);padding:18px;margin-bottom:12px;min-height:132px;background:var(--tint);overflow:hidden}
+.lcard h3{font-size:22px;font-weight:800;letter-spacing:-.4px}
+.lcard .badge{margin-top:6px;background:#111}
+.lcard .people{display:flex;align-items:center;margin-top:16px}
+.lcard .people .avatar{margin-left:-8px}.lcard .people .avatar:first-child{margin-left:0}
+.lcard .people .plus{width:30px;height:30px;border-radius:50%;border:2px dashed rgba(0,0,0,.25);display:grid;place-items:center;margin-left:6px}
+.lcard .art{position:absolute;right:-6px;bottom:-10px;font-size:58px;line-height:1;transform:rotate(-8deg);letter-spacing:-12px;opacity:.95}
+.lnew{border:2px dashed rgba(0,0,0,.14);border-radius:var(--r-card);height:64px;display:flex;align-items:center;justify-content:center;gap:8px;color:var(--text2);font-weight:600}
+
+/* Listendetail */
+.group{font-size:12px;font-weight:700;color:var(--text2);margin:18px 4px 6px}
+.crow{display:flex;align-items:center;gap:12px;background:#fff;border-radius:20px;padding:12px 14px;margin-bottom:8px}
+.crow .ck{width:26px;height:26px;border-radius:50%;border:2px solid #CFCFCB;display:grid;place-items:center;flex:none}
+.crow .txt{flex:1;min-width:0}
+.crow b{font-size:15px;font-weight:600;display:block}
+.crow small{font-size:12px;color:var(--text2)}
+.crow em{font-style:normal;font-weight:700;font-size:14px;font-variant-numeric:tabular-nums}
+.crow.done{background:transparent}
+.crow.done .ck{background:var(--accent);border-color:var(--accent)}
+.crow.done .ck svg.i{width:15px;height:15px;stroke-width:3}
+.crow.done b{text-decoration:line-through;color:var(--text3)}
+.crow.done em{color:var(--text3)}
+.addbar{position:absolute;left:16px;right:16px;bottom:112px;display:flex;gap:10px;z-index:4}
+.addbar .search{box-shadow:var(--shadow-float);color:var(--text3)}
+.addbar .round{box-shadow:var(--shadow-float)}
+
+@media (max-width:440px){
+  .screens{padding:24px 0 60px}
+  .screen{padding:0 0}
+  .phone{border-radius:0;box-shadow:none;width:100%}
+  .caption{padding:0 16px}
+}
+</style>
+<style>
+.progress{display:flex;gap:6px;margin:4px 0 22px}
+.progress i{flex:1;height:5px;border-radius:9px;background:#D6D5D0}
+.progress i.on{background:var(--action)}
+.rows{background:#fff;border-radius:24px;box-shadow:var(--shadow-soft);overflow:hidden}
+.r{display:flex;align-items:center;gap:12px;padding:13px 16px;border-bottom:1px solid rgba(0,0,0,.05);font-size:15px}
+.r:last-child{border-bottom:0}
+.r .t{flex:1;min-width:0}
+.r .t b{font-weight:600;display:block}
+.r .t small{font-size:12px;color:var(--text2)}
+.r .v{color:var(--text2);font-size:14px}
+.r .sq{width:34px;height:34px;border-radius:10px;display:grid;place-items:center;background:color-mix(in srgb,var(--c,#111) 14%,transparent);color:var(--c,#111)}
+.r .sq svg.i{width:18px;height:18px}
+.chev{color:var(--text3);width:18px;height:18px}
+.sw-t{width:50px;height:30px;border-radius:99px;background:#DCDBD6;position:relative;flex:none}
+.sw-t::after{content:"";position:absolute;top:3px;left:3px;width:24px;height:24px;border-radius:50%;background:#fff;box-shadow:0 2px 4px rgba(0,0,0,.2)}
+.sw-t.on{background:var(--accent-deep)}
+.sw-t.on::after{left:23px}
+.field{background:#fff;border-radius:22px;padding:14px 18px;box-shadow:var(--shadow-soft);margin-bottom:18px}
+.field small{font-size:12px;color:var(--text2);font-weight:600}
+.field div{font-size:30px;font-weight:800;letter-spacing:2px;margin-top:2px}
+.label{font-size:13px;font-weight:700;color:var(--text2);margin:20px 4px 10px}
+.wrap{display:flex;flex-wrap:wrap;gap:8px}
+.chip.sel{background:var(--action);color:#fff}
+.chip.line{background:transparent;border:1.5px solid rgba(0,0,0,.1)}
+.bigstep{display:flex;align-items:center;justify-content:space-between;background:#fff;border-radius:24px;padding:12px;box-shadow:var(--shadow-soft)}
+.bigstep button{width:48px;height:48px;border-radius:50%;background:var(--surface);font-size:22px;font-weight:700}
+.bigstep b{font-size:30px;font-weight:800}
+.bigstep small{display:block;text-align:center;font-size:12px;color:var(--text2)}
+.input{background:#fff;border-radius:18px;padding:14px 16px;color:var(--text3);font-size:15px;box-shadow:var(--shadow-soft)}
+.amount{text-align:center;margin:8px 0 6px}
+.amount b{font-size:56px;font-weight:800;letter-spacing:-2px}
+.amount small{display:block;color:var(--text2);font-size:13px}
+.slider{position:relative;height:10px;border-radius:99px;background:#fff;margin:16px 6px 6px}
+.slider i{position:absolute;left:0;top:0;bottom:0;border-radius:99px;background:var(--accent)}
+.slider b{position:absolute;top:50%;width:30px;height:30px;border-radius:50%;background:#111;border:5px solid #fff;transform:translate(-50%,-50%);box-shadow:var(--shadow-soft)}
+.scale{display:flex;justify-content:space-between;font-size:11px;color:var(--text3);margin:0 4px}
+.goals{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.goals div{background:#fff;border-radius:22px;padding:14px;box-shadow:var(--shadow-soft);border:2px solid transparent}
+.goals div.sel{border-color:var(--action)}
+.goals b{display:block;font-size:15px;margin-top:10px}
+.goals small{font-size:12px;color:var(--text2)}
+.cta{position:absolute;left:20px;right:20px;bottom:34px;z-index:4}
+.welcome{position:absolute;inset:0;background:#1A1A18;overflow:hidden}
+.welcome .plate{position:absolute;box-shadow:0 20px 40px rgba(0,0,0,.4)}
+.welcome .fade{position:absolute;inset:0;background:linear-gradient(180deg,rgba(17,17,17,0) 30%,#111 70%)}
+.welcome .txt{position:absolute;left:24px;right:24px;bottom:40px;color:#fff}
+.welcome .display{color:#fff}
+.welcome .display span{color:#8F8F8A}
+.welcome p{color:#BDBDBD;line-height:1.5;margin-bottom:24px;font-size:15px}
+.primary.inv{background:#fff;color:#111}
+.link{display:block;text-align:center;margin-top:16px;color:#BDBDBD;font-size:14px;font-weight:600}
+.sheetbg{position:absolute;inset:0;background:rgba(17,17,17,.35);z-index:3}
+.sheet{position:absolute;left:0;right:0;bottom:0;background:var(--bg);border-radius:36px 36px 0 0;z-index:4;padding:10px 20px 120px;max-height:88%;overflow-y:auto;scrollbar-width:none}
+.sheet::-webkit-scrollbar{display:none}
+.grip{width:40px;height:5px;border-radius:9px;background:#C9C8C3;margin:0 auto 14px}
+.sheet h2{font-size:24px;font-weight:800;letter-spacing:-.4px}
+.sheet .sub{display:flex;align-items:center;gap:8px;color:var(--text2);font-size:13px;margin:4px 0 6px}
+.dayt{display:flex;gap:6px}
+.dayt span{flex:1;height:40px;border-radius:50%;display:grid;place-items:center;font-size:12px;font-weight:700;background:#fff;aspect-ratio:1;max-width:40px}
+.dayt span.on{background:var(--action);color:#fff}
+.seg3{display:flex;background:#fff;border-radius:99px;padding:4px}
+.seg3 span{flex:1;text-align:center;height:34px;line-height:34px;border-radius:99px;font-size:12px;font-weight:600;color:var(--text2)}
+.seg3 span.on{background:var(--action);color:#fff}
+.sheet .cta{position:sticky;bottom:0;left:auto;right:auto;margin-top:18px}
+.loading{display:flex;flex-direction:column;align-items:center;padding-top:30px}
+.loading .plate{--s:150px;animation:spin 6s linear infinite;margin-bottom:28px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.steps2{width:100%;margin-top:18px}
+.steps2 div{display:flex;align-items:center;gap:12px;padding:10px 4px;font-size:15px;font-weight:600}
+.steps2 i{width:26px;height:26px;border-radius:50%;display:grid;place-items:center;flex:none;background:var(--accent)}
+.steps2 i svg.i{width:15px;height:15px;stroke-width:3}
+.steps2 .now i{background:#fff;border:2px solid var(--action)}
+.steps2 .todo{color:var(--text3)}
+.steps2 .todo i{background:#fff;border:2px solid #D6D5D0}
+.rate-head{display:flex;align-items:center;gap:14px;margin-bottom:18px}
+.rate-head .plate{--s:64px}
+.toast{position:absolute;top:60px;left:50%;transform:translateX(-50%);background:#111;color:#fff;border-radius:99px;padding:10px 16px;font-size:13px;font-weight:600;display:flex;gap:8px;align-items:center;z-index:6;white-space:nowrap}
+.pimg{position:relative;height:300px;border-radius:36px;display:grid;place-items:center;font-size:150px;background:#F7E3DA;margin-bottom:20px}
+.pimg .badge{position:absolute;top:18px;left:18px;height:28px;font-size:13px;padding:0 12px}
+.pimg .round{position:absolute;top:14px;right:14px}
+.pprice{display:flex;align-items:baseline;gap:10px;margin:14px 0 6px}
+.pprice b{font-size:36px;font-weight:800;letter-spacing:-1px}
+.pprice s{color:var(--text3);font-size:16px}
+.secondary{height:56px;border-radius:999px;background:#fff;font-weight:600;font-size:16px;display:flex;align-items:center;justify-content:center;gap:8px;width:100%}
+.btnrow{display:flex;gap:10px}
+.thumb{width:52px;height:52px;border-radius:16px;display:grid;place-items:center;font-size:28px;background:var(--tint,#F3EEE2);flex:none}
+.bars{display:flex;align-items:flex-end;gap:10px;height:120px;margin:18px 4px 6px}
+.bars i{flex:1;border-radius:10px 10px 4px 4px;background:var(--accent);display:block}
+.bars i.now{background:var(--accent-deep)}
+.barlbl{display:flex;gap:10px;margin:0 4px;font-size:10px;color:var(--text2);font-weight:600}
+.barlbl span{flex:1;text-align:center}
+.plus{color:var(--success);font-weight:700}
+.rgrid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:40px;row-gap:52px}
+.rcard{position:relative;padding:62px 12px 14px;text-align:center}
+.rcard .plate{position:absolute;top:-38px;left:50%;transform:translateX(-50%)}
+.rcard h4{font-size:14px;font-weight:700;line-height:1.2;min-height:34px}
+.rcard .stars{color:var(--warning);font-size:12px;letter-spacing:1px;margin:4px 0}
+.rcard p{font-size:12px;color:var(--text2)}
+.rcard .badge{margin-top:8px}
+.prof{display:flex;flex-direction:column;align-items:center;margin-bottom:18px}
+.prof .avatar{width:76px;height:76px;font-size:28px}
+.prof b{font-size:20px;margin-top:10px}
+.prof small{color:var(--text2)}
+.scan{position:absolute;inset:0;background:#2a2a28;z-index:3}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-home" viewBox="0 0 24 24"><path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></symbol>
+  <symbol id="i-tag" viewBox="0 0 24 24"><path d="M20.6 13.4l-7.2 7.2a2 2 0 0 1-2.8 0L3 13V3h10l7.6 7.6a2 2 0 0 1 0 2.8z"/><circle cx="7.5" cy="7.5" r="1.5"/></symbol>
+  <symbol id="i-bag" viewBox="0 0 24 24"><path d="M5 8h14l-1.2 11.1A2 2 0 0 1 15.8 21H8.2a2 2 0 0 1-2-1.9z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></symbol>
+  <symbol id="i-book" viewBox="0 0 24 24"><path d="M4 19.5V5.5A2.5 2.5 0 0 1 6.5 3H20v15H6.5A2.5 2.5 0 0 0 4 20.5 1.5 1.5 0 0 0 5.5 22H20"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></symbol>
+  <symbol id="i-bell" viewBox="0 0 24 24"><path d="M6 16v-5a6 6 0 1 1 12 0v5l2 2H4z"/><path d="M10 20.5a2 2 0 0 0 4 0"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M16.5 16.5 21 21"/></symbol>
+  <symbol id="i-sliders" viewBox="0 0 24 24"><path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="17" r="2"/></symbol>
+  <symbol id="i-back" viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></symbol>
+  <symbol id="i-heart" viewBox="0 0 24 24"><path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/></symbol>
+  <symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></symbol>
+  <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M20 12a8 8 0 1 1-2.3-5.7"/><path d="M20 4v5h-5"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></symbol>
+  <symbol id="i-scan" viewBox="0 0 24 24"><path d="M4 8V5a1 1 0 0 1 1-1h3M16 4h3a1 1 0 0 1 1 1v3M20 16v3a1 1 0 0 1-1 1h-3M8 20H5a1 1 0 0 1-1-1v-3M7 12h10"/></symbol>
+  <symbol id="i-sparkle" viewBox="0 0 24 24"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/><path d="M19 16l.8 2.2L22 19l-2.2.8L19 22l-.8-2.2L16 19l2.2-.8z"/></symbol>
+  <symbol id="i-chev" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></symbol>
+  <symbol id="i-right" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></symbol>
+  <symbol id="i-pin" viewBox="0 0 24 24"><path d="M12 21s-6-5.5-6-11a6 6 0 1 1 12 0c0 5.5-6 11-6 11z"/><circle cx="12" cy="10" r="2"/></symbol>
+  <symbol id="i-listplus" viewBox="0 0 24 24"><path d="M4 6h11M4 12h11M4 18h7M18 15v6M15 18h6"/></symbol>
+  <symbol id="i-pencil" viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16z"/></symbol>
+  <symbol id="i-share" viewBox="0 0 24 24"><path d="M16 8a3 3 0 1 0 0-.1M8 15a3 3 0 1 0 0-.1M16 22a3 3 0 1 0 0-.1"/><path d="M10.6 13.5l2.8-3M10.6 16.5l2.8 3"/></symbol>
+  <symbol id="n-flame" viewBox="0 0 24 24"><path d="M12 2c1 4 6 5.5 6 11a6 6 0 0 1-12 0c0-3 1.7-4.4 2.4-6 .6 1.6 1.6 2.4 1.6 2.4S9.5 5.5 12 2z"/></symbol>
+  <symbol id="n-cube" viewBox="0 0 24 24"><path d="M12 2l9 5v10l-9 5-9-5V7z"/></symbol>
+  <symbol id="n-leaf" viewBox="0 0 24 24"><path d="M20 4C9 4 4 9 4 16c0 1.5.3 3 .8 4C6.5 13.5 11 9.5 16 8c-4.5 2.5-7.5 6.5-9 12 7 0 13-5 13-16z"/></symbol>
+  <symbol id="n-drop" viewBox="0 0 24 24"><path d="M12 2s7 7.5 7 12.5a7 7 0 0 1-14 0C5 9.5 12 2 12 2z"/></symbol>
+</svg>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-users" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><path d="M16 4.5a3.5 3.5 0 0 1 0 7M18.5 20a6.5 6.5 0 0 0-3-5.5"/></symbol>
+  <symbol id="i-store" viewBox="0 0 24 24"><path d="M4 9l1.5-5h13L20 9M4 9h16v11H4zM9 20v-6h6v6"/></symbol>
+  <symbol id="i-euro" viewBox="0 0 24 24"><path d="M17 6.5A7 7 0 1 0 17 17.5M4 10h9M4 14h9"/></symbol>
+  <symbol id="i-target" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="4"/><circle cx="12" cy="12" r=".5"/></symbol>
+  <symbol id="i-server" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="7" rx="2"/><rect x="4" y="13" width="16" height="7" rx="2"/><path d="M8 7.5h.01M8 16.5h.01"/></symbol>
+  <symbol id="i-leaf" viewBox="0 0 24 24"><path d="M5 19c0-8 5-13 15-14-1 10-6 15-14 15M5 19l7-7"/></symbol>
+  <symbol id="i-calendar" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 10h18M8 3v4M16 3v4"/></symbol>
+  <symbol id="i-chart" viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></symbol>
+</svg>
+
+<header class="page-head">
+  <h1>Essenapp – weitere Screens, Entwurf v1</h1>
+  <p>Ergänzt die Kern-Screens. Gleiche Tokens und Bausteine wie die Kern-Screens. Spezifikation: <code>docs/ui/screens.md</code> S6–S13. Offene Punkte im autonomen Modus entschieden (E17–E22).</p>
+</header>
+
+<main class="screens">
+
+<!-- S6a Willkommen -->
+<section class="screen"><div class="phone">
+  <div class="island"></div><div class="status" style="color:#fff"><span>9:41</span><span class="batt" style="border-color:#fff"></span></div>
+  <div class="welcome">
+    <div class="plate f-tikka" style="--s:230px;left:-40px;top:70px"><div class="food">🍛</div></div>
+    <div class="plate f-bowl" style="--s:180px;right:-30px;top:40px"><div class="food">🍣</div></div>
+    <div class="plate f-pasta" style="--s:200px;left:120px;top:250px"><div class="food">🍝</div></div>
+    <div class="plate f-shak" style="--s:150px;right:-20px;top:330px"><div class="food">🍳</div></div>
+    <div class="fade"></div>
+    <div class="txt">
+      <h1 class="display" style="font-size:40px">Kochen nach<br><span>Angebot.</span></h1>
+      <p>Wir lesen die Prospekte deiner Läden und planen daraus deine Woche – passend zu Budget, Geschmack und Zielen.</p>
+      <button class="primary inv">Los geht's</button>
+      <a class="link">Ich habe einen Einladungslink</a>
+    </div>
+  </div>
+</div><div class="caption"><b>S6 Onboarding 1/4 – Willkommen</b>Vollbild mit Tellerfotos (Referenz 03), invertierter Pill-Button. Einladungslink-Weg für Familienmitglieder.</div></section>
+
+<!-- S6b Ort & Läden -->
+<section class="screen"><div class="phone">
+  <div class="island"></div><div class="status"><span>9:41</span><span class="batt"></span></div>
+  <div class="content" style="padding-bottom:120px">
+    <div class="progress"><i class="on"></i><i class="on"></i><i></i><i></i></div>
+    <h1 class="display">Wo kaufst<br><span>du ein?</span></h1>
+    <div class="field"><small>POSTLEITZAHL</small><div>50667</div></div>
+    <div class="rows">
+      <div class="r"><div class="t"><b>Rewe</b><small>Filiale: Rewe Hohe Str. 12 ›</small></div><span class="sw-t on"></span></div>
+      <div class="r"><div class="t"><b>Aldi Süd</b><small>regional</small></div><span class="sw-t on"></span></div>
+      <div class="r"><div class="t"><b>Lidl</b><small>regional</small></div><span class="sw-t on"></span></div>
+      <div class="r"><div class="t"><b>Edeka</b><small>Filiale wählen</small></div><span class="sw-t"></span></div>
+      <div class="r"><div class="t"><b>Kaufland</b></div><span class="sw-t"></span></div>
+      <div class="r"><div class="t"><b>dm</b><small>Drogerie</small></div><span class="sw-t on"></span></div>
+      <div class="r"><div class="t"><b>Rossmann</b><small>Drogerie</small></div><span class="sw-t"></span></div>
+    </div>
+  </div>
+  <div class="cta"><button class="primary">Weiter</button></div>
+</div><div class="caption"><b>S6 Onboarding 2/4 – Ort &amp; Läden</b>PLZ groß, Händler mit Schalter. Filialabhängige Händler zeigen nach dem Einschalten „Filiale wählen“. „Weiter“ erst bei gültiger PLZ und mindestens einem Laden.</div></section>
+
+<!-- S6c Haushalt -->
+<section class="screen"><div class="phone">
+  <div class="island"></div><div class="status"><span>9:41</span><span class="batt"></span></div>
+  <div class="content" style="padding-bottom:120px">
+    <div class="progress"><i class="on"></i><i class="on"></i><i class="on"></i><i></i></div>
+    <h1 class="display">Wer isst<br><span>mit?</span></h1>
+    <div class="bigstep"><button>−</button><div><b>2</b><small>Personen</small></div><button>+</button></div>
+    <div class="label">ERNÄHRUNG</div>
+    <div class="wrap"><span class="chip sel">Alles</span><span class="chip">Vegetarisch</span><span class="chip">Vegan</span><span class="chip">Pescetarisch</span><span class="chip">Halal</span></div>
+    <div class="label">ALLERGIEN &amp; UNVERTRÄGLICHKEITEN</div>
+    <div class="wrap"><span class="chip line">Gluten</span><span class="chip sel">Laktose</span><span class="chip line">Nüsse</span><span class="chip line">Erdnüsse</span><span class="chip line">Ei</span><span class="chip line">Soja</span><span class="chip line">Fisch</span><span class="chip line">Sellerie</span></div>
+    <div class="label">MAG ICH NICHT</div>
+    <div class="input">z.B. Koriander, Pilze …</div>
+  </div>
+  <div class="cta"><button class="primary">Weiter</button></div>
+</div><div class="caption"><b>S6 Onboarding 3/4 – Haushalt &amp; Ernährung</b>Personen-Stepper, Ernährungsform (eine Wahl), Allergien (mehrere), Freitext für Abneigungen.</div></section>
+
+<!-- S6d Budget & Ziel -->
+<section class="screen"><div class="phone">
+  <div class="island"></div><div class="status"><span>9:41</span><span class="batt"></span></div>
+  <div class="content" style="padding-bottom:120px">
+    <div class="progress"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i></div>
+    <h1 class="display">Budget<br><span>&amp; Ziel</span></h1>
+    <div class="amount"><b>60 €</b><small>pro Woche für Lebensmittel</small></div>
+    <div class="slider"><i style="width:22%"></i><b style="left:22%"></b></div>
+    <div class="scale"><span>20 €</span><span>200 €</span></div>
+    <div class="label">ZIEL</div>
+    <div class="goals">
+      <div class="sel"><i class="ni carbs"><svg class="f"><use href="#n-leaf"/></svg></i><b>Ausgewogen</b><small>Alle Nährstoffe abdecken</small></div>
+      <div><i class="ni protein"><svg class="f"><use href="#n-cube"/></svg></i><b>Proteinreich</b><small>Viel Eiweiß</small></div>
+      <div><i class="ni"><svg class="f"><use href="#n-flame"/></svg></i><b>Kalorienarm</b><small>Leichter essen</small></div>
+      <div><i class="ni fat"><svg class="f"><use href="#n-drop"/></svg></i><b>Eigenes</b><small>kcal &amp; Protein festlegen</small></div>
+    </div>
+    <div class="label">MAHLZEITEN</div>
+    <div class="wrap"><span class="chip">Frühstück</span><span class="chip sel">Mittag</span><span class="chip sel">Abend</span><span class="chip">Dessert</span></div>
+    <div class="label">KÜCHE</div>
+    <div class="wrap"><span class="chip sel">Gemischt</span><span class="chip">Indisch</span><span class="chip">Asiatisch</span><span class="chip">Italienisch</span><span class="chip">Deutsch</span><span class="chip">Mexikanisch</span><span class="chip">Orientalisch</span></div>
+  </div>
+  <div class="cta"><button class="primary"><svg class="i"><use href="#i-sparkle"/></svg>Ersten Plan erstellen</button></div>
+</div><div class="caption"><b>S6 Onboarding 4/4 – Budget &amp; Ziel</b>Großer Betrag mit Regler (5-€-Schritte), Ziel als Auswahlkarten, Mahlzeiten und Küchen als Chips. Endet direkt im Plan-Generator (Lade-Zustand).</div></section>
+
+<!-- S7a Plan-Generator -->
+<section class="screen"><div class="phone">
+  <div class="island"></div><div class="status"><span>9:41</span><span class="batt"></span></div>
+  <div class="content"><h1 class="display">Was kochen wir<br><span>diese Woche?</span></h1></div>
+  <div class="sheetbg"></div>
+  <div class="sheet">
+    <div class="grip"></div>
+    <h2>Wochenplan erstellen</h2>
+    <div class="sub"><svg class="i" style="width:16px;height:16px;transform:rotate(180deg)"><use href="#i-right"/></svg>KW 45 · 2.–8. November<svg class="i" style="width:16px;height:16px"><use href="#i-right"/></svg></div>
+    <div class="label">LÄDEN</div>
+    <div class="wrap"><span class="chip sel">Rewe <span style="color:#BDBDBD">86</span></span><span class="chip sel">Aldi Süd <span style="color:#BDBDBD">72</span></span><span class="chip sel">Lidl <span style="color:#BDBDBD">41</span></span></div>
+    <div class="label">KÜCHE</div>
+    <div class="wrap"><span class="chip sel">Gemischt</span><span class="chip">Indisch</span><span class="chip">Asiatisch</span><span class="chip">Italienisch</span><span class="chip">Deutsch</span></div>
+    <div class="label">MAHLZEITEN &amp; TAGE</div>
+    <div class="wrap" style="margin-bottom:10px"><span class="chip">Frühstück</span><span class="chip sel">Mittag</span><span class="chip sel">Abend</span><span class="chip">Dessert</span></div>
+    <div class="dayt"><span class="on">Mo</span><span class="on">Di</span><span class="on">Mi</span><span class="on">Do</span><span class="on">Fr</span><span>Sa</span><span>So</span></div>
+    <div class="label">BUDGET · 60 €</div>
+    <div class="slider" style="margin-top:8px"><i style="width:22%"></i><b style="left:22%"></b></div>
+    <div class="label">ZIEL</div>
+    <div class="seg3"><span class="on">Ausgewogen</span><span>Proteinreich</span><span>Kalorienarm</span></div>
+    <div class="rows" style="margin-top:16px">
+      <div class="r"><div class="t"><b>Lieblingsrezepte bevorzugen</b></div><span class="sw-t on"></span></div>
+      <div class="r"><div class="t"><b>Vorrat zuerst verbrauchen</b></div><span class="sw-t on"></span></div>
+    </div>
+    <div class="cta"><button class="primary"><svg class="i"><use href="#i-sparkle"/></svg>Plan erstellen</button></div>
+  </div>
+</div><div class="caption"><b>S7 Plan-Generator</b>Sheet aus den Schnell-Aktionen. Vorbelegt aus den Einstellungen, Änderungen gelten nur für diesen Plan. Woche umschaltbar.</div></section>
+
+<!-- S7b Laden -->
+<section class="screen"><div class="phone">
+  <div class="island"></div><div class="status"><span>9:41</span><span class="batt"></span></div>
+  <div class="sheetbg"></div>
+  <div class="sheet" style="top:90px;max-height:none">
+    <div class="grip"></div>
+    <div class="loading">
+      <div class="plate f-veg"><div class="food">🥗</div></div>
+      <h2>Dein Plan entsteht …</h2>
+      <div class="sub">Dauert meist unter einer Minute</div>
+      <div class="steps2">
+        <div><i><svg class="i"><use href="#i-check"/></svg></i>214 Angebote ausgewertet</div>
+        <div><i><svg class="i"><use href="#i-check"/></svg></i>5 Lieblingsrezepte im Angebot</div>
+        <div class="now"><i></i>Gerichte planen …</div>
+        <div class="todo"><i></i>Preise &amp; Nährwerte rechnen</div>
+      </div>
+    </div>
+  </div>
+</div><div class="caption"><b>S7 Plan-Generator – Lade-Zustand</b>Teller dreht sich langsam, Schritte werden nacheinander abgehakt. Fehler → <code>ErrorState</code> im Sheet; Budget nicht erreichbar → Hinweis mit „Trotzdem übernehmen“.</div></section>
+
+<!-- S8 Bewertung -->
+<section class="screen"><div class="phone">
+  <div class="island"></div><div class="status"><span>9:41</span><span class="batt"></span></div>
+  <div class="content"><h2 class="r-title" style="margin-top:250px">Chicken Tikka Masala</h2></div>
+  <div class="sheetbg"></div>
+  <div class="sheet" style="padding-bottom:40px">
+    <div class="grip"></div>
+    <div class="rate-head"><div class="plate f-tikka"><div class="food">🍛</div></div><div><small style="color:var(--text2);font-size:12px">Gekocht am Mi, 4.11.</small><h2 style="font-size:20px">Chicken Tikka Masala</h2></div></div>
+    <h2>Wie war's?</h2>
+    <div style="display:flex;gap:12px;font-size:40px;margin:12px 0 4px;color:var(--warning)">★★★★<span style="color:var(--text3)">★</span></div>
+    <div class="label">WIEDER KOCHEN?</div>
+    <div class="seg3"><span class="on">Bald</span><span>Irgendwann</span><span>Nie</span></div>
+    <div class="label">NOTIZ</div>
+    <div class="input">z.B. mehr Chili, weniger Reis …</div>
+    <button class="primary" style="margin-top:20px">Speichern</button>
+  </div>
+</div><div class="caption"><b>S8 Bewertung</b>Halbes Sheet nach „Gekocht“. 4–5 Sterne → Gericht kommt öfter, „Nie“ → wird nicht mehr vorgeschlagen. Danach Toast „Gespeichert – kommt öfter“.</div></section>
+
+<!-- S9 Angebotsdetail -->
+<section class="screen"><div class="phone">
+  <div class="island"></div><div class="status"><span>9:41</span><span class="batt"></span></div>
+  <div class="content" style="padding-bottom:120px">
+    <div class="topbar"><button class="round"><svg class="i"><use href="#i-back"/></svg></button></div>
+    <div class="pimg">🍗<span class="badge">−33 %</span><button class="round"><svg class="i"><use href="#i-heart"/></svg></button></div>
+    <h2 style="font-size:24px;font-weight:800">Hähnchenbrustfilet</h2>
+    <p class="meta" style="margin:4px 0 0">Teilstücke · 400 g Packung</p>
+    <div class="pprice"><b>3,99 €</b><s>5,99 €</s></div>
+    <div style="display:flex;gap:8px;align-items:center;font-size:13px;color:var(--text2)"><span class="chip store">Rewe</span>9,98 €/kg · gültig bis Sa, 7.11.</div>
+    <div class="section-head" style="margin-top:24px"><h2>Passt zu</h2></div>
+    <div class="hscroll" style="padding-top:44px">
+      <article class="card meal-sm"><div class="plate f-tikka" style="--s:90px"><div class="food">🍛</div></div><h4>Chicken Tikka Masala</h4><p>im Plan · Mi</p></article>
+      <article class="card meal-sm"><div class="plate f-bowl" style="--s:90px"><div class="food">🥙</div></div><h4>Hähnchen-Wraps</h4><p>★ 4,8 · Favorit</p></article>
+      <article class="card meal-sm"><div class="plate f-veg" style="--s:90px"><div class="food">🥗</div></div><h4>Caesar Salad</h4><p>2,10 € · 20 min</p></article>
+    </div>
+  </div>
+  <div class="bottom-cta"><button class="primary"><svg class="i"><use href="#i-plus"/></svg>Zur Einkaufsliste</button></div>
+</div><div class="caption"><b>S9 Angebotsdetail</b>Großes Produktbild auf getönter Fläche, Herz = Merkliste. „Passt zu“ zeigt Rezepte aus Plan und Favoriten. Ist der Artikel schon auf der Liste, wird der Button weiß mit „Auf der Liste ✓“.</div></section>
+
+<!-- S10 Merkliste -->
+<section class="screen"><div class="phone">
+  <div class="island"></div><div class="status"><span>9:41</span><span class="batt"></span></div>
+  <div class="content" style="padding-bottom:190px">
+    <div class="topbar"><div class="loc"><svg class="i" style="width:18px;height:18px"><use href="#i-pin"/></svg>Musterstadt · 4 Läden<svg class="i" style="width:16px;height:16px"><use href="#i-chev"/></svg></div></div>
+    <h1 class="display">Merkliste<br><span>3 Produkte</span></h1>
+    <div class="topbar" style="margin-bottom:14px"><div class="seg"><span>Angebote · 214</span><span class="on">Merkliste · 3</span></div></div>
+    <div class="label">DIESE WOCHE IM ANGEBOT</div>
+    <div class="rows">
+      <div class="r"><span class="thumb" style="--tint:#E6DFF3">🧴</span><div class="t"><b>Shampoo Repair</b><small>dm · gültig bis 30.11.</small></div><div style="text-align:right"><b style="display:block">1,79 €</b><span class="badge">−25 %</span></div></div>
+    </div>
+    <div class="label">BEOBACHTET</div>
+    <div class="rows">
+      <div class="r"><span class="thumb" style="--tint:#F2DCE6">🧴</span><div class="t"><b>Gesichtscreme Hydro</b><small>zuletzt im Angebot: KW 41 bei Rossmann</small></div><svg class="i chev"><use href="#i-right"/></svg></div>
+      <div class="r"><span class="thumb" style="--tint:#F7EBC4">☕</span><div class="t"><b>Kaffee Crema 1 kg</b><small>Alarm unter 9,99 € · noch nicht gesehen</small></div><svg class="i chev"><use href="#i-right"/></svg></div>
+    </div>
+  </div>
+  <div class="addbar" style="bottom:112px"><button class="secondary" style="box-shadow:var(--shadow-float)"><svg class="i"><use href="#i-search"/></svg>Suchen</button><button class="primary" style="box-shadow:var(--shadow-float)"><svg class="i"><use href="#i-scan"/></svg>Scannen</button></div>
+  <nav class="tabbar" data-active="angebote"></nav>
+</div><div class="caption"><b>S10 Merkliste</b>Oben, was diese Woche im Angebot ist, darunter alles Beobachtete mit „zuletzt gesehen“ und optionalem Wunschpreis. Hinzufügen per Suche oder Barcode (Kamera mit Limetten-Rahmen).</div></section>
+
+<!-- S11 Ersparnis -->
+<section class="screen"><div class="phone">
+  <div class="island"></div><div class="status"><span>9:41</span><span class="batt"></span></div>
+  <div class="content">
+    <div class="topbar"><button class="round"><svg class="i"><use href="#i-back"/></svg></button></div>
+    <h1 class="display">Gespart<br><span>seit Oktober</span></h1>
+    <article class="card" style="padding:20px">
+      <div style="font-size:48px;font-weight:800;color:var(--success);letter-spacing:-1.5px">86,30 €</div>
+      <div style="color:var(--text2);font-size:13px">diese Woche 12,40 € · ⌀ 10,79 € pro Woche</div>
+      <div class="bars"><i style="height:40%"></i><i style="height:62%"></i><i style="height:48%"></i><i style="height:80%"></i><i style="height:55%"></i><i style="height:70%"></i><i style="height:66%"></i><i class="now" style="height:76%"></i></div>
+      <div class="barlbl"><span>38</span><span>39</span><span>40</span><span>41</span><span>42</span><span>43</span><span>44</span><span>45</span></div>
+    </article>
+    <div class="label">KW 45</div>
+    <div class="rows">
+      <div class="r"><div class="t"><b>Rewe</b><small>14 Artikel · 4 im Angebot</small></div><span class="plus">+4,60 €</span></div>
+      <div class="r"><div class="t"><b>Aldi Süd</b><small>6 Artikel · 3 im Angebot</small></div><span class="plus">+5,20 €</span></div>
+      <div class="r"><div class="t"><b>dm</b><small>3 Artikel · 1 im Angebot</small></div><span class="plus">+2,60 €</span></div>
+    </div>
+    <div class="label">KW 44</div>
+    <div class="rows">
+      <div class="r"><div class="t"><b>Lidl</b><small>11 Artikel · 5 im Angebot</small></div><span class="plus">+7,10 €</span></div>
+    </div>
+  </div>
+  <nav class="tabbar" data-active="start"></nav>
+</div><div class="caption"><b>S11 Ersparnis</b>Großer Betrag (Referenz 08), Balken der letzten 8 Wochen, darunter Verlauf je Woche und Laden.</div></section>
+
+<!-- S12 Meine Rezepte -->
+<section class="screen"><div class="phone">
+  <div class="island"></div><div class="status"><span>9:41</span><span class="batt"></span></div>
+  <div class="content">
+    <div class="topbar"><div class="seg"><span>Wochenplan</span><span class="on">Meine Rezepte</span></div><button class="round dark"><svg class="i"><use href="#i-plus"/></svg></button></div>
+    <div class="searchrow" style="margin-bottom:14px"><div class="search"><svg class="i"><use href="#i-search"/></svg>Rezept suchen</div></div>
+    <div class="chips"><span class="chip dark">Alle <span>24</span></span><span class="chip">♥ Favoriten <span>8</span></span><span class="chip">Eigene <span>5</span></span><span class="chip">Im Angebot <span>6</span></span><span class="chip">Zuletzt gekocht</span></div>
+    <div class="rgrid">
+      <article class="card rcard"><div class="plate f-bowl" style="--s:84px"><div class="food">🍣</div></div><h4>Lachs-Bowl mit Avocado</h4><div class="stars">★★★★★</div><p>3,10 € · 20 min</p><span class="badge soft">im Angebot</span></article>
+      <article class="card rcard"><div class="plate f-dal" style="--s:84px"><div class="food">🍲</div></div><h4>Linsen-Dal mit Reis</h4><div class="stars">★★★★★</div><p>1,20 € · 30 min</p><span class="badge soft">im Angebot</span></article>
+      <article class="card rcard"><div class="plate f-tikka" style="--s:84px"><div class="food">🍛</div></div><h4>Chicken Tikka Masala</h4><div class="stars">★★★★<span style="color:var(--text3)">★</span></div><p>2,45 € · 35 min</p></article>
+      <article class="card rcard"><div class="plate f-pasta" style="--s:84px"><div class="food">🍝</div></div><h4>Omas Bolognese</h4><div class="stars">★★★★★</div><p>1,80 € · 60 min</p><span class="badge ok">eigenes</span></article>
+    </div>
+  </div>
+  <nav class="tabbar" data-active="rezepte"></nav>
+</div><div class="caption"><b>S12 Meine Rezepte</b>Tab „Rezepte“, Segment „Meine Rezepte“. Filter-Chips, Raster mit Sternen und Preis. „im Angebot“ ab 40 % der Kosten. „+“ öffnet das Formular „Rezept anlegen“.</div></section>
+
+<!-- S13 Einstellungen -->
+<section class="screen"><div class="phone">
+  <div class="island"></div><div class="status"><span>9:41</span><span class="batt"></span></div>
+  <div class="content" style="padding-bottom:40px">
+    <div class="topbar"><button class="round"><svg class="i"><use href="#i-back"/></svg></button></div>
+    <div class="prof"><div class="avatar a1">J</div><b>Jona</b><small>Haushalt „Zuhause“ · 2 Personen</small></div>
+    <div class="label">EINKAUFEN</div>
+    <div class="rows">
+      <div class="r"><span class="sq" style="--c:#3E7B1F"><svg class="i"><use href="#i-pin"/></svg></span><div class="t"><b>Ort</b></div><span class="v">50667</span><svg class="i chev"><use href="#i-right"/></svg></div>
+      <div class="r"><span class="sq" style="--c:#3E7B1F"><svg class="i"><use href="#i-store"/></svg></span><div class="t"><b>Läden &amp; Filialen</b></div><span class="v">4</span><svg class="i chev"><use href="#i-right"/></svg></div>
+      <div class="r"><span class="sq" style="--c:#3E7B1F"><svg class="i"><use href="#i-euro"/></svg></span><div class="t"><b>Budget</b></div><span class="v">60 € / Woche</span><svg class="i chev"><use href="#i-right"/></svg></div>
+    </div>
+    <div class="label">PLANUNG &amp; ERNÄHRUNG</div>
+    <div class="rows">
+      <div class="r"><span class="sq" style="--c:#E5483B"><svg class="i"><use href="#i-leaf"/></svg></span><div class="t"><b>Ernährung &amp; Allergien</b></div><span class="v">Alles · Laktose</span><svg class="i chev"><use href="#i-right"/></svg></div>
+      <div class="r"><span class="sq" style="--c:#E5483B"><svg class="i"><use href="#i-calendar"/></svg></span><div class="t"><b>Mahlzeiten &amp; Tage</b></div><span class="v">Mittag, Abend</span><svg class="i chev"><use href="#i-right"/></svg></div>
+      <div class="r"><span class="sq" style="--c:#E5483B"><svg class="i"><use href="#i-target"/></svg></span><div class="t"><b>Nährwertziel</b></div><span class="v">Ausgewogen</span><svg class="i chev"><use href="#i-right"/></svg></div>
+    </div>
+    <div class="label">BENACHRICHTIGUNGEN</div>
+    <div class="rows">
+      <div class="r"><span class="sq" style="--c:#F5A623"><svg class="i"><use href="#i-bell"/></svg></span><div class="t"><b>Push über ntfy</b><small>QR-Code scannen zum Einrichten</small></div><svg class="i chev"><use href="#i-right"/></svg></div>
+      <div class="r"><span class="sq" style="--c:#F5A623"><svg class="i"><use href="#i-tag"/></svg></span><div class="t"><b>Angebotsalarme</b></div><span class="sw-t on"></span></div>
+    </div>
+    <div class="label">FAMILIE</div>
+    <div class="rows">
+      <div class="r"><span class="sq" style="--c:#6A5ACD"><svg class="i"><use href="#i-users"/></svg></span><div class="t"><b>Mitglieder</b></div><span class="avatar sm a1">J</span><span class="avatar sm a2" style="margin-left:-12px">M</span><svg class="i chev"><use href="#i-right"/></svg></div>
+      <div class="r"><span class="sq" style="--c:#6A5ACD"><svg class="i"><use href="#i-share"/></svg></span><div class="t"><b>Einladungslink teilen</b></div><svg class="i chev"><use href="#i-right"/></svg></div>
+    </div>
+    <div class="label">APP</div>
+    <div class="rows">
+      <div class="r"><span class="sq"><svg class="i"><use href="#i-server"/></svg></span><div class="t"><b>Server</b></div><span class="v">192.168.178.20</span><svg class="i chev"><use href="#i-right"/></svg></div>
+      <div class="r"><span class="sq" style="--c:#E5483B"><svg class="i"><use href="#i-refresh"/></svg></span><div class="t"><b>Neu installieren fällig</b><small>App-Signatur läuft in 5 Tagen ab</small></div></div>
+    </div>
+  </div>
+</div><div class="caption"><b>S13 Einstellungen</b>Über den Avatar auf Start. Gruppierte Karten, Icon im getönten Quadrat, aktueller Wert grau. Änderungen speichern sofort. Hinweis auf die 7-Tage-Signatur (E2).</div></section>
+
+</main>
+<script>
+const tabs=[["start","i-home","Start"],["angebote","i-tag","Angebote"],null,["einkauf","i-bag","Einkauf"],["rezepte","i-book","Rezepte"]];
+document.querySelectorAll(".tabbar").forEach(nav=>{
+  nav.innerHTML=tabs.map(t=>t?`<button class="tab ${t[0]===nav.dataset.active?"on":""}"><svg class="i"><use href="#${t[1]}"/></svg>${t[2]}</button>`
+    :`<button class="fab" aria-label="Schnell-Aktionen"><svg class="i"><use href="#i-plus"/></svg></button>`).join("");
+});
+</script>
+</body>
+</html>

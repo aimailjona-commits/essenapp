@@ -8,13 +8,13 @@ Ziel: Das komplette UI ist mit dem Nutzer abgestimmt und so genau beschrieben, d
 - [x] Entwurf Design-System (`docs/ui/design-system.md`)
 - [x] Entwurf Screen-Liste und Navigation (`docs/ui/screens.md`)
 - [x] 👤 Grundsatzfragen beantworten: Stil hell & natürlich, KI-Tellerfotos, Mittel-Button = Schnell-Aktionen, nur hell (E12–E15)
-- [ ] 👤 App-Name festlegen
-- [ ] Design-System nach den Antworten finalisieren (Farben, Schrift, Komponenten)
+- [x] App-Name: Arbeitstitel „Essenapp“ (E21, änderbar)
+- [x] Design-System nach den Antworten finalisieren (Farben, Schrift, Komponenten) – E17–E22 (C)
 - [x] HTML-Mockups der Kern-Screens bauen (`docs/ui/mockups/kern-screens-v1.html`): Start, Schnell-Aktionen, Wochenplan, Rezeptdetail, Angebote, Einkauf, Listendetail
 - [ ] 👤 Mockups durchsehen, Feedback
 - [ ] Mockups überarbeiten bis freigegeben
-- [ ] Restliche Screens spezifizieren: Onboarding, Plan-Generator, Bewertung, Angebotsdetail, Merkliste, Ersparnis, Meine Rezepte, Einstellungen
-- [ ] 👤 Freigabe des gesamten UI
+- [x] Restliche Screens spezifizieren: Onboarding, Plan-Generator, Bewertung, Angebotsdetail, Merkliste, Ersparnis, Meine Rezepte, Einstellungen (`screens.md` S6–S13, `mockups/weitere-screens-v1.html`)
+- [~] 👤 Freigabe des gesamten UI – im autonomen Modus vorläufig freigegeben (E16), Nutzer-Feedback ausstehend
 - [ ] Status in `docs/ui/design-system.md` und `docs/ui/screens.md` auf „freigegeben“ setzen
 
 ## DoD

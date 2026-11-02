@@ -44,18 +44,18 @@ Dark Mode: **nicht in v1** (E15). Trotzdem nur Tokens verwenden, damit er späte
 
 System-Schrift **SF Pro** (E22 (C): keine Einbindung nötig, beste Dynamic-Type-Unterstützung). Web-PWA: `-apple-system, "Inter", system-ui`.
 
-| Token | Größe / Gewicht | Verwendung |
+| Token | iOS-Textstil (Standardgröße) / Gewicht | Verwendung |
 |---|---|---|
-| `display` | 34 / Bold, Zeilenhöhe 1.05, Laufweite −0.5 | Große Überschrift, 2 Zeilen: Zeile 1 `textPrimary`, Zeile 2 `textSecondary` |
-| `title` | 24 / Bold | Gericht-Name im Detail |
-| `headline` | 18 / Semibold | Abschnittstitel („Diese Woche“) |
-| `body` | 16 / Regular | Fließtext, Zutaten |
-| `callout` | 15 / Semibold | Karten-Titel, Buttons |
-| `caption` | 13 / Medium | Untertitel, Gewicht, „Alle ansehen“ |
-| `micro` | 11 / Semibold | Badges, Chip-Werte |
+| `display` | `.largeTitle` (34) / Heavy, Laufweite −0.8 | Große Überschrift, 2 Zeilen: Zeile 1 `textPrimary`, Zeile 2 `textSecondary` |
+| `title` | `.title2` (22) / Heavy | Gericht-Name im Detail |
+| `headline` | `.headline` (17) / Bold | Abschnittstitel („Diese Woche“) |
+| `body` | `.body` (17) / Regular | Fließtext, Zutaten |
+| `callout` | `.subheadline` (15) / Semibold | Karten-Titel, Buttons |
+| `caption` | `.footnote` (13) / Medium | Untertitel, Gewicht, „Alle ansehen“ |
+| `micro` | `.caption2` (11) / Semibold | Badges, Chip-Werte |
 | `number` | wie Kontext, `monospacedDigit` | Preise, Nährwerte |
 
-Alle Größen skalieren mit Dynamic Type.
+Textstile statt fester Größen, damit Dynamic Type funktioniert (umgesetzt in `ios/.../Theme.swift`).
 
 ## Abstände, Radien, Schatten
 
