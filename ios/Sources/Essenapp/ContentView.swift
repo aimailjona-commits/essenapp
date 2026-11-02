@@ -34,6 +34,7 @@ struct ContentView: View {
 struct MainView: View {
     @Environment(AppStore.self) private var store
     @State private var tab = MainView.demoTab
+    @State private var resetToken = 0  // erneutes Tippen auf den aktiven Tab → zurück zum Anfang
     @State private var quickOpen = Demo.screen == "quick"
     @State private var showGenerator = ["generator", "generating"].contains(Demo.screen ?? "")
 
@@ -74,6 +75,7 @@ struct MainView: View {
                 .background(Theme.C.bg)
                 .toolbar(.hidden, for: .navigationBar)
             }
+            .id("\(tab)-\(resetToken)")  // Tab-Wechsel schließt offene Detailseiten
             .animation(.easeInOut(duration: 0.2), value: tab)
 
             if quickOpen {
@@ -94,10 +96,7 @@ struct MainView: View {
                 .transition(.scale(scale: 0.85, anchor: .bottom).combined(with: .opacity))
             }
 
-            if store.detailDepth == 0 {
-                TabBar(selected: $tab, quickOpen: $quickOpen)
-                    .transition(.move(edge: .bottom).combined(with: .opacity))
-            }
+            TabBar(selected: $tab, quickOpen: $quickOpen) { resetToken += 1 }
         }
         .sheet(isPresented: $showGenerator) { PlanGeneratorSheet().presentationDetents([.large]) }
         .task { await store.loadAll() }

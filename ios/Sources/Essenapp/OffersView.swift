@@ -294,7 +294,7 @@ struct OfferDetailView: View {
                     }
                 }
                 .padding(.horizontal, Theme.pagePadding)
-                .padding(.bottom, 130)
+                .padding(.bottom, 200)
             }
             Button { withAnimation(Theme.spring) { store.addToList(offer) } } label: {
                 Label(onList ? "Auf der Einkaufsliste" : "Zur Einkaufsliste", systemImage: onList ? "checkmark" : "cart.badge.plus")
@@ -302,10 +302,9 @@ struct OfferDetailView: View {
             }
             .buttonStyle(PrimaryButtonStyle(color: onList ? Theme.C.accentDeep : Theme.C.action))
             .sensoryFeedback(.success, trigger: onList)
-            .padding(.horizontal, Theme.pagePadding).padding(.bottom, 12)
+            .padding(.horizontal, Theme.pagePadding).padding(.bottom, Theme.ctaAboveTabBar)
         }
         .toolbar(.hidden, for: .navigationBar)
-        .hidesTabBar()
     }
 
     private func fact(_ symbol: String, _ color: Color, _ title: String, _ value: String) -> some View {

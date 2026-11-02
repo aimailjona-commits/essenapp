@@ -46,7 +46,10 @@ struct ShoppingView: View {
         let groups = Dictionary(grouping: items, by: \.chain).sorted { ($0.key.isEmpty ? "~" : $0.key) < ($1.key.isEmpty ? "~" : $1.key) }
         ScrollView {
             VStack(alignment: .leading, spacing: 14) {
-                DisplayHeader(line1: "Einkauf", line2: "\(items.count) Artikel · \(groups.count) Listen")
+                HStack(alignment: .top) {
+                    DisplayHeader(line1: "Einkauf", line2: "\(items.count) Artikel · \(groups.count) Listen")
+                    ShareButton()
+                }
                 HStack(spacing: 10) {
                     TextField("Artikel hinzufügen …", text: $newItem)
                         .padding(.horizontal, 16).frame(height: 46)
@@ -166,7 +169,6 @@ struct ShoppingListView: View {
         }
         .background(Theme.C.bg)
         .toolbar(.hidden, for: .navigationBar)
-        .hidesTabBar()
         .sensoryFeedback(.success, trigger: checkedRaw)
     }
 
@@ -200,5 +202,42 @@ struct ShoppingListView: View {
         .padding(14)
         .background(done ? Color.clear : Theme.C.card, in: RoundedRectangle(cornerRadius: Theme.R.tile, style: .continuous))
         .overlay(RoundedRectangle(cornerRadius: Theme.R.tile, style: .continuous).strokeBorder(Theme.C.line, lineWidth: done ? 0 : 0.5))
+    }
+}
+
+extension AppStore {
+    /// Plan + Einkaufsliste als Text zum Teilen (WhatsApp, Nachrichten …).
+    var shareText: String {
+        var lines = ["🥘 Wochenplan" + (plan.map { " KW \($0.week.suffix(2))" } ?? "")]
+        for meal in plan?.entries ?? [] {
+            lines.append("• \(Labels.days[meal.day]) \(Labels.meal(meal.mealType)): \(meal.recipe.title)")
+        }
+        let groups = Dictionary(grouping: shoppingItems, by: \.chain).sorted { $0.key < $1.key }
+        lines.append("\n🛒 Einkaufsliste")
+        for (chain, items) in groups {
+            lines.append("\n\(chain.isEmpty ? "Überall" : Labels.chain(chain)):")
+            lines += items.map { item in
+                "◻︎ \(item.name)" + (item.amount.map { " – \($0.formatted()) \(item.unit == "stk" ? "Stück" : item.unit)" } ?? "")
+            }
+        }
+        if let plan { lines.append("\nGeschätzt \(euro(plan.totalCents)), davon \(euro(plan.savedCents)) gespart 💚") }
+        return lines.joined(separator: "\n")
+    }
+}
+
+/// Teilen-Knopf (rund, wie die anderen Kopf-Buttons).
+struct ShareButton: View {
+    @Environment(AppStore.self) private var store
+
+    var body: some View {
+        ShareLink(item: store.shareText) {
+            Image(systemName: "square.and.arrow.up")
+                .font(.system(size: 15, weight: .semibold))
+                .frame(width: 44, height: 44)
+                .foregroundStyle(Theme.C.text1)
+                .background(Theme.C.card, in: Circle())
+                .overlay(Circle().strokeBorder(Theme.C.line, lineWidth: 0.5))
+        }
+        .accessibilityLabel("Plan und Liste teilen")
     }
 }

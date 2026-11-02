@@ -22,6 +22,7 @@ struct RecipesTab: View {
                 } else if let plan = store.plan {
                     HStack(alignment: .bottom) {
                         DisplayHeader(line1: "KW \(plan.week.suffix(2))", line2: "Dein Plan")
+                        ShareButton()
                         Button { showGenerator = true } label: {
                             Image(systemName: "arrow.clockwise").font(.system(size: 15, weight: .bold))
                                 .frame(width: 40, height: 40).background(Theme.C.card, in: Circle())
@@ -258,14 +259,13 @@ struct RecipeDetailView: View {
                     .padding(16).card()
                 }
                 .padding(.horizontal, Theme.pagePadding)
-                .padding(.bottom, 120)
+                .padding(.bottom, 200)
             }
             Button { showRating = true } label: { Label("Gekocht – jetzt bewerten", systemImage: "star.fill") }
                 .buttonStyle(PrimaryButtonStyle())
-                .padding(.horizontal, Theme.pagePadding).padding(.bottom, 12)
+                .padding(.horizontal, Theme.pagePadding).padding(.bottom, Theme.ctaAboveTabBar)
         }
         .toolbar(.hidden, for: .navigationBar)
-        .hidesTabBar()
         .sheet(isPresented: $showRating) { RatingSheet(meal: meal).presentationDetents([.medium]).presentationCornerRadius(Theme.R.sheet) }
     }
 }
@@ -324,6 +324,9 @@ struct PlanGeneratorSheet: View {
     @State private var phase = 0
     @State private var started = Demo.screen == "generating"
     @State private var spin = false
+    @State private var prefs = Prefs()
+    @State private var wishes = ""
+    @State private var saveAsDefault = false
 
     private let steps = [("Angebote auswerten", "🏷️"), ("Lieblingsrezepte prüfen", "❤️"),
                          ("Gerichte planen", "👩‍🍳"), ("Preise rechnen", "🧮")]
@@ -365,43 +368,42 @@ struct PlanGeneratorSheet: View {
                 .padding(.top, 16)
                 .transition(.scale(scale: 0.95).combined(with: .opacity))
             } else {
-                Text("Wochenplan erstellen").font(Theme.F.title)
-                Text("Wir nutzen deine Einstellungen und die Angebote dieser Woche.").font(Theme.F.caption).foregroundStyle(Theme.C.text2)
-                if let h = store.household {
-                    VStack(spacing: 10) {
-                        info("storefront.fill", Theme.C.accent, "Läden", h.stores.filter(\.enabled).map { Labels.chain($0.chain) }.uniqued().joined(separator: ", "))
-                        info("fork.knife", Theme.C.kcal, "Mahlzeiten", h.mealTypes.map(Labels.meal).joined(separator: ", "))
-                        info("calendar", Theme.C.protein, "Tage", h.planDays.sorted().map { Labels.days[$0] }.joined(separator: " "))
-                        info("eurosign.circle.fill", Theme.C.warning, "Budget", euro(h.budgetFoodWeekCents))
-                        info("target", Theme.C.carbs, "Ziel", h.nutritionGoal.capitalized)
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 14) {
+                        Text("Wochenplan erstellen").font(Theme.F.title)
+                        Text("Passe an, was du diese Woche essen möchtest – gilt nur für diesen Plan.").font(Theme.F.caption).foregroundStyle(Theme.C.text2)
+                        VStack(alignment: .leading, spacing: 8) {
+                            Label { Text("Wünsche").font(Theme.F.headline) } icon: { Text("💭") }
+                            TextField("z.B. mehr Fisch, ein Gericht mit Kürbis", text: $wishes, axis: .vertical)
+                                .lineLimit(1...3)
+                                .padding(12).background(Theme.C.surface, in: RoundedRectangle(cornerRadius: Theme.R.chip))
+                        }
+                        .padding(16).card()
+                        PreferencesForm(prefs: $prefs, showDiet: false)
+                        Toggle("Als Standard speichern", isOn: $saveAsDefault).tint(Theme.C.accent).padding(16).card()
                     }
-                    .padding(16).card()
+                    .padding(.bottom, 90)
                 }
-                Spacer()
-                Button { start() } label: { Label("Plan erstellen", systemImage: "sparkles") }.buttonStyle(PrimaryButtonStyle())
+                .scrollDismissesKeyboard(.immediately)
+                .overlay(alignment: .bottom) {
+                    Button { start() } label: { Label("Plan erstellen", systemImage: "sparkles") }
+                        .buttonStyle(PrimaryButtonStyle())
+                        .disabled(prefs.mealTypes.isEmpty || prefs.planDays.isEmpty)
+                }
             }
         }
         .padding(Theme.pagePadding)
         .frame(maxHeight: .infinity, alignment: .top)
         .presentationBackground(Theme.C.bg)
         .presentationCornerRadius(Theme.R.sheet)
-    }
-
-    private func info(_ symbol: String, _ color: Color, _ title: String, _ value: String) -> some View {
-        HStack(spacing: 12) {
-            Image(systemName: symbol).font(.system(size: 14, weight: .semibold)).foregroundStyle(color)
-                .frame(width: 34, height: 34).background(color.opacity(0.14), in: RoundedRectangle(cornerRadius: 10))
-            Text(title).font(Theme.F.callout)
-            Spacer()
-            Text(value).font(Theme.F.caption).foregroundStyle(Theme.C.text2).lineLimit(1)
-        }
+        .onAppear { if let h = store.household { prefs = Prefs(h) } }
     }
 
     private func start() {
         withAnimation(Theme.spring) { started = true; phase = 0 }
         guard !store.demo else { return }
         Task {
-            async let done: Void = store.generatePlan()
+            async let done: Void = store.generatePlan(prefs.options(wishes: wishes, saveAsDefault: saveAsDefault))
             for i in 1..<steps.count {  // Fortschritt ist nur Anzeige, das Backend arbeitet in einem Aufruf
                 try? await Task.sleep(for: .seconds(8))
                 if store.generating { withAnimation(Theme.spring) { phase = i } }

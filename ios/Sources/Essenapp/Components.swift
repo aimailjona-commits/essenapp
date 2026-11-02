@@ -385,6 +385,7 @@ enum AppTab: CaseIterable {
 struct TabBar: View {
     @Binding var selected: AppTab
     @Binding var quickOpen: Bool
+    var reselect: () -> Void = {}
     @Namespace private var pill
 
     var body: some View {
@@ -421,6 +422,7 @@ struct TabBar: View {
     private func item(_ tab: AppTab) -> some View {
         let on = selected == tab
         return Button {
+            if selected == tab { reselect() }
             withAnimation(Theme.spring) { selected = tab; quickOpen = false }
         } label: {
             VStack(spacing: 3) {

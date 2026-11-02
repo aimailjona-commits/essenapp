@@ -76,6 +76,7 @@ enum Theme {
     }
 
     static let pagePadding: CGFloat = 20
+    static let ctaAboveTabBar: CGFloat = 96  // fester Button auf Detailseiten sitzt über der Tab-Leiste
     static let spring = Animation.spring(response: 0.38, dampingFraction: 0.78)
 }
 
@@ -128,19 +129,4 @@ struct PressableStyle: ButtonStyle {
 /// Cent → "12,49 €"
 func euro(_ cents: Int) -> String {
     (Double(cents) / 100).formatted(.currency(code: "EUR").locale(Locale(identifier: "de_DE")))
-}
-
-/// Detailseiten blenden die Tab-Leiste aus (sonst verdeckt sie den Hauptbutton unten).
-struct HidesTabBar: ViewModifier {
-    @Environment(AppStore.self) private var store
-
-    func body(content: Content) -> some View {
-        content
-            .onAppear { withAnimation(Theme.spring) { store.detailDepth += 1 } }
-            .onDisappear { withAnimation(Theme.spring) { store.detailDepth = max(0, store.detailDepth - 1) } }
-    }
-}
-
-extension View {
-    func hidesTabBar() -> some View { modifier(HidesTabBar()) }
 }

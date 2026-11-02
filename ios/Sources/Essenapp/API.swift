@@ -221,6 +221,7 @@ struct HouseholdPatch: Encodable {
     var planDays: [Int]?
     var budgetFoodWeekCents: Int?
     var nutritionGoal: String?
+    var maxCookMinutes: Int?
     var radiusKm: Int?
     var stores: [StoreDTO]?
 }
@@ -235,7 +236,6 @@ final class AppStore {
     var error: String?
     var generating = false
     var toast: String?
-    var detailDepth = 0  // > 0: Detailseite offen → Tab-Leiste ausblenden
     var extras: [ExtraItem] = Persist.load("extras") ?? [] { didSet { Persist.save(extras, "extras") } }
     var watchlist: Set<Int> = Persist.load("watchlist") ?? [] { didSet { Persist.save(watchlist, "watchlist") } }
 
@@ -315,11 +315,11 @@ final class AppStore {
         }
     }
 
-    func generatePlan() async {
+    func generatePlan(_ options: PlanOptions? = nil) async {
         generating = true
         defer { generating = false }
         do {
-            plan = try await api.request("POST", "/plans", timeout: 300)  // KI-Plan dauert bis ~2 min
+            plan = try await api.request("POST", "/plans", body: options, timeout: 300)  // KI-Plan dauert bis ~2 min
             error = nil
         } catch {
             self.error = error.localizedDescription

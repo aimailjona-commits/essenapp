@@ -52,7 +52,7 @@ struct StoreMapView: View {
                     }
                 }
                 .padding(.horizontal, Theme.pagePadding)
-                .padding(.bottom, 120)
+                .padding(.bottom, 200)
             }
             Button(action: save) {
                 Text(saving ? "Speichere …" : selected.isEmpty ? "Mindestens einen Laden wählen" : "\(selected.count) Läden übernehmen")
@@ -61,10 +61,9 @@ struct StoreMapView: View {
             .buttonStyle(PrimaryButtonStyle())
             .disabled(selected.isEmpty || saving)
             .opacity(selected.isEmpty ? 0.5 : 1)
-            .padding(.horizontal, Theme.pagePadding).padding(.bottom, 12)
+            .padding(.horizontal, Theme.pagePadding).padding(.bottom, onDone == nil ? Theme.ctaAboveTabBar : 12)
         }
         .toolbar(.hidden, for: .navigationBar)
-        .hidesTabBar()
         .task {
             radius = Double(store.household?.radiusKm ?? 5)
             selected = Set(store.household?.stores.compactMap(\.osmId) ?? [])
@@ -211,12 +210,21 @@ struct SettingsView: View {
                             row("mappin.and.ellipse", Theme.C.accent, "Läden & Umkreis",
                                 "\(h.stores.filter(\.enabled).count) Läden · \(h.radiusKm ?? 5) km")
                         }
-                        row("eurosign.circle.fill", Theme.C.warning, "Budget", "\(euro(h.budgetFoodWeekCents)) / Woche")
+                        NavigationLink { PreferencesView() } label: {
+                            row("eurosign.circle.fill", Theme.C.warning, "Budget", "\(euro(h.budgetFoodWeekCents)) / Woche")
+                        }
                     }
-                    group("ERNÄHRUNG") {
-                        row("leaf.fill", Theme.C.carbs, "Ernährung", h.diet.capitalized)
-                        row("exclamationmark.shield.fill", Theme.C.protein, "Allergien", h.allergies.isEmpty ? "keine" : h.allergies.joined(separator: ", "))
-                        row("target", Theme.C.kcal, "Ziel", h.nutritionGoal.capitalized)
+                    group("PRÄFERENZEN") {
+                        NavigationLink { PreferencesView() } label: {
+                            VStack(alignment: .leading, spacing: 10) {
+                                row("fork.knife", Theme.C.kcal, "Mahlzeiten & Küche",
+                                    "\(h.mealTypes.map(Labels.meal).joined(separator: ", ")) · \(h.cuisines.isEmpty ? "gemischt" : h.cuisines.joined(separator: ", "))")
+                                row("leaf.fill", Theme.C.carbs, "Ernährung", ([h.diet.capitalized] + h.allergies).joined(separator: " · "))
+                                row("target", Theme.C.protein, "Ziel", "\(h.nutritionGoal.capitalized) · max. \(h.maxCookMinutes) min")
+                                Text("Ändern ›").font(Theme.F.callout).foregroundStyle(Theme.C.accentDeep)
+                            }
+                        }
+                        .buttonStyle(PressableStyle())
                     }
                 }
                 group("APP") {
@@ -237,7 +245,6 @@ struct SettingsView: View {
         }
         .background(Theme.C.bg)
         .toolbar(.hidden, for: .navigationBar)
-        .hidesTabBar()
     }
 
     private func group(_ title: String, @ViewBuilder content: () -> some View) -> some View {
