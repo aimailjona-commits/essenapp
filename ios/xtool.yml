@@ -1,0 +1,4 @@
+version: 1
+bundleID: de.jsenf.essenapp
+infoPath: Info.plist
+iconPath: Icon.png
