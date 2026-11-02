@@ -68,13 +68,13 @@ struct MealCardBig: View {
 
     var body: some View {
         VStack(spacing: 4) {
-            Plate(url: URL(string: meal.recipe.imageUrl), size: 170).padding(.top, -78).padding(.bottom, 12)
+            Plate(url: URL(string: meal.recipe.imageUrl), size: 170, seed: meal.recipe.title).padding(.top, -78).padding(.bottom, 12)
             Text(meal.recipe.title).font(.system(.title3, weight: .bold)).multilineTextAlignment(.center)
             Text("\(meal.recipe.prepMinutes) min · \(euro(meal.costCents / max(meal.recipe.servings, 1))) pro Portion")
                 .font(Theme.F.caption).foregroundStyle(Theme.C.text2)
             let deals = meal.recipe.ingredients.filter { $0.offerId != nil }.count
             if deals > 0 {
-                DealBadge(text: "\(deals) Zutaten im Angebot", style: .soft).padding(.top, 10)
+                DealBadge(text: deals == 1 ? "1 Zutat im Angebot" : "\(deals) Zutaten im Angebot", style: .soft).padding(.top, 10)
             }
         }
         .padding(18)
@@ -88,7 +88,7 @@ struct MealCardSmall: View {
 
     var body: some View {
         VStack(spacing: 4) {
-            Plate(url: URL(string: meal.recipe.imageUrl), size: 96).padding(.top, -36)
+            Plate(url: URL(string: meal.recipe.imageUrl), size: 96, seed: meal.recipe.title).padding(.top, -36)
             Text(meal.recipe.title).font(.system(.subheadline, weight: .bold)).lineLimit(2)
                 .multilineTextAlignment(.center).frame(minHeight: 36)
             Text("\(euro(meal.costCents)) · \(meal.recipe.prepMinutes) min").font(Theme.F.micro).foregroundStyle(Theme.C.text2)
@@ -109,7 +109,7 @@ struct BudgetCard: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack {
-                Text("Budget \(plan.week.replacingOccurrences(of: "-W", with: " · KW "))").font(.system(.body, weight: .bold))
+                Text("Budget KW \(plan.week.suffix(2))").font(.system(.body, weight: .bold))
                 Spacer()
             }
             HStack(alignment: .firstTextBaseline, spacing: 6) {

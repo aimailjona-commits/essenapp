@@ -19,7 +19,7 @@ struct RecipesTab: View {
                 if mine {
                     EmptyState(symbol: "book.closed", title: "Meine Rezepte", text: "Gespeicherte und eigene Rezepte kommen in Phase 4.")
                 } else if let plan = store.plan {
-                    DisplayHeader(line1: plan.week.replacingOccurrences(of: "-W", with: " · KW "), line2: "Dein Plan")
+                    DisplayHeader(line1: "KW \(plan.week.suffix(2))", line2: "Dein Plan")
                     HStack(spacing: 10) {
                         summary(euro(plan.totalCents), "von \(euro(store.household?.budgetFoodWeekCents ?? 0))")
                         summary(euro(plan.savedCents), "gespart")
@@ -73,12 +73,12 @@ struct MealRow: View {
 
     var body: some View {
         HStack(spacing: 14) {
-            Plate(url: URL(string: meal.recipe.imageUrl), size: 76)
+            Plate(url: URL(string: meal.recipe.imageUrl), size: 76, seed: meal.recipe.title)
             VStack(alignment: .leading, spacing: 4) {
                 Text(meal.recipe.title).font(.system(.subheadline, weight: .bold)).lineLimit(2)
                 Text("\(meal.recipe.prepMinutes) min · \(euro(meal.costCents))").font(Theme.F.micro).foregroundStyle(Theme.C.text2)
                 let deals = meal.recipe.ingredients.filter { $0.offerId != nil }.count
-                if deals > 0 { DealBadge(text: "\(deals) Zutaten im Angebot", style: .soft) }
+                if deals > 0 { DealBadge(text: deals == 1 ? "1 Zutat im Angebot" : "\(deals) Zutaten im Angebot", style: .soft) }
             }
             Spacer()
             Image(systemName: "chevron.right").foregroundStyle(Theme.C.text3)
@@ -108,7 +108,7 @@ struct RecipeDetailView: View {
                     }
                     ZStack {
                         CornerFrame().stroke(Theme.C.accent, style: StrokeStyle(lineWidth: 4, lineCap: .round)).frame(width: 276, height: 276)
-                        Plate(url: URL(string: recipe.imageUrl), size: 236)
+                        Plate(url: URL(string: recipe.imageUrl), size: 236, seed: recipe.title)
                     }
                     .frame(maxWidth: .infinity)
                     VStack(spacing: 4) {
@@ -189,7 +189,7 @@ struct RatingSheet: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             HStack(spacing: 14) {
-                Plate(url: URL(string: meal.recipe.imageUrl), size: 64)
+                Plate(url: URL(string: meal.recipe.imageUrl), size: 64, seed: meal.recipe.title)
                 Text(meal.recipe.title).font(Theme.F.headline)
             }
             Text("Wie war's?").font(Theme.F.title)

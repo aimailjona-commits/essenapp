@@ -26,6 +26,14 @@ Plant Wochengerichte aus aktuellen Supermarkt- und Drogerieprospekten.
 4. Aufgabe in der Phasen-Datei abhaken. Neue Entscheidungen ins Entscheidungslog im Playbook.
 5. Phase fertig → DoD prüfen, in `docs/tasks/README.md` nächste Phase aktiv setzen.
 
+## UI prüfen (E34)
+
+- Nach UI-Änderungen: committen + pushen → GitHub Actions „iOS Screenshots“ läuft (oder `gh workflow run ios-screenshots.yml`). Danach
+  `gh run download <id> --name screenshots --dir .debug/ci` und mit `tools/contact_sheet.py` zu Übersichten zusammenfügen, gegen `docs/ui/mockups/` vergleichen.
+- Neuer Screen → Fall in `Demo.swift` / `MainView` ergänzen und in `ios/tools/screenshots.sh` aufnehmen.
+- Nach Änderungen an `xtool.yml`, `Info.plist` oder Icon: `ios/tools/gen-xcode.sh` (WSL) ausführen und committen.
+- Echtes iPhone: `tools/iphone-shot.ps1 [-Screen <name>]` (braucht laufenden tunneld des Nutzers). Screenshots können Privates zeigen: nur in `.debug/`, nie committen.
+
 ## Nutzer
 
 - Kommunikation auf Deutsch.

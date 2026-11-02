@@ -137,21 +137,32 @@ struct NutrientTile: View {
 
 // MARK: Bilder
 
-/// Freigestelltes Tellerfoto (KI-generiert, E13). Ohne Bild: leerer Teller.
+/// Freigestelltes Tellerfoto (KI-generiert, E13). Ohne Bild: Teller mit Speisen-Farbverlauf (wie Mockups).
 struct Plate: View {
     let url: URL?
     var size: CGFloat = 120
+    var seed = ""  // z.B. Gericht-Name: gleicher Name → gleiche Farbe
+
+    /// Warme Speisen-Töne aus den Mockups (Curry, Dal, Tomate, Bowl, Pasta, Gemüse).
+    private static let foods: [(UInt32, UInt32)] = [(0xF6B26B, 0xB8471A), (0xFFD27A, 0xC07A1A), (0xF08A5D, 0xB8361F),
+                                                     (0x9CCB6B, 0x4E7F2A), (0xFBE29B, 0xD9542F), (0xE07A3F, 0x7FAF4A)]
 
     var body: some View {
         AsyncImage(url: url) { image in
-            image.resizable().scaledToFill()
+            image.resizable().scaledToFill().clipShape(Circle())
         } placeholder: {
-            Circle()
-                .fill(RadialGradient(colors: [.white, Theme.C.surface], center: .center, startRadius: size * 0.3, endRadius: size * 0.5))
-                .overlay(Circle().strokeBorder(Theme.C.bg, lineWidth: size * 0.02).padding(size * 0.18))
+            let food = Self.foods[abs(seed.unicodeScalars.reduce(0) { $0 &* 31 &+ Int($1.value) }) % Self.foods.count]
+            ZStack {
+                Circle().fill(.white)
+                Circle().strokeBorder(Theme.C.bg, lineWidth: size * 0.025).padding(size * 0.1)
+                Circle()
+                    .fill(RadialGradient(colors: [Color(hex: food.0), Color(hex: food.1)], center: .init(x: 0.35, y: 0.35),
+                                         startRadius: 0, endRadius: size * 0.4))
+                    .padding(size * 0.16)
+                Image(systemName: "fork.knife").font(.system(size: size * 0.16, weight: .semibold)).foregroundStyle(.white.opacity(0.85))
+            }
         }
         .frame(width: size, height: size)
-        .clipShape(Circle())
         .floatShadow()
         .accessibilityHidden(true)
     }

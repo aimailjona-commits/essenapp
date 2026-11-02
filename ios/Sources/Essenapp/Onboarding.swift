@@ -91,9 +91,9 @@ struct OnboardingView: View {
         return ZStack(alignment: .bottomLeading) {
             Color(hex: 0x1A1A18).ignoresSafeArea()
             ZStack {
-                Plate(url: nil, size: 230).offset(x: -110, y: -230)
-                Plate(url: nil, size: 180).offset(x: 130, y: -280)
-                Plate(url: nil, size: 200).offset(x: 40, y: -60)
+                Plate(url: nil, size: 230, seed: "a").offset(x: -110, y: -230)
+                Plate(url: nil, size: 180, seed: "d").offset(x: 130, y: -280)
+                Plate(url: nil, size: 200, seed: "e").offset(x: 40, y: -60)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             LinearGradient(colors: [.clear, Theme.C.action], startPoint: .center, endPoint: .bottom).ignoresSafeArea()
