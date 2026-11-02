@@ -65,7 +65,7 @@ struct OnboardingView: View {
             .scrollDismissesKeyboard(.immediately)
             Button(action: next) {
                 HStack {
-                    if busy { ProgressView().tint(.white) }
+                    if busy { ProgressView().tint(Theme.C.onAction) }
                     if step == 4 && !busy { Image(systemName: "sparkles") }
                     Text(busy ? "Einen Moment …" : step == 4 ? "Ersten Plan erstellen" : "Weiter")
                 }
@@ -128,7 +128,7 @@ struct OnboardingView: View {
         @Bindable var api = store.api
         return ZStack(alignment: .bottom) {
             HeroImage(name: "bowl").ignoresSafeArea()
-            LinearGradient(colors: [.clear, .white.opacity(0.85), .white], startPoint: .init(x: 0.5, y: 0.35), endPoint: .init(x: 0.5, y: 0.7))
+            LinearGradient(colors: [.clear, Theme.C.bg.opacity(0.85), Theme.C.bg], startPoint: .init(x: 0.5, y: 0.35), endPoint: .init(x: 0.5, y: 0.7))
                 .ignoresSafeArea()
             VStack(spacing: 14) {
                 Text("Kochen nach\nAngebot.").font(.system(size: 36, weight: .bold)).multilineTextAlignment(.center)

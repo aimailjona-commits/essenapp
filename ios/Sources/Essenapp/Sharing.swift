@@ -43,6 +43,7 @@ struct URLDTO: Codable { var url: String }
 extension AppStore {
     func loadLists() async {
         guard !demo else { return }
+        await syncPending()  // erst Offline-Änderungen senden, sonst überschreibt der Server-Stand sie
         do {
             lists = try await api.request("GET", "/lists")
             if let id = lists.first(where: { $0.kind == "household" })?.id {
@@ -61,7 +62,20 @@ extension AppStore {
     func addItem(name: String, chain: String = "", offerId: Int? = nil, to listID: Int) async {
         struct Body: Encodable { var name: String; var chain: String; var offerId: Int? }
         guard !demo else { return }
-        let _: ListItemDTO? = try? await api.request("POST", "/lists/\(listID)/items", body: Body(name: name, chain: chain, offerId: offerId))
+        let temp = api.newTempId()
+        do {
+            let _: ListItemDTO = try await api.request("POST", "/lists/\(listID)/items", body: Body(name: name, chain: chain, offerId: offerId),
+                                                       tempId: temp)
+        } catch APIError.queued {
+            // offline: sofort in Liste und Cache, der Server bekommt es beim nächsten Netz (66)
+            let item = ListItemDTO(id: temp, name: name, amount: nil, unit: "", chain: chain, offerId: offerId, checked: false,
+                                   addedBy: profile?.name ?? "", checkedBy: "", source: "manual")
+            editList(listID) { l in
+                l.items.removeAll { i in i.id < 0 && !API.isTemp(i.id) && i.name == name }  // optimistischer Platzhalter
+                l.items.append(item)
+            }
+            return
+        } catch {}
         await loadLists()
     }
 
@@ -69,7 +83,7 @@ extension AppStore {
     func toggle(_ item: ListItemDTO) async {
         if let i = householdList?.items.firstIndex(where: { $0.id == item.id }) { householdList?.items[i].checked.toggle() }
         var suggest = demo && !item.checked  // Demo: immer anbieten
-        if !demo, item.id > 0 {
+        if !demo, item.id > 0 || API.isTemp(item.id) {  // offline angelegte Artikel: Haken wartet mit in der Warteschlange
             struct Body: Encodable { var checked: Bool }
             struct Out: Decodable { var pantrySuggest: Bool }
             let out: Out? = try? await api.request("PATCH", "/items/\(item.id)", body: Body(checked: !item.checked))
@@ -82,7 +96,7 @@ extension AppStore {
 
     func deleteItem(_ item: ListItemDTO) async {
         householdList?.items.removeAll { $0.id == item.id }
-        guard !demo, item.id > 0 else { return }
+        guard !demo, item.id > 0 || API.isTemp(item.id) else { return }
         struct Empty: Decodable {}
         _ = try? await api.request("DELETE", "/items/\(item.id)") as Empty?
     }
@@ -218,7 +232,13 @@ struct OneOffListView: View {
         if let i = list?.items.firstIndex(where: { $0.id == item.id }) { list?.items[i].checked.toggle() }
         Task {
             struct Body: Encodable { var checked: Bool }
-            let _: ListItemDTO? = try? await store.api.request("PATCH", "/items/\(item.id)", body: Body(checked: !item.checked))
+            do {
+                let _: ListItemDTO = try await store.api.request("PATCH", "/items/\(item.id)", body: Body(checked: !item.checked))
+            } catch APIError.queued {  // offline: Haken auch im Cache, damit das Neuladen ihn nicht zurücksetzt (66)
+                store.editList(summary.id) { l in
+                    if let i = l.items.firstIndex(where: { x in x.id == item.id }) { l.items[i].checked = !item.checked }
+                }
+            } catch {}
         }
     }
 }

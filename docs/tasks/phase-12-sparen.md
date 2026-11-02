@@ -5,7 +5,7 @@ Details, Abläufe und Abnahmekriterien: [`docs/features/spec-p12-sparen.md`](../
 ## Aufgaben
 
 - [ ] Grundlage: `product`-Schlüssel + `price_point` (Rückfüllung aus vorhandenen Angeboten)
-- [ ] 28 Preisverlauf-Diagramm, Urteil-Badges, Filter „Nur echte Angebote“
+- [~] 28 Preisverlauf-Diagramm, Urteil-Badges, Filter „Nur echte Angebote“ (Diagramm + Urteil im Angebotsdetail fertig; Badge auf Karten + Filter brauchen `verdict` in `GET /offers`)
 - [ ] 30 Folgewoche-Angebote, Pille „Nächste Woche“, Start-Karte „nächste Woche günstiger“, Plan für nächste Woche
 - [ ] 31 Vorratskauf-Logik + Karten + „n× auf die Liste“
 - [ ] 27 Merkliste: Barcode-Scan (VisionKit + Open Food Facts), Wunschpreis, Abgleich, ntfy-Push

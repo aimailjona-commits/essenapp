@@ -75,7 +75,11 @@ Einstellungen/Profil: über den Avatar oben rechts auf dem Start-Screen.
 - Übersicht: `ListCard` pro Laden (Pastellton aus `listTints`, E18) mit Anzahl offener Artikel und Avataren
 - Detail: Kopf mit Laden, Summe, Ersparnis; `ChecklistRow`s nach Kategorie gruppiert; abgehakte nach unten
 - Artikel hinzufügen (Freitext), Mitglieder einladen (+)
-- Offline abhakbar
+- Offline abhakbar (Feature 66): ohne Netz oder Server oben Glas-Banner (Liquid Glass, sonst Material, Symbol `wifi.slash`) „Offline – Änderungen werden später übertragen“ über allen Screens. Abhaken, Artikel hinzufügen/entfernen (Haushaltsliste und einmalige Listen) und Vorrat (anlegen, Menge, löschen) wirken sofort und warten in einer Warteschlange; beim nächsten Netz der Reihe nach gesendet, dann neu geladen. Konflikte: letzter Stand gewinnt pro Feld, auf dem Server abgehakte Artikel bleiben abgehakt. Angezeigt wird der zuletzt geladene Stand (Cache) von Haushalt, Plan, Listen, Angeboten, Vorrat, Rezepten; Bilder aus dem URLCache, wenn schon gesehen. Demo: `offline`.
+
+### Dark Mode (Feature 68, alle Screens)
+- Jeder Screen hat eine dunkle Fassung mit den Werten aus `design-system.md` (Abschnitt Dark Mode). Ausnahmen: Kochmodus S18 immer dunkel, Bildkarte (Feature 10) immer hell. Teilen-Erweiterung S20 folgt dem System.
+- CI-Screenshots: jeder Demo-Screen zusätzlich als `dark-<name>` (`-demoAppearance dark`).
 
 ## Weitere Screens
 
@@ -121,6 +125,7 @@ Mockups: `mockups/weitere-screens-v1.html`.
 - Preis groß, Normalpreis durchgestrichen, Grundpreis, `StoreChip`, „gültig bis Sa, 7.11.“.
 - „Passt zu“: horizontale kleine `MealCard`s mit Rezepten aus Plan oder Favoriten, die die Zutat nutzen.
 - Fester `PrimaryButton` „Zur Einkaufsliste“ (wird zu „Auf der Liste ✓“ mit `SecondaryButton`-Stil, wenn schon drauf).
+- Phase 12 (Feature 28): Karte **„Preisverlauf“** direkt unter dem Preis (`GET /offers/{id}/history`): Kopf „Preisverlauf“, rechts Urteil-Badge (getönte Pille): „🔥 Bestpreis“ (`deal`), „👍 Gutes Angebot“ (`success`), „😐 Normal“ (`text2`), „⚠️ Kein echtes Angebot“ (`warning`). Swift-Charts-Diagramm (220 pt) der letzten 12 Wochen: Stufenlinie je Laden (Farbe `Theme.storeColor`, Legende unten), Angebotswochen als Punkte, aktuelle Woche als `accentSoft`-Band und großer Punkt, Normalpreis (Streichpreis, sonst Median der Wochen ohne Angebot) als gestrichelte Linie mit „Normalpreis 5,99 €“. Antippen/Ziehen zeigt eine Linie mit Kästchen „KW 41 · Lidl 3,79 € · Angebot“. Darunter zwei `surface`-Kacheln „Median 12 Wochen“ / „Tiefstpreis“, „Zuletzt so günstig: KW 38 bei Lidl (3,79 €)“, „Im Schnitt alle 4 Wochen im Angebot“. Zustände: Laden → Skeleton (200 pt); `zu_wenig_daten` → „Noch zu wenig Daten (ab 3 Wochen)“ ohne Diagramm und Badge; Fehler → „Preisverlauf gerade nicht verfügbar.“ + „Erneut versuchen“. Demo: `offer`.
 - Phase 9 (Feature 2): Karte „Nährwerte“ unter den Fakten (`GET /offers/{id}/nutrition`): `PillSegment` „pro 100 g | pro Packung (400 g)“ (nur wenn `per_pack`), 4 `NutrientTile` (kcal, Protein, KH, Fett), darunter „Quelle: USDA FoodData Central · „<food>““. `pending` → Schimmer-Kacheln + „Nährwerte werden zugeordnet …“, nach 3/6/12/24 s neu fragen. `none` → Karte fehlt.
 
 ### S10 Merkliste (Tab „Angebote“, Segment „Merkliste“)
@@ -154,7 +159,7 @@ Mockups: `mockups/weitere-screens-v1.html`.
   - **Benachrichtigungen** (Push über Apple/APNs, kein ntfy; Test-Push: 422 → Toast „Erst Mitteilungen erlauben“, 502 → „Apple hat abgelehnt“; die Wochenplan-Erinnerung hat die Aktionen „Plan erstellen“ → S7 und „Später“): Status der iOS-Erlaubnis (abgelehnt → „In iOS-Einstellungen öffnen“), „Test-Push senden“, Push an/aus, Wochenplan-Erinnerung (an/aus, Wochentag, Uhrzeit), Ruhezeit (an/aus, Von/Bis), Angebotsalarme an/aus. Vor der iOS-Abfrage einmal ein Erklär-Sheet „Nichts verpassen“ (nach dem Onboarding bzw. beim ersten Öffnen der Einstellungen). Antippen einer Mitteilung öffnet `essenapp://start|generator|offer/<id>`.
   - **Familie:** Mitglieder (Avatare), „Einladungslink teilen“
   - **Rezepte** (Phase 9): „Teilen aus Instagram“ → S21; Schalter „Schritt-Bilder erzeugen“ mit Untertitel „ca. 2 Cent/Rezept“ (nur wenn `step_images_available`, speichert `PATCH /household {step_images}`).
-  - **App:** Server-Adresse, Version, „Neu installieren fällig in 5 Tagen“ (7-Tage-Signatur, E2)
+  - **App:** Erscheinungsbild (Menü **System · Hell · Dunkel**, Feature 68, sofort wirksam für alle Screens und Sheets), Server-Adresse, Version, „Neu installieren fällig in 5 Tagen“ (7-Tage-Signatur, E2)
 - Änderungen werden sofort gespeichert (kein Speichern-Button), Fehler als Banner.
 
 ### S15 Mein Profil (Push-Screen aus S13, Feature 48)

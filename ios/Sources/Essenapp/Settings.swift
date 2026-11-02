@@ -187,6 +187,8 @@ struct StoreMapView: View {
 struct SettingsView: View {
     @Environment(AppStore.self) private var store
     @Environment(\.dismiss) private var dismiss
+    @AppStorage("appearance") private var appearance = "system"
+    static let appearances = [("system", "System"), ("light", "Hell"), ("dark", "Dunkel")]
 
     var body: some View {
         @Bindable var api = store.api
@@ -262,6 +264,16 @@ struct SettingsView: View {
                 }
                 FamilySection()
                 group("APP") {
+                    HStack(spacing: 12) {
+                        icon("circle.lefthalf.filled", Theme.C.text1)
+                        Text("Erscheinungsbild").font(.system(.body, weight: .semibold)).foregroundStyle(Theme.C.text1)
+                        Spacer()
+                        Picker("Erscheinungsbild", selection: $appearance) {
+                            ForEach(Self.appearances, id: \.0) { key, label in Text(label).tag(key) }
+                        }
+                        .pickerStyle(.menu).tint(Theme.C.text2)
+                    }
+                    .sensoryFeedback(.selection, trigger: appearance)
                     HStack(spacing: 12) {
                         icon("server.rack", Theme.C.text2)
                         TextField("http://…", text: $api.baseURL).keyboardType(.URL).textInputAutocapitalization(.never).autocorrectionDisabled()

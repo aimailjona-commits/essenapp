@@ -15,15 +15,20 @@ xcrun simctl bootstatus "$udid" -b
 xcrun simctl status_bar "$udid" override --time 9:41 --batteryState charged --batteryLevel 100 --cellularBars 4 || true
 xcrun simctl install "$udid" "$app"
 
-shoot() {  # $1 = Screen, $2 = Dateiname
+shoot() {  # $1 = Screen, $2 = Dateiname, danach weitere App-Argumente (z. B. -demoAppearance dark)
+  local screen=$1 file=$2; shift 2
   xcrun simctl terminate "$udid" de.jsenf.essenapp 2>/dev/null || true
-  xcrun simctl launch "$udid" de.jsenf.essenapp -demoScreen "$1" >/dev/null
+  xcrun simctl launch "$udid" de.jsenf.essenapp -demoScreen "$screen" "$@" >/dev/null
   sleep 5
-  xcrun simctl io "$udid" screenshot "$out/$2.png" >/dev/null
+  xcrun simctl io "$udid" screenshot "$out/$file.png" >/dev/null
 }
 
 xcrun simctl ui "$udid" appearance light
-for s in onboarding start quick generator generating offers offer stores plan recipe cooking sharecard recipes myrecipe recipeform shopping list pantry settings profile notifications instagram imported importlink sharepair shareimport shareresult fridgecam fridgereview cooknow empty; do shoot "$s" "$s"; done
-xcrun simctl ui "$udid" appearance dark  # App erzwingt hell (E15) – Kontrolle, dass nichts weiß auf weiß wird
-for s in start; do shoot "$s" "dark-$s"; done
+for s in onboarding start quick generator generating offers offer stores plan recipe cooking sharecard recipes myrecipe recipeform shopping list pantry settings profile notifications instagram imported importlink sharepair shareimport shareresult fridgecam fridgereview cooknow offline empty; do shoot "$s" "$s"; done
+# Dark Mode (68): Simulator dunkel (Einstellung „System“) und zusätzlich per Demo-Argument erzwungen
+xcrun simctl ui "$udid" appearance dark
+for s in onboarding start quick generator offers offer stores plan recipe cooking sharecard recipes myrecipe recipeform shopping list pantry settings profile notifications instagram imported importlink sharepair shareresult fridgecam fridgereview cooknow offline; do
+  shoot "$s" "dark-$s" -demoAppearance dark
+done
+xcrun simctl ui "$udid" appearance light
 ls -la "$out"

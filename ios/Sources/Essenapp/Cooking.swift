@@ -401,6 +401,7 @@ struct CookingView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.colorScheme) private var appScheme  // außerhalb des Kochmodus (der selbst immer dunkel ist)
     @State private var page = Demo.screen == "cooking" ? 2 : 0
     @State private var checked: Set<Int> = []
     @State private var timers = CookTimers()
@@ -461,7 +462,7 @@ struct CookingView: View {
         .sheet(isPresented: $askPush, onDismiss: { timers.rescheduleAll() }) {
             PushPermissionSheet(text: "Damit dein Timer klingelt, auch wenn das iPhone gesperrt ist oder du eine andere App offen hast.")
                 .presentationDetents([.medium]).presentationCornerRadius(Theme.R.sheet)
-                .foregroundStyle(Theme.C.text1).environment(\.colorScheme, .light)
+                .foregroundStyle(Theme.C.text1).environment(\.colorScheme, appScheme)  // Sheet folgt dem App-Erscheinungsbild
         }
     }
 

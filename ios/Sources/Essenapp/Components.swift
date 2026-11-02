@@ -63,7 +63,7 @@ struct PrimaryButtonStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
             .font(.system(.body, design: .rounded, weight: .semibold))
-            .foregroundStyle(Theme.C.onAction)
+            .foregroundStyle(color == Theme.C.action ? Theme.C.onAction : .white)  // farbige Buttons (Orange) behalten weiße Schrift
             .frame(maxWidth: .infinity, minHeight: 54)
             .background(color, in: Capsule())
             .scaleEffect(configuration.isPressed ? 0.97 : 1)
@@ -160,16 +160,26 @@ struct NutrientTile: View {
 struct RemoteImage<Placeholder: View>: View {
     let url: URL?
     var contentMode: ContentMode = .fit
+    var dim = true  // Fotos im Dunkeln leicht abdunkeln (68), Logos nicht
     @ViewBuilder let placeholder: () -> Placeholder
 
     var body: some View {
-        AsyncImage(url: url, transaction: Transaction(animation: .easeOut(duration: 0.25))) { phase in
-            if let image = phase.image {
-                image.resizable().aspectRatio(contentMode: contentMode).transition(.opacity)
-            } else {
-                placeholder()
+        // Offline (66): schon gesehene Bilder direkt aus dem URLCache – AsyncImage nutzt ohne Netz keinen Cache
+        if API.offline, let url, let data = URLCache.shared.cachedResponse(for: URLRequest(url: url))?.data, let ui = UIImage(data: data) {
+            photo(Image(uiImage: ui))
+        } else {
+            AsyncImage(url: url, transaction: Transaction(animation: .easeOut(duration: 0.25))) { phase in
+                if let image = phase.image {
+                    photo(image).transition(.opacity)
+                } else {
+                    placeholder()
+                }
             }
         }
+    }
+
+    private func photo(_ image: Image) -> some View {
+        image.resizable().aspectRatio(contentMode: contentMode).overlay(dim ? Theme.C.photoDim : .clear)
     }
 }
 
@@ -188,7 +198,7 @@ struct Plate: View {
         let food = Self.foods[abs(seed.unicodeScalars.reduce(0) { $0 &* 31 &+ Int($1.value) }) % Self.foods.count]
         RemoteImage(url: url, contentMode: .fill) {
             ZStack {
-                Circle().fill(.white)
+                Circle().fill(Theme.C.plate)
                 Circle().strokeBorder(Theme.C.bg, lineWidth: size * 0.025).padding(size * 0.1)
                 Circle()
                     .fill(RadialGradient(colors: [Color(hex: food.0), Color(hex: food.1)], center: .init(x: 0.35, y: 0.3),
@@ -196,6 +206,7 @@ struct Plate: View {
                     .padding(size * 0.16)
                 Text(food.2).font(.system(size: size * 0.3))
             }
+            .overlay(Theme.C.photoDim)
         }
         .frame(width: size, height: size)
         .clipShape(Circle())
@@ -243,19 +254,20 @@ struct FilterChip: View {
     var color: Color = Theme.C.action
     let selected: Bool
     let action: () -> Void
+    private var fg: Color { color == Theme.C.action ? Theme.C.onAction : .white }
 
     var body: some View {
         Button(action: action) {
             HStack(spacing: 6) {
                 Text(label)
                 if let count {
-                    Text("\(count)").foregroundStyle(selected ? .white.opacity(0.7) : Theme.C.text3).contentTransition(.numericText())
+                    Text("\(count)").foregroundStyle(selected ? fg.opacity(0.7) : Theme.C.text3).contentTransition(.numericText())
                 }
             }
             .font(.system(.caption, weight: .semibold))
             .padding(.horizontal, 13)
             .frame(height: 34)
-            .foregroundStyle(selected ? .white : Theme.C.text1)
+            .foregroundStyle(selected ? fg : Theme.C.text1)
             .background(selected ? color : Theme.C.card, in: Capsule())
             .overlay(Capsule().strokeBorder(Theme.C.line, lineWidth: selected ? 0 : 0.5))
             .animation(Theme.spring, value: selected)
@@ -333,7 +345,7 @@ struct SkeletonCard: View {
         RoundedRectangle(cornerRadius: Theme.R.card, style: .continuous)
             .fill(Theme.C.surface)
             .overlay(
-                LinearGradient(colors: [.clear, .white.opacity(0.7), .clear], startPoint: .leading, endPoint: .trailing)
+                LinearGradient(colors: [.clear, Theme.C.shimmer, .clear], startPoint: .leading, endPoint: .trailing)
                     .offset(x: phase * 300)
                     .mask(RoundedRectangle(cornerRadius: Theme.R.card, style: .continuous))
             )
@@ -356,14 +368,14 @@ struct Toast: View {
             if let actionTitle {
                 Button(actionTitle, action: action)
                     .font(.system(.subheadline, weight: .bold))
-                    .foregroundStyle(Theme.C.text1)
+                    .foregroundStyle(Theme.C.action)
                     .padding(.horizontal, 14).frame(minHeight: 44)
-                    .background(.white, in: Capsule())
+                    .background(Theme.C.onAction, in: Capsule())
                     .buttonStyle(PressableStyle())
             }
         }
             .font(.system(.subheadline, weight: .semibold))
-            .foregroundStyle(.white)
+            .foregroundStyle(Theme.C.onAction)
             .padding(.leading, 16).padding(.trailing, actionTitle == nil ? 16 : 6).padding(.vertical, actionTitle == nil ? 12 : 6)
             .background(Theme.C.action, in: Capsule())
             .floatShadow()
@@ -417,10 +429,10 @@ struct TabBar: View {
             } else {
                 HStack(spacing: 4) {
                     tabs(glass: false)
-                    plusButton(glass: false).background(quickOpen ? Theme.C.accent : .white, in: Circle())
+                    plusButton(glass: false).background(quickOpen ? Theme.C.accent : Theme.C.plate, in: Circle())
                 }
                 .padding(7)
-                .background(Color(hex: 0x141414), in: Capsule())
+                .background(Theme.C.heroDark, in: Capsule())
                 .shadow(color: .black.opacity(0.25), radius: 16, y: 8)
             }
         }
@@ -440,7 +452,7 @@ struct TabBar: View {
             Image(systemName: "plus")
                 .font(.system(size: 22, weight: .bold))
                 .rotationEffect(.degrees(quickOpen ? 45 : 0))
-                .foregroundStyle(glass || quickOpen ? .white : Theme.C.text1)
+                .foregroundStyle(glass || quickOpen ? .white : Theme.C.heroDark)
                 .frame(width: 58, height: 58)
                 .contentShape(Circle())
         }
@@ -482,7 +494,7 @@ struct HeroImage: View {
         // Color.clear bestimmt die Größe, das Foto füllt nur aus – sonst macht scaledToFill die ganze Seite breiter
         Color.clear.overlay {
             if let url = Bundle.module.url(forResource: name, withExtension: "jpg"), let image = UIImage(contentsOfFile: url.path) {
-                Image(uiImage: image).resizable().scaledToFill()
+                Image(uiImage: image).resizable().scaledToFill().overlay(Theme.C.photoDim)
             } else {
                 LinearGradient(colors: [Theme.C.accent, Theme.C.accentDeep], startPoint: .topLeading, endPoint: .bottomTrailing)
             }
@@ -497,7 +509,7 @@ struct StoreLogo: View {
     var size: CGFloat = 36
 
     var body: some View {
-        RemoteImage(url: Labels.logoURL(chain)) {
+        RemoteImage(url: Labels.logoURL(chain), dim: false) {
             Text(String(Labels.chain(chain).prefix(1)))
                 .font(.system(size: size * 0.45, weight: .bold)).foregroundStyle(.white)
                 .frame(width: size, height: size)
@@ -505,7 +517,7 @@ struct StoreLogo: View {
         }
         .padding(size * 0.12)
         .frame(width: size, height: size)
-        .background(.white)
+        .background(Theme.C.plate)  // Logos auf weißem Plättchen, auch im Dunkeln (68)
         .clipShape(RoundedRectangle(cornerRadius: size * 0.28, style: .continuous))
         .overlay(RoundedRectangle(cornerRadius: size * 0.28, style: .continuous).strokeBorder(Theme.C.line, lineWidth: 0.5))
     }
@@ -526,7 +538,7 @@ struct CategoryCircles: View {
                         VStack(spacing: 6) {
                             Text(item.emoji).font(.system(size: 28))
                                 .frame(width: 62, height: 62)
-                                .background(.white, in: Circle())
+                                .background(Theme.C.card, in: Circle())
                                 .shadow(color: .black.opacity(on ? 0.12 : 0.05), radius: on ? 10 : 6, y: 3)
                                 .scaleEffect(on ? 1.08 : 1)
                             Text(item.label).font(Theme.F.micro).foregroundStyle(on ? Theme.C.text1 : Theme.C.text2).lineLimit(1)
@@ -563,8 +575,9 @@ struct PillSegment<T: Hashable>: View {
                 Button { withAnimation(Theme.spring) { selection = value } } label: {
                     Text(label)
                         .font(.system(.subheadline, weight: .semibold))
-                        .foregroundStyle(on ? .white : Theme.C.text1)
-                        .padding(.horizontal, 18).frame(height: 40)
+                        .foregroundStyle(on ? Theme.C.onAction : Theme.C.text1)
+                        .lineLimit(1).minimumScaleFactor(0.75)  // „Kühlschrank“ nicht umbrechen
+                        .padding(.horizontal, 12).frame(height: 40)
                         .frame(maxWidth: .infinity)
                         .background {
                             if on { Capsule().fill(Theme.C.action).matchedGeometryEffect(id: "seg", in: ns) }
@@ -807,7 +820,7 @@ struct Shimmer: ViewModifier {
     func body(content: Content) -> some View {
         content.overlay {
             if active {
-                LinearGradient(colors: [.clear, .white.opacity(0.8), .clear], startPoint: .leading, endPoint: .trailing)
+                LinearGradient(colors: [.clear, Theme.C.shimmer, .clear], startPoint: .leading, endPoint: .trailing)
                     .offset(x: phase * 120)
                     .onAppear { withAnimation(.linear(duration: 1.3).repeatForever(autoreverses: false)) { phase = 1 } }
                     .allowsHitTesting(false)

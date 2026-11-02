@@ -21,7 +21,34 @@ Grundidee: hell, warm, ruhig, viel Luft. Das Essen ist die Farbe. Akzent ist ein
 Kategorie-Farben (`Theme.hue`): Obst & Gemüse Grün + 🥦, Fleisch & Fisch Tomate + 🥩, Kühlung Himmelblau + 🧀, Vorrat Sonnengelb + 🥫, Getränke Türkis + 🥤, Drogerie Lavendel + 🧴, Haushalt Pink + 🧽, Sonstiges Grau + 🛒. Die Tönung ist der Hintergrund der Produktbilder.
 Laden-Farben (`Theme.storeColor`): feste Palette je Kette, keine Markenfarben (E18).
 
-Dark Mode: **nicht in v1** (E15), hell erzwungen.
+## Dark Mode (Feature 68, ersetzt E15)
+
+Einstellung in S13 › App › „Erscheinungsbild“: **System · Hell · Dunkel** (Standard System). Alle Tokens in `Theme.swift` sind Hell/Dunkel-Paare (`Color(hell, dunkel)` über `UIColor { trait in … }`, keine `.xcassets`); die Teilen-Erweiterung (`ShareTheme.swift`) hat dieselben Paare und folgt dem System. Web-PWA: gleiche Werte über `prefers-color-scheme`.
+
+| Token | Hell | Dunkel |
+|---|---|---|
+| `bg` | `#F3F3F3` | `#0F0F10` |
+| `surface` | `#EAEAEA` | `#2C2C2E` |
+| `card` | `#FFFFFF` | `#1C1C1E` |
+| `line` | Schwarz 6 % | Weiß 10 % |
+| `text1` / `text2` / `text3` | `#111111` / `#8A8A8E` / `#B4B4B8` | `#F5F5F5` / `#A0A0A5` / `#8A8A8E` |
+| `action` / `onAction` | `#111111` / Weiß | `#F5F5F5` / `#111111` (helle Pille, dunkle Schrift) |
+| `accent` / `deal` / `warning` / `highlight` / Nährwerte / Blüte | unverändert | unverändert (Orange bleibt) |
+| `accentSoft` / `accentDeep` | `#FFE9E1` / `#E0461C` | `#3A1E14` / `#FF7A52` |
+| `success` / `successSoft` | `#1FA35C` / `#DFF5E8` | `#34C77B` / `#12301F` |
+| `danger` | `#E5483B` | `#FF6B5E` |
+| `tabInactive` | `#A9ACB2` | `#6C6C70` |
+| `imageBg` (Produktbild-Fläche) | `#F7F7F7` | `#2A2A2D` |
+| `heroDark` (Kopf Angebotsdetail, Tab-Leiste ohne Glas) | `#141414` | `#1C1C1E` |
+| `scrim` (hinter Schnell-Aktionen) | Schwarz 25 % | Schwarz 55 % |
+| `shimmer` (Skeleton) | Weiß 70 % | Weiß 12 % |
+| `photoDim` (über Fotos) | – | Schwarz 12 % |
+| `plate` (Logo-/Teller-Plättchen) | Weiß | Weiß |
+| Kategorie-Tönungen (`Theme.hue`) | wie oben | `#1E3326`, `#3A2420`, `#1E2A3A`, `#3A3320`, `#1A3236`, `#2A2640`, `#3A2030`, `#2C2C2E` |
+
+- Glas-Leiste (Liquid Glass) wird im Dunkeln automatisch dunkel; Fotos leicht abgedunkelt, Händler-Logos auf weißen Plättchen.
+- Immer dunkel: Kochmodus (`cookBg`). Immer hell: Bildkarte (ShareCard, Feature 10).
+- Weiße Schrift nur auf Orange/Grün/dunklen Köpfen; auf `action` immer `onAction`.
 
 ## Animationen (v2)
 

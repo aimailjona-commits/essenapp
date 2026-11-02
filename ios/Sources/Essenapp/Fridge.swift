@@ -188,7 +188,7 @@ struct FridgeScanSheet: View {
                             .overlay(alignment: .topTrailing) {
                                 Button { _ = withAnimation(Theme.spring) { photos.remove(at: i) } } label: {
                                     Image(systemName: "xmark.circle.fill").font(.system(size: 20)).symbolRenderingMode(.palette)
-                                        .foregroundStyle(.white, Theme.C.action)
+                                        .foregroundStyle(Theme.C.onAction, Theme.C.action)
                                         .frame(width: 44, height: 44)
                                 }
                                 .offset(x: 16, y: -16)
@@ -215,8 +215,8 @@ struct FridgeScanSheet: View {
                         if UIImagePickerController.isSourceTypeAvailable(.camera) { camera = true } else { store.flash("Keine Kamera – wähle Fotos aus") }
                     } label: {
                         Circle().fill(Theme.C.action).frame(width: 76, height: 76)
-                            .overlay(Circle().strokeBorder(.white, lineWidth: 4).padding(5))
-                            .overlay(Image(systemName: "camera.fill").font(.system(size: 22, weight: .semibold)).foregroundStyle(.white))
+                            .overlay(Circle().strokeBorder(Theme.C.onAction, lineWidth: 4).padding(5))
+                            .overlay(Image(systemName: "camera.fill").font(.system(size: 22, weight: .semibold)).foregroundStyle(Theme.C.onAction))
                     }
                     .buttonStyle(PressableStyle())
                     .disabled(photos.count >= 5).opacity(photos.count >= 5 ? 0.4 : 1)
@@ -349,7 +349,7 @@ struct FridgeScanSheet: View {
                 Spacer()
                 // Ziel der Animation: die Karten fliegen in diese Vorrats-Pille
                 Label("Vorrat \(flying ? store.pantry.count : chosen.count)", systemImage: "basket.fill")
-                    .font(Theme.F.callout).foregroundStyle(.white)
+                    .font(Theme.F.callout).foregroundStyle(Theme.C.onAction)
                     .padding(.horizontal, 14).frame(minHeight: 44)
                     .background(Theme.C.action, in: Capsule())
                     .symbolEffect(.bounce, value: flying)

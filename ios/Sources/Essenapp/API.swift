@@ -1,4 +1,5 @@
 import Foundation
+import Network
 import SwiftUI
 import Observation
 import Security
@@ -74,11 +75,12 @@ struct OfferDTO: Codable, Identifiable, Hashable {
 }
 
 enum APIError: LocalizedError {
-    case noServer, http(Int)
+    case noServer, http(Int), queued
 
     var errorDescription: String? {
         switch self {
         case .noServer: "Keine Server-Adresse eingestellt."
+        case .queued: "Offline – wird später übertragen."
         case .http(401): "Nicht angemeldet."
         case .http(let code): "Server-Fehler (\(code))."
         }
@@ -91,7 +93,118 @@ final class API {
         didSet { UserDefaults.standard.set(baseURL, forKey: "backendURL") }
     }
     var token: String? = Keychain.read() {
-        didSet { Keychain.write(token) }
+        didSet {
+            Keychain.write(token)
+            if token != oldValue { OfflineStore.clear(); pending = [] }  // anderer Haushalt: alter Cache und Warteschlange weg
+        }
+    }
+
+    // MARK: Offline (66)
+
+    /// Netz da (NWPathMonitor) und Server zuletzt erreichbar – sonst Banner, Cache und Warteschlange.
+    var online: Bool { pathOK && reachable }
+    private(set) var pathOK = Demo.screen != "offline"
+    private(set) var reachable = true
+    /// Änderungen (abhaken, hinzufügen, Vorrat), die beim nächsten Netz gesendet werden.
+    private(set) var pending: [PendingRequest] = OfflineStore.load("pending") ?? [] {
+        didSet { OfflineStore.save(pending, "pending") }
+    }
+    /// Für `RemoteImage`: ohne Netz Bilder direkt aus dem URLCache.
+    static var offline = Demo.screen == "offline"
+    private let monitor = NWPathMonitor()
+    @ObservationIgnored private var flushing = false
+    @ObservationIgnored private var sending: UUID?
+    nonisolated static let tempBase = -1_000_000  // offline angelegte Einträge bekommen IDs darunter, bis der Server echte vergibt
+
+    init() {
+        guard Demo.screen == nil else { return }
+        monitor.pathUpdateHandler = { [weak self] path in
+            let ok = path.status == .satisfied
+            Task { @MainActor in self?.setPath(ok) }
+        }
+        monitor.start(queue: .main)
+    }
+
+    private func setPath(_ ok: Bool) {
+        pathOK = ok
+        if ok { reachable = true }  // neuer Versuch; schlägt die nächste Anfrage fehl, wieder offline
+        Self.offline = !online
+    }
+
+    private func setReachable(_ ok: Bool) {
+        if reachable != ok { reachable = ok }
+        Self.offline = !online
+    }
+
+    nonisolated static func isTemp(_ id: Int) -> Bool { id <= tempBase }
+
+    func newTempId() -> Int {
+        let id = (UserDefaults.standard.object(forKey: "offlineTempId") as? Int ?? Self.tempBase) - 1
+        UserDefaults.standard.set(id, forKey: "offlineTempId")
+        return id
+    }
+
+    /// Nur diese Änderungen dürfen offline warten: Listen-Artikel und Vorrat.
+    nonisolated static func queueable(_ method: String, _ path: String) -> Bool {
+        let parts = path.split(separator: "/").map(String.init)
+        switch (method, parts.count) {
+        case ("POST", 1): return parts[0] == "pantry"
+        case ("POST", 3): return parts[0] == "lists" && parts[2] == "items"
+        case ("PATCH", 2), ("DELETE", 2): return ["items", "pantry"].contains(parts[0]) && Int(parts[1]) != nil
+        default: return false
+        }
+    }
+
+    nonisolated static func ids(_ path: String) -> [Int] { path.split(separator: "/").compactMap { p in Int(p) } }
+
+    /// Wert so in den Cache schreiben, wie ihn der Server unter `path` liefern würde (Offline-Änderungen).
+    func store<T: Encodable>(_ value: T, _ path: String) {
+        if let data = try? encoder.encode(value) { OfflineStore.write(data, path) }
+    }
+
+    func cached<T: Decodable>(_ path: String) -> T? {
+        OfflineStore.read(path).flatMap { d in try? decoder.decode(T.self, from: d) }
+    }
+
+    private func enqueue(_ r: PendingRequest) throws -> Never {
+        if r.method == "DELETE", let id = Self.ids(r.path).last, Self.isTemp(id) {
+            pending.removeAll { p in p.tempId == id || Self.ids(p.path).contains(id) }  // offline angelegt und wieder gelöscht
+        } else if r.method == "PATCH", let i = pending.lastIndex(where: { p in p.method == "PATCH" && p.path == r.path && p.id != sending }) {
+            pending[i].body = PendingRequest.merge(pending[i].body, r.body)  // letzter Stand gewinnt pro Feld
+        } else {
+            pending.append(r)
+        }
+        throw APIError.queued
+    }
+
+    /// Warteschlange der Reihe nach senden. `keepChecked`: auf dem Server abgehakte Artikel – ein offline gesetztes
+    /// „nicht abgehakt“ fällt dann weg (abgehakt bleibt abgehakt).
+    func flush(keepChecked: Set<Int>) async {
+        guard !flushing else { return }
+        flushing = true
+        defer { flushing = false; sending = nil }
+        while let r = pending.first {
+            if r.method == "PATCH", r.path.hasPrefix("/items/"), let id = Self.ids(r.path).first, keepChecked.contains(id),
+               r.fields?["checked"] as? Bool == false {
+                pending.removeAll { p in p.id == r.id }
+                continue
+            }
+            sending = r.id
+            do {
+                let data = try await perform(r.method, r.path, r.body, timeout: 15)
+                pending.removeAll { p in p.id == r.id }
+                if let temp = r.tempId, let real = PendingRequest.createdId(data) {
+                    for i in pending.indices {  // spätere Änderungen am selben Eintrag zeigen jetzt auf die echte ID
+                        pending[i].path = pending[i].path.split(separator: "/", omittingEmptySubsequences: false)
+                            .map { p in p == "\(temp)" ? "\(real)" : String(p) }.joined(separator: "/")
+                    }
+                }
+            } catch is URLError {
+                return  // weiter beim nächsten Netz
+            } catch {
+                pending.removeAll { p in p.id == r.id }  // z. B. 404: Artikel inzwischen gelöscht – verwerfen
+            }
+        }
     }
 
     private let decoder: JSONDecoder = {
@@ -110,24 +223,63 @@ final class API {
         return (try? await request("GET", "/health") as Health)?.status == "ok"
     }
 
+    /// `tempId`: offline angelegter Eintrag (POST), dessen echte ID nach dem Senden die späteren Änderungen bekommen.
+    /// `cache: false`: GET ohne Cache (Abgleich vor dem Senden der Warteschlange).
     func request<T: Decodable>(_ method: String, _ path: String, body: (some Encodable)? = nil as String?,
-                               timeout: TimeInterval = 15) async throws -> T {
-        try decoder.decode(T.self, from: try await send(method, path, body: body, timeout: timeout))
+                               timeout: TimeInterval = 15, tempId: Int? = nil, cache: Bool = true) async throws -> T {
+        try decoder.decode(T.self, from: try await send(method, path, body: body, timeout: timeout, tempId: tempId, cache: cache))
     }
 
-    /// Wie `request`, aber ohne Dekodieren (z. B. 204-Antworten).
+    /// Wie `request`, aber ohne Dekodieren (z. B. 204-Antworten). GET: Antwort kommt in den Offline-Cache, ohne Netz
+    /// liefert der Cache. Listen-/Vorrats-Änderungen ohne Netz → Warteschlange (`APIError.queued`).
     @discardableResult
     func send(_ method: String, _ path: String, body: (some Encodable)? = nil as String?,
-              timeout: TimeInterval = 15) async throws -> Data {
+              timeout: TimeInterval = 15, tempId: Int? = nil, cache: Bool = true) async throws -> Data {
+        let data = try body.map { b in try encoder.encode(b) }
+        if method == "GET", cache, path != "/health" {
+            if pathOK {
+                do {
+                    let fresh = try await perform(method, path, nil, timeout: timeout)
+                    OfflineStore.write(fresh, path)
+                    return fresh
+                } catch let e as URLError {
+                    guard let old = OfflineStore.read(path) else { throw e }
+                    return old
+                }
+            }
+            guard let old = OfflineStore.read(path) else { throw URLError(.notConnectedToInternet) }
+            return old
+        }
+        let queueable = Self.queueable(method, path)
+        let request = PendingRequest(method: method, path: path, body: data, tempId: tempId)
+        if queueable, !online || Self.ids(path).contains(where: Self.isTemp) || flushing {
+            try enqueue(request)  // Reihenfolge bleibt erhalten, solange gesendet wird
+        }
+        do {
+            return try await perform(method, path, data, timeout: timeout)
+        } catch let e as URLError {
+            guard queueable else { throw e }
+            try enqueue(request)
+        }
+    }
+
+    private func perform(_ method: String, _ path: String, _ body: Data?, timeout: TimeInterval) async throws -> Data {
         guard let url = URL(string: baseURL.trimmingCharacters(in: .whitespaces) + path), !baseURL.isEmpty else { throw APIError.noServer }
         var req = URLRequest(url: url, timeoutInterval: timeout)
         req.httpMethod = method
         if let token { req.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization") }
         if let body {
             req.setValue("application/json", forHTTPHeaderField: "Content-Type")
-            req.httpBody = try encoder.encode(body)
+            req.httpBody = body
         }
-        let (data, response) = try await URLSession.shared.data(for: req)
+        let data: Data, response: URLResponse
+        do {
+            (data, response) = try await URLSession.shared.data(for: req)
+        } catch let e as URLError {
+            if e.code != .cancelled { setReachable(false) }
+            throw e
+        }
+        setReachable(true)
         let code = (response as? HTTPURLResponse)?.statusCode ?? 0
         guard (200..<300).contains(code) else { throw APIError.http(code) }
         return data
@@ -157,6 +309,57 @@ final class API {
         guard (200..<300).contains(code) else { throw APIError.http(code) }
         return try decoder.decode(T.self, from: data)
     }
+}
+
+/// Wartende Änderung (Offline-Modus 66).
+struct PendingRequest: Codable, Identifiable {
+    var id = UUID()
+    var method: String
+    var path: String
+    var body: Data?
+    var tempId: Int?
+
+    var fields: [String: Any]? { body.flatMap { d in try? JSONSerialization.jsonObject(with: d) as? [String: Any] } }
+
+    static func merge(_ old: Data?, _ new: Data?) -> Data? {
+        guard let o = old.flatMap({ d in try? JSONSerialization.jsonObject(with: d) as? [String: Any] }),
+              let n = new.flatMap({ d in try? JSONSerialization.jsonObject(with: d) as? [String: Any] }) else { return new }
+        return try? JSONSerialization.data(withJSONObject: o.merging(n) { _, b in b })
+    }
+
+    /// ID aus der Antwort eines POST (neuer Artikel / Vorratseintrag).
+    static func createdId(_ data: Data) -> Int? {
+        struct Created: Decodable { var id: Int }
+        return (try? JSONDecoder().decode(Created.self, from: data))?.id
+    }
+
+    static func selfTest() {
+        let merged = merge(Data(#"{"checked":true,"amount":2}"#.utf8), Data(#"{"checked":false}"#.utf8))
+        let m = merged.flatMap { d in try? JSONSerialization.jsonObject(with: d) as? [String: Any] }
+        assert(m?["checked"] as? Bool == false && m?["amount"] as? Int == 2, "Warteschlange: letzter Stand pro Feld")
+        assert(API.queueable("PATCH", "/items/5") && API.queueable("POST", "/lists/3/items") && API.queueable("POST", "/pantry"))
+        assert(!API.queueable("POST", "/pantry/basics/3/empty") && !API.queueable("POST", "/items/5/to-pantry"))
+        assert(createdId(Data(#"{"id":42,"name":"Milch"}"#.utf8)) == 42)
+    }
+}
+
+/// Letzte Server-Antworten und Warteschlange als JSON-Dateien (E25: kein SwiftData). Application Support statt Caches,
+/// damit iOS die Warteschlange nicht wegräumt.
+enum OfflineStore {
+    static let dir: URL = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
+        .appending(path: "offline", directoryHint: .isDirectory)
+
+    static func file(_ key: String) -> URL { dir.appending(path: key.addingPercentEncoding(withAllowedCharacters: .alphanumerics) ?? key) }
+    static func read(_ key: String) -> Data? { try? Data(contentsOf: file(key)) }
+
+    static func write(_ data: Data, _ key: String) {
+        try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        try? data.write(to: file(key), options: .atomic)
+    }
+
+    static func load<T: Decodable>(_ key: String) -> T? { read(key).flatMap { d in try? JSONDecoder().decode(T.self, from: d) } }
+    static func save<T: Encodable>(_ value: T, _ key: String) { if let d = try? JSONEncoder().encode(value) { write(d, key) } }
+    static func clear() { try? FileManager.default.removeItem(at: dir) }
 }
 
 /// Meldet den Sende-Fortschritt eines Uploads.
@@ -410,9 +613,13 @@ final class AppStore {
     var toastAction: (title: String, run: () -> Void)?
     var profile: ProfileDTO?  // angemeldetes Mitglied (48)
     var profiles: [ProfileDTO] = []
-    var pantry: [PantryDTO] = []
+    var pantry: [PantryDTO] = [] {
+        didSet { if !demo { api.store(pantry, "/pantry") } }
+    }
     var lists: [ListSummaryDTO] = []
-    var householdList: ListDTO?
+    var householdList: ListDTO? {  // Änderungen gehen auch in den Offline-Cache (66)
+        didSet { if !demo, let l = householdList { api.store(l, "/lists/\(l.id)") } }
+    }
     var nutrition: PlanNutritionDTO?  // Tagesringe (2)
     var recipesVersion = 0  // +1 nach Anlegen/Ändern/Bewerten → Listen und Detail laden neu
     var recipeFilter: String?  // Start-Karte → Rezepte-Tab mit diesem Filter
@@ -485,6 +692,7 @@ final class AppStore {
 
     func loadAll() async {
         guard !demo else { return }
+        await syncPending()
         do {
             household = try await api.request("GET", "/household")
             offers = try await api.request("GET", "/offers")
@@ -532,6 +740,32 @@ final class AppStore {
 }
 
 extension AppStore {
+    /// Offline-Änderungen senden, sobald wieder Netz da ist (66). Auf dem Server abgehakte Artikel bleiben abgehakt.
+    func syncPending() async {
+        guard !demo, !api.pending.isEmpty, api.pathOK else { return }
+        var checked = Set<Int>()
+        do {
+            let all: [ListSummaryDTO] = try await api.request("GET", "/lists", cache: false)
+            for l in all {
+                let list: ListDTO = try await api.request("GET", "/lists/\(l.id)", cache: false)
+                checked.formUnion(list.items.filter(\.checked).map(\.id))
+            }
+        } catch {
+            return  // Server noch nicht erreichbar
+        }
+        await api.flush(keepChecked: checked)
+    }
+
+    /// Offline-Änderung an einer Liste: im Speicher und im Cache, damit sie Neuladen und Neustart übersteht (66).
+    func editList(_ id: Int, _ edit: (inout ListDTO) -> Void) {
+        if householdList?.id == id {
+            edit(&householdList!)
+        } else if var l: ListDTO = api.cached("/lists/\(id)") {
+            edit(&l)
+            api.store(l, "/lists/\(id)")
+        }
+    }
+
     func nearbyStores(radiusKm: Int) async throws -> [NearbyStore] {
         try await api.request("GET", "/stores/nearby?radius_km=\(radiusKm)", timeout: 60)
     }

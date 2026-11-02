@@ -68,7 +68,7 @@ struct PreferencesForm: View {
                         Button { withAnimation(Theme.spring) { prefs.planDays.formSymmetricDifference([d]) } } label: {
                             Text(Labels.days[d]).font(.system(.caption, design: .rounded, weight: .bold))
                                 .frame(maxWidth: .infinity, minHeight: 38)
-                                .foregroundStyle(on ? .white : Theme.C.text1)
+                                .foregroundStyle(on ? Theme.C.onAction : Theme.C.text1)
                                 .background(on ? Theme.C.action : Theme.C.surface, in: Circle())
                         }
                         .buttonStyle(PressableStyle())

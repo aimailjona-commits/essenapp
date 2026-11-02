@@ -125,7 +125,7 @@ struct InstagramShareView: View {
                 section("So geht's") {
                     ForEach(Array(Self.steps.enumerated()), id: \.offset) { i, s in
                         HStack(alignment: .top, spacing: 12) {
-                            Text("\(i + 1)").font(.system(.footnote, design: .rounded, weight: .bold)).foregroundStyle(.white)
+                            Text("\(i + 1)").font(.system(.footnote, design: .rounded, weight: .bold)).foregroundStyle(Theme.C.onAction)
                                 .frame(width: 26, height: 26).background(Theme.C.action, in: Circle())
                             Text(s).font(Theme.F.body).fixedSize(horizontal: false, vertical: true)
                         }

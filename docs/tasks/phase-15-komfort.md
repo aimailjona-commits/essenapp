@@ -4,9 +4,9 @@ Details, Abläufe und Abnahmekriterien: [`docs/features/spec-p15-16-komfort.md`]
 
 ## Aufgaben
 
-- [ ] 66 Offline-Cache + Warteschlange + Banner
-- [ ] 68 Dark Mode (Tokens, Einstellung, CI-Screenshots dunkel)
-- [ ] `docs/ui/screens.md` + `Demo.swift` + `ios/tools/screenshots.sh` um neue Screens ergänzt, CI-Screenshots geprüft
+- [~] 66 Offline-Cache + Warteschlange + Banner (gebaut; Abnahme im Flugmodus auf dem iPhone offen)
+- [~] 68 Dark Mode (Tokens, Einstellung, CI-Screenshots dunkel) (gebaut; Abnahme Kontrast über CI-Screenshots offen)
+- [~] `docs/ui/screens.md` + `Demo.swift` + `ios/tools/screenshots.sh` um neue Screens ergänzt, CI-Screenshots geprüft (ergänzt; CI-Screenshots noch nicht geprüft)
 - [ ] Playbook-Entscheidungslog aktualisiert
 
 ## DoD

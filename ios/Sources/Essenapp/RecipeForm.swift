@@ -236,7 +236,7 @@ struct RecipeFormSheet: View {
                 ForEach($d.steps) { $step in
                     HStack(alignment: .top, spacing: 10) {
                         Text("\((d.steps.firstIndex(where: { s in s.id == step.id }) ?? 0) + 1)")
-                            .font(.system(.footnote, design: .rounded, weight: .bold)).foregroundStyle(.white)
+                            .font(.system(.footnote, design: .rounded, weight: .bold)).foregroundStyle(Theme.C.onAction)
                             .frame(width: 26, height: 26).background(Theme.C.action, in: Circle())
                         TextField("Schritt beschreiben …", text: $step.text, axis: .vertical).lineLimit(1...6)
                     }

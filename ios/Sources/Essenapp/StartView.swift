@@ -32,7 +32,7 @@ struct StartView: View {
                 .overlay(alignment: .topTrailing) {
                     NavigationLink { SettingsView() } label: {
                         Image(systemName: "person.crop.circle").font(.system(size: 20, weight: .semibold)).foregroundStyle(Theme.C.text1)
-                            .frame(width: 44, height: 44).background(.white.opacity(0.9), in: Circle())
+                            .frame(width: 44, height: 44).background(Theme.C.card.opacity(0.9), in: Circle())
                     }
                     .buttonStyle(PressableStyle())
                     .accessibilityLabel("Einstellungen")

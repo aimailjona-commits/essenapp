@@ -3,10 +3,14 @@ import SwiftUI
 
 struct ContentView: View {
     @State private var store = AppStore(api: API())
+    @AppStorage("appearance") private var appearance = "system"  // System · Hell · Dunkel (68, ersetzt E15)
 
     init() {
         // Produktbilder flüssig: großer Bild-Cache statt ständigem Neuladen beim Scrollen
         URLCache.shared = URLCache(memoryCapacity: 64 * 1024 * 1024, diskCapacity: 256 * 1024 * 1024)
+        #if DEBUG
+        PendingRequest.selfTest()
+        #endif
     }
 
     var body: some View {
@@ -19,6 +23,11 @@ struct ContentView: View {
                 }
             }
             .animation(.easeInOut(duration: 0.35), value: store.isOnboarded)
+            .animation(Theme.spring, value: store.api.online)
+
+            if !store.api.online && store.isOnboarded {
+                OfflineBanner().padding(.top, 4).transition(.move(edge: .top).combined(with: .opacity))
+            }
 
             if let toast = store.toast {
                 Toast(text: toast, actionTitle: store.toastAction?.title) {
@@ -32,9 +41,36 @@ struct ContentView: View {
         .environment(store)
         .environment(store.api)
         .environment(\.locale, .de)  // 24-h-Uhrzeiten, Komma – auch wenn das iPhone auf Englisch steht
-        .preferredColorScheme(.light)  // nur heller Modus in v1 (E15); sonst wird Systemtext im Dark Mode weiß
+        .onChange(of: Demo.appearance ?? appearance, initial: true) { _, mode in Self.apply(mode) }
         .foregroundStyle(Theme.C.text1)
         .tint(Theme.C.accentDeep)
+    }
+
+    /// Erscheinungsbild für alle Fenster (auch Sheets, Menüs, Alerts). Über das Fenster statt `preferredColorScheme`,
+    /// weil `preferredColorScheme(nil)` nicht zuverlässig zurück auf „System“ springt.
+    static func apply(_ mode: String) {
+        let style: UIUserInterfaceStyle = mode == "light" ? .light : mode == "dark" ? .dark : .unspecified
+        for case let scene as UIWindowScene in UIApplication.shared.connectedScenes {
+            scene.windows.forEach { w in w.overrideUserInterfaceStyle = style }
+        }
+    }
+}
+
+/// Glas-Banner oben, solange kein Netz bzw. Server nicht erreichbar ist (66).
+struct OfflineBanner: View {
+    var body: some View {
+        let label = Label("Offline – Änderungen werden später übertragen", systemImage: "wifi.slash")
+            .font(.system(.footnote, weight: .semibold))
+            .foregroundStyle(Theme.C.text1)
+            .padding(.horizontal, 16).frame(minHeight: 40)
+        Group {
+            if #available(iOS 26.0, *) {
+                label.glassEffect(.regular, in: Capsule())
+            } else {
+                label.background(.ultraThinMaterial, in: Capsule()).overlay(Capsule().strokeBorder(Theme.C.line, lineWidth: 0.5))
+            }
+        }
+        .accessibilityAddTraits(.isStaticText)
     }
 }
 
@@ -52,7 +88,7 @@ struct MainView: View {
         switch Demo.screen {
         case "offers", "offer", "stores": .angebote
         case "plan", "recipe", "cooking", "sharecard", "recipes", "myrecipe", "recipeform", "imported", "importlink": .rezepte
-        case "shopping", "list", "pantry", "fridgecam", "fridgereview", "cooknow": .einkauf
+        case "shopping", "list", "pantry", "fridgecam", "fridgereview", "cooknow", "offline": .einkauf
         default: .start
         }
     }
@@ -106,7 +142,7 @@ struct MainView: View {
             .animation(.easeInOut(duration: 0.2), value: tab)
 
             if quickOpen {
-                Color.black.opacity(0.25).ignoresSafeArea()
+                Theme.C.scrim.ignoresSafeArea()
                     .onTapGesture { withAnimation(Theme.spring) { quickOpen = false } }
                     .transition(.opacity)
                 QuickActions { action in
@@ -134,6 +170,9 @@ struct MainView: View {
         .sheet(isPresented: $showGenerator) { PlanGeneratorSheet().presentationDetents([.large]) }
         .sheet(isPresented: $showRecipeForm) { RecipeFormSheet().presentationDetents([.large]).presentationCornerRadius(Theme.R.sheet) }
         .task { await store.loadAll() }
+        .onChange(of: store.api.online) { _, on in  // Netz zurück → Warteschlange senden und frisch laden (66)
+            if on { Task { await store.loadAll() } }
+        }
         .modifier(PushAsk(active: store.askPush))
         .onOpenURL { url in Task { await open(url) } }
         .onChange(of: store.recipeFilter) { _, f in  // Start-Karte → Rezepte-Tab (RecipesTab übernimmt den Filter)
@@ -185,7 +224,7 @@ struct QuickActions: View {
                 }
                 GridRow {
                     tile(.list, "🛒", "Einkaufsliste", "Artikel abhaken & ergänzen", color: Theme.C.kcal)
-                    tile(.recipe, "📝", "Rezept anlegen", "Eigenes Rezept speichern", color: Color(hex: 0x8E7CFF))
+                    tile(.recipe, "📝", "Rezept anlegen", "Eigenes Rezept speichern", color: Theme.C.violet)
                 }
                 GridRow {
                     tile(.scan, "📸", "Kühlschrank scannen", "Fotos → Vorrat & Kochideen", color: Theme.C.carbs).gridCellColumns(2)
@@ -193,7 +232,7 @@ struct QuickActions: View {
             }
         }
         .padding(14)
-        .background(.white, in: RoundedRectangle(cornerRadius: Theme.R.sheet, style: .continuous))
+        .background(Theme.C.card, in: RoundedRectangle(cornerRadius: Theme.R.sheet, style: .continuous))
         .floatShadow()
     }
 

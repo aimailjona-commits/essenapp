@@ -198,7 +198,6 @@ public struct ShareFlowView: View {
         .foregroundStyle(ST.text1)
         .tint(ST.accentDeep)
         .environment(\.locale, Locale(identifier: "de_DE"))
-        .preferredColorScheme(.light)
         .onAppear {
             #if DEBUG
             ShareInput.selfTest()
@@ -237,7 +236,7 @@ public struct ShareFlowView: View {
                     let found = ShareInput.parse(url: nil, text: strings.joined(separator: " "))
                     Task { @MainActor in model.link = found.url.isEmpty ? strings.first ?? "" : found.url }
                 }
-                .labelStyle(.iconOnly).buttonBorderShape(.capsule).tint(ST.action)
+                .labelStyle(.iconOnly).buttonBorderShape(.capsule).tint(ST.pasteTint)
             }
             if let e = model.linkError { Text(e).font(ST.caption).foregroundStyle(ST.danger) }
         }
@@ -441,7 +440,7 @@ public struct ShareFlowView: View {
                 .buttonStyle(STPrimary()).disabled(!model.validLink).opacity(model.validLink ? 1 : 0.5)
         case .pair:
             Button { Task { await model.pair() } } label: {
-                if model.busy { ProgressView().tint(.white) } else { Text("Koppeln") }
+                if model.busy { ProgressView().tint(ST.onAction) } else { Text("Koppeln") }
             }
             .buttonStyle(STPrimary())
             .disabled(model.code.count < 6 || model.busy).opacity(model.code.count < 6 ? 0.5 : 1)

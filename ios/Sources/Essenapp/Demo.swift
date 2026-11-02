@@ -7,13 +7,38 @@ import UIKit
 /// recipes (Meine Rezepte), myrecipe (eigenes Rezept mit Bewertungen + Blüte), recipeform (Rezept-Formular, Seite Zutaten),
 /// imported (Instagram-Import mit Original-Reel, geschätzten Mengen, Schritt-Bildern), instagram (Teilen aus Instagram, S21),
 /// sharepair / shareimport / shareresult (Teilen-Erweiterung S20), importlink (Link einfügen S22),
-/// fridgecam / fridgereview / cooknow (Kühlschrank-Foto S23–S25)
+/// fridgecam / fridgereview / cooknow (Kühlschrank-Foto S23–S25), offline (Einkauf mit Offline-Banner, 66).
+/// Erscheinungsbild (68): zusätzlich `-demoAppearance dark|light` (überschreibt die Einstellung).
 enum Demo {
-    static let screen: String? = {
+    static let screen: String? = arg("-demoScreen")
+    static let appearance: String? = arg("-demoAppearance")
+
+    private static func arg(_ name: String) -> String? {
         let args = ProcessInfo.processInfo.arguments
-        guard let i = args.firstIndex(of: "-demoScreen"), i + 1 < args.count else { return nil }
+        guard let i = args.firstIndex(of: name), i + 1 < args.count else { return nil }
         return args[i + 1]
-    }()
+    }
+
+    /// Preisverlauf (28): Hähnchenbrust bei Rewe (jetzt 3,99 €) und Lidl, 12 Wochen bis heute → „Gutes Angebot“.
+    static func history(for id: Int) -> OfferHistoryDTO {
+        guard id == offers[0].id else {
+            return OfferHistoryDTO(points: [], medianCents: nil, minCents: nil, verdict: "zu_wenig_daten", lastLow: nil, avgIntervalWeeks: nil)
+        }
+        let cal = Calendar(identifier: .iso8601)
+        func week(_ back: Int) -> String {
+            let d = cal.date(byAdding: .weekOfYear, value: -back, to: .now) ?? .now
+            let w = cal.component(.weekOfYear, from: d)
+            return "\(cal.component(.yearForWeekOfYear, from: d))-W\(w < 10 ? "0" : "")\(w)"
+        }
+        let rewe = [599, 599, 449, 599, 599, 599, 499, 599, 599, 599, 599, 399]
+        let lidl = [549, 549, 549, 379, 549, 549, 549, 549, 429, 549, 549, 549]
+        let points = (0..<12).flatMap { i in [
+            OfferHistoryDTO.Point(week: week(11 - i), chain: "rewe", priceCents: rewe[i], regularPriceCents: 599, isOffer: rewe[i] < 599),
+            OfferHistoryDTO.Point(week: week(11 - i), chain: "lidl", priceCents: lidl[i], regularPriceCents: nil, isOffer: lidl[i] < 549),
+        ] }
+        return OfferHistoryDTO(points: points, medianCents: 549, minCents: 379, verdict: "gut",
+                               lastLow: .init(week: week(8), chain: "lidl", priceCents: 379), avgIntervalWeeks: 3.7)
+    }
 
     static let household = HouseholdDTO(
         id: 1, name: "Zuhause", plz: "50667", persons: 2, diet: "alles", allergies: ["Laktose"], excludedIngredients: [],

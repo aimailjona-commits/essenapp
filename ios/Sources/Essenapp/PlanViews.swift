@@ -183,7 +183,7 @@ struct MealRow: View {
     private func small(_ symbol: String, on: Bool, label: String, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             Image(systemName: symbol).font(.system(size: 14, weight: .semibold))
-                .foregroundStyle(on ? .white : Theme.C.text1)
+                .foregroundStyle(on ? Theme.C.onAction : Theme.C.text1)
                 .frame(width: 36, height: 36)
                 .background(on ? Theme.C.action : Theme.C.surface, in: Circle())
                 .contentTransition(.symbolEffect(.replace))
@@ -377,7 +377,7 @@ struct RecipeDetailView: View {
                                         if isDone { Image(systemName: "checkmark").font(.system(size: 12, weight: .bold)) }
                                         else { Text("\(i + 1)").font(.system(.footnote, design: .rounded, weight: .bold)) }
                                     }
-                                    .foregroundStyle(.white).frame(width: 28, height: 28)
+                                    .foregroundStyle(isDone ? .white : Theme.C.onAction).frame(width: 28, height: 28)
                                     Text(step).font(Theme.F.body).strikethrough(isDone).foregroundStyle(isDone ? Theme.C.text3 : Theme.C.text1)
                                         .multilineTextAlignment(.leading)
                                     Spacer(minLength: 0)
@@ -492,7 +492,7 @@ extension RecipeDetailView {
             if insta, let url = URL(string: recipe.sourceUrl), !recipe.sourceUrl.isEmpty {
                 Button { openURL(url) } label: {
                     Label("Original-Reel", systemImage: "play.fill")
-                        .font(Theme.F.callout).foregroundStyle(.white)
+                        .font(Theme.F.callout).foregroundStyle(Theme.C.onAction)
                         .padding(.horizontal, 14).frame(minHeight: 44)
                         .background(Theme.C.action, in: Capsule())
                 }

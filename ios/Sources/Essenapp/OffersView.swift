@@ -107,10 +107,10 @@ struct OfferCard: View {
                 .padding(10)
                 .frame(maxWidth: .infinity)
                 .frame(height: 118)
-                .background(Color(hex: 0xF7F7F7), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+                .background(Theme.C.imageBg, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
                 .overlay(alignment: .topLeading) { StoreLogo(chain: offer.chain, size: 26).padding(8) }
             Text(offer.discount.map { "−\($0) %" } ?? "Angebot")
-                .font(.system(size: 11, weight: .bold)).foregroundStyle(.white)
+                .font(.system(size: 11, weight: .bold)).foregroundStyle(Theme.C.onAction)
                 .padding(.horizontal, 9).frame(height: 20).background(Theme.C.action, in: Capsule())
             Text(offer.title).font(.system(.subheadline, weight: .semibold)).lineLimit(2).multilineTextAlignment(.center)
                 .foregroundStyle(Theme.C.text1).frame(minHeight: 36)
@@ -131,7 +131,7 @@ struct OfferCard: View {
                 Button { withAnimation(Theme.spring) { store.addToList(offer) } } label: {
                     Image(systemName: onList ? "checkmark" : "plus")
                         .font(.system(size: 14, weight: .bold))
-                        .foregroundStyle(.white)
+                        .foregroundStyle(onList ? .white : Theme.C.onAction)
                         .frame(width: 34, height: 34)
                         .background(onList ? Theme.C.success : Theme.C.action, in: Circle())
                         .contentTransition(.symbolEffect(.replace))
@@ -171,11 +171,11 @@ struct OfferDetailView: View {
                 VStack(alignment: .leading, spacing: 18) {
                     // Dunkler Kopf mit großem Produktbild rechts (Vorlage „Pizza Mojo“)
                     ZStack(alignment: .topLeading) {
-                        Color(hex: 0x141414)
+                        Theme.C.heroDark
                         RemoteImage(url: URL(string: offer.imageUrl)) { Text(hue.emoji).font(.system(size: 110)) }
                             .padding(18)
                             .frame(width: 210, height: 210)
-                            .background(.white, in: Circle())
+                            .background(Theme.C.plate, in: Circle())
                             .offset(x: 190, y: 120)
                             .scaleEffect(zoom ? 1 : 0.8, anchor: .trailing)
                             .opacity(zoom ? 1 : 0)
@@ -220,6 +220,8 @@ struct OfferDetailView: View {
                         }
                     }
                     .appear()
+
+                    PriceHistoryCard(offer: offer).appear(delay: 0.03)  // Preisverlauf (28)
 
                     LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 10) {
                         fact("scalemass.fill", Theme.C.kcal, "Menge", offer.amountText ?? "–")

@@ -68,10 +68,17 @@ extension AppStore {
     }
 
     func addPantry(_ new: PantryIn) async throws {
-        let created: PantryDTO = demo
-            ? PantryDTO(id: -(pantry.count + 1), name: new.name, ingredientKey: new.name.lowercased(), amount: new.amount, unit: new.unit,
-                        bestBefore: new.bestBefore, isBasic: new.isBasic, source: "manual", updatedAt: "")
-            : try await api.request("POST", "/pantry", body: new)
+        let id = demo ? -(pantry.count + 1) : api.newTempId()
+        let local = PantryDTO(id: id, name: new.name, ingredientKey: new.name.lowercased(), amount: new.amount, unit: new.unit,
+                              bestBefore: new.bestBefore, isBasic: new.isBasic, source: new.source, updatedAt: "")
+        var created = local
+        if !demo {
+            do {
+                created = try await api.request("POST", "/pantry", body: new, tempId: id)
+            } catch APIError.queued {
+                created = local  // offline: lokal mit vorläufiger ID, Server bekommt es später (66)
+            }
+        }
         withAnimation(Theme.spring) { pantry.insert(created, at: 0) }
     }
 
@@ -84,14 +91,14 @@ extension AppStore {
         var local = item
         local.amount = amount
         replacePantry(local)
-        guard !demo, item.id > 0 else { return }
+        guard !demo, item.id > 0 || API.isTemp(item.id) else { return }
         let body: [String: Double?] = ["amount": amount]
         if let updated: PantryDTO = try? await api.request("PATCH", "/pantry/\(item.id)", body: body) { replacePantry(updated) }
     }
 
     func deletePantry(_ item: PantryDTO) async {
         withAnimation(Theme.spring) { pantry.removeAll { $0.id == item.id } }
-        guard !demo, item.id > 0 else { return }
+        guard !demo, item.id > 0 || API.isTemp(item.id) else { return }
         _ = try? await api.send("DELETE", "/pantry/\(item.id)")
     }
 
