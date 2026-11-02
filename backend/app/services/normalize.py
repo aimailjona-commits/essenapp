@@ -1,3 +1,4 @@
+import math
 import re
 
 _UNITS = {"g": ("g", 1), "kg": ("g", 1000), "ml": ("ml", 1), "l": ("ml", 1000), "cl": ("ml", 10),
@@ -20,12 +21,17 @@ def base_price_cents(price_cents: int, amount: float | None, unit: str) -> int |
     if not amount:
         return None
     per = 1000 if unit in ("g", "ml") else 1
-    return round(price_cents * per / amount)
+    return cents(price_cents * per / amount)
 
 
 def euro_to_cents(text: str | float) -> int:
     """'1,99 €' / '1.99' / 1.99 -> 199"""
     if isinstance(text, (int, float)):
-        return round(text * 100)
+        return cents(text * 100)
     s = re.sub(r"[^\d,.\-]", "", text).replace(",", ".")
-    return round(float(s) * 100)
+    return cents(float(s) * 100)
+
+
+def cents(value: float) -> int:
+    """Kaufmännisch runden (Python-round rundet 598,5 auf 598)."""
+    return math.floor(value + 0.5 + 1e-9)
