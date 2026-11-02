@@ -6,8 +6,10 @@ class Settings(BaseSettings):
 
     database_url: str = "sqlite:///./essenapp.db"
     anthropic_api_key: str = ""
-    model_planner: str = "claude-sonnet-5-5"
-    model_fast: str = "claude-haiku-5-5"
+    # Günstigere Modelle (z.B. claude-sonnet-5-5, claude-haiku-5-5) per .env möglich – Entscheidung des Nutzers.
+    model_planner: str = "claude-opus-5-5"
+    model_fast: str = "claude-opus-5-5"
+    planner_effort: str = "medium"  # low | medium | high | xhigh | max
 
 
 settings = Settings()

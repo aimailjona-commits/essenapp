@@ -88,3 +88,50 @@ class Offer(Base):
     ingredient_id: Mapped[int | None] = mapped_column(ForeignKey("ingredient.id"))
     raw: Mapped[dict] = mapped_column(JSON, default=dict)
     fetched_at: Mapped[datetime] = mapped_column(server_default=func.now())
+
+
+class Recipe(Base):
+    __tablename__ = "recipe"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    household_id: Mapped[int | None] = mapped_column(ForeignKey("household.id"))
+    title: Mapped[str] = mapped_column(String(200))
+    description: Mapped[str] = mapped_column(String(500), default="")
+    cuisine: Mapped[str] = mapped_column(String(30), default="")
+    meal_type: Mapped[str] = mapped_column(String(20))
+    servings: Mapped[int]
+    prep_minutes: Mapped[int]
+    # shortcut: Zutaten als JSON [{name, amount, unit, offer_id}] statt eigener Tabelle; umbauen, sobald Zutaten-Stammdaten (Nährwerte) da sind
+    ingredients: Mapped[list[dict]] = mapped_column(JSON, default=list)
+    steps: Mapped[list[str]] = mapped_column(JSON, default=list)
+    source: Mapped[str] = mapped_column(String(10), default="ai")  # ai | user | import
+    image_url: Mapped[str] = mapped_column(String(500), default="")
+    created_at: Mapped[datetime] = mapped_column(server_default=func.now())
+
+
+class MealPlan(Base):
+    __tablename__ = "meal_plan"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    household_id: Mapped[int] = mapped_column(ForeignKey("household.id"), index=True)
+    week: Mapped[str] = mapped_column(String(8))  # ISO-Woche "2026-W45"
+    total_cents: Mapped[int] = mapped_column(default=0)  # Einkauf an der Kasse
+    saved_cents: Mapped[int] = mapped_column(default=0)
+    params: Mapped[dict] = mapped_column(JSON, default=dict)  # Snapshot der Einstellungen
+    created_at: Mapped[datetime] = mapped_column(server_default=func.now())
+
+    entries: Mapped[list["MealPlanEntry"]] = relationship(cascade="all, delete-orphan", order_by="MealPlanEntry.day")
+
+
+class MealPlanEntry(Base):
+    __tablename__ = "meal_plan_entry"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    plan_id: Mapped[int] = mapped_column(ForeignKey("meal_plan.id"))
+    day: Mapped[int]  # 0 = Montag
+    meal_type: Mapped[str] = mapped_column(String(20))
+    recipe_id: Mapped[int] = mapped_column(ForeignKey("recipe.id"))
+    cost_cents: Mapped[int] = mapped_column(default=0)  # anteilige Kosten für dieses Gericht
+    locked: Mapped[bool] = mapped_column(default=False)
+
+    recipe: Mapped[Recipe] = relationship()

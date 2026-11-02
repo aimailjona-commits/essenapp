@@ -78,3 +78,38 @@ class OfferOut(BaseModel):
     valid_from: date
     valid_to: date
     image_url: str
+
+
+class RecipeOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    title: str
+    description: str
+    cuisine: str
+    meal_type: str
+    servings: int
+    prep_minutes: int
+    ingredients: list[dict]
+    steps: list[str]
+    image_url: str
+
+
+class MealOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    day: int
+    meal_type: str
+    cost_cents: int
+    locked: bool
+    recipe: RecipeOut
+
+
+class PlanOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    week: str
+    total_cents: int
+    saved_cents: int
+    entries: list[MealOut]
