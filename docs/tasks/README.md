@@ -11,7 +11,16 @@
 | 4 | [Personalisierung + Web](phase-4-personalisierung-web.md) | offen |
 | 5 | [Drogerie & Alarme](phase-5-drogerie-alarme.md) | offen |
 | 6 | [Extras](phase-6-extras.md) | offen |
-| 7 | [VPS](phase-7-vps.md) | offen |
+| 7 | [VPS](phase-7-vps.md) | → aufgegangen in Phase 8 (IONOS) |
+| 8 | [Fundament: Server, Personen, Vorrat](phase-8-fundament-server.md) | geplant |
+| 9 | [Rezepte, Instagram-Import, Kühlschrank-Foto](phase-9-rezepte-import.md) | geplant |
+| 10 | [Kochen](phase-10-kochen.md) | geplant |
+| 11 | [Clever planen](phase-11-planen.md) | geplant |
+| 12 | [Sparen](phase-12-sparen.md) | geplant |
+| 13 | [Bonus, Laden, Ausgaben](phase-13-bonus-laden.md) | geplant |
+| 14 | [Motivation & Teilen](phase-14-motivation.md) | geplant |
+| 15 | [Komfort](phase-15-komfort.md) | geplant |
+| 16 | [Erweiterungen (Widget, Live-Aktivität)](phase-16-erweiterungen.md) | geplant |
 
 ## Wartet auf dich 👤
 

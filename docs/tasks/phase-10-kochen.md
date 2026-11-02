@@ -1,0 +1,17 @@
+# Phase 10 – Kochen
+
+Details, Abläufe und Abnahmekriterien: [`docs/features/spec-p10-kochen.md`](../features/spec-p10-kochen.md). Jede Aufgabe erst abhaken, wenn die Abnahme des Features erfüllt ist.
+
+## Aufgaben
+
+- [ ] 4 Kochmodus S18: Vorbereitung, Schritt-Seiten, Bildschirm an, Abschluss → Bewertung/Vorrat
+- [ ] 8 Mehrere Timer (Glas-Leiste, Benachrichtigung im Hintergrund)
+- [ ] 8 Sprachsteuerung on-device (Befehle laut Spezifikation), Vorlesen, Info.plist-Texte
+- [ ] 7 Ersatzzutaten: Tabelle (~80) + Haiku-Fallback, Ersetzen im Rezept
+- [ ] 10 Bildkarte (ImageRenderer) teilen
+- [ ] `docs/ui/screens.md` + `Demo.swift` + `ios/tools/screenshots.sh` um neue Screens ergänzt, CI-Screenshots geprüft
+- [ ] Playbook-Entscheidungslog aktualisiert
+
+## DoD
+
+- Abnahme aus 4, 8, 7, 10 erfüllt

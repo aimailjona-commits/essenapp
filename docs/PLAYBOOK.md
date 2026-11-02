@@ -63,6 +63,7 @@ Nutzer: der Entwickler selbst (iOS-App) + Familie/Freunde (Web-Version).
 | E42 | `store_ref` = kaufDA-Filial-ID für **alle** Ketten (nur Such-Ketten wie ALDI SÜD/dm: `plz:<plz>`); je Kette wird nur die gewählte Filiale geladen | Behebt Vermischung von Angeboten verschiedener Städte (korrigiert die Aussage „regional = \"\"“ aus E38) |
 | E43 | **Design v3** nach Nutzer-Vorlagen (DashBite, Pizza Mojo, Spring Vibes, Grilled Chicken): grauer Grund, weiße Karten, Schwarz + Orange `#FF5B2E`, Mischgewicht-Titel, große Fotos (Pexels, `ios/Sources/Essenapp/Resources/hero`, CREDITS.md), Pillen-Umschalter, dunkler Angebots-Kopf | Ersetzt Farben aus E36 |
 | E44 | Tab-Leiste mit **Liquid Glass** (`glassEffect`, iOS 26), Fallback dunkle Kapsel. Offizielle Händler-Logos als Wikimedia-Thumbnails, nur verlinkt (nicht im Repo) | Nutzerwunsch; Logos sind PD-textlogo, aber Marken – daher nicht weiterverbreitet |
+| E45 | **Feature-Roadmap Phasen 8–16** (44 Features, Nutzerauswahl 2026-11-02), Spezifikationen in `docs/features/`, Annahmen A1–A12 dort zur Bestätigung | Ziel: 100 % wie spezifiziert; Abweichungen nur nach Rückfrage |
 
 ---
 

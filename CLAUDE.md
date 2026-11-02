@@ -14,9 +14,10 @@ Plant Wochengerichte aus aktuellen Supermarkt- und Drogerieprospekten.
 
 1. `docs/tasks/README.md` – welche Phase aktiv ist, wie Tasks funktionieren
 2. die aktive Phasen-Datei in `docs/tasks/` – nächste offene Aufgabe
-3. `docs/PLAYBOOK.md` – Entscheidungen, Architektur, Datenmodell, xtool-Grenzen (bei Bedarf)
-4. Bei UI-Arbeit: `docs/ui/README.md`, `docs/ui/design-system.md`, `docs/ui/screens.md`
-5. `ios/CLAUDE.md` bzw. `backend/CLAUDE.md` – Regeln für den jeweiligen Teil
+3. `docs/features/README.md` + Spezifikation der aktiven Phase (Phasen 8–16: genau so umsetzen)
+4. `docs/PLAYBOOK.md` – Entscheidungen, Architektur, Datenmodell, xtool-Grenzen (bei Bedarf)
+5. Bei UI-Arbeit: `docs/ui/README.md`, `docs/ui/design-system.md`, `docs/ui/screens.md`
+6. `ios/CLAUDE.md` bzw. `backend/CLAUDE.md` – Regeln für den jeweiligen Teil
 
 ## Arbeitsablauf
 
