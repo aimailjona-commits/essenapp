@@ -14,6 +14,9 @@ class Household(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     name: Mapped[str] = mapped_column(String(100))
     plz: Mapped[str] = mapped_column(String(5), default="")
+    lat: Mapped[float | None]  # aus der PLZ geocodiert (für kaufDA)
+    lng: Mapped[float | None]
+    offers_refreshed_at: Mapped[datetime | None]
     persons: Mapped[int] = mapped_column(default=2)
     diet: Mapped[str] = mapped_column(String(30), default="alles")
     allergies: Mapped[list[str]] = mapped_column(JSON, default=list)

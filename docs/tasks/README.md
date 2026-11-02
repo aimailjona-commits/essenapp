@@ -1,13 +1,13 @@
 # Aufgaben
 
-**Aktive Phase: [Phase 0 – UI-Planung](phase-0-ui-planung.md)**
+**Aktive Phase: [Phase 1 – Fundament](phase-1-fundament.md)** (blockiert durch 👤 Apple-ID-Login; im autonomen Modus (E16) wurde an Phase 2 und 3 weitergearbeitet)
 
 | Phase | Datei | Status |
 |---|---|---|
-| 0 | [UI-Planung](phase-0-ui-planung.md) | aktiv |
-| 1 | [Fundament](phase-1-fundament.md) | offen |
-| 2 | [Angebote](phase-2-angebote.md) | offen |
-| 3 | [Wochenplan](phase-3-wochenplan.md) | offen |
+| 0 | [UI-Planung](phase-0-ui-planung.md) | vorläufig fertig (Feedback offen) |
+| 1 | [Fundament](phase-1-fundament.md) | aktiv – fehlt: Login, App aufs iPhone, Netzwerk |
+| 2 | [Angebote](phase-2-angebote.md) | großteils fertig |
+| 3 | [Wochenplan](phase-3-wochenplan.md) | begonnen |
 | 4 | [Personalisierung + Web](phase-4-personalisierung-web.md) | offen |
 | 5 | [Drogerie & Alarme](phase-5-drogerie-alarme.md) | offen |
 | 6 | [Extras](phase-6-extras.md) | offen |

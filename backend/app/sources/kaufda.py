@@ -1,0 +1,195 @@
+"""kaufDA/Bonial-Adapter. Endpunkte und Feldnamen: docs/research/datenquellen.md, Abschnitt 0."""
+import re
+import time
+from datetime import date, datetime
+from zoneinfo import ZoneInfo
+
+import httpx
+
+from app.services.normalize import base_price_cents, cents, euro_to_cents, parse_quantity
+
+CHAINS = {  # kaufDA-Händlername (klein) -> unser chain-Schlüssel
+    "rewe": "rewe", "aldi süd": "aldi_sued", "aldi nord": "aldi_nord", "lidl": "lidl",
+    "edeka": "edeka", "e center": "edeka", "marktkauf": "edeka", "kaufland": "kaufland",
+    "penny": "penny", "netto marken-discount": "netto_md", "dm-drogerie markt": "dm", "rossmann": "rossmann",
+}
+STORE_CHAINS = {"rewe", "edeka"}  # filialabhängige Angebote, sonst regional
+SEARCH_QUERIES = {"aldi_sued": "ALDI", "dm": "dm-drogerie markt"}  # Prospekt nur über die Suche erreichbar
+
+# Erste passende Kategorie gewinnt (Reihenfolge zählt).
+CATEGORIES = [
+    ("getraenke", ("getränk", "saft", "wasser", "bier", "pils", "wein", "sekt", "cola", "limo", "drink", "schorle", "pfand")),
+    ("fleisch_fisch", ("fleisch", "hack", "schnitzel", "gulasch", "wurst", "steak", "hähnchen", "chicken", "schinken", "salami", "lachs", "fisch")),
+    ("obst_gemuese", ("obst", "gemüse", "apfel", "äpfel", "banane", "tomate", "kartoffel", "zwiebel", "salat", "paprika", "gurke", "möhre", "clementine", "trauben")),
+    ("kuehlung", ("milch", "joghurt", "käse", "quark", "butter", "sahne", "pudding", "dessert", "gekühlt", "tiefgefroren", "pizza", "eier")),
+    ("vorrat", ("nudel", "pasta", "mehl", "zucker", "sauce", "soße", "müsli", "kaffee", "schokolade", "keks", "chips", "brot", "konserve")),
+    ("drogerie", ("shampoo", "dusch", "creme", "pflege", "zahn", "deo", "windel", "schaumbad", "kosmetik")),
+    ("haushalt", ("wasch", "spülmittel", "reiniger", "küchenrolle", "toilettenpapier", "müllbeutel", "duft", "kerze", "deko", "vase", "lampe")),
+]
+_BASE = re.compile(  # "(1 kg = 2.98 €)", "1 l = € 1.38", "12.99/kg", "EUR 2,83 / 1 l", "kg-Preis 4.48"
+    r"\b1\s*(?:kg|l|liter)\s*=\s*(?:ab\s*)?€?\s*(\d+[.,]\d+)"
+    r"|(\d+[.,]\d+)\s*€?\s*/\s*(?:1\s*)?(?:kg|l|st)\b"
+    r"|(?:kg|l)-preis\s*=?\s*(\d+[.,]\d+)", re.I)
+_BERLIN = ZoneInfo("Europe/Berlin")
+
+HEADERS = {"User-Agent": "Essenapp/0.1 (privat)", "Accept-Language": "de-DE"}
+SHELF_URL = "https://www.kaufda.de/api/shelf"
+SEARCH_URL = "https://www.kaufda.de/api/search"
+PAGES_URL = "https://content-viewer-be.kaufda.de/v1/brochures/{}/pages"
+
+
+def chain_of(publisher_name: str | None) -> str | None:
+    return CHAINS.get((publisher_name or "").strip().lower())
+
+
+def category_of(chain: str, text: str) -> str:
+    text = text.lower()
+    found = next((cat for cat, words in CATEGORIES if any(w in text for w in words)), "sonstiges")
+    if chain in ("dm", "rossmann"):
+        return "haushalt" if found == "haushalt" else "drogerie"
+    return found
+
+
+def _day(ts: str) -> date:
+    """'2026-11-01T23:00:00.000+0000' -> 2026-11-02 (deutsche Ortszeit)."""
+    return datetime.strptime(ts, "%Y-%m-%dT%H:%M:%S.%f%z").astimezone(_BERLIN).date()
+
+
+def _offer(chain, store_ref, source_id, title, brand, text, price_cents, regular_cents, base_text,
+           valid_from, valid_to, image_url, raw) -> dict:
+    qty = parse_quantity(text)
+    amount, unit = qty if qty else (None, "")
+    m = _BASE.search(base_text or "")
+    base = euro_to_cents(next(g for g in m.groups() if g)) if m else base_price_cents(price_cents, amount, unit)
+    return {
+        "chain": chain, "store_ref": store_ref, "source_id": source_id,
+        "title": title[:200], "brand": (brand or "")[:100], "category": category_of(chain, text),
+        "price_cents": price_cents,
+        "regular_price_cents": regular_cents if regular_cents and regular_cents > price_cents else None,
+        "amount": amount, "unit": unit, "base_price_cents": base, "ean": "",
+        "valid_from": valid_from, "valid_to": valid_to, "image_url": (image_url or "")[:500],
+        "ingredient_id": None, "raw": raw,
+    }
+
+
+def parse_shelf(data: dict) -> list[dict]:
+    """Shelf-Antwort -> Prospekte bekannter Händler."""
+    out = []
+    for item in data.get("contents", []):
+        c = item.get("content")
+        if item.get("contentType") not in ("brochure", "brochurePremium") or not isinstance(c, dict):
+            continue
+        chain = chain_of((c.get("publisher") or {}).get("name"))
+        if not chain or not c.get("contentId"):
+            continue
+        out.append({
+            "chain": chain, "content_id": c["contentId"],
+            "store_id": str((c.get("closestStore") or {}).get("externalId") or ""),
+            "valid_from": _day(c["validFrom"]), "valid_to": _day(c["validUntil"]),
+        })
+    return out
+
+
+def _pick(deals: list[dict], *types: str) -> int | None:
+    """Preis des ersten Deals mit passendem Typ (Typen in Vorrangreihenfolge)."""
+    for t in types:
+        for d in deals:
+            if d.get("type") == t and d.get("min"):
+                return cents(d["min"] * 100)
+    return None
+
+
+def parse_pages(data: dict, chain: str, store_ref: str = "") -> list[dict]:
+    """Brochure-/pages-Antwort -> Offer-Dicts (ein Dict pro Produkt)."""
+    out = []
+    for page in data.get("contents", []):
+        for item in page.get("offers", []):
+            c = item.get("content") or {}
+            profiles = c.get("publicationProfiles") or []
+            if not profiles:
+                continue
+            valid_from, valid_to = _day(profiles[0]["validity"]["startDate"]), _day(profiles[0]["validity"]["endDate"])
+            if valid_from > valid_to:
+                continue  # kommt in den Quelldaten vor (Lidl), Zeitraum unklar
+            deals = c.get("deals") or []
+            for i, p in enumerate(c.get("products") or []):
+                name = (p.get("name") or "").strip()
+                # Mehrere Produkte je Angebot: Deals über ihre Beschreibung dem Produkt zuordnen.
+                own = [d for d in deals if name and (d.get("description") or "").startswith(name)] or deals
+                price = _pick(own, "SALES_PRICE", "SPECIAL_PRICE")
+                if not name or not price:
+                    continue
+                base_text = next((d.get("priceByBaseUnit") for d in own if d.get("priceByBaseUnit")), "")
+                desc = " ".join(d.get("paragraph") or "" for d in p.get("description") or [])
+                images = p.get("images") or []
+                out.append(_offer(
+                    chain, store_ref if chain in STORE_CHAINS else "", c["id"] if i == 0 else f"{c['id']}#{i}",
+                    name, p.get("brandName"), f"{name} {desc}", price,
+                    _pick(own, "REGULAR_PRICE", "RECOMMENDED_RETAIL_PRICE"), base_text,
+                    valid_from, valid_to,
+                    images[0]["url"] if images else c.get("image"), c,
+                ))
+    return out
+
+
+def parse_search(data: dict) -> list[dict]:
+    """/api/search-Antwort -> Offer-Dicts. Gültigkeit kommt vom Prospekt (Elternprospekt, sonst Händler)."""
+    contents = data.get("searchResults", {}).get("contents", {})
+    validity = {}
+    for b in contents.get("brochures", []):
+        c = b.get("content") or {}
+        if c.get("validFrom") and c.get("validUntil"):
+            span = (_day(c["validFrom"]), _day(c["validUntil"]))
+            validity[c.get("contentId")] = span
+            validity.setdefault((c.get("publisher") or {}).get("id"), span)
+    out, seen = [], set()
+    for o in contents.get("offers", []):
+        chain = chain_of(o.get("publisherName"))
+        prices = o.get("prices") or {}
+        span = validity.get((o.get("parentContent") or {}).get("id")) or validity.get(o.get("publisherId"))
+        title = (o.get("title") or "").strip()
+        if not chain or not title or not prices.get("mainPrice") or not span or o["id"] in seen:
+            continue  # shortcut: ohne bekannte Gültigkeit verworfen, statt Daten zu raten
+        seen.add(o["id"])
+        price = cents(prices["mainPrice"] * 100)
+        regular = cents(prices["secondaryPrice"] * 100) if prices.get("secondaryPrice") else None
+        out.append(_offer(
+            chain, "", o["id"], title, o.get("brand"), f"{title} {o.get('description') or ''}", price, regular,
+            prices.get("priceByBaseUnit"), *span, ((o.get("offerImages") or {}).get("url") or {}).get("large"), o,
+        ))
+    return out
+
+
+def fetch_offers(lat: float, lng: float, chains: set[str]) -> list[dict]:
+    """Live-Abruf bei kaufDA. Höchstens 1 Anfrage/s; 403/429 und andere Fehler brechen mit Exception ab."""
+    with httpx.Client(headers=HEADERS, timeout=20, follow_redirects=True) as http:
+        def get(url, **params):
+            time.sleep(1)
+            r = http.get(url, params=params)
+            if r.status_code in (403, 429):
+                raise RuntimeError(f"kaufDA blockt ({r.status_code}): {url}")
+            r.raise_for_status()
+            return r.json()
+
+        offers, brochures, page, pages = [], [], 0, 1
+        while page < pages:
+            data = get(SHELF_URL, lat=lat, lng=lng, size=50, page=page, sectorIds="")
+            brochures += parse_shelf(data)
+            pages, page = data.get("page", {}).get("totalPages", 0), page + 1
+        done = set()
+        for b in brochures:
+            if b["chain"] in chains and b["chain"] not in SEARCH_QUERIES and b["content_id"] not in done:
+                done.add(b["content_id"])
+                data = get(PAGES_URL.format(b["content_id"]), partner="kaufda_web", brochureKey="", lat=lat, lng=lng)
+                offers += parse_pages(data, b["chain"], b["store_id"])
+        for chain, query in SEARCH_QUERIES.items():
+            offset, total, known = 0, 1, []
+            while chain in chains and offset < total:
+                data = get(SEARCH_URL, query=query, lat=lat, lng=lng, offset=offset, limit=24)
+                contents = data["searchResults"]["contents"]
+                known += contents.get("brochures", [])
+                contents["brochures"] = known  # Gültigkeit auch für Folgeseiten ohne Prospektliste
+                offers += [o for o in parse_search(data) if o["chain"] == chain]
+                total = data["searchResults"]["metadata"]["contentCount"].get("offer", 0)
+                offset += 24
+    return offers

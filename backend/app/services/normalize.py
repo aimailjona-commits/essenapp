@@ -1,9 +1,9 @@
 import math
 import re
 
-_UNITS = {"g": ("g", 1), "kg": ("g", 1000), "ml": ("ml", 1), "l": ("ml", 1000), "cl": ("ml", 10),
+_UNITS = {"g": ("g", 1), "kg": ("g", 1000), "ml": ("ml", 1), "l": ("ml", 1000), "liter": ("ml", 1000), "cl": ("ml", 10),
           "stk": ("stk", 1), "stück": ("stk", 1), "st": ("stk", 1)}
-_QTY = re.compile(r"(?:(\d+)\s*[x×]\s*)?(\d+(?:[.,]\d+)?)\s*-?\s*(kg|g|ml|cl|l|stück|stk|st)\b", re.I)
+_QTY = re.compile(r"(?:(\d+)\s*[x×]\s*)?(\d+(?:[.,]\d+)?)\s*-?\s*(kg|g|ml|cl|liter|l|stück|stk|st)\b", re.I)
 
 
 def parse_quantity(text: str) -> tuple[float, str] | None:

@@ -8,7 +8,7 @@ from app.core.auth import current_member, new_token
 from app.core.db import get_db
 from app.models import Household, HouseholdStore, MealPlan, MealPlanEntry, Member, Offer, Recipe
 from app.schemas import HouseholdCreate, HouseholdCreated, HouseholdOut, HouseholdSettings, OfferOut, PlanOut
-from app.services import planner
+from app.services import offers_import, planner
 
 router = APIRouter()
 
@@ -31,6 +31,8 @@ def get_household(member: Member = Depends(current_member)):
 def update_household(body: HouseholdSettings, member: Member = Depends(current_member), db: Session = Depends(get_db)):
     household = member.household
     changes = body.model_dump(exclude_unset=True)
+    if changes.get("plz", household.plz) != household.plz:
+        household.lat = household.lng = None  # neu geocodieren
     if (stores := changes.pop("stores", None)) is not None:
         household.stores = [HouseholdStore(**s) for s in stores]
     for key, value in changes.items():
@@ -56,6 +58,16 @@ def list_offers(chain: str | None = None, category: str | None = None, q: str | 
                 member: Member = Depends(current_member), db: Session = Depends(get_db)):
     offers = household_offers(db, member.household, chain)
     return [o for o in offers if (not category or o.category == category) and (not q or q.lower() in o.title.lower())]
+
+
+@router.post("/offers/refresh")
+def refresh_offers(member: Member = Depends(current_member), db: Session = Depends(get_db)):
+    """Lädt die Angebote der Läden des Haushalts neu (dauert je nach Läden 10–60 s)."""
+    try:
+        count = offers_import.refresh_household(db, member.household)
+    except (ValueError, RuntimeError) as e:
+        raise HTTPException(422, str(e))
+    return {"imported": count}
 
 
 @router.post("/plans", response_model=PlanOut, status_code=201)

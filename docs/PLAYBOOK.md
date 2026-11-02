@@ -46,6 +46,11 @@ Nutzer: der Entwickler selbst (iOS-App) + Familie/Freunde (Web-Version).
 | E25 | **Kein SwiftData** (Makro-Plugin `SwiftDataMacros` fehlt unter xtool, getestet). Lokaler Cache als Codable-JSON-Dateien | Backend ist die Quelle der Wahrheit; GRDB nur, falls später echte lokale Abfragen nötig werden |
 | E26 | App-Icon über `iconPath: Icon.png` in `xtool.yml` (erzeugt von `ios/tools/make_icon.py`), Info.plist-Ergänzungen über `infoPath` | Bekannte xtool.yml-Keys laut Binary: version, bundleID, product, infoPath, iconPath, entitlementsPath, resources, extensions, minimumVersion, skipLSP |
 | E27 | Backend-venv liegt in WSL (`~/.venvs/essenapp-backend`), Aufruf über `backend/dev.sh` | Python-Importe von `/mnt/c` sind ~10× langsamer |
+| E28 | Erste Datenquelle: **kaufDA** (ein Adapter für Rewe, Lidl, Kaufland, Penny, Netto, Edeka, Rossmann, Aldi Süd, dm). Details: `research/datenquellen.md` | Ohne Login/Bot-Schutz, live getestet (Köln: 1.067 Angebote für Rewe+Lidl+Aldi Süd). Direkte Adapter (Aldi Nord, Penny, Kaufland) später, wo Daten besser sind |
+| E29 | PLZ → Koordinaten über OpenStreetMap Nominatim, einmal pro Haushalt gespeichert. Rewe/Edeka: nächster Markt aus kaufDA wird automatisch als Filiale gesetzt | Filialwahl in der App folgt (S6/S13) |
+| E30 | KI-Modell: `claude-opus-5-5` (Standard laut Claude-API-Referenz), Effort `medium`, Server-Fallback bei Ablehnung (`fallbacks: "default"`). Per `.env` änderbar (`MODEL_PLANNER`, `PLANNER_EFFORT`) | Günstigere Modelle sind Nutzerentscheidung. E2E: 3 Gerichte in 34 s |
+| E31 | shortcut: Rezept-Zutaten als JSON am Rezept; Einkaufsliste wird in der App aus dem Plan berechnet und lokal abgehakt | Umbauen, wenn Zutaten-Stammdaten (Nährwerte) bzw. gemeinsame Liste (Phase 4) kommen |
+| E32 | Wöchentlicher Import ohne Scheduler-Bibliothek: `./dev.sh python -m app.jobs` per cron (Phase 7) | Kein zusätzlicher Dienst nötig |
 
 ---
 
@@ -151,7 +156,7 @@ Strategien pro Adapter (in dieser Reihenfolge prüfen):
 3. Prospekt-PDF/-Bilder → Extraktion per Claude Vision zu `RawOffer`-JSON
 
 Regeln:
-- Konkrete Endpunkte werden in Phase 2/5 **recherchiert und hier dokumentiert**. Nichts erfinden.
+- Recherche mit allen Endpunkten, Fixtures und Bewertung: [`research/datenquellen.md`](research/datenquellen.md). Neue Quellen dort ergänzen. Nichts erfinden.
 - Höflich abrufen: 1× pro Woche pro Filiale/Region, Caching, Rate-Limit, ehrlicher User-Agent.
 - Rohdaten (`raw`) speichern, damit Normalisierung ohne erneutes Abrufen wiederholt werden kann.
 - Jeder Adapter hat einen Test mit gespeicherter Beispielantwort (Fixture), damit Änderungen beim Händler sofort auffallen.

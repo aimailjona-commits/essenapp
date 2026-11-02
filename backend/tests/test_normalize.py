@@ -9,6 +9,7 @@ from app.services.normalize import base_price_cents, euro_to_cents, parse_quanti
     ("500-g-Packung", (500.0, "g")),
     ("6 x 1,5 l", (9000.0, "ml")),
     ("0,75 l Flasche", (750.0, "ml")),
+    ("20 x 0,33-Liter-Flaschen", (6600.0, "ml")),
     ("10 Stück", (10.0, "stk")),
     ("je Packung", None),
 ])

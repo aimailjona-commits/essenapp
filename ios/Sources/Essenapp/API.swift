@@ -87,9 +87,10 @@ final class API {
         return (try? await request("GET", "/health") as Health)?.status == "ok"
     }
 
-    func request<T: Decodable>(_ method: String, _ path: String, body: (some Encodable)? = nil as String?) async throws -> T {
+    func request<T: Decodable>(_ method: String, _ path: String, body: (some Encodable)? = nil as String?,
+                               timeout: TimeInterval = 15) async throws -> T {
         guard let url = URL(string: baseURL.trimmingCharacters(in: .whitespaces) + path), !baseURL.isEmpty else { throw APIError.noServer }
-        var req = URLRequest(url: url, timeoutInterval: 15)
+        var req = URLRequest(url: url, timeoutInterval: timeout)
         req.httpMethod = method
         if let token { req.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization") }
         if let body {
@@ -122,5 +123,147 @@ enum Keychain {
         var q = query
         q[kSecValueData as String] = Data(token.utf8)
         SecItemAdd(q as CFDictionary, nil)
+    }
+}
+
+struct IngredientDTO: Codable, Hashable {
+    var name: String
+    var amount: Double
+    var unit: String
+    var offerId: Int?
+    var inPantry: Bool
+}
+
+struct RecipeDTO: Codable, Identifiable, Hashable {
+    var id: Int
+    var title: String
+    var description: String
+    var cuisine: String
+    var mealType: String
+    var servings: Int
+    var prepMinutes: Int
+    var ingredients: [IngredientDTO]
+    var steps: [String]
+    var imageUrl: String
+}
+
+struct MealDTO: Codable, Hashable {
+    var day: Int
+    var mealType: String
+    var costCents: Int
+    var locked: Bool
+    var recipe: RecipeDTO
+}
+
+struct PlanDTO: Codable {
+    var id: Int
+    var week: String
+    var totalCents: Int
+    var savedCents: Int
+    var entries: [MealDTO]
+}
+
+/// Anzeige-Namen; Schlüssel wie im Backend.
+enum Labels {
+    static let chains: [(key: String, name: String, drugstore: Bool)] = [
+        ("rewe", "Rewe", false), ("aldi_sued", "Aldi Süd", false), ("aldi_nord", "Aldi Nord", false), ("lidl", "Lidl", false),
+        ("edeka", "Edeka", false), ("kaufland", "Kaufland", false), ("penny", "Penny", false), ("netto_md", "Netto", false),
+        ("dm", "dm", true), ("rossmann", "Rossmann", true),
+    ]
+    static func chain(_ key: String) -> String { chains.first { $0.key == key }?.name ?? key }
+
+    static let mealTypes = [("fruehstueck", "Frühstück"), ("mittag", "Mittag"), ("abend", "Abend"), ("dessert", "Dessert")]
+    static func meal(_ key: String) -> String { mealTypes.first { $0.0 == key }?.1 ?? key }
+
+    static let days = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"]
+    static let dayNames = ["Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag", "Sonntag"]
+    static let diets = [("alles", "Alles"), ("vegetarisch", "Vegetarisch"), ("vegan", "Vegan"), ("pescetarisch", "Pescetarisch"), ("halal", "Halal")]
+    static let allergies = ["Gluten", "Laktose", "Nüsse", "Erdnüsse", "Ei", "Soja", "Fisch", "Sellerie"]
+    static let goals = [("ausgewogen", "Ausgewogen", "Alle Nährstoffe abdecken"), ("proteinreich", "Proteinreich", "Viel Eiweiß"),
+                        ("kalorienarm", "Kalorienarm", "Leichter essen")]
+    static let cuisines = ["Indisch", "Asiatisch", "Italienisch", "Deutsch", "Mexikanisch", "Orientalisch"]
+    static let categories = [("obst_gemuese", "🥦 Obst & Gemüse"), ("fleisch_fisch", "🥩 Fleisch & Fisch"), ("kuehlung", "🧀 Kühlung"),
+                             ("vorrat", "🥫 Vorrat"), ("getraenke", "🥤 Getränke"), ("drogerie", "🧴 Drogerie"), ("haushalt", "🧽 Haushalt")]
+}
+
+/// Settings-PATCH: nur gesetzte Felder werden gesendet (Optionals fallen beim Encoden weg).
+struct HouseholdPatch: Encodable {
+    var name: String?
+    var plz: String?
+    var persons: Int?
+    var diet: String?
+    var allergies: [String]?
+    var excludedIngredients: [String]?
+    var cuisines: [String]?
+    var mealTypes: [String]?
+    var planDays: [Int]?
+    var budgetFoodWeekCents: Int?
+    var nutritionGoal: String?
+    var stores: [StoreDTO]?
+}
+
+/// App-Zustand: lädt und hält Haushalt, Angebote und Plan.
+@MainActor @Observable
+final class AppStore {
+    let api: API
+    var household: HouseholdDTO?
+    var offers: [OfferDTO] = []
+    var plan: PlanDTO?
+    var error: String?
+    var generating = false
+
+    init(api: API) { self.api = api }
+
+    var isOnboarded: Bool { api.token != nil }
+
+    func createHousehold(name: String, memberName: String) async throws {
+        struct Body: Encodable { var name: String; var memberName: String }
+        let created: HouseholdCreated = try await api.request("POST", "/households", body: Body(name: name, memberName: memberName))
+        api.token = created.token
+        household = created.household
+    }
+
+    func save(_ patch: HouseholdPatch) async throws {
+        household = try await api.request("PATCH", "/household", body: patch)
+    }
+
+    func loadAll() async {
+        do {
+            household = try await api.request("GET", "/household")
+            offers = try await api.request("GET", "/offers")
+            plan = try? await api.request("GET", "/plans/current")
+            error = nil
+        } catch {
+            self.error = error.localizedDescription
+        }
+    }
+
+    /// Lädt die Angebote der Läden neu (Backend fragt kaufDA, dauert 10–60 s).
+    func refreshOffers() async {
+        struct Result: Decodable { var imported: Int }
+        do {
+            let _: Result = try await api.request("POST", "/offers/refresh", timeout: 180)
+            offers = try await api.request("GET", "/offers")
+        } catch {
+            self.error = error.localizedDescription
+        }
+    }
+
+    func generatePlan() async {
+        generating = true
+        defer { generating = false }
+        do {
+            plan = try await api.request("POST", "/plans", timeout: 300)  // KI-Plan dauert bis ~2 min
+            error = nil
+        } catch {
+            self.error = error.localizedDescription
+        }
+    }
+
+    /// Gericht für heute (erste Mahlzeit des heutigen Wochentags, Mittag bevorzugt).
+    var todayMeal: MealDTO? {
+        let weekday = (Calendar(identifier: .iso8601).component(.weekday, from: .now) + 5) % 7  // 0 = Montag
+        let today = plan?.entries.filter { $0.day == weekday } ?? []
+        return today.first { $0.mealType == "mittag" } ?? today.first
     }
 }
