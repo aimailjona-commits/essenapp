@@ -7,7 +7,7 @@ PonyTail `full` gilt (siehe Root-`CLAUDE.md`).
 - Gebaut wird **in WSL (Ubuntu-24.04)** mit xtool, nie unter Windows direkt.
 - Quellen liegen in `ios/` (Windows), gebaut wird in `~/build/essenapp-ios` (E24). Immer über das Skript:
   `./build.sh build` (nur bauen) bzw. `./build.sh` (bauen, signieren, aufs iPhone).
-- iPhone vorher an WSL hängen: `usbipd attach --wsl --busid <ID>` (Windows), prüfen mit `idevice_id -l` (E23).
+- iPhone hängt an Windows (Apple Devices). Nach Windows-/WSL-Neustart: `tools/windows-setup.ps1` als Admin (Nutzer). Prüfen in WSL: `USBMUXD_SOCKET_ADDRESS=$(ip route list default | awk '{print $3}'):27015 idevice_id -l` (E33).
 - Kein Simulator. Logik in reine Swift-Typen ohne UI auslagern und mit `swift test` prüfen. UI auf dem iPhone prüfen.
 
 ## xtool-Grenzen (Details: PLAYBOOK Abschnitt 9)

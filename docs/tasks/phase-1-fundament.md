@@ -28,8 +28,8 @@ Ziel: Toolchain läuft, eine leere App mit dem Design-System läuft auf dem iPho
 
 - [x] `xtool new` in `ios/`, `bundleID` festlegen, `xtool.yml` prüfen (`de.jsenf.essenapp`, Build in WSL-Dateisystem E24)
 - [ ] 👤 `xtool dev`: auf dem iPhone Entwicklermodus aktivieren und Entwickler unter Einstellungen › Allgemein › VPN & Geräteverwaltung vertrauen
-- [~] App baut erfolgreich (`./build.sh build`). Aufs iPhone: wartet auf Apple-ID-Login
-- [ ] 👤 `xtool setup` mit Apple-ID (SDK ist schon installiert), dann `./build.sh`
+- [x] App baut und ist auf dem iPhone installiert (`./build.sh`, Weg über Apple Devices E33)
+- [x] 👤 `xtool auth login` mit Apple-ID
 - [x] Test: SwiftData `@Model` → kompiliert nicht, JSON-Cache stattdessen (E25)
 - [~] App-Icon über `iconPath` (E26): `Icon.png` liegt im Bundle; ob es auf dem Homescreen erscheint, auf dem Gerät prüfen
 - [-] nicht nötig – Systemschrift (E22)
@@ -42,7 +42,7 @@ Ziel: Toolchain läuft, eine leere App mit dem Design-System läuft auf dem iPho
 - [x] `GET /health` → `{"status":"ok"}` + Test
 - [x] Datenbank (SQLite) + erste Migration (gleich mit den Modellen aus Phase 2)
 - [x] `.env.example`
-- [ ] 👤 (Admin-Abfrage nötig) Backend vom iPhone aus erreichbar machen (WSL mirrored networking oder `netsh portproxy`, Windows-Firewall-Regel). Weg im Playbook dokumentieren
+- [x] 👤 Backend vom iPhone aus erreichbar: `tools/windows-setup.ps1` → `http://<Windows-IP>:8000` (WSL mirrored networking oder `netsh portproxy`, Windows-Firewall-Regel). Weg im Playbook dokumentieren
 
 ## DoD
 

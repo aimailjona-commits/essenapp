@@ -8,4 +8,6 @@ dst="$HOME/build/essenapp-ios"
 mkdir -p "$dst"
 rsync -a --delete --exclude .build --exclude xtool --exclude tools "$src/" "$dst/"
 cd "$dst"
+# iPhone hängt an Windows (Apple Devices), WSL spricht dessen usbmux-Dienst über das Gateway an (E33)
+export USBMUXD_SOCKET_ADDRESS="${USBMUXD_SOCKET_ADDRESS:-$(ip route list default | awk '{print $3}'):27015}"
 xtool dev "${1:-run}"

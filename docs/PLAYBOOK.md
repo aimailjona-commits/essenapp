@@ -41,7 +41,7 @@ Nutzer: der Entwickler selbst (iOS-App) + Familie/Freunde (Web-Version).
 | E20 (C) | Wochenplan liegt im Tab „Rezepte“ (Umschalter Wochenplan / Meine Rezepte), zusätzlich über Start erreichbar | |
 | E21 (C) | Arbeitstitel **„Essenapp“**, Bundle-ID `de.jsenf.essenapp`; Anzeigename später änderbar | Bundle-ID sollte danach nicht mehr wechseln |
 | E22 (C) | Schrift: System-Schrift SF Pro (iOS), Inter/Systemschrift im Web | Keine Schrift-Einbindung, beste Barrierefreiheit |
-| E23 | iPhone ↔ WSL über **usbipd (Weg A)** funktioniert | Einmalig `usbipd bind --busid <ID>` (Admin). Danach je Sitzung: WSL muss laufen, dann `usbipd attach --wsl --busid <ID>` (BUSID mit `usbipd list`, Apple = `05ac:…`). Gerät ist dann nur noch in WSL sichtbar. Prüfen: `idevice_id -l` |
+| E23 | ~~iPhone ↔ WSL über usbipd~~ → ersetzt durch E33 (Installation hing) | Einmalig `usbipd bind --busid <ID>` (Admin). Danach je Sitzung: WSL muss laufen, dann `usbipd attach --wsl --busid <ID>` (BUSID mit `usbipd list`, Apple = `05ac:…`). Gerät ist dann nur noch in WSL sichtbar. Prüfen: `idevice_id -l` |
 | E24 | iOS wird in **`~/build/essenapp-ios` (WSL-Dateisystem)** gebaut, Quellen bleiben in `ios/` | xtool scheitert auf `/mnt/c` an Datei-Umbenennungen („Permission denied“). `ios/build.sh` kopiert per rsync und ruft `xtool dev` auf |
 | E25 | **Kein SwiftData** (Makro-Plugin `SwiftDataMacros` fehlt unter xtool, getestet). Lokaler Cache als Codable-JSON-Dateien | Backend ist die Quelle der Wahrheit; GRDB nur, falls später echte lokale Abfragen nötig werden |
 | E26 | App-Icon über `iconPath: Icon.png` in `xtool.yml` (erzeugt von `ios/tools/make_icon.py`), Info.plist-Ergänzungen über `infoPath` | Bekannte xtool.yml-Keys laut Binary: version, bundleID, product, infoPath, iconPath, entitlementsPath, resources, extensions, minimumVersion, skipLSP |
@@ -51,6 +51,7 @@ Nutzer: der Entwickler selbst (iOS-App) + Familie/Freunde (Web-Version).
 | E30 | KI-Modell: `claude-opus-5-5` (Standard laut Claude-API-Referenz), Effort `medium`, Server-Fallback bei Ablehnung (`fallbacks: "default"`). Per `.env` änderbar (`MODEL_PLANNER`, `PLANNER_EFFORT`) | Günstigere Modelle sind Nutzerentscheidung. E2E: 3 Gerichte in 34 s |
 | E31 | shortcut: Rezept-Zutaten als JSON am Rezept; Einkaufsliste wird in der App aus dem Plan berechnet und lokal abgehakt | Umbauen, wenn Zutaten-Stammdaten (Nährwerte) bzw. gemeinsame Liste (Phase 4) kommen |
 | E32 | Wöchentlicher Import ohne Scheduler-Bibliothek: `./dev.sh python -m app.jobs` per cron (Phase 7) | Kein zusätzlicher Dienst nötig |
+| E33 | **iPhone hängt an Windows (App „Apple Devices“), nicht mehr per usbipd an WSL.** WSL spricht Apples usbmux-Dienst über `<WSL-Gateway>:27015` an (`USBMUXD_SOCKET_ADDRESS`, setzt `ios/build.sh`). Backend fürs iPhone über `<Windows-IP>:8000` | Mit usbipd hing `xtool dev` bei „Connecting“ (xtool Issue #19). `tools/windows-setup.ps1` (Admin, nach jedem Neustart) richtet Portproxys + Firewall ein. Ersetzt E23 |
 
 ---
 
