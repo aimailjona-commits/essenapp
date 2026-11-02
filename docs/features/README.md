@@ -18,7 +18,7 @@ Aufwand: S = bis 1 Tag, M = 1–3 Tage, L = > 3 Tage (Claude-Arbeitszeit, grob).
 
 | Nr | Feature | Phase | Aufwand | KI-Kosten | Hängt ab von |
 |---|---|---|---|---|---|
-| 72 | Umzug auf IONOS-VPS (+ ntfy, Scheduler, HTTPS) | 8 | L | – | – |
+| 72 | Umzug auf IONOS-VPS (+ eigener ntfy, HTTPS) – **ganz am Ende** (Nutzerwunsch) | 17 | L | – | alle |
 | 48 | Ziele pro Person (Mitglieder-Profile) | 8 | M | – | – |
 | 60 | Vorratskammer | 8 | M | – | – |
 | 3 | Meine Rezepte (merken, eigene, Bewertung → Planer) | 9 | L | – | 8 (Rezept-Modell) |
@@ -81,11 +81,15 @@ Spezifikationen:
 
 ## Bitte prüfen (Annahmen und Risiken)
 
+Start: **Phase 8** (Nutzerentscheidung 2026-11-02). ✅ = entschieden.
+
+**Bis zum VPS (Phase 17):** Push über den öffentlichen Dienst **ntfy.sh** (zufällige Topics), Zeitpläne laufen im lokalen Backend (Scheduler-Thread, solange der PC an ist), Einladungslinks nur im Heim-WLAN. Alles so gebaut, dass der Umzug nur Konfiguration ändert (`NTFY_URL`, `PUBLIC_BASE_URL`).
+
 | # | Thema | Was ich angenommen habe / was das Risiko ist |
 |---|---|---|
-| A1 | **Teilen-Menü aus Instagram (5)** | Braucht eine *Share Extension*. Die Erweiterung muss sich mit der App den Login teilen (App Group / Keychain-Gruppe). Ob das mit der **kostenlosen Apple-ID** + xtool geht, ist unklar → wird als erstes in Phase 9 getestet (Spike). **Ersatz, falls nicht:** In der Erweiterung einmalig einen 6-stelligen Kopplungscode eingeben (aus den App-Einstellungen), danach läuft es ohne weitere Eingabe. |
-| A2 | Instagram-Inhalte | Instagram gibt Beschreibung/Video ohne Login nicht immer heraus. Geplant: öffentliche Einbettungs-Seite des Beitrags lesen. Klappt das bei einem Beitrag nicht, zeigt die App „Rezept steht nicht in der Beschreibung“ und bietet an, Screenshots zu wählen. *(Screenshots hattest du nicht ausgewählt – ist dieser Ersatz ok?)* |
-| A3 | KI-Bilder pro Schritt (9) | Braucht einen **fal.ai-Key** (`FAL_KEY`), ca. 0,3 Cent pro Bild → etwa 2 Cent pro Rezept. Bilder werden einmal erzeugt und auf dem Server gespeichert. |
+| A1 ✅ | **Teilen-Menü aus Instagram (5)** – Entscheidung: Ersatz = **Kopplungscode** | Braucht eine *Share Extension*. Die Erweiterung muss sich mit der App den Login teilen (App Group / Keychain-Gruppe). Ob das mit der **kostenlosen Apple-ID** + xtool geht, ist unklar → wird als erstes in Phase 9 getestet (Spike). **Ersatz, falls nicht:** In der Erweiterung einmalig einen 6-stelligen Kopplungscode eingeben (aus den App-Einstellungen), danach läuft es ohne weitere Eingabe. |
+| A2 ✅ | Instagram-Inhalte – Entscheidung: **kein Screenshot-Ersatz**; ohne Rezept in der Beschreibung klare Meldung „Kein Rezept gefunden“ | Instagram gibt Beschreibung/Video ohne Login nicht immer heraus. Geplant: öffentliche Einbettungs-Seite des Beitrags lesen. Klappt das bei einem Beitrag nicht, zeigt die App „Rezept steht nicht in der Beschreibung“ und bietet an, Screenshots zu wählen. *(Screenshots hattest du nicht ausgewählt – ist dieser Ersatz ok?)* |
+| A3 ✅ | KI-Bilder pro Schritt (9) – Entscheidung: **ja**, Nutzer richtet fal.ai-Key ein | Braucht einen **fal.ai-Key** (`FAL_KEY`), ca. 0,3 Cent pro Bild → etwa 2 Cent pro Rezept. Bilder werden einmal erzeugt und auf dem Server gespeichert. |
 | A4 | Push-Nachrichten | Ohne bezahlten Apple-Account über die App **ntfy** (kostenlos, einmal installieren und Kanal abonnieren). Betrifft 17, 27, 40, 58, 38. |
 | A5 | Standort-Erinnerung (36) | Braucht die Standort-Erlaubnis **„Immer“**; iOS erlaubt max. 20 überwachte Orte → die 20 nächsten gewählten Läden. |
 | A6 | Nährwerte (2) | Quelle: USDA-Nährwertdatenbank (gemeinfrei, englisch). Die KI ordnet deutsche Zutaten einmalig einem Eintrag zu, Werte kommen aus der Datenbank (E10). Genauigkeit „gute Schätzung“, nicht Laborwert. |

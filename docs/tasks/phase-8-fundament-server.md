@@ -1,15 +1,11 @@
-# Phase 8 – Fundament: Server, Personen, Vorrat
+# Phase 8 – Fundament: Personen, Vorrat, Push (VPS kommt in Phase 17)
 
 Details, Abläufe und Abnahmekriterien: [`docs/features/spec-p08-fundament.md`](../features/spec-p08-fundament.md). Jede Aufgabe erst abhaken, wenn die Abnahme des Features erfüllt ist.
 
 ## Aufgaben
 
-- [ ] 👤 IONOS-VPS + Domain buchen, SSH-Schlüssel für Claude hinterlegen (A11)
-- [ ] 72 Docker Compose: api, db (Postgres), caddy (HTTPS), ntfy, scheduler
-- [ ] 72 Daten-Umzug SQLite → Postgres, /media-Volume, Backups + Wiederherstellungstest
-- [ ] 72 Scheduler-Jobs laut Tabelle (Import inkl. Folgewoche, Preisverlauf-Punkte sammeln, Alarme, Plan-Erinnerung …)
-- [ ] 72 ntfy-Topics pro Mitglied, Einstellungen › Benachrichtigungen (QR, Test-Push), URL-Schema `essenapp://` + Router
-- [ ] 72 iOS auf HTTPS umstellen, ATS-Ausnahme entfernen
+- [ ] Lokaler Scheduler-Thread (`SCHEDULER=1`) mit den Jobs aus der Spezifikation (Import inkl. Folgewoche, Preisverlauf sammeln, Alarme, Plan-Erinnerung …)
+- [ ] Push über ntfy.sh: Topic pro Mitglied, Einstellungen › Benachrichtigungen (QR, Test-Push), URL-Schema `essenapp://` + Router in der App
 - [ ] 48 `member_profile` + `GET/PATCH /me/profile`, Portionsfaktoren, Esser pro Slot im Planner
 - [ ] 48 iOS: S15 Mein Profil, Umschalter „Für: …“ in Rezept/Tag
 - [ ] 60 `pantry_item` + CRUD + `/pantry/consume`, Basics-Flag, Planner/Pricing/sync-plan nutzen Vorrat
@@ -19,5 +15,5 @@ Details, Abläufe und Abnahmekriterien: [`docs/features/spec-p08-fundament.md`](
 
 ## DoD
 
-- Alles aus den Abnahme-Abschnitten von 72, 48, 60 erfüllt
+- Alles aus den Abnahme-Abschnitten von 48, 60 erfüllt; Test-Push über ntfy.sh kommt an und öffnet die App
 - Preisverlauf-Daten werden ab jetzt wöchentlich gesammelt

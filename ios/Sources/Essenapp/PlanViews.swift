@@ -158,6 +158,8 @@ struct RecipeDetailView: View {
     @Environment(\.dismiss) private var dismiss
     let meal: MealDTO
     @State private var showRating = false
+    @State private var openOffer: OfferDTO?
+    @State private var searchIngredient: IngredientDTO?
     @State private var servings: Int?
     @State private var done: Set<Int> = []
     @State private var spin = false
@@ -212,6 +214,8 @@ struct RecipeDetailView: View {
                         .padding(.bottom, 6)
                         ForEach(recipe.ingredients, id: \.self) { ing in
                             let offer = store.offers.first { $0.id == ing.offerId }
+                            // Feature 1: Zutat antippen → Angebot (oder passende Angebote)
+                            Button { if let offer { openOffer = offer } else { searchIngredient = ing } } label: {
                             HStack(spacing: 12) {
                                 Text(offer.map { Theme.hue(category: $0.category).emoji } ?? (ing.inPantry ? "🧂" : "🥄")).font(.system(size: 22))
                                     .frame(width: 40, height: 40).background(Theme.C.surface, in: RoundedRectangle(cornerRadius: 12))
@@ -228,8 +232,12 @@ struct RecipeDetailView: View {
                                 Spacer()
                                 Text("\((ing.amount * factor).formatted(.number.precision(.fractionLength(0...1)))) \(ing.unit == "stk" ? "Stück" : ing.unit)")
                                     .monospacedDigit().foregroundStyle(Theme.C.text2).contentTransition(.numericText())
+                                Image(systemName: "chevron.right").font(.system(size: 11, weight: .bold)).foregroundStyle(Theme.C.text3)
                             }
                             .padding(.vertical, 8)
+                            .contentShape(Rectangle())
+                            }
+                            .buttonStyle(PressableStyle())
                         }
                     }
                     .padding(16).card()
@@ -277,6 +285,8 @@ struct RecipeDetailView: View {
         }
         .toolbar(.hidden, for: .navigationBar)
         .sheet(isPresented: $showRating) { RatingSheet(meal: meal).presentationDetents([.medium]).presentationCornerRadius(Theme.R.sheet) }
+        .navigationDestination(item: $openOffer) { OfferDetailView(offer: $0) }
+        .sheet(item: $searchIngredient) { IngredientOffersSheet(ingredient: $0).presentationDetents([.medium, .large]).presentationCornerRadius(Theme.R.sheet) }
     }
 }
 

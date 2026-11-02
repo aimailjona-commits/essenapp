@@ -153,6 +153,8 @@ struct IngredientDTO: Codable, Hashable {
     var unit: String
     var offerId: Int?
     var inPantry: Bool
+    var packAmount: Double?
+    var packPriceCents: Int?
 }
 
 struct RecipeDTO: Codable, Identifiable, Hashable {

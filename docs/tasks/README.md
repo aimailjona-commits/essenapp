@@ -1,6 +1,6 @@
 # Aufgaben
 
-**Aktive Phase: [Phase 1 – Fundament](phase-1-fundament.md)** (blockiert durch 👤 Apple-ID-Login; im autonomen Modus (E16) wurde an Phase 2 und 3 weitergearbeitet)
+**Aktive Phase: [Phase 8 – Fundament](phase-8-fundament-server.md)** (Phasen 1–7: Grundlage steht, Rest aufgegangen in 8–17) (blockiert durch 👤 Apple-ID-Login; im autonomen Modus (E16) wurde an Phase 2 und 3 weitergearbeitet)
 
 | Phase | Datei | Status |
 |---|---|---|
@@ -21,6 +21,7 @@
 | 14 | [Motivation & Teilen](phase-14-motivation.md) | geplant |
 | 15 | [Komfort](phase-15-komfort.md) | geplant |
 | 16 | [Erweiterungen (Widget, Live-Aktivität)](phase-16-erweiterungen.md) | geplant |
+| 17 | [Umzug auf IONOS-VPS](phase-17-vps.md) | geplant (ganz am Ende) |
 
 ## Wartet auf dich 👤
 
