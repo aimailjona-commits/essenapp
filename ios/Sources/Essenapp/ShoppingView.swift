@@ -22,14 +22,23 @@ extension AppStore {
     }
 }
 
-/// S5 Einkauf: gemeinsame Haushaltsliste (je Laden eine Karte) + einmalige Listen.
+/// S5 Einkauf: gemeinsame Haushaltsliste (je Laden eine Karte) + einmalige Listen; Pille „Vorrat“ → S16.
 struct ShoppingView: View {
     @Environment(AppStore.self) private var store
     @State private var newItem = ""
     @State private var newListName = ""
     @State private var askNewList = false
+    @State private var pantryMode = Demo.screen == "pantry"
 
     var body: some View {
+        VStack(spacing: 6) {
+            PillSegment(options: [(false, "Liste"), (true, "Vorrat")], selection: $pantryMode)
+                .padding(.horizontal, Theme.pagePadding)
+            if pantryMode { PantryView() } else { listPage }
+        }
+    }
+
+    @ViewBuilder private var listPage: some View {
         let items = store.listItems
         let groups = Dictionary(grouping: items, by: \.chain).sorted { ($0.key.isEmpty ? "~" : $0.key) < ($1.key.isEmpty ? "~" : $1.key) }
         let oneoffs = store.lists.filter { $0.kind == "oneoff" }

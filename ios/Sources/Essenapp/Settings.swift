@@ -199,6 +199,21 @@ struct SettingsView: View {
                 }
                 .frame(maxWidth: .infinity).padding(.bottom, 6)
 
+                group("MEIN PROFIL") {
+                    NavigationLink { ProfileView() } label: {
+                        HStack(spacing: 12) {
+                            Text(store.profile?.emoji ?? "🙂").font(.system(size: 20))
+                                .frame(width: 34, height: 34).background(Theme.C.accentSoft, in: Circle())
+                            Text(store.profile?.name ?? "Mein Profil").font(.system(.body, weight: .semibold)).foregroundStyle(Theme.C.text1)
+                            Spacer()
+                            Text(store.profile.map { p in ProfileView.goals.first { g in g.0 == p.goal }?.1 ?? p.goal } ?? "Ziele & Essenszeiten")
+                                .font(Theme.F.caption).foregroundStyle(Theme.C.text2).lineLimit(1)
+                            Image(systemName: "chevron.right").font(.system(size: 13, weight: .bold)).foregroundStyle(Theme.C.text3)
+                        }
+                    }
+                    .buttonStyle(PressableStyle())
+                }
+
                 if let h = store.household {
                     group("EINKAUFEN") {
                         NavigationLink { StoreMapView() } label: {
@@ -222,6 +237,11 @@ struct SettingsView: View {
                         .buttonStyle(PressableStyle())
                     }
                 }
+                group("BENACHRICHTIGUNGEN") {
+                    NavigationLink { NotificationsView() } label: {
+                        row("bell.fill", Theme.C.accent, "Mitteilungen", "Erinnerung, Ruhezeit")
+                    }
+                }
                 FamilySection()
                 group("APP") {
                     HStack(spacing: 12) {
@@ -241,6 +261,7 @@ struct SettingsView: View {
         }
         .background(Theme.C.bg)
         .toolbar(.hidden, for: .navigationBar)
+        .modifier(PushAsk())  // bestehende Installationen: einmal beim ersten Öffnen der Einstellungen
     }
 
     private func group(_ title: String, @ViewBuilder content: () -> some View) -> some View {

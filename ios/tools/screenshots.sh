@@ -23,7 +23,7 @@ shoot() {  # $1 = Screen, $2 = Dateiname
 }
 
 xcrun simctl ui "$udid" appearance light
-for s in onboarding start quick generator generating offers offer stores plan recipe shopping list settings empty; do shoot "$s" "$s"; done
+for s in onboarding start quick generator generating offers offer stores plan recipe shopping list pantry settings profile notifications empty; do shoot "$s" "$s"; done
 xcrun simctl ui "$udid" appearance dark  # App erzwingt hell (E15) – Kontrolle, dass nichts weiß auf weiß wird
 for s in start; do shoot "$s" "dark-$s"; done
 ls -la "$out"

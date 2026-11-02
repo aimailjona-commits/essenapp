@@ -343,16 +343,28 @@ struct SkeletonCard: View {
     }
 }
 
-/// Kurze Bestätigung oben (z.B. „Zur Liste hinzugefügt“).
+/// Kurze Bestätigung oben (z.B. „Zur Liste hinzugefügt“), optional mit Aktions-Knopf („In den Vorrat“).
 struct Toast: View {
     let text: String
     var symbol = "checkmark.circle.fill"
+    var actionTitle: String?
+    var action: () -> Void = {}
 
     var body: some View {
-        Label(text, systemImage: symbol)
+        HStack(spacing: 10) {
+            Label(text, systemImage: symbol).lineLimit(2)
+            if let actionTitle {
+                Button(actionTitle, action: action)
+                    .font(.system(.subheadline, weight: .bold))
+                    .foregroundStyle(Theme.C.text1)
+                    .padding(.horizontal, 14).frame(minHeight: 44)
+                    .background(.white, in: Capsule())
+                    .buttonStyle(PressableStyle())
+            }
+        }
             .font(.system(.subheadline, weight: .semibold))
             .foregroundStyle(.white)
-            .padding(.horizontal, 16).padding(.vertical, 12)
+            .padding(.leading, 16).padding(.trailing, actionTitle == nil ? 16 : 6).padding(.vertical, actionTitle == nil ? 12 : 6)
             .background(Theme.C.action, in: Capsule())
             .floatShadow()
             .transition(.move(edge: .top).combined(with: .opacity))

@@ -126,10 +126,30 @@ Mockups: `mockups/weitere-screens-v1.html`.
 ### S13 Einstellungen (Push-Screen über Avatar)
 - Kopf: Avatar groß, Name, Haushaltsname.
 - Gruppen als weiße Karten mit Zeilen (Icon im getönten Quadrat, Titel, aktueller Wert grau, Chevron):
+  - **Mein Profil** (ganz oben): Emoji-Avatar, Name, Ziel → S15
   - **Haushalt:** Personen, Ernährung, Allergien, Mag ich nicht
   - **Einkaufen:** Ort (PLZ), Läden & Filialen, Budget Lebensmittel, Budget Drogerie
   - **Planung:** Mahlzeiten, Tage, Küchen, Nährwertziel, Max. Kochzeit
-  - **Benachrichtigungen:** ntfy einrichten (QR-Code + Topic), Wochenplan-Erinnerung (Tag/Uhrzeit), Angebotsalarme an/aus
+  - **Benachrichtigungen** (Push über Apple/APNs, kein ntfy): Status der iOS-Erlaubnis (abgelehnt → „In iOS-Einstellungen öffnen“), „Test-Push senden“, Push an/aus, Wochenplan-Erinnerung (an/aus, Wochentag, Uhrzeit), Ruhezeit (an/aus, Von/Bis), Angebotsalarme an/aus. Vor der iOS-Abfrage einmal ein Erklär-Sheet „Nichts verpassen“ (nach dem Onboarding bzw. beim ersten Öffnen der Einstellungen). Antippen einer Mitteilung öffnet `essenapp://start|generator|offer/<id>`.
   - **Familie:** Mitglieder (Avatare), „Einladungslink teilen“
   - **App:** Server-Adresse, Version, „Neu installieren fällig in 5 Tagen“ (7-Tage-Signatur, E2)
 - Änderungen werden sofort gespeichert (kein Speichern-Button), Fehler als Banner.
+
+### S15 Mein Profil (Push-Screen aus S13, Feature 48)
+- `DisplayHeader` „Mein Profil / Ziele & Essenszeiten“, Abschnitte als Karten wie Präferenzen.
+- Avatar & Name: großes Emoji, Raster beliebter Emojis (8 Spalten), Namensfeld.
+- Ziel als Karten (wie Onboarding): Ausgewogen, Proteinreich, Kalorienarm, Eigenes. Wahl setzt Vorschlag für kcal/Protein.
+- Tagesziel: Ringe-Vorschau (kcal, Protein) + „Portion ×1,25“ (kcal / 2000, auf 0,25), Regler kcal (1000–5000) und Protein (0–400 g) mit Zahl, „Vorschlag übernehmen“.
+- Allergien (`ChipFlow`) und „Mag ich nicht“ (Textfeld, kommagetrennt).
+- **Isst mit:** Matrix Mahlzeiten × Mo–So als runde Toggles. **Lunchbox-Tage:** Mo–So runde Toggles.
+- Fester `PrimaryButton` „Speichern“ (PATCH, Toast „Profil gespeichert“). Zustände: Laden → Skeleton, Fehler → `ErrorState`.
+- Dazu: S3 zeigt „Für: 🧑‍🍳 Jona ▾“ (alle Profile) mit „Deine Portion: 520 g · 2,10 €“ und je Zutat die Menge der Person; Portionen-Stepper skaliert weiter das ganze Rezept. S2-Kopf zeigt die Avatare der Esser des Tages.
+
+### S16 Vorrat (Tab „Einkauf“, Pille „Liste | Vorrat“, Feature 60)
+- `DisplayHeader` „Vorrat / N Sachen zu Hause“ + runder „+“-Button.
+- `SearchField`, `CategoryCircles` (Kategorie aus dem Namen, eigene Gruppe „Basics“ 🧂).
+- Zeilen (weiße Kacheln): Emoji auf Kategorie-Tönung, Name, Menge, Haltbarkeits-Chip („läuft in 2 Tagen ab“ orange, „abgelaufen“ rot, sonst grau), rechts Stepper (g/ml 10er bzw. ab 100 50er, Stück 1er; 0 → Eintrag weg). Basics statt Stepper Schalter vorhanden/leer; leer → kommt auf die Liste, Toast „Öl steht auf der Liste“.
+- Wischen nach links oder lange drücken → Löschen.
+- „+“-Sheet: Name, Menge (optional), Einheit (g/ml/Stück/ohne), Haltbarkeit optional, Schalter „Basic“.
+- Leer: `EmptyState` „📸 Kühlschrank fotografieren“, Knopf deaktiviert „kommt bald“ (Feature 69). Laden → Skeleton, Fehler → `ErrorState`.
+- Abhaken in S5b: haltbare Artikel → Toast „„Reis“ abgehakt“ mit Aktion „In den Vorrat“. „Gekocht ★“ (S8): nach dem Speichern wird der Vorrat abgezogen, Liste „Vom Vorrat abgezogen“ mit korrigierbaren Mengen, Toast „Vorrat aktualisiert“.

@@ -4,6 +4,17 @@
 <dict>
 	<key>CFBundleDisplayName</key>
 	<string>Essenapp</string>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>de.jsenf.essenapp</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>essenapp</string>
+			</array>
+		</dict>
+	</array>
 	<key>UIUserInterfaceStyle</key>
 	<string>Light</string>
 	<key>NSLocalNetworkUsageDescription</key>

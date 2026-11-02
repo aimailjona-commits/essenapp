@@ -27,6 +27,15 @@ struct RecipesTab: View {
                         .buttonStyle(PressableStyle())
                         .accessibilityLabel("Neuen Plan erstellen")
                     }
+                    let eaters = store.profiles.filter { p in p.eatsOn(day: day, mealTypes: store.household?.mealTypes ?? Labels.mealTypes.map(\.0)) }
+                    if !eaters.isEmpty {
+                        HStack(spacing: 8) {
+                            HStack(spacing: -8) { ForEach(eaters) { p in Avatar(profile: p) } }
+                            Text("\(Labels.dayNames[day]) essen mit: \(eaters.map(\.name).joined(separator: ", "))")
+                                .font(Theme.F.caption).foregroundStyle(Theme.C.text2).lineLimit(1)
+                        }
+                        .animation(Theme.spring, value: eaters)
+                    }
                     HStack(spacing: 10) {
                         summary("eurosign.circle.fill", Theme.C.warning, euro(plan.totalCents), "von \(euro(store.household?.budgetFoodWeekCents ?? 0))")
                         summary("arrow.down.circle.fill", Theme.C.accent, euro(plan.savedCents), "gespart")
@@ -161,13 +170,18 @@ struct RecipeDetailView: View {
     @State private var openOffer: OfferDTO?
     @State private var searchIngredient: IngredientDTO?
     @State private var servings: Int?
+    @State private var person: Int?  // Mitglied für „Deine Portion“ (48), nil = ich
     @State private var done: Set<Int> = []
     @State private var spin = false
 
     private var recipe: RecipeDTO { meal.recipe }
 
     var body: some View {
-        let factor = Double(servings ?? recipe.servings) / Double(max(recipe.servings, 1))
+        let base = meal.basePortions  // Rezeptmengen gelten für so viele Portionen
+        let factor = servings.map { Double($0) / base } ?? 1  // Portionen-Stepper skaliert das ganze Rezept
+        let who = store.profiles.first { $0.memberId == (person ?? store.profile?.memberId) } ?? store.profile
+        // Anteil der gewählten Person; alte Pläne ohne Portionen: 1 Portion je Person
+        let mine: Double? = meal.portions.isEmpty ? 1 : meal.portions.first { $0.memberId == who?.memberId }?.factor
         ZStack(alignment: .bottom) {
             Theme.C.bg.ignoresSafeArea()
             ScrollView {
@@ -191,7 +205,7 @@ struct RecipeDetailView: View {
                     HStack(spacing: 0) {
                         infoCell("clock", "\(recipe.prepMinutes) min")
                         Divider().frame(height: 22)
-                        infoCell("eurosign.circle", "\(euro(meal.costCents / max(recipe.servings, 1))) p. P.")
+                        infoCell("eurosign.circle", "\(euro(Int(Double(meal.costCents) * (who == nil ? 1 : mine ?? 1) / base))) \(who == nil || mine == nil ? "p. P." : "Portion")")
                         Divider().frame(height: 22)
                         infoCell("tag", "\(recipe.ingredients.filter { $0.offerId != nil }.count) im Angebot")
                     }
@@ -201,13 +215,15 @@ struct RecipeDetailView: View {
                         Text(recipe.description).font(Theme.F.body).foregroundStyle(Theme.C.text2)
                     }
                     // Nährwerte: werden berechnet, sobald Zutaten-Stammdaten da sind (E10)
+                    if let who { portionCard(who, mine: mine, base: base) }
 
                     VStack(alignment: .leading, spacing: 0) {
                         HStack {
                             Text("Zutaten").font(Theme.F.headline)
                             Spacer()
-                            Stepper(value: Binding(get: { servings ?? recipe.servings }, set: { servings = $0 }), in: 1...12) {
-                                Text("\(servings ?? recipe.servings) Portionen").font(Theme.F.callout).contentTransition(.numericText())
+                            Stepper(value: Binding(get: { servings ?? max(Int(base.rounded()), 1) }, set: { servings = $0 }), in: 1...12) {
+                                Text("\(servings.map { Double($0) } ?? base, format: .number.precision(.fractionLength(0...2))) Portionen")
+                                    .font(Theme.F.callout).contentTransition(.numericText())
                             }
                             .fixedSize()
                         }
@@ -230,8 +246,16 @@ struct RecipeDetailView: View {
                                     }
                                 }
                                 Spacer()
-                                Text("\((ing.amount * factor).formatted(.number.precision(.fractionLength(0...1)))) \(ing.unit == "stk" ? "Stück" : ing.unit)")
-                                    .monospacedDigit().foregroundStyle(Theme.C.text2).contentTransition(.numericText())
+                                VStack(alignment: .trailing, spacing: 2) {
+                                    Text(qty(ing.amount * factor, ing.unit))
+                                        .monospacedDigit().foregroundStyle(Theme.C.text2).contentTransition(.numericText())
+                                    if let who, let mine {
+                                        Text("\(who.emoji) \(qty(ing.amount * mine / base, ing.unit))")
+                                            .font(Theme.F.micro).monospacedDigit().foregroundStyle(Theme.C.accentDeep)
+                                            .contentTransition(.numericText())
+                                            .accessibilityLabel("Portion \(who.name): \(qty(ing.amount * mine / base, ing.unit))")
+                                    }
+                                }
                                 Image(systemName: "chevron.right").font(.system(size: 11, weight: .bold)).foregroundStyle(Theme.C.text3)
                             }
                             .padding(.vertical, 8)
@@ -242,6 +266,7 @@ struct RecipeDetailView: View {
                     }
                     .padding(16).card()
                     .animation(Theme.spring, value: servings)
+                    .animation(Theme.spring, value: person)
 
                     VStack(alignment: .leading, spacing: 12) {
                         Text("Zubereitung").font(Theme.F.headline)
@@ -284,7 +309,7 @@ struct RecipeDetailView: View {
             .padding(.horizontal, Theme.pagePadding).padding(.bottom, Theme.ctaAboveTabBar)
         }
         .toolbar(.hidden, for: .navigationBar)
-        .sheet(isPresented: $showRating) { RatingSheet(meal: meal).presentationDetents([.medium]).presentationCornerRadius(Theme.R.sheet) }
+        .sheet(isPresented: $showRating) { RatingSheet(meal: meal).presentationDetents([.medium, .large]).presentationCornerRadius(Theme.R.sheet) }
         .navigationDestination(item: $openOffer) { OfferDetailView(offer: $0) }
         .sheet(item: $searchIngredient) { IngredientOffersSheet(ingredient: $0).presentationDetents([.medium, .large]).presentationCornerRadius(Theme.R.sheet) }
     }
@@ -294,6 +319,47 @@ extension RecipeDetailView {
     fileprivate func infoCell(_ symbol: String, _ text: String) -> some View {
         Label(text, systemImage: symbol).font(.system(.footnote, weight: .semibold)).foregroundStyle(Theme.C.text1)
             .frame(maxWidth: .infinity)
+    }
+
+    fileprivate func qty(_ amount: Double, _ unit: String) -> String {
+        "\(amount.formatted(.number.precision(.fractionLength(0...1)))) \(unit == "stk" ? "Stück" : unit)"
+    }
+
+    /// „Für: 🧑‍🍳 Jona ▾“ + „Deine Portion: 520 g · 2,10 €“ (48).
+    fileprivate func portionCard(_ who: ProfileDTO, mine: Double?, base: Double) -> some View {
+        let isMe = who.memberId == store.profile?.memberId
+        let grams = recipe.ingredients.filter { ["g", "ml"].contains($0.unit) }.map(\.amount).reduce(0, +) * (mine ?? 0) / base
+        let parts = [grams > 0 ? "\(Int(grams.rounded())) g" : nil, mine.map { euro(Int(Double(meal.costCents) * $0 / base)) },
+                     mine.map { "×\($0.formatted()) von \(base.formatted()) Portionen" }].compactMap { $0 }
+        return VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 8) {
+                Text("Für:").font(Theme.F.callout).foregroundStyle(Theme.C.text2)
+                Menu {
+                    ForEach(store.profiles) { p in
+                        Button("\(p.emoji) \(p.name)") { withAnimation(Theme.spring) { person = p.memberId } }
+                    }
+                } label: {
+                    HStack(spacing: 6) {
+                        Text("\(who.emoji) \(who.name)")
+                        Image(systemName: "chevron.down").font(.system(size: 11, weight: .bold))
+                    }
+                    .font(Theme.F.callout).foregroundStyle(Theme.C.text1)
+                    .padding(.horizontal, 14).frame(minHeight: 44)
+                    .background(Theme.C.surface, in: Capsule())
+                }
+                .accessibilityLabel("Portion für \(who.name), ändern")
+                Spacer()
+            }
+            if mine == nil {
+                Text("\(who.name) isst bei diesem Gericht nicht mit.").font(Theme.F.caption).foregroundStyle(Theme.C.text2)
+            } else {
+                (Text(isMe ? "Deine Portion: " : "Portion \(who.name): ").foregroundStyle(Theme.C.text2)
+                    + Text(parts.joined(separator: " · ")).foregroundStyle(Theme.C.text1))
+                    .font(Theme.F.callout)
+            }
+        }
+        .padding(14)
+        .card(radius: Theme.R.tile)
     }
 }
 
@@ -318,8 +384,42 @@ struct RatingSheet: View {
     @State private var rating = 0
     @State private var again = "bald"
     @State private var note = ""
+    @State private var consumed: [PantryDTO]?  // nach „Speichern“: vom Vorrat abgezogene Einträge (editierbar)
 
     var body: some View {
+        if let consumed { consumedList(consumed) } else { ratingForm }
+    }
+
+    /// Rückfrage-Liste: was abgezogen wurde, Mengen hier korrigierbar.
+    private func consumedList(_ items: [PantryDTO]) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Vom Vorrat abgezogen").font(Theme.F.title)
+            Text("Stimmt etwas nicht? Menge hier korrigieren.").font(Theme.F.caption).foregroundStyle(Theme.C.text2)
+            ScrollView {
+                VStack(spacing: 8) {
+                    ForEach(items) { c in
+                        if let p = store.pantry.first(where: { p in p.id == c.id }) {
+                            PantryRow(item: p)
+                        } else {
+                            HStack {
+                                Text(c.name).font(.system(.body, weight: .semibold))
+                                Spacer()
+                                Text("aufgebraucht").font(Theme.F.micro).foregroundStyle(Theme.C.text2)
+                            }
+                            .padding(14).card(radius: Theme.R.tile)
+                        }
+                    }
+                }
+            }
+            Button("Fertig") { dismiss() }.buttonStyle(PrimaryButtonStyle())
+        }
+        .padding(Theme.pagePadding)
+        .frame(maxHeight: .infinity, alignment: .top)
+        .background(Theme.C.bg)
+        .transition(.opacity)
+    }
+
+    private var ratingForm: some View {
         VStack(alignment: .leading, spacing: 16) {
             HStack(spacing: 14) {
                 Plate(url: URL(string: meal.recipe.imageUrl), size: 64, seed: meal.recipe.title)
@@ -335,7 +435,12 @@ struct RatingSheet: View {
                 .background(Theme.C.card, in: RoundedRectangle(cornerRadius: Theme.R.tile))
             Button("Speichern") {
                 store.flash(rating >= 4 ? "Gespeichert – kommt öfter 🎉" : "Danke für deine Bewertung")
-                dismiss()
+                Task {
+                    let changed = await store.consume(meal)
+                    if changed.isEmpty { dismiss(); return }
+                    store.flash("Vorrat aktualisiert")
+                    withAnimation(Theme.spring) { consumed = changed }
+                }
             }
             .buttonStyle(PrimaryButtonStyle()).disabled(rating == 0).opacity(rating == 0 ? 0.5 : 1)
         }

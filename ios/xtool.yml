@@ -1,4 +1,8 @@
 version: 1
 bundleID: de.jsenf.essenapp
+product: Essenapp
 infoPath: Info.plist
 iconPath: Icon.png
+extensions:
+  - product: EssenappShare
+    infoPath: EssenappShare-Info.plist

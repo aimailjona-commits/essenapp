@@ -20,7 +20,12 @@ struct ContentView: View {
             .animation(.easeInOut(duration: 0.35), value: store.isOnboarded)
 
             if let toast = store.toast {
-                Toast(text: toast).padding(.top, 8).zIndex(1)
+                Toast(text: toast, actionTitle: store.toastAction?.title) {
+                    let run = store.toastAction?.run
+                    withAnimation(Theme.spring) { store.toast = nil; store.toastAction = nil }
+                    run?()
+                }
+                .padding(.horizontal, 16).padding(.top, 8).zIndex(1)
             }
         }
         .environment(store)
@@ -33,6 +38,8 @@ struct ContentView: View {
 
 struct MainView: View {
     @Environment(AppStore.self) private var store
+    @EnvironmentObject private var delegate: AppDelegate
+    @State private var deepOffer: OfferDTO?
     @State private var tab = MainView.demoTab
     @State private var resetToken = 0  // erneutes Tippen auf den aktiven Tab → zurück zum Anfang
     @State private var quickOpen = Demo.screen == "quick"
@@ -42,7 +49,7 @@ struct MainView: View {
         switch Demo.screen {
         case "offers", "offer", "stores": .angebote
         case "plan", "recipe": .rezepte
-        case "shopping", "list": .einkauf
+        case "shopping", "list", "pantry": .einkauf
         default: .start
         }
     }
@@ -68,12 +75,15 @@ struct MainView: View {
                     case ("stores", _): StoreMapView()
                     case ("list", _): ShoppingListView(chain: "rewe")
                     case ("settings", _): SettingsView()
+                    case ("profile", _): ProfileView()
+                    case ("notifications", _): NotificationsView()
                     default: tabContent.id(tab).transition(.opacity)
                     }
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .background(Theme.C.bg)
                 .toolbar(.hidden, for: .navigationBar)
+                .navigationDestination(item: $deepOffer) { OfferDetailView(offer: $0) }
             }
             .id("\(tab)-\(resetToken)")  // Tab-Wechsel schließt offene Detailseiten
             .animation(.easeInOut(duration: 0.2), value: tab)
@@ -100,6 +110,34 @@ struct MainView: View {
         }
         .sheet(isPresented: $showGenerator) { PlanGeneratorSheet().presentationDetents([.large]) }
         .task { await store.loadAll() }
+        .modifier(PushAsk(active: store.askPush))
+        .onOpenURL { url in Task { await open(url) } }
+        .onReceive(delegate.$pendingURL) { url in  // Mitteilung angetippt
+            guard let url else { return }
+            delegate.pendingURL = nil
+            Task { await open(url) }
+        }
+    }
+
+    /// Router für essenapp://start, essenapp://generator, essenapp://offer/<id>.
+    private func open(_ url: URL) async {
+        guard url.scheme == "essenapp" else { return }
+        withAnimation(Theme.spring) { quickOpen = false }
+        switch url.host() {
+        case "start":
+            withAnimation(Theme.spring) { tab = .start }
+        case "generator":
+            showGenerator = true
+        case "offer":
+            guard let id = Int(url.lastPathComponent) else { return }
+            if !store.offers.contains(where: { o in o.id == id }) { await store.loadAll() }
+            guard let offer = store.offers.first(where: { o in o.id == id }) else { store.flash("Angebot nicht mehr verfügbar"); return }
+            withAnimation(Theme.spring) { tab = .angebote }
+            try? await Task.sleep(for: .milliseconds(350))  // Tab-Wechsel baut den NavigationStack neu
+            deepOffer = offer
+        default:
+            break
+        }
     }
 }
 

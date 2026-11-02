@@ -65,12 +65,19 @@ extension AppStore {
         await loadLists()
     }
 
-    /// Abhaken: sofort lokal, dann Server (gemeinsam mit allen Mitgliedern).
+    /// Abhaken: sofort lokal, dann Server (gemeinsam mit allen Mitgliedern). Haltbares → Toast „In den Vorrat“ (60).
     func toggle(_ item: ListItemDTO) async {
         if let i = householdList?.items.firstIndex(where: { $0.id == item.id }) { householdList?.items[i].checked.toggle() }
-        guard !demo, item.id > 0 else { return }
-        struct Body: Encodable { var checked: Bool }
-        let _: ListItemDTO? = try? await api.request("PATCH", "/items/\(item.id)", body: Body(checked: !item.checked))
+        var suggest = demo && !item.checked  // Demo: immer anbieten
+        if !demo, item.id > 0 {
+            struct Body: Encodable { var checked: Bool }
+            struct Out: Decodable { var pantrySuggest: Bool }
+            let out: Out? = try? await api.request("PATCH", "/items/\(item.id)", body: Body(checked: !item.checked))
+            suggest = out?.pantrySuggest == true
+        }
+        if suggest {
+            flash("„\(item.name)“ abgehakt", action: ("In den Vorrat", { Task { await self.toPantry(item) } }))
+        }
     }
 
     func deleteItem(_ item: ListItemDTO) async {

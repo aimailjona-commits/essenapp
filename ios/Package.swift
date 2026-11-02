@@ -15,11 +15,14 @@ let package = Package(
             name: "Essenapp",
             targets: ["Essenapp"]
         ),
+        .library(name: "EssenappShare", targets: ["EssenappShare"]),
     ],
     targets: [
         .target(
             name: "Essenapp",
             resources: [.process("Resources")]
         ),
+        // Teilen-Erweiterung (Instagram-Import, Feature 5). Ohne App Group – Login über Kopplungscode (A1).
+        .target(name: "EssenappShare"),
     ]
 )

@@ -1,7 +1,8 @@
 import Foundation
 
 /// Demo-Modus für Screenshots im Simulator (CI): App starten mit `-demoScreen <name>`.
-/// Namen: onboarding, start, quick, generator, generating, offers, offer, plan, recipe, shopping, list, settings, stores, empty
+/// Namen: onboarding, start, quick, generator, generating, offers, offer, plan, recipe, shopping, list, pantry, settings, profile,
+/// notifications, stores, empty
 enum Demo {
     static let screen: String? = {
         let args = ProcessInfo.processInfo.arguments
@@ -43,13 +44,46 @@ enum Demo {
     }
 
     static func meal(_ day: Int, _ type: String, _ title: String, _ cost: Int, _ minutes: Int, _ ings: [IngredientDTO]) -> MealDTO {
-        MealDTO(id: day * 10 + (type == "mittag" ? 1 : 2), day: day, mealType: type, costCents: cost, locked: day == 1 && type == "mittag", recipe: RecipeDTO(
+        // Jona (Faktor 1,25) ist mittwochs mittags nicht zu Hause, Malina (1,0) isst immer mit
+        let portions = [PortionDTO(memberId: 1, factor: 1.25), PortionDTO(memberId: 2, factor: 1)].filter { $0.memberId == 2 || !(day == 2 && type == "mittag") }
+        return MealDTO(id: day * 10 + (type == "mittag" ? 1 : 2), day: day, mealType: type, costCents: cost, locked: day == 1 && type == "mittag", recipe: RecipeDTO(
             id: day * 10 + (type == "mittag" ? 1 : 2), title: title, description: "Schnell, würzig und mit Angeboten der Woche.",
             cuisine: "Indisch", mealType: type, servings: 2, prepMinutes: minutes, ingredients: ings,
             steps: ["Zwiebel würfeln und anbraten.", "Hähnchen dazugeben und rundum anbraten.",
                     "Tomaten und Gewürze zugeben, 15 Minuten köcheln.", "Mit Reis servieren."],
-            imageUrl: ""))
+            imageUrl: ""), portions: portions, portionsTotal: portions.map(\.factor).reduce(0, +))
     }
+
+    // MARK: Profile (48), Vorrat (60), Mitteilungen
+
+    static let profiles = [
+        ProfileDTO(memberId: 1, name: "Jona", emoji: "🧑‍🍳", goal: "proteinreich", kcal: 2500, proteinG: 140, allergies: [],
+                   dislikes: ["Koriander"], lunchboxDays: [0, 2],
+                   eats: ["fruehstueck": week, "mittag": [true, true, false, true, true, true, true], "abend": week, "dessert": week]),
+        ProfileDTO(memberId: 2, name: "Malina", emoji: "🦊", goal: "ausgewogen", kcal: 1900, proteinG: 80, allergies: ["Laktose"],
+                   dislikes: nil, lunchboxDays: [], eats: ["fruehstueck": week, "mittag": week, "abend": week, "dessert": week]),
+    ]
+    static let week = [Bool](repeating: true, count: 7)
+
+    static let pantry: [PantryDTO] = [
+        stock(1, "Feta", 200, "g", days: 2),
+        stock(2, "Eier", 6, "stk", days: 12),
+        stock(3, "Basmatireis", 500, "g"),
+        stock(4, "Passierte Tomaten", 500, "g"),
+        stock(5, "Spaghetti", 500, "g"),
+        stock(6, "Öl", nil, "", basic: true),
+        stock(7, "Pfeffer", 0, "", basic: true),
+        stock(8, "Salz", nil, "", basic: true),
+    ]
+
+    static func stock(_ id: Int, _ name: String, _ amount: Double?, _ unit: String, days: Double? = nil, basic: Bool = false) -> PantryDTO {
+        PantryDTO(id: id, name: name, ingredientKey: name.lowercased(), amount: amount, unit: unit,
+                  bestBefore: days.map { Date.now.addingTimeInterval($0 * 86400).formatted(PantryDTO.day) }, isBasic: basic,
+                  source: "manual", updatedAt: "")
+    }
+
+    static let pushSettings = PushSettingsDTO(pushEnabled: true, planPromptEnabled: true, planPromptWeekday: 6, planPromptTime: "18:00",
+                                              quietHours: .init(start: "22:00", end: "07:00"))
 
     static func ing(_ name: String, _ amount: Double, _ unit: String = "g", offer: Int? = nil, pantry: Bool = false) -> IngredientDTO {
         IngredientDTO(name: name, amount: amount, unit: unit, offerId: offer, inPantry: pantry)

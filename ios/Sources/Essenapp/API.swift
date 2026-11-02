@@ -110,6 +110,13 @@ final class API {
 
     func request<T: Decodable>(_ method: String, _ path: String, body: (some Encodable)? = nil as String?,
                                timeout: TimeInterval = 15) async throws -> T {
+        try decoder.decode(T.self, from: try await send(method, path, body: body, timeout: timeout))
+    }
+
+    /// Wie `request`, aber ohne Dekodieren (z. B. 204-Antworten).
+    @discardableResult
+    func send(_ method: String, _ path: String, body: (some Encodable)? = nil as String?,
+              timeout: TimeInterval = 15) async throws -> Data {
         guard let url = URL(string: baseURL.trimmingCharacters(in: .whitespaces) + path), !baseURL.isEmpty else { throw APIError.noServer }
         var req = URLRequest(url: url, timeoutInterval: timeout)
         req.httpMethod = method
@@ -121,7 +128,7 @@ final class API {
         let (data, response) = try await URLSession.shared.data(for: req)
         let code = (response as? HTTPURLResponse)?.statusCode ?? 0
         guard (200..<300).contains(code) else { throw APIError.http(code) }
-        return try decoder.decode(T.self, from: data)
+        return data
     }
 }
 
@@ -177,6 +184,15 @@ struct MealDTO: Codable, Hashable {
     var costCents: Int
     var locked: Bool
     var recipe: RecipeDTO
+    var portions: [PortionDTO] = []  // Esser dieses Gerichts (48)
+    var portionsTotal: Double = 0  // Rezeptmengen gelten für so viele Portionen; 0 = alter Plan → recipe.servings
+
+    var basePortions: Double { portionsTotal > 0 ? portionsTotal : Double(max(recipe.servings, 1)) }
+}
+
+struct PortionDTO: Codable, Hashable {
+    var memberId: Int
+    var factor: Double
 }
 
 struct PlanDTO: Codable {
@@ -253,15 +269,21 @@ final class AppStore {
     var error: String?
     var generating = false
     var toast: String?
+    var toastAction: (title: String, run: () -> Void)?
+    var profile: ProfileDTO?  // angemeldetes Mitglied (48)
+    var profiles: [ProfileDTO] = []
+    var pantry: [PantryDTO] = []
     var lists: [ListSummaryDTO] = []
     var householdList: ListDTO?
     var watchlist: Set<Int> = Persist.load("watchlist") ?? [] { didSet { Persist.save(watchlist, "watchlist") } }
 
-    func flash(_ text: String) {
-        withAnimation(Theme.spring) { toast = text }
+    /// Toast oben, optional mit Aktions-Knopf (bleibt dann länger stehen).
+    func flash(_ text: String, action: (title: String, run: () -> Void)? = nil) {
+        withAnimation(Theme.spring) { toast = text; toastAction = action }
+        let seconds = action == nil ? 1.8 : 4.5
         Task {
-            try? await Task.sleep(for: .seconds(1.8))
-            if toast == text { withAnimation(Theme.spring) { toast = nil } }
+            try? await Task.sleep(for: .seconds(seconds))
+            if toast == text { withAnimation(Theme.spring) { toast = nil; toastAction = nil } }
         }
     }
 
@@ -292,14 +314,19 @@ final class AppStore {
         if demo, Demo.screen != "empty" {
             household = Demo.household; offers = Demo.offers; plan = Demo.plan
             householdList = Demo.householdList; lists = Demo.lists
+            profiles = Demo.profiles; profile = Demo.profiles.first; pantry = Demo.pantry
         }
     }
 
     /// Onboarding ist erst fertig, wenn alle Schritte durch sind (Haushalt entsteht schon in Schritt 1).
     // Bestehende Installationen (Token schon da, Flag noch nicht) gelten als fertig eingerichtet.
     var onboarded: Bool = UserDefaults.standard.object(forKey: "onboarded") as? Bool ?? (Keychain.read() != nil) {
-        didSet { UserDefaults.standard.set(onboarded, forKey: "onboarded") }
+        didSet {
+            UserDefaults.standard.set(onboarded, forKey: "onboarded")
+            if onboarded { askPush = true }  // direkt nach dem Onboarding einmal nach Mitteilungen fragen
+        }
     }
+    var askPush = false
 
     var isOnboarded: Bool { demo ? Demo.screen != "onboarding" : api.token != nil && onboarded }
 
@@ -321,6 +348,8 @@ final class AppStore {
             offers = try await api.request("GET", "/offers")
             plan = try? await api.request("GET", "/plans/current")
             await loadLists()
+            await loadProfiles()
+            try? await loadPantry()
             error = nil
         } catch {
             self.error = error.localizedDescription
