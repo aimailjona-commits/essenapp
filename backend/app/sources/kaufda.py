@@ -160,8 +160,9 @@ def parse_search(data: dict) -> list[dict]:
     return out
 
 
-def fetch_offers(lat: float, lng: float, chains: set[str]) -> list[dict]:
-    """Live-Abruf bei kaufDA. Höchstens 1 Anfrage/s; 403/429 und andere Fehler brechen mit Exception ab."""
+def fetch_offers(lat: float, lng: float, chains: set[str], nearest_only: bool = False) -> list[dict]:
+    """Live-Abruf bei kaufDA. Höchstens 1 Anfrage/s; 403/429 und andere Fehler brechen mit Exception ab.
+    nearest_only: bei Rewe/Edeka nur die Prospekte des ersten (nächsten) Markts im Shelf laden."""
     with httpx.Client(headers=HEADERS, timeout=20, follow_redirects=True) as http:
         def get(url, **params):
             time.sleep(1)
@@ -176,8 +177,10 @@ def fetch_offers(lat: float, lng: float, chains: set[str]) -> list[dict]:
             data = get(SHELF_URL, lat=lat, lng=lng, size=50, page=page, sectorIds="")
             brochures += parse_shelf(data)
             pages, page = data.get("page", {}).get("totalPages", 0), page + 1
-        done = set()
+        done, nearest = set(), {}
         for b in brochures:
+            if nearest_only and b["chain"] in STORE_CHAINS and nearest.setdefault(b["chain"], b["store_id"]) != b["store_id"]:
+                continue
             if b["chain"] in chains and b["chain"] not in SEARCH_QUERIES and b["content_id"] not in done:
                 done.add(b["content_id"])
                 data = get(PAGES_URL.format(b["content_id"]), partner="kaufda_web", brochureKey="", lat=lat, lng=lng)

@@ -75,3 +75,28 @@ def test_plan_endpoint(client, auth, db, monkeypatch):
     assert body["total_cents"] == 399 + 200
     assert "1 | rewe | Hähnchen | 399 ct" in seen["prompt"]
     assert client.get("/plans/current", headers=auth).json()["id"] == body["id"]
+
+
+def test_reroll_and_lock_entry(client, auth, db, monkeypatch):
+    test_plan_endpoint(client, auth, db, monkeypatch)
+    plan = client.get("/plans/current", headers=auth).json()
+    curry, dal = plan["entries"]
+    seen = {}
+
+    def fake_ask(prompt):
+        seen["prompt"] = prompt
+        return PlanDraft(meals=[meal(0, "Chili", [ing("Bohnen", 400, pack=400, price=99)])])
+
+    monkeypatch.setattr(planner, "ask_claude", fake_ask)
+    r = client.post(f"/plans/current/entries/{curry['id']}/reroll", headers=auth)
+    assert r.status_code == 200, r.text
+    body = r.json()
+    assert [e["recipe"]["title"] for e in body["entries"]] == ["Chili", "Dal"]
+    assert body["total_cents"] == 99 + 200 and body["entries"][0]["cost_cents"] == 99
+    assert "anders als: Curry und andere Gerichte der Woche (Dal)" in seen["prompt"]
+    assert "day=0 (Montag), meal_type=mittag" in seen["prompt"] and "day=1" not in seen["prompt"]
+
+    r = client.patch(f"/plans/current/entries/{dal['id']}", headers=auth, json={"locked": True})
+    assert r.status_code == 200 and r.json()["entries"][1]["locked"] is True
+    assert client.post(f"/plans/current/entries/{dal['id']}/reroll", headers=auth).status_code == 409
+    assert client.post("/plans/current/entries/9999/reroll", headers=auth).status_code == 404

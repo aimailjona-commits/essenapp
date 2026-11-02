@@ -1,17 +1,19 @@
 import SwiftUI
 
-/// Eine Zeile der Einkaufsliste, aus dem Plan zusammengefasst.
+/// Eine Zeile der Einkaufsliste: aus dem Plan zusammengefasst oder selbst hinzugefügt.
 struct ShoppingItem: Identifiable, Hashable {
     let id: String
     let name: String
-    let amount: Double
+    let amount: Double?
     let unit: String
     let chain: String  // "" = egal wo
     let offer: OfferDTO?
+    var extraID: UUID?
+    var priceCents: Int? { offer?.priceCents }
 }
 
 extension AppStore {
-    /// shortcut: Liste wird aus dem Plan berechnet und lokal abgehakt; gemeinsame Liste über das Backend in Phase 4.
+    /// shortcut: Liste wird aus dem Plan berechnet + lokale Extras, lokal abgehakt; gemeinsame Liste übers Backend in Phase 4.
     var shoppingItems: [ShoppingItem] {
         var sums: [String: (IngredientDTO, Double)] = [:]
         for meal in plan?.entries ?? [] {
@@ -20,55 +22,99 @@ extension AppStore {
                 sums[key, default: (ing, 0)].1 += ing.amount
             }
         }
-        return sums.map { key, value in
+        let fromPlan = sums.map { key, value in
             let offer = offers.first { $0.id == value.0.offerId }
             return ShoppingItem(id: key, name: offer?.title ?? value.0.name, amount: value.1, unit: value.0.unit,
                                 chain: offer?.chain ?? "", offer: offer)
         }
-        .sorted { $0.name < $1.name }
+        let planned = Set(fromPlan.compactMap { $0.offer?.id })
+        let extra = extras.filter { $0.offerId.map { !planned.contains($0) } ?? true }.map { e in
+            ShoppingItem(id: "x\(e.id)", name: e.name, amount: nil, unit: "", chain: e.chain,
+                         offer: offers.first { $0.id == e.offerId }, extraID: e.id)
+        }
+        return (fromPlan + extra).sorted { $0.name < $1.name }
     }
 }
 
 /// S5 Einkauf: eine Karte pro Laden.
 struct ShoppingView: View {
     @Environment(AppStore.self) private var store
+    @State private var newItem = ""
 
     var body: some View {
-        let groups = Dictionary(grouping: store.shoppingItems, by: \.chain).sorted { ($0.key.isEmpty ? "~" : $0.key) < ($1.key.isEmpty ? "~" : $1.key) }
+        let items = store.shoppingItems
+        let groups = Dictionary(grouping: items, by: \.chain).sorted { ($0.key.isEmpty ? "~" : $0.key) < ($1.key.isEmpty ? "~" : $1.key) }
         ScrollView {
             VStack(alignment: .leading, spacing: 14) {
-                DisplayHeader(line1: "Einkauf", line2: "\(store.shoppingItems.count) Artikel in \(groups.count) Listen")
+                DisplayHeader(line1: "Einkauf", line2: "\(items.count) Artikel · \(groups.count) Listen")
+                HStack(spacing: 10) {
+                    TextField("Artikel hinzufügen …", text: $newItem)
+                        .padding(.horizontal, 16).frame(height: 46)
+                        .background(Theme.C.card, in: Capsule()).overlay(Capsule().strokeBorder(Theme.C.line, lineWidth: 0.5))
+                        .onSubmit(add)
+                    RoundIconButton(systemName: "plus", dark: true, label: "Hinzufügen", action: add)
+                }
                 if let plan = store.plan, plan.savedCents > 0 {
-                    HStack {
+                    HStack(spacing: 14) {
+                        Text("💰").font(.system(size: 30)).frame(width: 56, height: 56).background(Theme.C.accentSoft, in: Circle())
                         VStack(alignment: .leading, spacing: 2) {
                             Text("Diese Woche gespart").font(Theme.F.caption).foregroundStyle(Theme.C.text2)
-                            Text(euro(plan.savedCents)).font(.system(size: 30, weight: .heavy)).foregroundStyle(Theme.C.success).monospacedDigit()
-                            Text("gegenüber Normalpreis").font(Theme.F.micro).foregroundStyle(Theme.C.text2)
+                            Text(euro(plan.savedCents)).font(.system(size: 28, weight: .bold, design: .rounded))
+                                .foregroundStyle(Theme.C.success).contentTransition(.numericText())
                         }
                         Spacer()
                     }
-                    .padding(18).card()
+                    .padding(16).card().appear()
                 }
                 if groups.isEmpty {
-                    EmptyState(symbol: "bag", title: "Liste ist leer", text: "Sobald ein Wochenplan da ist, steht hier alles, was du kaufen musst.")
+                    EmptyState(emoji: "🛒", title: "Liste ist leer", text: "Sobald ein Wochenplan da ist, steht hier alles, was du kaufen musst.")
                 }
-                ForEach(Array(groups.enumerated()), id: \.offset) { i, group in
-                    NavigationLink { ShoppingListView(chain: group.key) } label: {
-                        VStack(alignment: .leading, spacing: 6) {
-                            Text(group.key.isEmpty ? "Überall erhältlich" : Labels.chain(group.key)).font(.system(.title2, weight: .heavy))
-                            Text("\(group.value.count) Artikel").font(Theme.F.micro).foregroundStyle(.white)
-                                .padding(.horizontal, 8).frame(height: 22).background(Theme.C.action, in: Capsule())
-                        }
-                        .foregroundStyle(Theme.C.text1)
-                        .frame(maxWidth: .infinity, minHeight: 110, alignment: .topLeading)
-                        .padding(18)
-                        .background(Theme.C.listTints[i % Theme.C.listTints.count], in: RoundedRectangle(cornerRadius: Theme.R.card, style: .continuous))
-                    }
+                ForEach(Array(groups.enumerated()), id: \.element.key) { i, group in
+                    NavigationLink { ShoppingListView(chain: group.key) } label: { ListCard(chain: group.key, items: group.value) }
+                        .buttonStyle(PressableStyle())
+                        .appear(delay: Double(i) * 0.05)
                 }
             }
             .padding(.horizontal, Theme.pagePadding)
             .padding(.bottom, 120)
         }
+        .scrollDismissesKeyboard(.immediately)
+    }
+
+    private func add() {
+        let name = newItem.trimmingCharacters(in: .whitespaces)
+        guard !name.isEmpty else { return }
+        withAnimation(Theme.spring) { store.extras.append(ExtraItem(name: name)) }
+        newItem = ""
+        store.flash("„\(name)“ hinzugefügt")
+    }
+}
+
+/// Große Listen-Karte (Referenz 07) mit Laden-Farbe und Emoji-Collage.
+struct ListCard: View {
+    @Environment(AppStore.self) private var store
+    let chain: String
+    let items: [ShoppingItem]
+
+    var body: some View {
+        let color = chain.isEmpty ? Theme.C.accent : Theme.storeColor(chain)
+        let emojis = Array(Set(items.compactMap { $0.offer.map { Theme.hue(category: $0.category).emoji } })).prefix(3)
+        let open = items.filter { !ShoppingListView.isChecked($0, plan: store.plan?.id) }.count
+        HStack(alignment: .top) {
+            VStack(alignment: .leading, spacing: 8) {
+                Text(chain.isEmpty ? "Überall erhältlich" : Labels.chain(chain)).font(.system(.title2, design: .rounded, weight: .bold))
+                Text(open == 0 ? "Alles erledigt ✓" : "\(open) offen").font(Theme.F.micro).foregroundStyle(.white)
+                    .padding(.horizontal, 9).frame(height: 22).background(color, in: Capsule())
+                Spacer(minLength: 0)
+                ProgressView(value: Double(items.count - open), total: Double(max(items.count, 1))).tint(color).frame(width: 120)
+            }
+            Spacer()
+            Text(emojis.isEmpty ? "🛍️" : emojis.joined()).font(.system(size: 34)).rotationEffect(.degrees(-8))
+        }
+        .foregroundStyle(Theme.C.text1)
+        .padding(18)
+        .frame(maxWidth: .infinity, minHeight: 120, alignment: .topLeading)
+        .background(color.opacity(0.13), in: RoundedRectangle(cornerRadius: Theme.R.card, style: .continuous))
     }
 }
 
@@ -79,86 +125,79 @@ struct ShoppingListView: View {
     let chain: String
     @AppStorage("checkedItems") private var checkedRaw = ""
 
+    static func key(_ item: ShoppingItem, plan: Int?) -> String { "\(plan ?? 0):\(item.id)" }
+
+    static func isChecked(_ item: ShoppingItem, plan: Int?) -> Bool {
+        (UserDefaults.standard.string(forKey: "checkedItems") ?? "").split(separator: ",").contains { $0 == key(item, plan: plan) }
+    }
+
     private var checked: Set<String> { Set(checkedRaw.split(separator: ",").map(String.init)) }
 
     var body: some View {
         let items = store.shoppingItems.filter { $0.chain == chain }
-        let key = { (item: ShoppingItem) in "\(store.plan?.id ?? 0):\(item.id)" }
+        let planID = store.plan?.id
+        let sorted = items.sorted {
+            let a = checked.contains(Self.key($0, plan: planID)), b = checked.contains(Self.key($1, plan: planID))
+            return a == b ? $0.name < $1.name : !a
+        }
+        let total = items.compactMap(\.priceCents).reduce(0, +)
         ScrollView {
             VStack(alignment: .leading, spacing: 8) {
                 RoundIconButton(systemName: "chevron.left", label: "Zurück") { dismiss() }
-                DisplayHeader(line1: chain.isEmpty ? "Überall" : Labels.chain(chain), line2: "\(items.count) Artikel").padding(.bottom, 10)
-                ForEach(items.sorted { checked.contains(key($0)) == checked.contains(key($1)) ? $0.name < $1.name : !checked.contains(key($0)) }) { item in
-                    let done = checked.contains(key(item))
-                    Button {
-                        var set = checked
-                        if done { set.remove(key(item)) } else { set.insert(key(item)) }
-                        checkedRaw = set.sorted().joined(separator: ",")
-                    } label: {
-                        HStack(spacing: 12) {
-                            Image(systemName: done ? "checkmark.circle.fill" : "circle").font(.system(size: 24))
-                                .foregroundStyle(done ? Theme.C.accent : Color(hex: 0xCFCFCB))
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text(item.name).font(.system(.body, weight: .semibold)).strikethrough(done)
-                                    .foregroundStyle(done ? Theme.C.text3 : Theme.C.text1)
-                                Text("\(item.amount.formatted()) \(item.unit == "stk" ? "Stück" : item.unit)").font(Theme.F.micro).foregroundStyle(Theme.C.text2)
-                            }
-                            Spacer()
-                            if let offer = item.offer {
-                                Text(euro(offer.priceCents)).font(.system(.subheadline, weight: .bold)).monospacedDigit()
-                                    .foregroundStyle(done ? Theme.C.text3 : Theme.C.text1)
+                DisplayHeader(line1: chain.isEmpty ? "Überall" : Labels.chain(chain),
+                              line2: total > 0 ? "\(items.count) Artikel · \(euro(total))" : "\(items.count) Artikel")
+                    .padding(.bottom, 10)
+                ForEach(sorted) { item in
+                    let done = checked.contains(Self.key(item, plan: planID))
+                    Button { toggle(item, planID) } label: { row(item, done: done) }
+                        .buttonStyle(PressableStyle())
+                        .contextMenu {
+                            if let id = item.extraID {
+                                Button("Entfernen", systemImage: "trash", role: .destructive) {
+                                    withAnimation(Theme.spring) { store.extras.removeAll { $0.id == id } }
+                                }
                             }
                         }
-                        .padding(14)
-                        .background(done ? .clear : Theme.C.cardTop, in: RoundedRectangle(cornerRadius: 20))
-                    }
-                    .buttonStyle(.plain)
                 }
             }
             .padding(.horizontal, Theme.pagePadding)
             .padding(.bottom, 120)
+            .animation(Theme.spring, value: checkedRaw)
         }
         .background(Theme.C.bg)
         .toolbar(.hidden, for: .navigationBar)
+        .sensoryFeedback(.success, trigger: checkedRaw)
     }
-}
 
-/// S13 Einstellungen (Grundversion: Server, Haushalt, Abmelden).
-struct SettingsView: View {
-    @Environment(AppStore.self) private var store
-    @Environment(\.dismiss) private var dismiss
+    private func toggle(_ item: ShoppingItem, _ planID: Int?) {
+        var set = checked
+        let key = Self.key(item, plan: planID)
+        if set.remove(key) == nil { set.insert(key) }
+        checkedRaw = set.sorted().joined(separator: ",")
+    }
 
-    var body: some View {
-        @Bindable var api = store.api
-        ScrollView {
-            VStack(alignment: .leading, spacing: 14) {
-                RoundIconButton(systemName: "chevron.left", label: "Zurück") { dismiss() }
-                DisplayHeader(line1: "Einstellungen", line2: store.household?.name ?? "")
-                if let h = store.household {
-                    VStack(alignment: .leading, spacing: 10) {
-                        row("Ort", h.plz)
-                        row("Läden", h.stores.filter(\.enabled).map { Labels.chain($0.chain) }.joined(separator: ", "))
-                        row("Personen", "\(h.persons)")
-                        row("Budget", "\(euro(h.budgetFoodWeekCents)) / Woche")
-                        row("Ernährung", ([h.diet] + h.allergies).joined(separator: " · "))
-                    }
-                    .padding(16).card(radius: 24)
+    private func row(_ item: ShoppingItem, done: Bool) -> some View {
+        HStack(spacing: 12) {
+            Image(systemName: done ? "checkmark.circle.fill" : "circle")
+                .font(.system(size: 24))
+                .foregroundStyle(done ? Theme.C.accent : Theme.C.text3)
+                .contentTransition(.symbolEffect(.replace))
+            Text(item.offer.map { Theme.hue(category: $0.category).emoji } ?? "📝").font(.system(size: 22))
+            VStack(alignment: .leading, spacing: 2) {
+                Text(item.name).font(.system(.body, weight: .semibold)).strikethrough(done)
+                    .foregroundStyle(done ? Theme.C.text3 : Theme.C.text1)
+                if let amount = item.amount {
+                    Text("\(amount.formatted()) \(item.unit == "stk" ? "Stück" : item.unit)").font(Theme.F.micro).foregroundStyle(Theme.C.text2)
                 }
-                Text("SERVER").font(Theme.F.micro).foregroundStyle(Theme.C.text2)
-                TextField("http://…", text: $api.baseURL).keyboardType(.URL).textInputAutocapitalization(.never).autocorrectionDisabled()
-                    .padding(14).background(Theme.C.cardTop, in: RoundedRectangle(cornerRadius: Theme.R.chip))
-                Text("Die App muss alle 7 Tage neu installiert werden (kostenlose Apple-ID).")
-                    .font(Theme.F.caption).foregroundStyle(Theme.C.text2)
-                Button("Abmelden & neu einrichten") { api.token = nil; store.plan = nil; store.household = nil }
-                    .foregroundStyle(Theme.C.danger).padding(.top, 10)
             }
-            .padding(.horizontal, Theme.pagePadding)
+            Spacer()
+            if let price = item.priceCents {
+                Text(euro(price)).font(.system(.subheadline, design: .rounded, weight: .bold)).monospacedDigit()
+                    .foregroundStyle(done ? Theme.C.text3 : Theme.C.text1)
+            }
         }
-        .background(Theme.C.bg)
-        .toolbar(.hidden, for: .navigationBar)
-    }
-
-    private func row(_ title: String, _ value: String) -> some View {
-        HStack { Text(title).font(.system(.body, weight: .semibold)); Spacer(); Text(value).foregroundStyle(Theme.C.text2).lineLimit(1) }
+        .padding(14)
+        .background(done ? Color.clear : Theme.C.card, in: RoundedRectangle(cornerRadius: Theme.R.tile, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: Theme.R.tile, style: .continuous).strokeBorder(Theme.C.line, lineWidth: done ? 0 : 0.5))
     }
 }

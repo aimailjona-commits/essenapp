@@ -10,11 +10,15 @@ def test_household_requires_token(client):
 
 def test_update_settings_and_stores(client, auth):
     r = client.patch("/household", headers=auth, json={
-        "plz": "50667", "persons": 3, "stores": [{"chain": "rewe", "store_ref": "123"}, {"chain": "aldi_sued"}]})
+        "plz": "50667", "persons": 3, "radius_km": 8, "stores": [
+        {"chain": "rewe", "store_ref": "123"},
+        {"chain": "aldi_sued", "osm_id": "node/5", "lat": 50.9, "lng": 6.9, "address": "Ring 1, 50667 Köln"}]})
     assert r.status_code == 200
     h = client.get("/household", headers=auth).json()
     assert h["plz"] == "50667" and h["persons"] == 3
     assert [s["chain"] for s in h["stores"]] == ["rewe", "aldi_sued"]
+    assert h["radius_km"] == 8 and h["stores"][1]["osm_id"] == "node/5" and h["stores"][1]["lat"] == 50.9
+    assert client.patch("/household", headers=auth, json={"radius_km": 31}).status_code == 422
     assert client.patch("/household", headers=auth, json={"plz": "123"}).status_code == 422
 
 

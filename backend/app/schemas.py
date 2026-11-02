@@ -9,6 +9,10 @@ class StoreIn(BaseModel):
     store_ref: str = ""
     store_name: str = ""
     enabled: bool = True
+    osm_id: str = ""
+    lat: float | None = None
+    lng: float | None = None
+    address: str = ""
 
 
 class StoreOut(StoreIn):
@@ -29,6 +33,7 @@ class HouseholdSettings(BaseModel):
     budget_drugstore_cents: int | None = Field(None, ge=0)
     nutrition_goal: str | None = None
     max_cook_minutes: int | None = Field(None, ge=5)
+    radius_km: int | None = Field(None, ge=1, le=30)
     stores: list[StoreIn] | None = None
 
 
@@ -38,6 +43,8 @@ class HouseholdOut(BaseModel):
     id: int
     name: str
     plz: str
+    lat: float | None
+    lng: float | None
     persons: int
     diet: str
     allergies: list[str]
@@ -49,6 +56,7 @@ class HouseholdOut(BaseModel):
     budget_drugstore_cents: int | None
     nutrition_goal: str
     max_cook_minutes: int
+    radius_km: int
     stores: list[StoreOut]
 
 
@@ -67,6 +75,7 @@ class OfferOut(BaseModel):
 
     id: int
     chain: str
+    store_ref: str
     title: str
     brand: str
     category: str
@@ -98,6 +107,7 @@ class RecipeOut(BaseModel):
 class MealOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
+    id: int
     day: int
     meal_type: str
     cost_cents: int
@@ -113,3 +123,17 @@ class PlanOut(BaseModel):
     total_cents: int
     saved_cents: int
     entries: list[MealOut]
+
+
+class EntryUpdate(BaseModel):
+    locked: bool
+
+
+class NearbyStoreOut(BaseModel):
+    osm_id: str
+    chain: str
+    name: str
+    address: str
+    lat: float
+    lng: float
+    distance_km: float

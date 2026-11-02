@@ -53,6 +53,7 @@ Nutzer: der Entwickler selbst (iOS-App) + Familie/Freunde (Web-Version).
 | E32 | Wöchentlicher Import ohne Scheduler-Bibliothek: `./dev.sh python -m app.jobs` per cron (Phase 7) | Kein zusätzlicher Dienst nötig |
 | E33 | **iPhone hängt an Windows (App „Apple Devices“), nicht mehr per usbipd an WSL.** WSL spricht Apples usbmux-Dienst über `<WSL-Gateway>:27015` an (`USBMUXD_SOCKET_ADDRESS`, setzt `ios/build.sh`). Backend fürs iPhone über `<Windows-IP>:8000` | Mit usbipd hing `xtool dev` bei „Connecting“ (xtool Issue #19). `tools/windows-setup.ps1` (Admin, nach jedem Neustart) richtet Portproxys + Firewall ein. Ersetzt E23 |
 | E34 | **UI-Debugging ohne Nutzer:** (1) Cloud-Simulator: GitHub Actions (`.github/workflows/ios-screenshots.yml`, macOS-Runner) baut die App, startet jeden Screen im Demo-Modus (`-demoScreen <name>`, Beispieldaten in `Demo.swift`) und lädt Screenshots als Artefakt hoch. (2) Echtes iPhone: `tools/iphone-shot.ps1` (pymobiledevice3; Nutzer muss `python -m pymobiledevice3 remote tunneld` als Admin laufen lassen) | Kein iOS-Simulator unter Windows/Linux. Repo öffentlich: github.com/aimailjona-commits/essenapp. Händler-Fixtures und `.debug/` sind nicht versioniert |
+| E35 | Läden in der Nähe aus OpenStreetMap Overpass (`GET /stores/nearby`, 24 h im Speicher gecacht). Rewe/Edeka mit Kartenposition: kaufDA-Shelf an der Filiale abfragen, `closestStore` = Markt-ID. Ersetzt die Auto-Filiale aus E29 für Filialen mit Koordinaten | Kette über `brand`/`name`-Tag; „ALDI“ ohne Süd/Nord und Netto (Scottie) werden ignoriert |
 
 ---
 

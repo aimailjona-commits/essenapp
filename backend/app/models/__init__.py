@@ -28,6 +28,7 @@ class Household(Base):
     budget_drugstore_cents: Mapped[int | None]
     nutrition_goal: Mapped[str] = mapped_column(String(30), default="ausgewogen")
     max_cook_minutes: Mapped[int] = mapped_column(default=45)
+    radius_km: Mapped[int] = mapped_column(default=5, server_default="5")  # Umkreis für die Ladensuche
     created_at: Mapped[datetime] = mapped_column(server_default=func.now())
 
     members: Mapped[list["Member"]] = relationship(back_populates="household")
@@ -54,6 +55,10 @@ class HouseholdStore(Base):
     chain: Mapped[str] = mapped_column(String(30))
     store_ref: Mapped[str] = mapped_column(String(50), default="")  # Filial-ID, leer = regional
     store_name: Mapped[str] = mapped_column(String(100), default="")
+    osm_id: Mapped[str] = mapped_column(String(30), default="", server_default="")  # z.B. "node/123"
+    lat: Mapped[float | None]  # Filial-Koordinaten aus OpenStreetMap
+    lng: Mapped[float | None]
+    address: Mapped[str] = mapped_column(String(200), default="", server_default="")
     enabled: Mapped[bool] = mapped_column(default=True)
 
     household: Mapped[Household] = relationship(back_populates="stores")

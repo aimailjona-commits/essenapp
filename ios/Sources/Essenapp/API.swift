@@ -1,4 +1,5 @@
 import Foundation
+import SwiftUI
 import Observation
 import Security
 
@@ -9,6 +10,22 @@ struct StoreDTO: Codable, Hashable {
     var storeRef = ""
     var storeName = ""
     var enabled = true
+    var osmId: String? = nil
+    var lat: Double? = nil
+    var lng: Double? = nil
+    var address: String? = nil
+}
+
+/// Laden aus der Umkreissuche (GET /stores/nearby).
+struct NearbyStore: Codable, Identifiable, Hashable {
+    var osmId: String
+    var chain: String
+    var name: String
+    var address: String
+    var lat: Double
+    var lng: Double
+    var distanceKm: Double
+    var id: String { osmId }
 }
 
 struct HouseholdDTO: Codable {
@@ -26,6 +43,9 @@ struct HouseholdDTO: Codable {
     var budgetDrugstoreCents: Int?
     var nutritionGoal: String
     var maxCookMinutes: Int
+    var radiusKm: Int?
+    var lat: Double?
+    var lng: Double?
     var stores: [StoreDTO]
 }
 
@@ -48,6 +68,7 @@ struct OfferDTO: Codable, Identifiable, Hashable {
     var validFrom: String
     var validTo: String
     var imageUrl: String
+    var storeRef: String?
 }
 
 enum APIError: LocalizedError {
@@ -148,6 +169,7 @@ struct RecipeDTO: Codable, Identifiable, Hashable {
 }
 
 struct MealDTO: Codable, Hashable {
+    var id: Int?
     var day: Int
     var mealType: String
     var costCents: Int
@@ -199,6 +221,7 @@ struct HouseholdPatch: Encodable {
     var planDays: [Int]?
     var budgetFoodWeekCents: Int?
     var nutritionGoal: String?
+    var radiusKm: Int?
     var stores: [StoreDTO]?
 }
 
@@ -211,6 +234,34 @@ final class AppStore {
     var plan: PlanDTO?
     var error: String?
     var generating = false
+    var toast: String?
+    var extras: [ExtraItem] = Persist.load("extras") ?? [] { didSet { Persist.save(extras, "extras") } }
+    var watchlist: Set<Int> = Persist.load("watchlist") ?? [] { didSet { Persist.save(watchlist, "watchlist") } }
+
+    func flash(_ text: String) {
+        withAnimation(Theme.spring) { toast = text }
+        Task {
+            try? await Task.sleep(for: .seconds(1.8))
+            if toast == text { withAnimation(Theme.spring) { toast = nil } }
+        }
+    }
+
+    func isOnList(_ offer: OfferDTO) -> Bool {
+        extras.contains { $0.offerId == offer.id } || shoppingItems.contains { $0.offer?.id == offer.id }
+    }
+
+    func addToList(_ offer: OfferDTO) {
+        guard !isOnList(offer) else { return }
+        extras.append(ExtraItem(name: offer.title, chain: offer.chain, offerId: offer.id, priceCents: offer.priceCents))
+        flash("Zur Einkaufsliste hinzugefügt")
+    }
+
+    func toggleWatch(_ offer: OfferDTO) {
+        if watchlist.remove(offer.id) == nil {
+            watchlist.insert(offer.id)
+            flash("Auf der Merkliste")
+        }
+    }
 
     let demo = Demo.screen != nil
 
@@ -221,7 +272,12 @@ final class AppStore {
         }
     }
 
-    var isOnboarded: Bool { demo ? Demo.screen != "onboarding" : api.token != nil }
+    /// Onboarding ist erst fertig, wenn alle Schritte durch sind (Haushalt entsteht schon in Schritt 1).
+    var onboarded: Bool = UserDefaults.standard.bool(forKey: "onboarded") {
+        didSet { UserDefaults.standard.set(onboarded, forKey: "onboarded") }
+    }
+
+    var isOnboarded: Bool { demo ? Demo.screen != "onboarding" : api.token != nil && onboarded }
 
     func createHousehold(name: String, memberName: String) async throws {
         struct Body: Encodable { var name: String; var memberName: String }
@@ -273,5 +329,47 @@ final class AppStore {
         let weekday = demo ? 1 : (Calendar(identifier: .iso8601).component(.weekday, from: .now) + 5) % 7  // 0 = Montag
         let today = plan?.entries.filter { $0.day == weekday } ?? []
         return today.first { $0.mealType == "mittag" } ?? today.first
+    }
+}
+
+/// Lokale Einträge: selbst hinzugefügte Artikel und gemerkte Angebote.
+/// shortcut: nur auf diesem Gerät gespeichert; gemeinsame Liste/Merkliste übers Backend in Phase 4/5.
+struct ExtraItem: Codable, Hashable, Identifiable {
+    var id = UUID()
+    var name: String
+    var chain: String = ""
+    var offerId: Int?
+    var priceCents: Int?
+}
+
+extension AppStore {
+    func nearbyStores(radiusKm: Int) async throws -> [NearbyStore] {
+        try await api.request("GET", "/stores/nearby?radius_km=\(radiusKm)", timeout: 60)
+    }
+
+    func reroll(_ meal: MealDTO) async {
+        guard let id = meal.id else { return }
+        do {
+            plan = try await api.request("POST", "/plans/current/entries/\(id)/reroll", timeout: 180)
+        } catch {
+            self.error = error.localizedDescription
+        }
+    }
+
+    func setLocked(_ meal: MealDTO, _ locked: Bool) async {
+        guard let id = meal.id else { return }
+        struct Body: Encodable { var locked: Bool }
+        plan = (try? await api.request("PATCH", "/plans/current/entries/\(id)", body: Body(locked: locked))) ?? plan
+    }
+}
+
+/// Kleine Codable-Ablage in UserDefaults.
+enum Persist {
+    static func load<T: Decodable>(_ key: String) -> T? {
+        UserDefaults.standard.data(forKey: key).flatMap { try? JSONDecoder().decode(T.self, from: $0) }
+    }
+
+    static func save<T: Encodable>(_ value: T, _ key: String) {
+        UserDefaults.standard.set(try? JSONEncoder().encode(value), forKey: key)
     }
 }

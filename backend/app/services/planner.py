@@ -151,6 +151,16 @@ def make_plan(household: Household, offers: list[Offer], slots: list[tuple[int, 
     return best  # Budget nicht erreichbar: günstigster Entwurf, Nutzer entscheidet (S7 „Trotzdem übernehmen“)
 
 
+def reroll_meal(household: Household, offers: list[Offer], slot: tuple[int, str], avoid: list[str]) -> PlannedMeal:
+    """Genau ein neues Gericht für einen Platz im Plan; avoid[0] ist das alte Gericht, danach die übrigen der Woche."""
+    prompt = build_prompt(household, offers, [slot], favorites=[])
+    prompt += f"\n\nPlane genau EIN neues Gericht, anders als: {avoid[0]} und andere Gerichte der Woche ({', '.join(avoid[1:]) or '-'})."
+    meal = next((m for m in ask_claude(prompt).meals if (m.day, m.meal_type) == slot), None)
+    if meal is None:
+        raise RuntimeError("Kein neues Gericht erzeugt")
+    return meal
+
+
 def week_slots(household: Household) -> list[tuple[int, str]]:
     order = list(MEAL_TYPES)
     meals = sorted((m for m in household.meal_types if m in MEAL_TYPES), key=order.index)

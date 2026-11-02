@@ -1,7 +1,7 @@
 import Foundation
 
 /// Demo-Modus für Screenshots im Simulator (CI): App starten mit `-demoScreen <name>`.
-/// Namen: onboarding, start, quick, generator, offers, plan, recipe, shopping, list, settings, empty
+/// Namen: onboarding, start, quick, generator, generating, offers, offer, plan, recipe, shopping, list, settings, stores, empty
 enum Demo {
     static let screen: String? = {
         let args = ProcessInfo.processInfo.arguments
@@ -12,8 +12,18 @@ enum Demo {
     static let household = HouseholdDTO(
         id: 1, name: "Zuhause", plz: "50667", persons: 2, diet: "alles", allergies: ["Laktose"], excludedIngredients: [],
         cuisines: [], mealTypes: ["mittag", "abend"], planDays: [0, 1, 2, 3, 4], budgetFoodWeekCents: 6000,
-        budgetDrugstoreCents: nil, nutritionGoal: "ausgewogen", maxCookMinutes: 45,
-        stores: [StoreDTO(chain: "rewe", storeRef: "1763159"), StoreDTO(chain: "lidl"), StoreDTO(chain: "aldi_sued"), StoreDTO(chain: "dm")])
+        budgetDrugstoreCents: nil, nutritionGoal: "ausgewogen", maxCookMinutes: 45, radiusKm: 3, lat: 50.9375, lng: 6.9603,
+        stores: nearby.prefix(4).map { StoreDTO(chain: $0.chain, storeName: $0.name, osmId: $0.osmId, lat: $0.lat, lng: $0.lng, address: $0.address) })
+
+    static let nearby: [NearbyStore] = [
+        NearbyStore(osmId: "n1", chain: "rewe", name: "REWE Hohe Straße", address: "Hohe Str. 30, 50667 Köln", lat: 50.9378, lng: 6.9568, distanceKm: 0.3),
+        NearbyStore(osmId: "n2", chain: "lidl", name: "Lidl", address: "Gereonstr. 1, 50670 Köln", lat: 50.9431, lng: 6.9497, distanceKm: 0.9),
+        NearbyStore(osmId: "n3", chain: "aldi_sued", name: "ALDI SÜD", address: "Breite Str. 80, 50667 Köln", lat: 50.9381, lng: 6.9480, distanceKm: 0.9),
+        NearbyStore(osmId: "n4", chain: "dm", name: "dm-drogerie markt", address: "Schildergasse 65, 50667 Köln", lat: 50.9359, lng: 6.9530, distanceKm: 0.6),
+        NearbyStore(osmId: "n5", chain: "rossmann", name: "Rossmann", address: "Schildergasse 24, 50667 Köln", lat: 50.9364, lng: 6.9555, distanceKm: 0.4),
+        NearbyStore(osmId: "n6", chain: "edeka", name: "EDEKA Neumarkt", address: "Neumarkt 18, 50667 Köln", lat: 50.9356, lng: 6.9467, distanceKm: 1.0),
+        NearbyStore(osmId: "n7", chain: "penny", name: "PENNY", address: "Severinstr. 120, 50678 Köln", lat: 50.9262, lng: 6.9585, distanceKm: 1.3),
+    ]
 
     static let offers: [OfferDTO] = [
         offer(1, "rewe", "Hähnchenbrustfilet", "fleisch_fisch", 399, 599, 400, "g", 998),
@@ -33,7 +43,7 @@ enum Demo {
     }
 
     static func meal(_ day: Int, _ type: String, _ title: String, _ cost: Int, _ minutes: Int, _ ings: [IngredientDTO]) -> MealDTO {
-        MealDTO(day: day, mealType: type, costCents: cost, locked: false, recipe: RecipeDTO(
+        MealDTO(id: day * 10 + (type == "mittag" ? 1 : 2), day: day, mealType: type, costCents: cost, locked: day == 1 && type == "mittag", recipe: RecipeDTO(
             id: day * 10 + (type == "mittag" ? 1 : 2), title: title, description: "Schnell, würzig und mit Angeboten der Woche.",
             cuisine: "Indisch", mealType: type, servings: 2, prepMinutes: minutes, ingredients: ings,
             steps: ["Zwiebel würfeln und anbraten.", "Hähnchen dazugeben und rundum anbraten.",
