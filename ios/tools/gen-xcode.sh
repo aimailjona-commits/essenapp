@@ -8,4 +8,4 @@ rsync -a --delete --exclude .build --exclude xtool --exclude tools "$src/" "$dst
 cd "$dst" && xtool dev generate-xcode-project
 rm -rf "$src/xtool" && mkdir -p "$src/xtool/.xtool-tmp"
 cp -r xtool/Essenapp.xcworkspace "$src/xtool/"
-cp -r xtool/.xtool-tmp/Essenapp.xcodeproj xtool/.xtool-tmp/Essenapp "$src/xtool/.xtool-tmp/"
+cp -r xtool/.xtool-tmp/. "$src/xtool/.xtool-tmp/"
