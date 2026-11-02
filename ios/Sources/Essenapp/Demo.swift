@@ -65,4 +65,25 @@ enum Demo {
         meal(2, "mittag", "Pasta al Pomodoro", 210, 15, [ing("Spaghetti", 250), ing("Rispentomaten", 300, offer: 3)]),
         meal(3, "mittag", "Ofengemüse mit Feta", 380, 30, [ing("Paprika", 2, "stk"), ing("Feta", 100, offer: 8)]),
     ])
+
+    static let householdList = ListDTO(id: 1, name: "Haushalt", kind: "household", shareUrl: nil, items: [
+        item(1, "Hähnchenbrustfilet", 400, "g", "rewe", 1),
+        item(2, "Basmatireis", 480, "g", "rewe", 7, checked: true, by: "Malina"),
+        item(3, "Rispentomaten", 700, "g", "lidl", 3),
+        item(4, "Feta", 200, "g", "lidl", 8),
+        item(5, "Lachsfilet", 250, "g", "lidl", 4),
+        item(6, "Avocado", 1, "stk", "aldi_sued", 2),
+        item(7, "Spülmittel", nil, "", "", nil, source: "manual", added: "Malina"),
+    ])
+
+    static let lists = [
+        ListSummaryDTO(id: 1, name: "Haushalt", kind: "household", shareUrl: nil, openCount: 6, totalCount: 7),
+        ListSummaryDTO(id: 2, name: "Grillparty", kind: "oneoff", shareUrl: "http://192.168.0.224:8000/l/abc", openCount: 5, totalCount: 8),
+    ]
+
+    static func item(_ id: Int, _ name: String, _ amount: Double?, _ unit: String, _ chain: String, _ offer: Int?,
+                     checked: Bool = false, by: String = "", source: String = "plan", added: String = "") -> ListItemDTO {
+        ListItemDTO(id: id, name: name, amount: amount, unit: unit, chain: chain, offerId: offer, checked: checked,
+                    addedBy: added, checkedBy: by, source: source)
+    }
 }

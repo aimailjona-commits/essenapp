@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block title %}{{ household.name }} – Essenapp{% endblock %}
+{% block content %}
+<h1>Willkommen bei<span>{{ household.name }}</span></h1>
+<form class="card" method="post" action="/app/join/{{ code }}">
+  <p>Du wurdest eingeladen. Wie heißt du? Dein Name steht bei allem, was du auf der Einkaufsliste hinzufügst oder abhakst.</p>
+  <input type="text" name="member_name" maxlength="50" required placeholder="Dein Name" autocomplete="given-name">
+  <button class="btn" type="submit">Beitreten</button>
+</form>
+{% if days %}
+<h2>Wochenplan</h2>
+{% for day, entries in days %}
+<div class="card">
+  <div class="muted">{{ day }}</div>
+  {% for e in entries %}<div class="title">{{ e.recipe.title }}</div>{% endfor %}
+</div>
+{% endfor %}
+{% endif %}
+{% endblock %}

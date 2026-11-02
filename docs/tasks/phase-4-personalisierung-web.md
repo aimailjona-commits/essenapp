@@ -12,9 +12,12 @@ Ziel: Lieblingsgerichte prägen die Pläne, die Familie nutzt Plan und Liste im 
 
 ## Web-PWA (`backend/app/web/`)
 
-- [ ] Einladung per Link → Mitglied-Token im Browser
-- [ ] Layout + CSS-Variablen aus dem Design-System, PWA-Manifest, Homescreen-Icon
-- [ ] Wochenplan, Rezeptdetail, Einkaufsliste (gemeinsam abhaken), Bewertungen
+- [x] Einladung per Link → Mitglied-Token im Browser (`/join/<code>`, HttpOnly-Cookie, E40)
+- [x] Gemeinsame Einkaufsliste im Backend (`/lists`, `sync-plan` bei neuem Plan), einmalige Listen mit Gast-Link `/l/<code>` (E40)
+- [ ] iOS: Einkaufsliste auf `/lists` umstellen, Einladen/Teilen-Button (`POST /household/invites`, `GET /household/share`), Mitglieder
+- [x] Layout + CSS-Variablen aus dem Design-System (v3), PWA-Manifest, Homescreen-Icon
+- [x] Wochenplan, Rezeptdetail (aufklappbar), Einkaufsliste (gemeinsam abhaken, 10-s-Polling)
+- [ ] Bewertungen im Web
 - [ ] Mobile-first, getestet auf iPhone-Safari
 
 ## DoD

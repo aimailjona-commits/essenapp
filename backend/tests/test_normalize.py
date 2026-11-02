@@ -12,6 +12,11 @@ from app.services.normalize import base_price_cents, euro_to_cents, parse_quanti
     ("20 x 0,33-Liter-Flaschen", (6600.0, "ml")),
     ("10 Stück", (10.0, "stk")),
     ("je Packung", None),
+    ("Duft-Müllbeutel 35 l", None),  # Fassungsvermögen, kein Inhalt
+    ("Recycling-Abfallsäcke 60 l", None),
+    ("Müllbeutel 35 l, 20 Stück", (20.0, "stk")),
+    ("Seife Nachfüllbeutel 1 l", (1000.0, "ml")),
+    ("Kartoffeln 2,5 kg Sack", (2500.0, "g")),
 ])
 def test_parse_quantity(text, expected):
     assert parse_quantity(text) == expected

@@ -1,14 +1,16 @@
 """KI-Wochenplan: Claude plant Gerichte rund um die Angebote, der Code rechnet die Kosten (E10)."""
 import logging
 from collections.abc import Callable
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field
 from typing import Literal
 
 import anthropic
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 from app.core.config import settings
 from app.models import Household, Offer
+from app.services import recipe_images
 from app.services.normalize import cents
 from app.services.pricing import Pack, cost_line
 
@@ -34,6 +36,9 @@ class PlannedIngredient(BaseModel):
 
 
 class PlannedMeal(BaseModel):
+    # Schema für Claude: image_query trotz Default Pflicht (Felder mit Default würde das Modell sonst gern weglassen)
+    model_config = ConfigDict(json_schema_mode_override="serialization", json_schema_serialization_defaults_required=True)
+
     day: int
     meal_type: Literal["fruehstueck", "mittag", "abend", "dessert"]
     title: str
@@ -43,6 +48,7 @@ class PlannedMeal(BaseModel):
     servings: int
     ingredients: list[PlannedIngredient]
     steps: list[str]
+    image_query: str = ""  # englische Suchbegriffe fürs Foto; Default, weil api.py Gerichte aus der DB nachbaut
 
 
 class PlanDraft(BaseModel):
@@ -58,6 +64,7 @@ Regeln:
 - Nutze Zutaten über mehrere Gerichte, damit wenig übrig bleibt (z.B. halbe Packung Feta am nächsten Tag).
 - Ernährungsform, Allergien und Ausschlüsse sind harte Regeln. Kochzeit nicht überschreiten.
 - Alle Texte auf Deutsch. Schritte kurz und konkret, 3–8 Schritte.
+- image_query: 2–4 englische Suchbegriffe für ein Foto des Gerichts, z.B. "chicken tikka masala".
 - Plane genau die genannten Mahlzeiten, nicht mehr und nicht weniger."""
 
 
@@ -68,6 +75,7 @@ class PricedPlan:
     saved_cents: int
     meal_costs: list[int]
     usage: dict = field(default_factory=dict)
+    images: list[str] = field(default_factory=list)  # Foto-URL je Gericht in draft.meals, "" = keins
 
 
 def select_offers(offers: list[Offer], limit: int = MAX_OFFERS) -> list[Offer]:
@@ -201,6 +209,14 @@ def make_plan(household: Household, offers: list[Offer], slots: list[tuple[int, 
                 f"{household.budget_food_week_cents} ct. Ersetze die teuersten Gerichte durch günstigere mit mehr Angeboten.")
     best.usage = usage
     return best  # Budget evtl. nicht erreicht: günstigster Entwurf, Nutzer entscheidet (S7 „Trotzdem übernehmen“)
+
+
+def add_images(planned: PricedPlan, find: Callable[[str], str] | None = None) -> PricedPlan:
+    """Setzt planned.images (parallel zu draft.meals), höchstens 6 Abrufe gleichzeitig."""
+    find = find or recipe_images.find_image
+    with ThreadPoolExecutor(max_workers=6) as pool:
+        planned.images = list(pool.map(find, [m.image_query or m.title for m in planned.draft.meals]))
+    return planned
 
 
 def reroll_meal(household: Household, offers: list[Offer], slot: tuple[int, str], avoid: list[str],

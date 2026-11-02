@@ -1,0 +1,24 @@
+<div id="list" hx-get="{{ base }}/list" hx-trigger="every 10s" hx-swap="outerHTML" hx-target="this" hx-include="#guest">
+  <p class="muted">{{ open_count }} von {{ lst.items|length }} offen</p>
+  {% for chain, items in groups %}
+  <div class="chain">{{ chain }}</div>
+  <div class="card items">
+    {% for i in items %}
+    <button class="item{% if i.checked %} done{% endif %}" hx-post="{{ base }}/items/{{ i.id }}/toggle" hx-target="#list"
+            hx-swap="outerHTML" aria-pressed="{{ 'true' if i.checked else 'false' }}">
+      <span class="check" aria-hidden="true">{% if i.checked %}✓{% endif %}</span>
+      <span class="name">{{ i.name }}
+        <span class="meta">{% if i.checked %}✓ {{ i.checked_by }}{% elif i.source == "manual" %}von {{ i.added_by }}{% endif %}</span>
+      </span>
+      <span class="qty">{{ i|qty }}</span>
+    </button>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="card empty">
+    <div class="big">🛒</div>
+    <h2>Die Liste ist leer</h2>
+    <p class="muted">Füge oben einen Artikel hinzu.</p>
+  </div>
+  {% endfor %}
+</div>

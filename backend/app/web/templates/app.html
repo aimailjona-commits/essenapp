@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block content %}
+{% if tab == "plan" %}
+<h1>Wochenplan<span>Hallo {{ member.name }}</span></h1>
+{% for day, entries in days %}
+<h2>{{ day }}</h2>
+{% for e in entries %}
+<details class="card meal">
+  <summary>
+    <span class="emoji" aria-hidden="true">🍽️</span>
+    <span>
+      <span class="muted">{{ meals.get(e.meal_type, e.meal_type) }} · ⏱ {{ e.recipe.prep_minutes }} min · <span class="price">{{ e.cost_cents|euro }}</span></span><br>
+      <span class="title">{{ e.recipe.title }}</span>
+    </span>
+    <span class="chev" aria-hidden="true">›</span>
+  </summary>
+  <div class="body">
+    {% if e.recipe.description %}<p class="muted">{{ e.recipe.description }}</p>{% endif %}
+    <h2>Zutaten für {{ e.recipe.servings }}</h2>
+    <ul>
+      {% for i in e.recipe.ingredients %}
+      <li>{% if i.amount %}{{ "%g"|format(i.amount) }} {{ "Stk" if i.unit == "stk" else i.unit }} {% endif %}{{ i.name }}</li>
+      {% endfor %}
+    </ul>
+    <h2>Zubereitung</h2>
+    <ol>{% for s in e.recipe.steps %}<li>{{ s }}</li>{% endfor %}</ol>
+  </div>
+</details>
+{% endfor %}
+{% else %}
+<div class="card empty">
+  <div class="big">🗓️</div>
+  <h2>Noch kein Wochenplan</h2>
+  <p class="muted">Sobald ein Plan erstellt ist, steht er hier.</p>
+</div>
+{% endfor %}
+{% if plan %}<p class="muted">Einkauf gesamt {{ plan.total_cents|euro }} · gespart {{ plan.saved_cents|euro }}</p>{% endif %}
+{% else %}
+<h1>Einkaufsliste<span>gemeinsam abhaken</span></h1>
+<form class="add" hx-post="/app/items" hx-target="#list" hx-swap="outerHTML" hx-on::after-request="this.reset()">
+  <input type="text" name="name" maxlength="100" required placeholder="Artikel hinzufügen" aria-label="Artikel">
+  <button type="submit" aria-label="Hinzufügen">+</button>
+</form>
+<div hx-get="/app/list" hx-trigger="load" hx-swap="outerHTML"><p class="muted">Lädt …</p></div>
+{% endif %}
+<nav class="tabs">
+  <a href="/app?tab=plan" class="{{ 'active' if tab == 'plan' }}"><span class="ico">🗓️</span>Wochenplan</a>
+  <a href="/app?tab=liste" class="{{ 'active' if tab == 'liste' }}"><span class="ico">🛒</span>Einkauf</a>
+</nav>
+{% endblock %}

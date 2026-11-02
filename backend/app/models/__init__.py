@@ -144,3 +144,44 @@ class MealPlanEntry(Base):
     locked: Mapped[bool] = mapped_column(default=False)
 
     recipe: Mapped[Recipe] = relationship()
+
+
+class Invite(Base):
+    """Einladungscode für den Haushalt (mehrfach nutzbar bis expires_at)."""
+    __tablename__ = "invite"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    household_id: Mapped[int] = mapped_column(ForeignKey("household.id"), index=True)
+    code: Mapped[str] = mapped_column(String(16), unique=True)
+    expires_at: Mapped[datetime]
+    created_at: Mapped[datetime] = mapped_column(server_default=func.now())
+
+
+class ShoppingList(Base):
+    __tablename__ = "shopping_list"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    household_id: Mapped[int | None] = mapped_column(ForeignKey("household.id"), index=True)
+    name: Mapped[str] = mapped_column(String(100))
+    kind: Mapped[str] = mapped_column(String(10), default="household")  # household | oneoff
+    share_code: Mapped[str | None] = mapped_column(String(16), unique=True)  # nur oneoff: Gast-Link
+    created_at: Mapped[datetime] = mapped_column(server_default=func.now())
+
+    items: Mapped[list["ShoppingItem"]] = relationship(cascade="all, delete-orphan", order_by="ShoppingItem.id")
+
+
+class ShoppingItem(Base):
+    __tablename__ = "shopping_item"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    list_id: Mapped[int] = mapped_column(ForeignKey("shopping_list.id"), index=True)
+    name: Mapped[str] = mapped_column(String(100))
+    amount: Mapped[float | None]
+    unit: Mapped[str] = mapped_column(String(10), default="")
+    chain: Mapped[str] = mapped_column(String(30), default="")
+    offer_id: Mapped[int | None]  # kein FK: alte Angebote dürfen gelöscht werden
+    checked: Mapped[bool] = mapped_column(default=False)
+    added_by: Mapped[str] = mapped_column(String(50), default="")  # Mitglied oder Gast
+    checked_by: Mapped[str] = mapped_column(String(50), default="")
+    source: Mapped[str] = mapped_column(String(10), default="manual")  # plan | manual
+    created_at: Mapped[datetime] = mapped_column(server_default=func.now())

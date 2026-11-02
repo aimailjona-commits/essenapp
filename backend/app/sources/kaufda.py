@@ -6,14 +6,13 @@ from zoneinfo import ZoneInfo
 
 import httpx
 
-from app.services.normalize import base_price_cents, cents, euro_to_cents, parse_quantity
+from app.services.normalize import BAG, base_price_cents, cents, euro_to_cents, parse_quantity
 
 CHAINS = {  # kaufDA-Händlername (klein) -> unser chain-Schlüssel
     "rewe": "rewe", "aldi süd": "aldi_sued", "aldi nord": "aldi_nord", "lidl": "lidl",
     "edeka": "edeka", "e center": "edeka", "marktkauf": "edeka", "kaufland": "kaufland",
     "penny": "penny", "netto marken-discount": "netto_md", "dm-drogerie markt": "dm", "rossmann": "rossmann",
 }
-STORE_CHAINS = {"rewe", "edeka"}  # filialabhängige Angebote, sonst regional
 SEARCH_QUERIES = {"aldi_sued": "ALDI", "dm": "dm-drogerie markt"}  # Prospekt nur über die Suche erreichbar
 
 # Erste passende Kategorie gewinnt (Reihenfolge zählt).
@@ -60,6 +59,8 @@ def _offer(chain, store_ref, source_id, title, brand, text, price_cents, regular
     qty = parse_quantity(text)
     amount, unit = qty if qty else (None, "")
     m = _BASE.search(base_text or "")
+    if m and BAG.search(text) and re.search(r"\bl\b|liter", m.group(0), re.I):
+        m = None  # Literpreis eines Müllbeutels ist kein Grundpreis
     base = euro_to_cents(next(g for g in m.groups() if g)) if m else base_price_cents(price_cents, amount, unit)
     return {
         "chain": chain, "store_ref": store_ref, "source_id": source_id,
@@ -124,7 +125,7 @@ def parse_pages(data: dict, chain: str, store_ref: str = "") -> list[dict]:
                 desc = " ".join(d.get("paragraph") or "" for d in p.get("description") or [])
                 images = p.get("images") or []
                 out.append(_offer(
-                    chain, store_ref if chain in STORE_CHAINS else "", c["id"] if i == 0 else f"{c['id']}#{i}",
+                    chain, store_ref, c["id"] if i == 0 else f"{c['id']}#{i}",
                     name, p.get("brandName"), f"{name} {desc}", price,
                     _pick(own, "REGULAR_PRICE", "RECOMMENDED_RETAIL_PRICE"), base_text,
                     valid_from, valid_to,
@@ -187,20 +188,32 @@ def fetch_shelf(lat: float, lng: float) -> list[dict]:
         return _shelf(_getter(http), lat, lng)
 
 
-def fetch_offers(lat: float, lng: float, chains: set[str], nearest_only: bool = False) -> list[dict]:
+def pick_brochures(brochures: list[dict], chains: set[str], stores: set[tuple[str, str]] = frozenset()) -> list[dict]:
+    """Je Kette nur die Prospekte einer Filiale: der in stores {(chain, externalId)} gewählten,
+    sonst der nächsten (Shelf ist nach Nähe sortiert). Ketten aus SEARCH_QUERIES laufen über die Suche."""
+    chosen, nearest, done, out = {c for c, _ in stores}, {}, set(), []
+    for b in brochures:
+        if b["chain"] not in chains or b["chain"] in SEARCH_QUERIES or b["content_id"] in done:
+            continue
+        if b["chain"] in chosen:
+            own = (b["chain"], b["store_id"]) in stores
+        else:
+            own = nearest.setdefault(b["chain"], b["store_id"]) == b["store_id"]
+        if own:
+            done.add(b["content_id"])
+            out.append(b)
+    return out
+
+
+def fetch_offers(lat: float, lng: float, chains: set[str], stores: set[tuple[str, str]] = frozenset()) -> list[dict]:
     """Live-Abruf bei kaufDA. Höchstens 1 Anfrage/s; 403/429 und andere Fehler brechen mit Exception ab.
-    nearest_only: bei Rewe/Edeka nur die Prospekte des ersten (nächsten) Markts im Shelf laden."""
+    store_ref = closestStore.externalId des Prospekts; Angebote aus der Suche haben store_ref ""."""
     with httpx.Client(headers=HEADERS, timeout=20, follow_redirects=True) as http:
         get = _getter(http)
-        offers, brochures = [], _shelf(get, lat, lng)
-        done, nearest = set(), {}
-        for b in brochures:
-            if nearest_only and b["chain"] in STORE_CHAINS and nearest.setdefault(b["chain"], b["store_id"]) != b["store_id"]:
-                continue
-            if b["chain"] in chains and b["chain"] not in SEARCH_QUERIES and b["content_id"] not in done:
-                done.add(b["content_id"])
-                data = get(PAGES_URL.format(b["content_id"]), partner="kaufda_web", brochureKey="", lat=lat, lng=lng)
-                offers += parse_pages(data, b["chain"], b["store_id"])
+        offers = []
+        for b in pick_brochures(_shelf(get, lat, lng), chains, stores):
+            data = get(PAGES_URL.format(b["content_id"]), partner="kaufda_web", brochureKey="", lat=lat, lng=lng)
+            offers += parse_pages(data, b["chain"], b["store_id"])
         for chain, query in SEARCH_QUERIES.items():
             offset, total, known = 0, 1, []
             while chain in chains and offset < total:

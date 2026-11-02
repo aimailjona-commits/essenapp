@@ -383,7 +383,7 @@ enum AppTab: CaseIterable {
     }
 }
 
-/// Dunkle, schwebende Tab-Leiste (v3, wie DashBite): aktiver Tab = oranger Kreis, Mitte = weißer Plus-Knopf.
+/// Tab-Leiste: Liquid Glass ab iOS 26 (Kapsel mit Tabs + eigener Glas-Kreis für „+“), sonst dunkle Kapsel.
 struct TabBar: View {
     @Binding var selected: AppTab
     @Binding var quickOpen: Bool
@@ -391,47 +391,70 @@ struct TabBar: View {
     @Namespace private var pill
 
     var body: some View {
-        HStack(spacing: 4) {
-            item(.start)
-            item(.angebote)
-            Button { withAnimation(Theme.spring) { quickOpen.toggle() } } label: {
-                Image(systemName: "plus")
-                    .font(.system(size: 20, weight: .bold))
-                    .rotationEffect(.degrees(quickOpen ? 45 : 0))
-                    .foregroundStyle(quickOpen ? .white : Theme.C.text1)
-                    .frame(width: 52, height: 52)
-                    .background(quickOpen ? Theme.C.accent : .white, in: Circle())
+        Group {
+            if #available(iOS 26.0, *) {
+                GlassEffectContainer(spacing: 10) {
+                    HStack(spacing: 10) {
+                        tabs(glass: true)
+                            .padding(5)
+                            .glassEffect(.regular.interactive(), in: Capsule())
+                        plusButton(glass: true)
+                            .glassEffect(.regular.tint(quickOpen ? Theme.C.accent : Theme.C.accent.opacity(0.85)).interactive(), in: Circle())
+                    }
+                }
+            } else {
+                HStack(spacing: 4) {
+                    tabs(glass: false)
+                    plusButton(glass: false).background(quickOpen ? Theme.C.accent : .white, in: Circle())
+                }
+                .padding(7)
+                .background(Color(hex: 0x141414), in: Capsule())
+                .shadow(color: .black.opacity(0.25), radius: 16, y: 8)
             }
-            .buttonStyle(PressableStyle())
-            .sensoryFeedback(.impact(weight: .medium), trigger: quickOpen)
-            .accessibilityLabel("Schnell-Aktionen")
-            item(.einkauf)
-            item(.rezepte)
         }
-        .padding(7)
-        .background(Color(hex: 0x141414), in: Capsule())
-        .shadow(color: .black.opacity(0.25), radius: 16, y: 8)
-        .padding(.horizontal, 28)
+        .padding(.horizontal, 16)
         .sensoryFeedback(.selection, trigger: selected)
+        .sensoryFeedback(.impact(weight: .medium), trigger: quickOpen)
     }
 
-    private func item(_ tab: AppTab) -> some View {
+    private func tabs(glass: Bool) -> some View {
+        HStack(spacing: 0) {
+            ForEach(AppTab.allCases, id: \.self) { tab in item(tab, glass: glass) }
+        }
+    }
+
+    private func plusButton(glass: Bool) -> some View {
+        Button { withAnimation(Theme.spring) { quickOpen.toggle() } } label: {
+            Image(systemName: "plus")
+                .font(.system(size: 22, weight: .bold))
+                .rotationEffect(.degrees(quickOpen ? 45 : 0))
+                .foregroundStyle(glass || quickOpen ? .white : Theme.C.text1)
+                .frame(width: 58, height: 58)
+                .contentShape(Circle())
+        }
+        .buttonStyle(PressableStyle())
+        .accessibilityLabel("Schnell-Aktionen")
+    }
+
+    private func item(_ tab: AppTab, glass: Bool) -> some View {
         let on = selected == tab
         return Button {
             if selected == tab { reselect() }
             withAnimation(Theme.spring) { selected = tab; quickOpen = false }
         } label: {
-            Image(systemName: tab.symbol)
-                .font(.system(size: 18, weight: .semibold))
-                .symbolEffect(.bounce, value: on)
-                .foregroundStyle(on ? .white : Color.white.opacity(0.55))
-                .frame(maxWidth: .infinity, minHeight: 52)
-                .background {
-                    if on {
-                        Circle().fill(Theme.C.accent).frame(width: 52, height: 52)
-                            .matchedGeometryEffect(id: "pill", in: pill)
-                    }
+            VStack(spacing: 2) {
+                Image(systemName: tab.symbol).font(.system(size: 18, weight: .semibold)).symbolEffect(.bounce, value: on)
+                Text(tab.title).font(.system(size: 10, weight: .semibold))
+            }
+            .foregroundStyle(on ? Theme.C.accent : (glass ? Theme.C.text1 : Color.white.opacity(0.6)))
+            .frame(maxWidth: .infinity, minHeight: 48)
+            .background {
+                if on {
+                    Capsule().fill(glass ? Theme.C.accent.opacity(0.14) : Color.white.opacity(0.12))
+                        .matchedGeometryEffect(id: "pill", in: pill)
                 }
+            }
+            .contentShape(Capsule())
         }
         .buttonStyle(PressableStyle())
         .accessibilityLabel(tab.title)
@@ -444,11 +467,15 @@ struct HeroImage: View {
     let name: String
 
     var body: some View {
-        if let url = Bundle.module.url(forResource: name, withExtension: "jpg"), let image = UIImage(contentsOfFile: url.path) {
-            Image(uiImage: image).resizable().scaledToFill()
-        } else {
-            LinearGradient(colors: [Theme.C.accent, Theme.C.accentDeep], startPoint: .topLeading, endPoint: .bottomTrailing)
+        // Color.clear bestimmt die Größe, das Foto füllt nur aus – sonst macht scaledToFill die ganze Seite breiter
+        Color.clear.overlay {
+            if let url = Bundle.module.url(forResource: name, withExtension: "jpg"), let image = UIImage(contentsOfFile: url.path) {
+                Image(uiImage: image).resizable().scaledToFill()
+            } else {
+                LinearGradient(colors: [Theme.C.accent, Theme.C.accentDeep], startPoint: .topLeading, endPoint: .bottomTrailing)
+            }
         }
+        .clipped()
     }
 }
 
@@ -508,5 +535,33 @@ struct CategoryCircles: View {
         }
         .padding(.horizontal, -Theme.pagePadding)
         .sensoryFeedback(.selection, trigger: selected)
+    }
+}
+
+/// Pillen-Umschalter wie in den Vorlagen („All | Popular“): aktive Pille schwarz, gleitet mit.
+struct PillSegment<T: Hashable>: View {
+    let options: [(T, String)]
+    @Binding var selection: T
+    @Namespace private var ns
+
+    var body: some View {
+        HStack(spacing: 6) {
+            ForEach(options, id: \.0) { value, label in
+                let on = selection == value
+                Button { withAnimation(Theme.spring) { selection = value } } label: {
+                    Text(label)
+                        .font(.system(.subheadline, weight: .semibold))
+                        .foregroundStyle(on ? .white : Theme.C.text1)
+                        .padding(.horizontal, 18).frame(height: 40)
+                        .frame(maxWidth: .infinity)
+                        .background {
+                            if on { Capsule().fill(Theme.C.action).matchedGeometryEffect(id: "seg", in: ns) }
+                            else { Capsule().fill(Theme.C.card) }
+                        }
+                }
+                .buttonStyle(PressableStyle())
+            }
+        }
+        .sensoryFeedback(.selection, trigger: selection)
     }
 }

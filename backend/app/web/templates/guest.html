@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}{{ lst.name }} – Essenapp{% endblock %}
+{% block content %}
+<h1>{{ lst.name }}<span>gemeinsame Liste</span></h1>
+<input type="hidden" id="guest" name="guest">
+<form class="add" hx-post="{{ base }}/items" hx-target="#list" hx-swap="outerHTML" hx-include="#guest" hx-on::after-request="this.reset()">
+  <input type="text" name="name" maxlength="100" required placeholder="Artikel hinzufügen" aria-label="Artikel">
+  <button type="submit" aria-label="Hinzufügen">+</button>
+</form>
+<div hx-get="{{ base }}/list" hx-trigger="load" hx-swap="outerHTML"><p class="muted">Lädt …</p></div>
+
+<div class="overlay" id="ask" hidden>
+  <form class="card" id="ask-form">
+    <h2>Wie heißt du?</h2>
+    <p class="muted">Damit die anderen sehen, wer was abgehakt hat.</p>
+    <input type="text" id="ask-name" maxlength="50" required placeholder="Dein Name" autocomplete="given-name">
+    <button class="btn" type="submit">Los geht's</button>
+  </form>
+</div>
+<script>
+  const KEY = "essen_guest", guest = document.getElementById("guest"), ask = document.getElementById("ask");
+  try { guest.value = localStorage.getItem(KEY) || ""; } catch (e) {}
+  ask.hidden = !!guest.value;
+  document.getElementById("ask-form").addEventListener("submit", (ev) => {
+    ev.preventDefault();
+    guest.value = document.getElementById("ask-name").value.trim();
+    try { localStorage.setItem(KEY, guest.value); } catch (e) {}
+    ask.hidden = !!guest.value;
+  });
+</script>
+{% endblock %}

@@ -11,11 +11,7 @@ struct RecipesTab: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 18) {
-                Picker("", selection: $mine.animation(Theme.spring)) {
-                    Text("Wochenplan").tag(false)
-                    Text("Meine Rezepte").tag(true)
-                }
-                .pickerStyle(.segmented)
+                PillSegment(options: [(false, "Wochenplan"), (true, "Meine Rezepte")], selection: $mine)
 
                 if mine {
                     EmptyState(emoji: "📖", title: "Meine Rezepte", text: "Gespeicherte und eigene Rezepte kommen in Phase 4.")

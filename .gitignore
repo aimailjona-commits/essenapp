@@ -9,3 +9,4 @@ __pycache__/
 .pytest_cache/
 backend/tests/fixtures/
 .debug/
+backend/image_cache.json

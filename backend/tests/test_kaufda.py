@@ -5,7 +5,7 @@ from sqlalchemy import func, select
 
 from app.models import Offer
 from app.services.importer import upsert_offers
-from app.sources.kaufda import category_of, parse_pages, parse_search, parse_shelf
+from app.sources.kaufda import category_of, parse_pages, parse_search, parse_shelf, pick_brochures
 
 FIX = Path(__file__).parent / "fixtures" / "sources" / "kaufda"
 FIELDS = {"chain", "store_ref", "source_id", "title", "brand", "category", "price_cents", "regular_price_cents",
@@ -43,10 +43,28 @@ def test_pages_rewe():
     assert str(alpro["valid_from"]) == "2026-11-02" and str(alpro["valid_to"]) == "2026-11-07"
 
 
-def test_pages_regional_chain_has_no_store_ref():
+def test_pages_regional_chain_keeps_its_store():
     offers = parse_pages(load("brochure_pages_lidl.json"), "lidl", "5741")
     assert_plausible(offers)
-    assert {o["store_ref"] for o in offers} == {""}
+    assert {o["store_ref"] for o in offers} == {"5741"}
+
+
+def test_pick_brochures_one_store_per_chain():
+    b = [{"chain": c, "store_id": s, "content_id": i} for c, s, i in [
+        ("rewe", "1", "a"), ("rewe", "2", "b"), ("rewe", "1", "c"), ("lidl", "7", "d"), ("lidl", "8", "e"),
+        ("penny", "3", "f"), ("dm", "", "g")]]
+    picked = pick_brochures(b, {"rewe", "lidl", "dm"}, {("lidl", "8")})
+    assert [x["content_id"] for x in picked] == ["a", "c", "e"]  # rewe: nächste Filiale, lidl: gewählte
+
+
+def test_bag_volume_is_no_quantity():
+    page = {"contents": [{"offers": [{"content": {
+        "id": "x", "publicationProfiles": [{"validity": {"startDate": "2026-11-01T23:00:00.000+0000",
+                                                         "endDate": "2026-11-06T23:00:00.000+0000"}}],
+        "deals": [{"type": "SALES_PRICE", "min": 1.49, "priceByBaseUnit": "1 l = 0,04 €"}],
+        "products": [{"name": "Duft-Müllbeutel", "description": [{"paragraph": "35 l, 20 Stück"}]}]}}]}]}
+    o = parse_pages(page, "aldi_nord", "1")[0]
+    assert (o["category"], o["amount"], o["unit"], o["base_price_cents"]) == ("haushalt", 20, "stk", 7)
 
 
 def test_search_aldi():

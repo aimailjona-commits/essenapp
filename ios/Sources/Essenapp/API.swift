@@ -251,7 +251,8 @@ final class AppStore {
     var error: String?
     var generating = false
     var toast: String?
-    var extras: [ExtraItem] = Persist.load("extras") ?? [] { didSet { Persist.save(extras, "extras") } }
+    var lists: [ListSummaryDTO] = []
+    var householdList: ListDTO?
     var watchlist: Set<Int> = Persist.load("watchlist") ?? [] { didSet { Persist.save(watchlist, "watchlist") } }
 
     func flash(_ text: String) {
@@ -263,13 +264,16 @@ final class AppStore {
     }
 
     func isOnList(_ offer: OfferDTO) -> Bool {
-        extras.contains { $0.offerId == offer.id } || shoppingItems.contains { $0.offer?.id == offer.id }
+        householdList?.items.contains { $0.offerId == offer.id } ?? false
     }
 
     func addToList(_ offer: OfferDTO) {
-        guard !isOnList(offer) else { return }
-        extras.append(ExtraItem(name: offer.title, chain: offer.chain, offerId: offer.id, priceCents: offer.priceCents))
+        guard !isOnList(offer), let list = householdList else { return }
+        // sofort anzeigen, Server bestätigt im Hintergrund
+        householdList?.items.append(ListItemDTO(id: -offer.id, name: offer.title, amount: nil, unit: "", chain: offer.chain,
+                                                offerId: offer.id, checked: false, addedBy: "", checkedBy: "", source: "manual"))
         flash("Zur Einkaufsliste hinzugefügt")
+        Task { await addItem(name: offer.title, chain: offer.chain, offerId: offer.id, to: list.id) }
     }
 
     func toggleWatch(_ offer: OfferDTO) {
@@ -285,6 +289,7 @@ final class AppStore {
         self.api = api
         if demo, Demo.screen != "empty" {
             household = Demo.household; offers = Demo.offers; plan = Demo.plan
+            householdList = Demo.householdList; lists = Demo.lists
         }
     }
 
@@ -313,6 +318,7 @@ final class AppStore {
             household = try await api.request("GET", "/household")
             offers = try await api.request("GET", "/offers")
             plan = try? await api.request("GET", "/plans/current")
+            await loadLists()
             error = nil
         } catch {
             self.error = error.localizedDescription
@@ -335,6 +341,7 @@ final class AppStore {
         defer { generating = false }
         do {
             plan = try await api.request("POST", "/plans", body: options, timeout: 300)  // KI-Plan dauert bis ~2 min
+            await loadLists()  // Backend übernimmt die Zutaten in die Haushaltsliste
             error = nil
         } catch {
             self.error = error.localizedDescription
@@ -347,16 +354,6 @@ final class AppStore {
         let today = plan?.entries.filter { $0.day == weekday } ?? []
         return today.first { $0.mealType == "mittag" } ?? today.first
     }
-}
-
-/// Lokale Einträge: selbst hinzugefügte Artikel und gemerkte Angebote.
-/// shortcut: nur auf diesem Gerät gespeichert; gemeinsame Liste/Merkliste übers Backend in Phase 4/5.
-struct ExtraItem: Codable, Hashable, Identifiable {
-    var id = UUID()
-    var name: String
-    var chain: String = ""
-    var offerId: Int?
-    var priceCents: Int?
 }
 
 extension AppStore {

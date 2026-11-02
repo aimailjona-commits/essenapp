@@ -10,6 +10,7 @@ class Settings(BaseSettings):
     model_planner: str = "claude-haiku-5-5"
     model_fast: str = "claude-opus-5-5"
     planner_effort: str = "low"  # low | medium | high | xhigh | max
+    fal_key: str = ""  # optional: KI-Rezeptfotos über fal.ai, wenn kein freies Foto gefunden wird
 
 
 settings = Settings()

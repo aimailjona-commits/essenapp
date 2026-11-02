@@ -28,3 +28,12 @@ def auth(client):
     """Legt einen Haushalt an und liefert die Auth-Header."""
     token = client.post("/households", json={"name": "Test", "member_name": "J"}).json()["token"]
     return {"Authorization": f"Bearer {token}"}
+
+
+@pytest.fixture(autouse=True)
+def no_image_lookup(monkeypatch, request):
+    """API-Tests sollen keine echten Bildsuchen machen (test_recipe_images testet die Suche selbst)."""
+    if request.module.__name__.endswith("test_recipe_images"):
+        return
+    from app.services import recipe_images
+    monkeypatch.setattr(recipe_images, "find_image", lambda q: "")

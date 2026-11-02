@@ -222,6 +222,7 @@ struct SettingsView: View {
                         .buttonStyle(PressableStyle())
                     }
                 }
+                FamilySection()
                 group("APP") {
                     HStack(spacing: 12) {
                         icon("server.rack", Theme.C.text2)

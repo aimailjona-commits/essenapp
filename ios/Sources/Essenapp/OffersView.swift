@@ -33,11 +33,7 @@ struct OffersView: View {
                 .buttonStyle(PressableStyle())
 
                 DisplayHeader(line1: watchlist ? "Merkliste" : "Angebote", line2: watchlist ? "\(all.count) gemerkt" : "\(all.count) diese Woche")
-                Picker("", selection: $watchlist.animation(Theme.spring)) {
-                    Text("Angebote").tag(false)
-                    Text("Merkliste · \(store.watchlist.count)").tag(true)
-                }
-                .pickerStyle(.segmented)
+                PillSegment(options: [(false, "Angebote"), (true, "Merkliste · \(store.watchlist.count)")], selection: $watchlist)
                 SearchField(text: $search, placeholder: "Produkt suchen")
 
                 ScrollView(.horizontal, showsIndicators: false) {

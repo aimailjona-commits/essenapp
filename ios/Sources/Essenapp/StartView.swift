@@ -19,7 +19,7 @@ struct StartView: View {
             VStack(alignment: .leading, spacing: 20) {
                 // Großes Foto mit Begrüßung (Vorlage „HEY, ALEX.“)
                 ZStack(alignment: .bottomLeading) {
-                    HeroImage(name: "grill").frame(height: 330).frame(maxWidth: .infinity).clipped()
+                    HeroImage(name: "grill").frame(height: 330)
                     LinearGradient(colors: [.black.opacity(0.35), .clear, .black.opacity(0.65)], startPoint: .top, endPoint: .bottom)
                     VStack(alignment: .leading, spacing: 6) {
                         Text(greeting.uppercased()).font(Theme.F.hero).foregroundStyle(.white).lineSpacing(-6)

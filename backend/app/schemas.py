@@ -158,3 +158,76 @@ class UsageOut(BaseModel):
     plans: int
     cost_cents_total: float  # geschätzte KI-Kosten in Cent
     cost_cents_last: float
+
+
+# --- Teilen: Einladungen, gemeinsame Einkaufslisten (E40) ---
+
+class InviteOut(BaseModel):
+    code: str
+    url: str
+
+
+class ShareOut(BaseModel):
+    url: str
+
+
+class JoinIn(BaseModel):
+    member_name: str = Field(min_length=1, max_length=50)
+
+
+class MemberOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    name: str
+    role: str
+
+
+class ListCreate(BaseModel):
+    name: str = Field(min_length=1, max_length=100)
+
+
+class ListSummary(BaseModel):
+    id: int
+    name: str
+    kind: str  # household | oneoff
+    share_url: str | None
+    open_count: int
+    total_count: int
+
+
+class ItemCreate(BaseModel):
+    name: str = Field(min_length=1, max_length=100)
+    amount: float | None = Field(None, ge=0, le=100000)
+    unit: str = Field("", max_length=10)
+    chain: str = Field("", max_length=30)
+    offer_id: int | None = None
+
+
+class ItemUpdate(BaseModel):
+    checked: bool | None = None
+    name: str | None = Field(None, min_length=1, max_length=100)
+    amount: float | None = Field(None, ge=0, le=100000)
+
+
+class ItemOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    name: str
+    amount: float | None
+    unit: str
+    chain: str
+    offer_id: int | None
+    checked: bool
+    added_by: str
+    checked_by: str
+    source: str  # plan | manual
+
+
+class ListOut(BaseModel):
+    id: int
+    name: str
+    kind: str
+    share_url: str | None
+    items: list[ItemOut]
