@@ -94,7 +94,10 @@ struct MainView: View {
                 .transition(.scale(scale: 0.85, anchor: .bottom).combined(with: .opacity))
             }
 
-            TabBar(selected: $tab, quickOpen: $quickOpen)
+            if store.detailDepth == 0 {
+                TabBar(selected: $tab, quickOpen: $quickOpen)
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
+            }
         }
         .sheet(isPresented: $showGenerator) { PlanGeneratorSheet().presentationDetents([.large]) }
         .task { await store.loadAll() }

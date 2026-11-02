@@ -305,6 +305,7 @@ struct OfferDetailView: View {
             .padding(.horizontal, Theme.pagePadding).padding(.bottom, 12)
         }
         .toolbar(.hidden, for: .navigationBar)
+        .hidesTabBar()
     }
 
     private func fact(_ symbol: String, _ color: Color, _ title: String, _ value: String) -> some View {

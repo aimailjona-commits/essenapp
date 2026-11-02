@@ -166,6 +166,7 @@ struct ShoppingListView: View {
         }
         .background(Theme.C.bg)
         .toolbar(.hidden, for: .navigationBar)
+        .hidesTabBar()
         .sensoryFeedback(.success, trigger: checkedRaw)
     }
 

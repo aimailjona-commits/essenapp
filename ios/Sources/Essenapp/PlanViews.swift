@@ -265,6 +265,7 @@ struct RecipeDetailView: View {
                 .padding(.horizontal, Theme.pagePadding).padding(.bottom, 12)
         }
         .toolbar(.hidden, for: .navigationBar)
+        .hidesTabBar()
         .sheet(isPresented: $showRating) { RatingSheet(meal: meal).presentationDetents([.medium]).presentationCornerRadius(Theme.R.sheet) }
     }
 }
@@ -381,7 +382,8 @@ struct PlanGeneratorSheet: View {
             }
         }
         .padding(Theme.pagePadding)
-        .background(Theme.C.bg)
+        .frame(maxHeight: .infinity, alignment: .top)
+        .presentationBackground(Theme.C.bg)
         .presentationCornerRadius(Theme.R.sheet)
     }
 

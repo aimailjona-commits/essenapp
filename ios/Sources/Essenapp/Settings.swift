@@ -64,6 +64,7 @@ struct StoreMapView: View {
             .padding(.horizontal, Theme.pagePadding).padding(.bottom, 12)
         }
         .toolbar(.hidden, for: .navigationBar)
+        .hidesTabBar()
         .task {
             radius = Double(store.household?.radiusKm ?? 5)
             selected = Set(store.household?.stores.compactMap(\.osmId) ?? [])
@@ -236,6 +237,7 @@ struct SettingsView: View {
         }
         .background(Theme.C.bg)
         .toolbar(.hidden, for: .navigationBar)
+        .hidesTabBar()
     }
 
     private func group(_ title: String, @ViewBuilder content: () -> some View) -> some View {

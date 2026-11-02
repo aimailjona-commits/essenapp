@@ -235,6 +235,7 @@ final class AppStore {
     var error: String?
     var generating = false
     var toast: String?
+    var detailDepth = 0  // > 0: Detailseite offen → Tab-Leiste ausblenden
     var extras: [ExtraItem] = Persist.load("extras") ?? [] { didSet { Persist.save(extras, "extras") } }
     var watchlist: Set<Int> = Persist.load("watchlist") ?? [] { didSet { Persist.save(watchlist, "watchlist") } }
 
