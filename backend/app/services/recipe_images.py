@@ -16,8 +16,15 @@ TIMEOUT = 8
 HEADERS = {"User-Agent": "Essenapp/0.1 (privat)"}
 FAL_PROMPT = "appetizing overhead photo of {} on a white plate, soft natural light, food photography"
 FAL_URL = "https://fal.run/fal-ai/flux/schnell"
-# Schritt-Bilder (9): einheitlicher Stil laut Spezifikation, 16:10
-STEP_PROMPT = "{title}: {step}. bright overhead food photography, home kitchen, natural light"
+# Schritt-Bilder (9): einheitlicher Stil laut Spezifikation, 16:10. Zwischenschritte zeigen den Zwischenstand
+# (z.B. roher Teig in der Schüssel), nur der letzte Schritt das fertige Gericht.
+STEP_PROMPT = ("Cooking step {n} of {total} for the dish \"{title}\". The step (German): \"{step}\". "
+               "Show ONLY the intermediate state right after this step: the ingredients and cookware as they look now "
+               "(e.g. raw dough in a bowl, chopped vegetables on a board, food in the pan). "
+               "NOT the finished dish, no plated meal. bright overhead food photography, home kitchen, natural light")
+STEP_PROMPT_LAST = ("Final cooking step {n} of {total} for the dish \"{title}\". The step (German): \"{step}\". "
+                    "Show the finished dish as described in this step. bright overhead food photography, "
+                    "home kitchen, natural light")
 STEP_SIZE = {"width": 1024, "height": 640}
 FAL_CENTS = 0.3  # fal.ai FLUX schnell: 0,003 $ je angefangenem Megapixel (fal.ai/models/fal-ai/flux/schnell, 02.11.2026)
 MAX_DOWNLOAD = 5 * 1024 * 1024
@@ -100,6 +107,10 @@ def download_jpeg(url: str, timeout: float = 10) -> bytes | None:
 
 # --- KI-Bild pro Rezeptschritt (9) ---
 
+def step_prompt(title: str, step: str, n: int, total: int) -> str:
+    return (STEP_PROMPT_LAST if n == total else STEP_PROMPT).format(title=title, step=step, n=n, total=total)
+
+
 def make_step_images(db, recipe, media: Path, generate: Callable[..., str] | None = None) -> int:
     """Fehlende Schritt-Bilder erzeugen und unter media/steps/<id>/<n>.jpg speichern (n ab 1). Vorhandene Bilder
     (Spalte oder Datei) werden nie neu erzeugt. Nach jedem Bild gespeichert, damit die App den Fortschritt sieht."""
@@ -113,7 +124,7 @@ def make_step_images(db, recipe, media: Path, generate: Callable[..., str] | Non
             continue
         path = folder / f"{n}.jpg"
         if not path.exists():
-            url = generate(STEP_PROMPT.format(title=recipe.title, step=step), timeout=60, image_size=STEP_SIZE,
+            url = generate(step_prompt(recipe.title, step, n, len(recipe.steps)), timeout=60, image_size=STEP_SIZE,
                            output_format="jpeg")
             log_cost(db, recipe.household_id, "step_image", FAL_CENTS, "fal-ai/flux/schnell", f"Rezept {recipe.id}/{n}")
             raw = download_jpeg(url, timeout=30)

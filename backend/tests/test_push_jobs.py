@@ -300,12 +300,15 @@ def test_device_endpoints_and_test_push(client, auth, db, monkeypatch):
 def test_push_settings(client, auth):
     assert client.get("/me/push/settings", headers=auth).json() == {
         "push_enabled": True, "plan_prompt_enabled": True, "plan_prompt_weekday": 6, "plan_prompt_time": "18:00",
-        "quiet_hours": {"start": "22:00", "end": "07:00"}}
+        "quiet_hours": {"start": "22:00", "end": "07:00"}, "lunchbox_push": None}
     r = client.patch("/me/push/settings", headers=auth, json={
         "plan_prompt_weekday": 0, "plan_prompt_time": "07:30", "push_enabled": False, "plan_prompt_enabled": None})
     assert r.status_code == 200, r.text
     assert r.json() == {"push_enabled": False, "plan_prompt_enabled": True, "plan_prompt_weekday": 0,
-                        "plan_prompt_time": "07:30", "quiet_hours": {"start": "22:00", "end": "07:00"}}
+                        "plan_prompt_time": "07:30", "quiet_hours": {"start": "22:00", "end": "07:00"},
+                        "lunchbox_push": None}
+    assert client.patch("/me/push/settings", headers=auth, json={"lunchbox_push": "20:00"}).json()["lunchbox_push"] == "20:00"
+    assert client.patch("/me/push/settings", headers=auth, json={"lunchbox_push": None}).json()["lunchbox_push"] is None
     r = client.patch("/me/push/settings", headers=auth, json={"quiet_hours": None})
     assert r.json()["quiet_hours"] is None and r.json()["plan_prompt_time"] == "07:30"
     client.patch("/me/push/settings", headers=auth, json={"quiet_hours": {"start": "23:00", "end": "06:30"}})

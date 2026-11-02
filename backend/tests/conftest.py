@@ -52,3 +52,14 @@ def no_local_env(monkeypatch):
     from app.core.config import settings
     monkeypatch.setattr(settings, "reinstall_base", None)
     monkeypatch.setattr(settings, "fal_key", "")  # sonst starten Schritt-Bilder echte fal.ai-Aufrufe gegen die echte DB
+    monkeypatch.setattr(settings, "apns_key_path", "")  # kein echter Push (test_push_jobs setzt eigene Werte)
+
+
+@pytest.fixture(autouse=True)
+def no_real_ai(monkeypatch):
+    """Nie echte KI-Aufrufe: jeder Test muss ask_claude ersetzen, sonst schlägt er laut fehl."""
+    import anthropic
+
+    def blocked(*a, **kw):
+        raise AssertionError("Echter Anthropic-Aufruf im Test")
+    monkeypatch.setattr(anthropic, "Anthropic", blocked)

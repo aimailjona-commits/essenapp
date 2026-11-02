@@ -184,6 +184,41 @@ def plan_prompts(db: Session, now: datetime) -> None:
             run(db, name, now, prompt_job(member))
 
 
+def weekly_basics(db: Session, now: datetime) -> str:
+    """Frühstück & Snacks (23a): Wochen-Basics jeden Montag auf die Haushaltsliste (nach dem Angebotsimport 06:00)."""
+    from app.api import apply_weekly_basics  # api importiert jobs nicht; hier spät, damit der Scheduler leicht bleibt
+    from app.models import WeeklyBasic
+    households = list(db.scalars(select(Household).where(Household.id.in_(select(WeeklyBasic.household_id)))))
+    for household in households:
+        apply_weekly_basics(db, household)
+    db.commit()
+    return f"{len(households)} Haushalte"
+
+
+def lunchbox_job(member: Member):
+    """„Lunchbox für morgen vorbereiten“ (24): nur wenn morgen im aktuellen Plan eine Lunchbox für das Mitglied steht."""
+    def job(db, now):
+        plan = db.scalar(select(MealPlan).where(MealPlan.household_id == member.household_id)
+                         .order_by(MealPlan.id.desc()).limit(1))
+        tomorrow = (now + timedelta(days=1)).weekday()
+        entry = next((e for e in (plan.entries if plan else []) if e.meal_type == "lunchbox" and e.day == tomorrow
+                      and any(p["member_id"] == member.id for p in e.portions)), None)
+        if entry is None:
+            return "keine Lunchbox morgen"
+        if not notify(member, now, "Essenapp", f"🥡 Lunchbox für morgen vorbereiten: {entry.recipe.title}",
+                      click_url=f"essenapp://recipe/{entry.recipe_id}", thread_id="lunchbox"):
+            raise RuntimeError("Push nicht gesendet")
+        return entry.recipe.title
+    return job
+
+
+def lunchbox_reminders(db: Session, now: datetime) -> None:
+    for member in db.scalars(select(Member).where(Member.lunchbox_push.is_not(None), Member.push_enabled)).all():
+        name = f"lunchbox:{member.id}"
+        if due(db, name, last_slot(f"täglich {member.lunchbox_push}", now), now):
+            run(db, name, now, lunchbox_job(member))
+
+
 def reinstall_slot(now: datetime) -> datetime | None:
     """Alle 6 Tage seit REINSTALL_BASE um 18:00 (freie Apple-ID: Signatur gilt 7 Tage, E2)."""
     base = settings.reinstall_base
@@ -213,6 +248,7 @@ JOBS = {  # name: (Zeitplan oder None, Funktion(db, now) -> Info); Zeitpläne pe
     "week_review": ("So 19:00", waiting("Phase 14 (55 Wochenrückblick)")),
     "achievements": ("täglich 03:00", waiting("Phase 14 (54 Erfolge)")),
     "reinstall_reminder": (None, reinstall_reminder),  # Termin aus reinstall_slot()
+    "weekly_basics": ("Mo 06:30", weekly_basics),
 }
 
 
@@ -223,6 +259,7 @@ def tick(db: Session, now: datetime) -> None:
         if due(db, name, last_slot(spec, now), now):
             run(db, name, now)
     plan_prompts(db, now)
+    lunchbox_reminders(db, now)
     if due(db, "reinstall_reminder", reinstall_slot(now), now):
         run(db, "reinstall_reminder", now)
     send_outbox(db, now)

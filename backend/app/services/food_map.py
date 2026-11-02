@@ -68,12 +68,14 @@ def piece_g(key: str) -> float | None:
     return next((g for k, g in PIECE_G.items() if last == k or (len(k) >= 4 and last.endswith(k))), None)
 
 
-def ask_claude(prompt: str | list[dict], schema: type[BaseModel]) -> tuple[BaseModel, dict]:
+def ask_claude(prompt: str | list[dict], schema: type[BaseModel], think: bool = True) -> tuple[BaseModel, dict]:
     """Haiku (MODEL_FAST) mit strukturierter Ausgabe; prompt = Text oder Inhaltsblöcke (z.B. Bilder). Auch für Import,
     Kühlschrank-Scan und „Was koche ich jetzt?“ (5/69)."""
     client = anthropic.Anthropic(api_key=settings.anthropic_api_key or None)
+    # think=False: ohne Denkphase (Haiku 5.5 erlaubt das bis Effort high) – für schnelle Antworten („Keine Lust“, 16)
     response = client.messages.parse(model=settings.model_fast, max_tokens=8000, output_config={"effort": "low"},
-                                     messages=[{"role": "user", "content": prompt}], output_format=schema)
+                                     messages=[{"role": "user", "content": prompt}], output_format=schema,
+                                     **({} if think else {"thinking": {"type": "disabled"}}))
     u = response.usage
     usage = {"model": response.model, "input_tokens": u.input_tokens, "output_tokens": u.output_tokens,
              "cache_read_input_tokens": u.cache_read_input_tokens or 0,

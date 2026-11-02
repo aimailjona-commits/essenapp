@@ -81,8 +81,42 @@ class Stock:
         if (basic := self.basic(name)) is not None:
             return math.inf if basic else 0.0
         k = (ingredient_key(name), unit)
+        if k not in self.left and self.left.get((k[0], "")) == math.inf:
+            return math.inf  # ohne Einheit und Menge vorhanden (z.B. Wochen-Basic „Brot“): gilt für jede Einheit
         if k not in self.left:
             return math.inf if ai_in_pantry else 0.0
         took = min(self.left[k], needed)
         self.left[k] -= took
         return took
+
+
+# --- Reste (19): Haltbarkeit nach dem Öffnen ---
+
+SHELF_DAYS = {"fleisch_fisch": 2, "obst_gemuese": 3, "kuehlung": 4}  # frisch 2–3 Tage, Kühlung 4, Vorrat egal
+SHELF_WORDS = {  # für Zutaten ohne Angebot; Wortanfang oder -ende („Hähnchenbrust“, „Schlagsahne“)
+    "fleisch_fisch": ("hähnchen", "huhn", "pute", "hack", "rind", "schwein", "lamm", "fisch", "lachs", "garnele",
+                      "speck", "schinken", "filet", "steak", "geschnetzeltes", "forelle", "kabeljau", "gyros"),
+    "kuehlung": ("sahne", "milch", "joghurt", "quark", "käse", "feta", "mozzarella", "schmand", "frischkäse",
+                 "crème", "creme", "skyr", "ricotta", "mascarpone", "tofu", "hummus", "kokosmilch"),
+    "obst_gemuese": ("salat", "spinat", "zucchini", "paprika", "tomate", "gurke", "brokkoli", "blumenkohl",
+                     "champignon", "pilz", "lauch", "porree", "kohl", "aubergine", "spargel", "kürbis", "avocado",
+                     "beere", "kräuter", "petersilie", "basilikum", "koriander", "schnittlauch", "rucola", "fenchel",
+                     "sellerie", "mangold", "bohne", "erbse", "kohlrabi", "radieschen"),
+}
+LONG_KEEP = ("kartoffel", "zwiebel", "knoblauch", "apfel", "zitrone", "limette", "ingwer", "möhre", "karotte",
+             "dose", "getrocknet", "tk", "tiefkühl")
+# Begriffe für haltbare Sachen (Abhaken → „In den Vorrat?“, 60): Wortanfang oder -ende
+PANTRY_WORDS = ("reis", "nudel", "pasta", "spaghetti", "mehl", "zucker", "salz", "öl", "essig", "linsen", "bohnen",
+                "kichererbsen", "dose", "konserve", "brühe", "gewürz", "pfeffer", "haferflocken", "kaffee", "honig",
+                "senf", "ketchup", "tomatenmark", "passierte", "couscous", "bulgur", "quinoa", "müsli")
+
+
+def shelf_days(name: str, category: str | None = None) -> int | None:
+    """Tage, die ein angebrochener Rest hält; None = egal (Vorrat, Lagergemüse)."""
+    words = ingredient_key(name).split()
+    if any(w.startswith(p) or w.endswith(p) for w in words for p in (*LONG_KEEP, *PANTRY_WORDS)):
+        return None
+    if category in SHELF_DAYS:
+        return SHELF_DAYS[category]
+    return next((SHELF_DAYS[c] for c, ps in SHELF_WORDS.items()
+                 if any(w.startswith(p) or w.endswith(p) for w in words for p in ps)), None)

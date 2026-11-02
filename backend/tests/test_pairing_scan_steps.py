@@ -170,8 +170,11 @@ def test_make_step_images_once_and_logged(db, tmp_path, monkeypatch):
 
     monkeypatch.setattr(recipe_images, "download_jpeg", lambda url, timeout=10: JPEG)
     assert recipe_images.make_step_images(db, recipe, tmp_path, generate) == 2
-    assert calls[0] == ("Dal: Zwiebel anbraten. bright overhead food photography, home kitchen, natural light",
-                        {"image_size": {"width": 1024, "height": 640}, "output_format": "jpeg"})
+    assert calls[0][1] == {"image_size": {"width": 1024, "height": 640}, "output_format": "jpeg"}
+    # Zwischenschritt: Position + Schritttext + „nicht das fertige Gericht“; letzter Schritt zeigt das Gericht
+    assert 'step 1 of 3 for the dish "Dal"' in calls[0][0] and '"Zwiebel anbraten"' in calls[0][0]
+    assert "NOT the finished dish" in calls[0][0] and "NOT the finished dish" in calls[1][0]  # Schritt 1 und 2 von 3
+    assert "Show the finished dish" in recipe_images.step_prompt("Dal", "Servieren", 3, 3)
     assert recipe.step_images == [f"/media/steps/{recipe.id}/{n}.jpg" for n in (1, 2, 3)]
     assert (tmp_path / "steps" / str(recipe.id) / "1.jpg").read_bytes() == JPEG
     assert [c.cost_cents for c in db.query(AiCost)] == [0.3, 0.3]

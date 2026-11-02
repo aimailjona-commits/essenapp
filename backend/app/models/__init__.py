@@ -8,6 +8,9 @@ from app.core.db import Base
 # Geld immer in Cent (int), nie float.
 
 QUIET_DEFAULT = {"start": "22:00", "end": "07:00"}  # Ruhezeit für Pushes (Europe/Berlin)
+# Abwechslungsregeln (12): Standardwerte laut Spezifikation
+VARIETY_DEFAULT = {"max_pasta": 1, "max_rice": 2, "max_potato": 2, "min_fish": 1, "veggie_days": 2, "max_red_meat": 2,
+                   "repeat_weeks": 3, "no_same_cuisine_row": True}
 
 
 class Household(Base):
@@ -32,6 +35,7 @@ class Household(Base):
     max_cook_minutes: Mapped[int] = mapped_column(default=45)
     radius_km: Mapped[int] = mapped_column(default=5, server_default="5")  # Umkreis für die Ladensuche
     step_images: Mapped[bool] = mapped_column(default=True, server_default=true())  # KI-Schritt-Bilder (9), nur mit FAL_KEY
+    variety: Mapped[dict] = mapped_column(JSON, default=dict, server_default="{}")  # Abwechslungsregeln (12), fehlende Schlüssel = VARIETY_DEFAULT
     created_at: Mapped[datetime] = mapped_column(server_default=func.now())
 
     members: Mapped[list["Member"]] = relationship(back_populates="household")
@@ -51,6 +55,7 @@ class Member(Base):
     plan_prompt_weekday: Mapped[int] = mapped_column(default=6, server_default="6")  # 0 = Montag
     plan_prompt_time: Mapped[str] = mapped_column(String(5), default="18:00", server_default="18:00")
     quiet_hours: Mapped[dict | None] = mapped_column(JSON, default=lambda: dict(QUIET_DEFAULT))  # None = keine
+    lunchbox_push: Mapped[str | None] = mapped_column(String(5))  # „Lunchbox für morgen vorbereiten“ um HH:MM, None = aus (24)
 
     household: Mapped[Household] = relationship(back_populates="members")
     profile: Mapped["MemberProfile | None"] = relationship(cascade="all, delete-orphan")
@@ -148,8 +153,20 @@ class PantryItem(Base):
     unit: Mapped[str] = mapped_column(String(10), default="")  # g, ml, stk oder leer
     best_before: Mapped[date | None]
     is_basic: Mapped[bool] = mapped_column(default=False)
-    source: Mapped[str] = mapped_column(String(10), default="manual")  # manual | list | scan | barcode
+    source: Mapped[str] = mapped_column(String(10), default="manual")  # manual | list | scan | barcode | rest
+    location: Mapped[str | None] = mapped_column(String(15))  # kuehlschrank | vorrat | gefrierfach (69), None = offen
     updated_at: Mapped[datetime] = mapped_column(default=datetime.now, onupdate=datetime.now)
+
+
+class WeeklyBasic(Base):
+    """Frühstück & Snacks (23a): kommt jede Woche mit der Wochenmenge auf die Haushaltsliste (Quelle basics)."""
+    __tablename__ = "weekly_basic"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    household_id: Mapped[int] = mapped_column(ForeignKey("household.id"), index=True)
+    name: Mapped[str] = mapped_column(String(100))
+    amount: Mapped[float | None]  # Wochenmenge, None = „1×“ ohne Menge (z.B. Brot)
+    unit: Mapped[str] = mapped_column(String(10), default="")  # g, ml, stk oder leer
 
 
 class HouseholdStore(Base):
@@ -283,6 +300,7 @@ class MealPlanEntry(Base):
     portions_total: Mapped[float] = mapped_column(default=0, server_default="0")
     # Mengenfaktor für eingesetzte Rezepte (3): Zutatenmenge im Plan = Rezeptmenge × scale (KI-Gerichte: 1)
     scale: Mapped[float] = mapped_column(default=1, server_default="1")
+    guests: Mapped[int] = mapped_column(default=0, server_default="0")  # Gäste (15), in portions_total enthalten
 
     recipe: Mapped[Recipe] = relationship()
 

@@ -73,7 +73,7 @@ class Idea(BaseModel):
     title: str
     description: str
     cuisine: str
-    meal_type: Literal["fruehstueck", "mittag", "abend", "dessert"]
+    meal_type: Literal["fruehstueck", "mittag", "abend", "snack", "dessert"]
     prep_minutes: int
     servings: int
     ingredients: list[IdeaIngredient]
@@ -87,49 +87,64 @@ class Ideas(BaseModel):
 
 COOK = """Schlage {n} verschiedene Gerichte vor, die man JETZT kochen kann.
 Regeln:
-- Höchstens 30 Minuten. Nur Zutaten aus dem Vorrat und den Basics; höchstens 2 Zutaten dürfen fehlen.
+- Höchstens {minutes} Minuten. Nur Zutaten aus dem Vorrat und den Basics; {missing_rule}.
 - Zutatennamen exakt wie im Vorrat schreiben, Mengen für {persons} Portionen; bald ablaufende Sachen zuerst nutzen.
 - Ernährungsform, Allergien und Ausschlüsse sind harte Regeln.
-- Alle Texte auf Deutsch, 3–6 kurze Schritte. image_query: 2–4 englische Suchbegriffe für ein Foto.
+- Alle Texte auf Deutsch, {steps} kurze Schritte, Beschreibung ein kurzer Satz. image_query: 2–4 englische Suchbegriffe für ein Foto.
 
 Ernährung: {diet}
 Allergien: {allergies}
 Mag nicht: {dislikes}
 Basics (immer da): {basics}
-Vorrat: {stock}"""
+Vorrat: {stock}{exclude}"""
 
 
-def missing(ingredients: list[dict], pantry: list[PantryItem]) -> list[dict]:
-    """Zutaten, die (ganz oder teilweise) nicht im Vorrat sind, mit der fehlenden Menge. g und ml gelten als gleich."""
+ALWAYS = {"wasser", "leitungswasser", "eiswasser"}  # kommt aus dem Hahn
+
+
+def missing(ingredients: list[dict], pantry: list[PantryItem], partial_ok: bool = False) -> list[dict]:
+    """Zutaten, die (ganz oder teilweise) nicht im Vorrat sind, mit der fehlenden Menge. g und ml gelten als gleich.
+    partial_ok: etwas davon da = nicht fehlend (Vorratsmengen sind Schätzungen)."""
     stock, out = Stock(pantry), []
     for i in ingredients:
         amount, unit = i["amount"], i["unit"]
         if unit in SPOON_G:
             amount, unit = amount * SPOON_G[unit], "g"
+        if " ".join(i["name"].lower().split()) in ALWAYS:
+            continue
         have = stock.take(i["name"], unit, amount)
         if have < amount and unit in ("g", "ml"):
             have += stock.take(i["name"], "ml" if unit == "g" else "g", amount - have)
+        if have < amount and partial_ok and have > 0:
+            continue
         if have < amount:
             factor = (amount - have) / amount if amount else 1
             out.append({"name": i["name"], "amount": round(i["amount"] * factor, 1), "unit": i["unit"]})
     return out
 
 
-def cook_now(prefs, pantry: list[PantryItem], ask: Callable | None = None) -> tuple[list[tuple[Idea, list]], dict]:
-    """Bis zu 3 Gerichte, sortiert nach Abdeckung (wenigste fehlende Zutaten zuerst); mehr als 2 fehlende → raus.
-    Die KI schlägt eins mehr vor, damit nach der Prüfung meist 3 übrig bleiben."""
+def cook_now(prefs, pantry: list[PantryItem], ask: Callable | None = None, minutes: int = 30,
+             max_missing: int = MAX_MISSING, exclude: list[str] = ()) -> tuple[list[tuple[Idea, list]], dict]:
+    """Bis zu 3 Gerichte, sortiert nach Abdeckung (wenigste fehlende Zutaten zuerst); mehr als max_missing fehlende
+    → raus. Die KI schlägt eins mehr vor, damit nach der Prüfung meist 3 übrig bleiben. „Keine Lust“ (16):
+    minutes=15, max_missing=0 (dann zählt eine angebrochene Menge als vorhanden), exclude = schon gezeigte Titel."""
     ask = ask or food_map.ask_claude
     stock = [p for p in pantry if not p.is_basic and p.amount != 0]
     if not stock:
         return [], {}
     prompt = COOK.format(
-        n=IDEAS + 1, persons=prefs.persons, diet=prefs.diet, allergies=", ".join(prefs.allergies) or "keine",
+        n=IDEAS + 1 if max_missing else IDEAS, persons=prefs.persons, minutes=minutes,
+        steps="3–6" if max_missing else "3–4",  # „Keine Lust“: kürzer = schneller (< 8 s)
+        missing_rule="es darf nichts fehlen" if not max_missing else f"höchstens {max_missing} Zutaten dürfen fehlen",
+        exclude=f"\nNicht noch einmal vorschlagen: {', '.join(exclude)}" if exclude else "",
+        diet=prefs.diet, allergies=", ".join(prefs.allergies) or "keine",
         dislikes=", ".join(prefs.excluded_ingredients) or "-",
         basics=", ".join(p.name for p in pantry if p.is_basic and p.amount != 0) or "-",
         stock=", ".join(p.name + (f" {p.amount:g}{p.unit}" if p.amount is not None else "")
                         + (f" bis {p.best_before:%d.%m.}" if p.best_before else "") for p in stock))
-    ideas, usage = ask(prompt, Ideas)
-    checked = [(idea, missing([i.model_dump() for i in idea.ingredients], pantry)) for idea in ideas.ideas
-               if idea.ingredients and idea.steps]
-    checked = sorted((c for c in checked if len(c[1]) <= MAX_MISSING), key=lambda c: len(c[1]))
+    # „Keine Lust“ muss in < 8 s antworten: ohne Denkphase
+    ideas, usage = ask(prompt, Ideas) if max_missing else ask(prompt, Ideas, think=False)
+    checked = [(idea, missing([i.model_dump() for i in idea.ingredients], pantry, partial_ok=not max_missing))
+               for idea in ideas.ideas if idea.ingredients and idea.steps and idea.prep_minutes <= minutes]
+    checked = sorted((c for c in checked if len(c[1]) <= max_missing), key=lambda c: len(c[1]))
     return checked[:IDEAS], usage

@@ -53,6 +53,7 @@ def test_profile_created_from_household_and_validated(client, auth):
 def test_plan_two_members_portions_and_allergies(client, auth, db, monkeypatch):
     """Abnahme 48: Allergien beider, Portionen je Person, Oma mittags nie zu Hause."""
     client.patch("/household", headers=auth, json={"meal_types": ["mittag", "abend"], "plan_days": [0],
+                                                    "variety": {"min_fish": 0},
                                                     "allergies": ["Sellerie"]})
     oma = join(client, auth)
     client.patch("/me/profile", headers=auth, json={"kcal": 2500, "allergies": ["Nüsse"]})

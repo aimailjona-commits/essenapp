@@ -22,6 +22,30 @@ class StoreOut(StoreIn):
     model_config = ConfigDict(from_attributes=True)
 
 
+class VarietyRules(BaseModel):
+    """Abwechslungsregeln (12), Standardwerte laut Spezifikation. Zählen für Hauptgerichte (mittag/abend/lunchbox)."""
+    max_pasta: int = Field(1, ge=0, le=14)
+    max_rice: int = Field(2, ge=0, le=14)
+    max_potato: int = Field(2, ge=0, le=14)
+    min_fish: int = Field(1, ge=0, le=3)  # gilt nicht bei vegetarisch/vegan oder Fisch-Allergie/-Abneigung
+    veggie_days: int = Field(2, ge=0, le=7)  # Tage, an denen alle Hauptgerichte vegetarisch/vegan sind
+    max_red_meat: int = Field(2, ge=0, le=14)
+    repeat_weeks: int = Field(3, ge=1, le=12)  # gleiches Gericht frühestens nach N Wochen
+    no_same_cuisine_row: bool = True  # gleiche Küche nicht an zwei Tagen hintereinander
+
+
+class VarietyUpdate(BaseModel):
+    """Nur genannte Regeln ändern (PATCH /household {"variety": {...}})."""
+    max_pasta: int | None = Field(None, ge=0, le=14)
+    max_rice: int | None = Field(None, ge=0, le=14)
+    max_potato: int | None = Field(None, ge=0, le=14)
+    min_fish: int | None = Field(None, ge=0, le=3)
+    veggie_days: int | None = Field(None, ge=0, le=7)
+    max_red_meat: int | None = Field(None, ge=0, le=14)
+    repeat_weeks: int | None = Field(None, ge=1, le=12)
+    no_same_cuisine_row: bool | None = None
+
+
 class HouseholdSettings(BaseModel):
     name: str | None = None
     plz: str | None = Field(None, pattern=r"^\d{5}$")
@@ -38,6 +62,7 @@ class HouseholdSettings(BaseModel):
     max_cook_minutes: int | None = Field(None, ge=5)
     radius_km: int | None = Field(None, ge=1, le=30)
     step_images: bool | None = None  # Schalter „Schritt-Bilder erzeugen (ca. 2 Cent/Rezept)“ (9)
+    variety: VarietyUpdate | None = None  # Abwechslungsregeln (12)
     stores: list[StoreIn] | None = None
 
 
@@ -62,6 +87,7 @@ class HouseholdOut(BaseModel):
     max_cook_minutes: int
     radius_km: int
     step_images: bool  # Schalter (Standard an); wirkt nur, wenn step_images_available
+    variety: VarietyRules  # Abwechslungsregeln (12), immer vollständig
     stores: list[StoreOut]
 
     @computed_field
@@ -149,6 +175,11 @@ class Portion(BaseModel):
     factor: float  # kcal-Ziel / 2000, auf 0,25 gerundet
 
 
+class RestBadge(BaseModel):
+    name: str  # Zutat
+    from_day: int  # „♻︎ Rest von Mo“ (0 = Montag)
+
+
 class MealOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
@@ -161,6 +192,26 @@ class MealOut(BaseModel):
     portions: list[Portion]  # Esser dieses Gerichts (48); leer bei alten Plänen
     portions_total: float  # Rezeptmengen gelten für so viele Portionen; 0 = alter Plan → recipe.servings
     scale: float  # Menge im Plan = Rezeptmenge × scale (eingesetzte Rezepte, 3); KI-Gerichte 1
+    guests: int  # Gäste (15), Badge „+4“; in portions_total enthalten
+    rests: list[RestBadge] = []  # frische Zutaten aus dem Rest eines früheren Gerichts (19)
+
+
+class VarietyOut(BaseModel):
+    ok: bool  # Chip „✓ Abwechslung“
+    issues: list[str]  # sonst „⚠ 2× Pasta“ (erstes Element), alle Verstöße
+
+
+class LeftoverOut(BaseModel):
+    name: str
+    amount: float
+    unit: str
+    until_day: int  # haltbar bis (0 = Montag der Planwoche, ≥ 7 = nächste Woche)
+    suggestion: str  # z.B. „Bis Do verbrauchen, z.B. im Frühstück oder als Snack“
+
+
+class LeftoversOut(BaseModel):
+    planned: int  # frische Reste, die ein späteres Gericht verwendet („3 verplant“)
+    left: list[LeftoverOut]  # übrig („1 übrig (Sahne 100 ml)“)
 
 
 class PlanOut(BaseModel):
@@ -171,6 +222,8 @@ class PlanOut(BaseModel):
     total_cents: int
     saved_cents: int
     entries: list[MealOut]
+    variety: VarietyOut = VarietyOut(ok=True, issues=[])  # (12), live berechnet
+    leftovers: LeftoversOut = LeftoversOut(planned=0, left=[])  # Reste-Karte im Plan-Kopf (19)
 
 
 class EntryUpdate(BaseModel):
@@ -187,6 +240,15 @@ class NearbyStoreOut(BaseModel):
     distance_km: float
 
 
+PlanMeal = Literal["fruehstueck", "mittag", "abend", "snack", "dessert", "lunchbox", "vorspeise"]
+
+
+class GuestSlot(BaseModel):
+    day: Annotated[int, Field(ge=0, le=6)]
+    meal_type: PlanMeal
+    count: int = Field(ge=0, le=20)
+
+
 class PlanOptions(BaseModel):
     """Einstellungen nur für diesen Plan (POST /plans). Fehlende Felder = Werte des Haushalts."""
     cuisines: list[str] | None = None
@@ -198,7 +260,10 @@ class PlanOptions(BaseModel):
     max_cook_minutes: int | None = Field(None, ge=5)
     diet: str | None = None
     wishes: str | None = Field(None, max_length=300)  # Freitext, wird nie gespeichert
-    save_as_default: bool = False  # zusätzlich (ohne wishes) in den Haushalt schreiben
+    guests: list[GuestSlot] | None = Field(None, max_length=50)  # „+ Gäste“ je Tag/Mahlzeit (15)
+    guest_budget_cents: int | None = Field(None, ge=0)  # „Gäste-Budget extra“, sonst aus dem Wochenbudget
+    special: str | None = Field(None, max_length=20)  # Special-Vorlage = key aus GET /specials (25)
+    save_as_default: bool = False  # zusätzlich (ohne wishes/guests/special) in den Haushalt schreiben
 
 
 class CostEntry(BaseModel):
@@ -299,7 +364,7 @@ class ItemPatchOut(ItemOut):
 # --- Ziele pro Person (48) ---
 
 GOALS = Literal["ausgewogen", "proteinreich", "kalorienarm", "eigenes"]
-MealType = Literal["fruehstueck", "mittag", "abend", "dessert"]
+MealType = Literal["fruehstueck", "mittag", "abend", "snack", "dessert"]
 Weekday = Annotated[int, Field(ge=0, le=6)]
 Tag = Annotated[str, Field(min_length=1, max_length=50)]
 
@@ -343,7 +408,8 @@ class PantryIn(BaseModel):
     unit: PantryUnit = ""
     best_before: date | None = None
     is_basic: bool = False
-    source: Literal["manual", "list", "scan", "barcode"] = "manual"
+    source: Literal["manual", "list", "scan", "barcode", "rest"] = "manual"  # rest = Reste nach dem Kochen (19)
+    location: Literal["kuehlschrank", "vorrat", "gefrierfach"] | None = None  # Ort aus dem Kühlschrank-Foto (69)
 
 
 class ScanItem(BaseModel):
@@ -374,6 +440,7 @@ class PantryUpdate(BaseModel):
     unit: PantryUnit | None = None
     best_before: date | None = None
     is_basic: bool | None = None
+    location: Literal["kuehlschrank", "vorrat", "gefrierfach"] | None = None  # explizit null = kein Ort
 
 
 class PantryOut(BaseModel):
@@ -387,6 +454,7 @@ class PantryOut(BaseModel):
     best_before: date | None
     is_basic: bool
     source: str
+    location: str | None  # kuehlschrank | vorrat | gefrierfach, null = unbekannt
     updated_at: datetime
 
 
@@ -420,6 +488,7 @@ class PushSettings(BaseModel):
     plan_prompt_weekday: int  # 0 = Montag … 6 = Sonntag
     plan_prompt_time: str
     quiet_hours: QuietHours | None  # null = keine Ruhezeit
+    lunchbox_push: str | None  # „Lunchbox für morgen vorbereiten“ um HH:MM (24), null = aus
 
 
 class PushSettingsUpdate(BaseModel):
@@ -428,6 +497,7 @@ class PushSettingsUpdate(BaseModel):
     plan_prompt_weekday: Weekday | None = None
     plan_prompt_time: HHMM | None = None
     quiet_hours: QuietHours | None = None  # explizit null = Ruhezeit aus
+    lunchbox_push: HHMM | None = None  # explizit null = aus
 
 
 # --- Preisverlauf (28) ---
@@ -632,3 +702,116 @@ class StepImagesOut(BaseModel):
 class CookIdeaOut(BaseModel):
     recipe: RecipeOut  # gespeichert (source ai) → Rezeptdetail, „Heute kochen“ über …/replace
     missing: list[MissingIngredient]  # höchstens 2, „Zur Liste“
+
+
+# --- Clever planen (Phase 11) + Ersatzzutaten (7) ---
+
+class GuestsIn(BaseModel):
+    count: int = Field(ge=0, le=20)  # „Gäste hinzufügen“ nachträglich (15), ohne KI
+
+
+class PostponeIn(BaseModel):
+    """„Auf morgen verschieben?“ (16): Rezept auf diesen Tag; spätere Gerichte derselben Mahlzeit rücken einen Tag
+    weiter (fixierte bleiben), das letzte fällt aus dem Plan."""
+    recipe_id: int
+    day: Annotated[int, Field(ge=0, le=6)]
+    meal_type: PlanMeal
+
+
+class NoMoodIn(BaseModel):
+    exclude: list[Annotated[str, Field(max_length=200)]] = Field(default_factory=list, max_length=30)  # gezeigte Titel
+
+
+class EntryLeftover(BaseModel):
+    """Erwarteter Rest nach dem Kochen dieses Gerichts (19) → bestätigen → POST /pantry/bulk (source rest)."""
+    name: str
+    amount: float
+    unit: str
+    best_before: date | None  # frische Reste: Anbruch + 2–4 Tage, sonst null
+
+
+class WeeklyBasicIn(BaseModel):
+    name: str = Field(min_length=1, max_length=100)
+    amount: float | None = Field(None, ge=0, le=100000)  # Wochenmenge, null = ohne Menge (z.B. Brot)
+    unit: PantryUnit = ""
+
+
+class WeeklyBasicUpdate(BaseModel):
+    name: str | None = Field(None, min_length=1, max_length=100)
+    amount: float | None = Field(None, ge=0, le=100000)
+    unit: PantryUnit | None = None
+
+
+class WeeklyBasicOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    name: str
+    amount: float | None
+    unit: str
+
+
+class SubOffer(BaseModel):
+    id: int
+    chain: str
+    price_cents: int
+
+
+class SubIngredientOut(BaseModel):
+    name: str
+    amount: float
+    unit: str
+    in_pantry: bool  # „im Vorrat“
+    offer: SubOffer | None  # „im Angebot“ (günstigstes passendes Angebot der eigenen Läden)
+
+
+class SubstituteOption(BaseModel):
+    note: str  # Wirkung, z.B. „cremiger, weniger flüssig“
+    ingredients: list[SubIngredientOut]  # 1–3 Zutaten mit umgerechneter Menge
+
+
+class SubstitutesOut(BaseModel):
+    ingredient: dict  # die ersetzte Zutat {name, amount, unit}
+    source: Literal["tabelle", "ki"]
+    options: list[SubstituteOption]  # 2–4, nie mit Allergenen/gegen die Ernährungsform
+
+
+class SubstituteIn(BaseModel):
+    ingredients: list[IngredientIn] = Field(min_length=1, max_length=3)  # gewählte Option (Mengen wie geliefert)
+
+
+class SpecialOut(BaseModel):
+    key: str  # für PlanOptions.special
+    name: str
+    emoji: str
+    date: date  # Anlass bzw. Saisonbeginn
+    days_until: int
+    template: Literal["festtagsmenue", "plaetzchen", "grillparty"]
+    template_name: str  # Festtagsmenü | Plätzchen-Back-Plan | Grillparty
+    running: bool  # Saison läuft schon
+
+
+class BannerOut(SpecialOut):
+    text: str  # „🎄 Weihnachten in 12 Tagen – Menü planen?“
+
+
+class HolidayOut(BaseModel):
+    date: date
+    name: str
+
+
+class SpecialsOut(BaseModel):
+    state: str | None  # Bundesland-Kürzel aus der PLZ
+    banner: BannerOut | None  # Start-Banner 14 Tage vorher
+    specials: list[SpecialOut]  # alle jetzt passenden Vorlagen
+    holidays: list[HolidayOut]  # Feiertage der nächsten 14 Tage
+    seasons: list[str]  # z.B. „Spargelzeit“
+    produce: list[str]  # Saisonkalender Obst/Gemüse dieses Monats
+
+
+class GeneratorOut(BaseModel):
+    """Plan-Generator nach „Plan erstellen“ (17): Standards des Haushalts + „Diese Woche im Angebot: …“."""
+    week: int  # KW, für die geplant wird (ab Freitag die nächste)
+    defaults: PlanOptions
+    top_offers: list[OfferOut]  # Top-3 Angebote (höchster Rabatt, Lebensmittel)
+    banner: BannerOut | None

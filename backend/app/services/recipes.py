@@ -136,22 +136,26 @@ def is_disliked(stats: Stats | None) -> bool:
     return stats is not None and (stats.again == "nie" or (stats.avg_stars is not None and stats.avg_stars <= 2))
 
 
-def recent_titles(db: Session, household_id: int, today: date | None = None) -> list[str]:
-    """Gerichte der beiden Vorwochen: Wiederholung frühestens nach 3 Wochen (12)."""
+def recent_titles(db: Session, household_id: int, today: date | None = None, repeat_weeks: int = REPEAT_WEEKS,
+                  exclude_plan: int | None = None) -> list[str]:
+    """Gerichte der Vorwochen: gleiches Gericht frühestens nach repeat_weeks Wochen (12, Standard 3).
+    exclude_plan: der geprüfte Plan selbst zählt nicht."""
     today = today or date.today()
-    weeks = [f"{y}-W{w:02d}" for y, w, _ in ((today - timedelta(weeks=k)).isocalendar() for k in (1, 2))]
+    weeks = [f"{y}-W{w:02d}" for y, w, _ in ((today - timedelta(weeks=k)).isocalendar()
+                                             for k in range(1, repeat_weeks))]
     return list(dict.fromkeys(db.scalars(
         select(Recipe.title).join(MealPlanEntry, MealPlanEntry.recipe_id == Recipe.id)
         .join(MealPlan, MealPlan.id == MealPlanEntry.plan_id)
-        .where(MealPlan.household_id == household_id, MealPlan.week.in_(weeks)))))
+        .where(MealPlan.household_id == household_id, MealPlan.week.in_(weeks), MealPlan.id != (exclude_plan or 0)))))
 
 
-def planner_memory(db: Session, household_id: int, today: date | None = None) -> dict:
-    """Für den Prompt (3): Top 15 Favoriten/≥4★ mit Zutaten, „Nie“/≤2★-Titel, Gerichte der letzten 3 Wochen."""
+def planner_memory(db: Session, household_id: int, today: date | None = None,
+                   repeat_weeks: int = REPEAT_WEEKS) -> dict:
+    """Für den Prompt (3): Top 15 Favoriten/≥4★ mit Zutaten, „Nie“/≤2★-Titel, Gerichte der letzten N Wochen (12)."""
     recipes = household_recipes(db, household_id)
     stats = rating_stats(db, [r.id for r in recipes])
     favs = favorite_ids(db, household_id)
-    recent = recent_titles(db, household_id, today)
+    recent = recent_titles(db, household_id, today, repeat_weeks)
     never = [r.title for r in recipes if is_disliked(stats.get(r.id))]
     liked = [r for r in recipes if not is_disliked(stats.get(r.id)) and r.title not in recent
              and (r.id in favs or (stats.get(r.id) and (stats[r.id].avg_stars or 0) >= 4))]

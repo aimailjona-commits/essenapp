@@ -67,6 +67,7 @@ def test_week_slots_order():
 
 def test_plan_endpoint(client, auth, db, monkeypatch):
     client.patch("/household", headers=auth, json={"meal_types": ["mittag"], "plan_days": [0, 1],
+                                                    "variety": {"min_fish": 0},
                                                     "stores": [{"chain": "rewe", "store_ref": "1"}]})
     db.add(Offer(chain="rewe", store_ref="1", source_id="h", title="Hähnchen", price_cents=399, amount=400, unit="g",
                  valid_from=date.today(), valid_to=date.today() + timedelta(days=2)))
@@ -129,7 +130,7 @@ def test_plan_options_override_only_this_plan(client, auth, monkeypatch):
     r = client.post("/plans", headers=auth, json=body)
     assert r.status_code == 201, r.text
     assert "portionen=4" in seen["prompt"] and "Wünsche: mehr Fisch, ein Gericht mit Kürbis" in seen["prompt"]
-    assert "day=2 (Mittwoch), meal_type=mittag" in seen["prompt"] and "abend" not in seen["prompt"]
+    assert "day=2 (Mittwoch), meal_type=mittag" in seen["prompt"] and "meal_type=abend" not in seen["prompt"]
     h = client.get("/household", headers=auth).json()
     assert (h["persons"], h["meal_types"], h["plan_days"]) == (2, ["abend"], [0, 1])
 
