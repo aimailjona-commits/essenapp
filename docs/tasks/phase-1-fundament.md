@@ -26,22 +26,23 @@ Ziel: Toolchain läuft, eine leere App mit dem Design-System läuft auf dem iPho
 
 ## iOS-Grundgerüst
 
-- [ ] `xtool new` in `ios/`, `bundleID` festlegen, `xtool.yml` prüfen
+- [x] `xtool new` in `ios/`, `bundleID` festlegen, `xtool.yml` prüfen (`de.jsenf.essenapp`, Build in WSL-Dateisystem E24)
 - [ ] 👤 `xtool dev`: auf dem iPhone Entwicklermodus aktivieren und Entwickler unter Einstellungen › Allgemein › VPN & Geräteverwaltung vertrauen
-- [ ] Hello-World läuft auf dem iPhone
-- [ ] Test: SwiftData `@Model` kompiliert und speichert → sonst GRDB. Ergebnis ins Entscheidungslog im Playbook
-- [ ] Test: App-Icon ohne Asset-Catalog (`CFBundleIconFiles` mit PNGs). Ergebnis ins Playbook
-- [ ] Test: eigene Schrift als Ressource + `UIAppFonts` (falls im Design-System eine Schrift gewählt ist)
-- [ ] `Theme.swift` mit allen Tokens aus `docs/ui/design-system.md`
-- [ ] Basis-Komponenten aus dem Design-System (Karte, Pill-Button, Tab-Bar, Nährwert-Chip) + eine Demo-Seite, die alle zeigt
+- [~] App baut erfolgreich (`./build.sh build`). Aufs iPhone: wartet auf Apple-ID-Login
+- [ ] 👤 `xtool setup` mit Apple-ID (SDK ist schon installiert), dann `./build.sh`
+- [x] Test: SwiftData `@Model` → kompiliert nicht, JSON-Cache stattdessen (E25)
+- [~] App-Icon über `iconPath` (E26): `Icon.png` liegt im Bundle; ob es auf dem Homescreen erscheint, auf dem Gerät prüfen
+- [-] nicht nötig – Systemschrift (E22)
+- [x] `Theme.swift` mit allen Tokens aus `docs/ui/design-system.md`
+- [x] Basis-Komponenten aus dem Design-System + Demo-Seite (`Components.swift`, `ComponentDemoView`)
 
 ## Backend-Grundgerüst
 
-- [ ] `backend/` mit `uv init`, FastAPI, SQLAlchemy, Alembic, pydantic-settings, pytest
-- [ ] `GET /health` → `{"status":"ok"}` + Test
-- [ ] Datenbank (SQLite) + erste leere Migration
-- [ ] `.env.example`
-- [ ] Backend vom iPhone aus erreichbar machen (WSL mirrored networking oder `netsh portproxy`, Windows-Firewall-Regel). Weg im Playbook dokumentieren
+- [x] `backend/` mit FastAPI, SQLAlchemy, Alembic, pydantic-settings, pytest
+- [x] `GET /health` → `{"status":"ok"}` + Test
+- [x] Datenbank (SQLite) + erste Migration (gleich mit den Modellen aus Phase 2)
+- [x] `.env.example`
+- [ ] 👤 (Admin-Abfrage nötig) Backend vom iPhone aus erreichbar machen (WSL mirrored networking oder `netsh portproxy`, Windows-Firewall-Regel). Weg im Playbook dokumentieren
 
 ## DoD
 

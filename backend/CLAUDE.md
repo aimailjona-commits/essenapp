@@ -5,7 +5,7 @@ PonyTail `full` gilt (siehe Root-`CLAUDE.md`).
 ## Umgebung
 
 - Läuft **in WSL (Ubuntu-24.04)**, Python 3.12, Paketverwaltung mit `uv`.
-- Start: `uv run fastapi dev app/main.py`. Tests: `uv run pytest`.
+- Immer über `./dev.sh` (venv im WSL-Dateisystem, E27): `./dev.sh test`, `./dev.sh serve`, `./dev.sh alembic upgrade head`.
 - Secrets nur in `backend/.env` (nicht ins Git). `.env.example` immer aktuell halten.
 
 ## Struktur (aus dem Playbook)

@@ -42,6 +42,10 @@ Nutzer: der Entwickler selbst (iOS-App) + Familie/Freunde (Web-Version).
 | E21 (C) | Arbeitstitel **„Essenapp“**, Bundle-ID `de.jsenf.essenapp`; Anzeigename später änderbar | Bundle-ID sollte danach nicht mehr wechseln |
 | E22 (C) | Schrift: System-Schrift SF Pro (iOS), Inter/Systemschrift im Web | Keine Schrift-Einbindung, beste Barrierefreiheit |
 | E23 | iPhone ↔ WSL über **usbipd (Weg A)** funktioniert | Einmalig `usbipd bind --busid <ID>` (Admin). Danach je Sitzung: WSL muss laufen, dann `usbipd attach --wsl --busid <ID>` (BUSID mit `usbipd list`, Apple = `05ac:…`). Gerät ist dann nur noch in WSL sichtbar. Prüfen: `idevice_id -l` |
+| E24 | iOS wird in **`~/build/essenapp-ios` (WSL-Dateisystem)** gebaut, Quellen bleiben in `ios/` | xtool scheitert auf `/mnt/c` an Datei-Umbenennungen („Permission denied“). `ios/build.sh` kopiert per rsync und ruft `xtool dev` auf |
+| E25 | **Kein SwiftData** (Makro-Plugin `SwiftDataMacros` fehlt unter xtool, getestet). Lokaler Cache als Codable-JSON-Dateien | Backend ist die Quelle der Wahrheit; GRDB nur, falls später echte lokale Abfragen nötig werden |
+| E26 | App-Icon über `iconPath: Icon.png` in `xtool.yml` (erzeugt von `ios/tools/make_icon.py`), Info.plist-Ergänzungen über `infoPath` | Bekannte xtool.yml-Keys laut Binary: version, bundleID, product, infoPath, iconPath, entitlementsPath, resources, extensions, minimumVersion, skipLSP |
+| E27 | Backend-venv liegt in WSL (`~/.venvs/essenapp-backend`), Aufruf über `backend/dev.sh` | Python-Importe von `/mnt/c` sind ~10× langsamer |
 
 ---
 
@@ -225,8 +229,8 @@ Quelle: xtool-README, Docs und Issues (geprüft 2026-11-02, xtool v1.24.0).
 | iPhone in WSL | USB-Passthrough per **usbipd-win**; bei `AFCClient.Error.muxError` Verbindung über Windows-iTunes/Apple-Geräte-Dienst weiterleiten (`USBMUXD_SOCKET_ADDRESS` → Windows-Host:27015, siehe xtool Issue #19) | In Phase 1 beides ausprobieren |
 | `xtool setup` auf WSL | kann bei 72 % beim Entpacken hängen (Issue #316); SDK braucht ~7 GB (`--slim` möglich) | Genug Platz in WSL, ggf. erneut starten |
 | Login | Kostenlose Apple-ID über „Password“-Modus (nutzt private APIs). Einige Login/2FA-Probleme gemeldet | Ggf. xtool aktualisieren; Nutzer gibt Login selbst ein |
-| **Asset-Catalogs (.xcassets)** | Funktionieren auf Linux nicht (kein `actool`, Issue #310, PR #325 offen) | Kein `.xcassets`. Bilder als normale Ressourcen; App-Icon per `CFBundleIconFiles` mit losen PNGs **testen** |
-| **SwiftData `@Model`** | Unklar, ob die Makros unterstützt werden (SwiftUI-Makros: ja, seit v1.20) | In Phase 1 Mini-Test. Wenn nicht → **GRDB** |
+| **Asset-Catalogs (.xcassets)** | Funktionieren auf Linux nicht (kein `actool`, Issue #310, PR #325 offen) | Kein `.xcassets`. Bilder als normale Ressourcen; App-Icon per `iconPath` (E26) |
+| **SwiftData `@Model`** | **Geht nicht** (Plugin `SwiftDataMacros` fehlt, getestet mit 1.24.0) | JSON-Cache (E25) |
 | Widgets/Extensions | Unterstützt, aber offene Bugs (#313, #379) | Erst Phase 6, vorher Issue-Stand prüfen |
 | Simulator | Gibt es nicht | Tests direkt auf dem iPhone, Logik in testbare Swift-Pakete auslagern |
 | `xtool.yml` | Bekannte Keys: `version`, `bundleID`, `product`, `entitlementsPath`, `extensions`. Falsch geschriebene Keys werden **still ignoriert** | Keys genau prüfen |

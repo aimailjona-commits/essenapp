@@ -5,17 +5,17 @@ PonyTail `full` gilt (siehe Root-`CLAUDE.md`).
 ## Build
 
 - Gebaut wird **in WSL (Ubuntu-24.04)** mit xtool, nie unter Windows direkt.
-- Projekt liegt unter Windows in `C:\Users\jsenf\Desktop\essenapp\ios`, in WSL unter `/mnt/c/Users/jsenf/Desktop/essenapp/ios`.
-  Falls Builds auf `/mnt/c` zu langsam sind oder Rechteprobleme machen: Entscheidung im Playbook dokumentieren.
-- Befehle: `xtool dev` (bauen, signieren, installieren), `xtool dev build` (nur bauen).
+- Quellen liegen in `ios/` (Windows), gebaut wird in `~/build/essenapp-ios` (E24). Immer über das Skript:
+  `./build.sh build` (nur bauen) bzw. `./build.sh` (bauen, signieren, aufs iPhone).
+- iPhone vorher an WSL hängen: `usbipd attach --wsl --busid <ID>` (Windows), prüfen mit `idevice_id -l` (E23).
 - Kein Simulator. Logik in reine Swift-Typen ohne UI auslagern und mit `swift test` prüfen. UI auf dem iPhone prüfen.
 
 ## xtool-Grenzen (Details: PLAYBOOK Abschnitt 9)
 
 - **Kein `.xcassets`.** Farben im Code (`Theme`), Bilder als SwiftPM-Ressourcen.
-- `xtool.yml`: nur bekannte Keys (`version`, `bundleID`, `product`, `entitlementsPath`, `extensions`). Tippfehler werden still ignoriert.
+- `xtool.yml`: nur bekannte Keys (E26). Tippfehler werden still ignoriert. Icon: `Icon.png` via `iconPath`, neu erzeugen mit `uv run --no-project --with pillow ios/tools/make_icon.py`.
 - Keine Push-, iCloud- oder App-Group-Entitlements (kostenlose Apple-ID).
-- Persistenz: SwiftData oder GRDB, je nach Ergebnis aus Phase 1 (steht dann im Playbook).
+- **Kein SwiftData** (geht unter xtool nicht, E25). Lokaler Cache = Codable-JSON-Dateien.
 
 ## UI
 
