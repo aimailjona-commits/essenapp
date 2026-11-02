@@ -195,7 +195,18 @@ enum Labels {
     static func chain(_ key: String) -> String { chains.first { $0.key == key }?.name ?? key }
 
     /// Offizielle Logos als PNG-Thumbnails von Wikimedia Commons (geprüfte URLs, nur verlinkt, E39).
-    static let logos: [String: String] = [:]
+    static let logos: [String: String] = [
+        "rewe": "https://upload.wikimedia.org/wikipedia/commons/thumb/4/4c/Logo_REWE.svg/250px-Logo_REWE.svg.png",
+        "aldi_sued": "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e5/Aldi_S%C3%BCd_2017_logo.svg/250px-Aldi_S%C3%BCd_2017_logo.svg.png",
+        "aldi_nord": "https://upload.wikimedia.org/wikipedia/commons/thumb/f/f0/AldiNord-WorldwideLogo.svg/250px-AldiNord-WorldwideLogo.svg.png",
+        "lidl": "https://upload.wikimedia.org/wikipedia/commons/thumb/9/91/Lidl-Logo.svg/250px-Lidl-Logo.svg.png",
+        "edeka": "https://upload.wikimedia.org/wikipedia/commons/thumb/c/cf/Edeka_Logo_Aktuell.svg/250px-Edeka_Logo_Aktuell.svg.png",
+        "kaufland": "https://upload.wikimedia.org/wikipedia/commons/thumb/4/44/Kaufland_201x_logo.svg/250px-Kaufland_201x_logo.svg.png",
+        "penny": "https://upload.wikimedia.org/wikipedia/commons/thumb/8/8e/Penny-Logo.svg/250px-Penny-Logo.svg.png",
+        "netto_md": "https://upload.wikimedia.org/wikipedia/commons/thumb/f/f1/Netto_Marken-Discount_2018_logo.svg/250px-Netto_Marken-Discount_2018_logo.svg.png",
+        "dm": "https://upload.wikimedia.org/wikipedia/commons/thumb/2/2c/Dm-drogerie-Logo.svg/250px-Dm-drogerie-Logo.svg.png",
+        "rossmann": "https://upload.wikimedia.org/wikipedia/commons/thumb/7/7c/Logo_rossmann_2024.svg/250px-Logo_rossmann_2024.svg.png",
+    ]
     static func logoURL(_ key: String) -> URL? { logos[key].flatMap(URL.init(string:)) }
 
     static let mealTypes = [("fruehstueck", "Frühstück"), ("mittag", "Mittag"), ("abend", "Abend"), ("dessert", "Dessert")]
