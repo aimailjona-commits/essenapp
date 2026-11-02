@@ -22,6 +22,7 @@ struct PantryIn: Encodable {
     var unit: String
     var bestBefore: String?
     var isBasic: Bool
+    var source = "manual"  // manual | scan (Kühlschrank-Foto, 69)
 }
 
 extension PantryDTO {
@@ -176,14 +177,9 @@ struct PantryView: View {
                     } else if let error {
                         ErrorState(message: error) { Task { await load() } }
                     } else {
-                        VStack(spacing: 8) {
-                            EmptyState(emoji: "📸", title: "Kühlschrank fotografieren",
-                                       text: "Noch nichts im Vorrat. Trag ein, was zu Hause ist – über „+“ oder beim Abhaken der Liste.")
-                            Button("📸 Kühlschrank fotografieren") {}
-                                .buttonStyle(PrimaryButtonStyle()).frame(maxWidth: 280)
-                                .disabled(true).opacity(0.5)
-                            Text("Foto-Erkennung kommt bald").font(Theme.F.micro).foregroundStyle(Theme.C.text2)
-                        }
+                        EmptyState(emoji: "📸", title: "Kühlschrank fotografieren",
+                                   text: "Noch nichts im Vorrat. Fotografiere Kühlschrank, Vorrat oder Gefrierfach – wir erkennen, was da ist.",
+                                   buttonTitle: "📸 Kühlschrank fotografieren") { store.scanning = true }
                     }
                 } else if shown.isEmpty {
                     EmptyState(emoji: "🔍", title: "Nichts gefunden", text: "Anderen Begriff oder andere Kategorie probieren.")

@@ -1,3 +1,4 @@
+import EssenappShareUI
 import SwiftUI
 
 // Meine Rezepte (Feature 3) und Nährwerte pro Person (Feature 2).
@@ -28,8 +29,8 @@ extension AppStore {
 
     func recipe(_ id: Int) async throws -> RecipeDTO {
         guard !demo else {
-            guard id == Demo.savedRecipe.id else { throw APIError.http(404) }
-            return Demo.savedRecipe
+            guard let r = [Demo.savedRecipe, Demo.importedRecipe].first(where: { r in r.id == id }) else { throw APIError.http(404) }
+            return r
         }
         return try await api.request("GET", "/recipes/\(id)")
     }
@@ -146,6 +147,8 @@ struct MyRecipesList: View {
     @State private var error: String?
     @State private var creating = false
     @State private var planning: RecipeCard?
+    @State private var importing = false  // „Link einfügen“ (S22)
+    @State private var opened: Int?  // importiertes Rezept öffnen
 
     static let filters = [("alle", "Alle"), ("favoriten", "♥ Favoriten"), ("eigene", "Eigene"), ("importiert", "Importiert"),
                           ("im_angebot", "Im Angebot"), ("zuletzt", "Zuletzt gekocht")]
@@ -165,6 +168,7 @@ struct MyRecipesList: View {
         VStack(alignment: .leading, spacing: 16) {
             HStack(alignment: .bottom) {
                 DisplayHeader(line1: "Meine Rezepte", line2: cards.map { c in "\(c.count) gespeichert" } ?? "Gemerkt & eigene")
+                RoundIconButton(systemName: "link", label: "Rezept aus Link importieren") { importing = true }
                 RoundIconButton(systemName: "plus", dark: true, label: "Rezept anlegen") { creating = true }
             }
             SearchField(text: $query, placeholder: "Rezept oder Tag suchen")
@@ -208,6 +212,14 @@ struct MyRecipesList: View {
             await load()
         }
         .sheet(isPresented: $creating) { RecipeFormSheet().presentationDetents([.large]).presentationCornerRadius(Theme.R.sheet) }
+        .sheet(isPresented: $importing, onDismiss: { store.recipesVersion += 1 }) {
+            ShareFlowView(input: nil, session: store.shareSession, onOpen: { id in
+                importing = false
+                opened = id
+            }) { importing = false }
+            .presentationDetents([.large]).presentationCornerRadius(Theme.R.sheet)
+        }
+        .navigationDestination(item: $opened) { id in SavedRecipeView(recipeId: id) }
         .sheet(item: $planning) { card in
             PlanSlotSheet(recipeId: card.id, title: card.title).presentationDetents([.medium, .large]).presentationCornerRadius(Theme.R.sheet)
         }

@@ -389,9 +389,9 @@ struct CameraPicker: UIViewControllerRepresentable {
 }
 
 extension UIImage {
-    /// JPEG für den Upload (Backend: max. 2 MB): längste Seite ≤ 1600 px, dann Qualität und Größe senken, bis es passt.
-    func jpeg(maxBytes: Int = 2_000_000) -> Data? {
-        var side: CGFloat = 1600
+    /// JPEG für den Upload (Backend: max. 2 MB): längste Seite ≤ `maxSide` px, dann Qualität und Größe senken, bis es passt.
+    func jpeg(maxBytes: Int = 2_000_000, maxSide: CGFloat = 1600) -> Data? {
+        var side = maxSide
         while side >= 400 {
             let k = min(1, side / max(size.width, size.height, 1))
             let target = CGSize(width: (size.width * k).rounded(), height: (size.height * k).rounded())

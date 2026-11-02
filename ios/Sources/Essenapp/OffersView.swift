@@ -229,6 +229,8 @@ struct OfferDetailView: View {
                     }
                     .appear(delay: 0.05)
 
+                    OfferNutritionCard(offer: offer)  // nur bei sicherer Zuordnung (2)
+
                     section("Erhältlich bei") {
                         if stores.isEmpty {
                             Text("Alle \(Labels.chain(offer.chain))-Filialen in deiner Region").font(Theme.F.caption).foregroundStyle(Theme.C.text2)

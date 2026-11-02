@@ -47,6 +47,8 @@ struct HouseholdDTO: Codable {
     var lat: Double?
     var lng: Double?
     var stores: [StoreDTO]
+    var stepImages: Bool? = nil  // Schalter „Schritt-Bilder erzeugen“ (9)
+    var stepImagesAvailable: Bool? = nil  // FAL_KEY im Backend gesetzt → Schalter zeigen
 }
 
 struct HouseholdCreated: Codable {
@@ -130,6 +132,43 @@ final class API {
         guard (200..<300).contains(code) else { throw APIError.http(code) }
         return data
     }
+
+    /// Multipart-Upload (Kühlschrank-Fotos): Dateien als „files“ (JPEG), dazu Formularfelder; `progress` 0–1 beim Senden.
+    func upload<T: Decodable>(_ path: String, files: [Data], fields: [String: String], timeout: TimeInterval = 120,
+                              progress: @escaping @Sendable (Double) -> Void) async throws -> T {
+        guard let url = URL(string: baseURL.trimmingCharacters(in: .whitespaces) + path), !baseURL.isEmpty else { throw APIError.noServer }
+        let boundary = "essenapp-\(UUID().uuidString)"
+        var body = Data()
+        for (key, value) in fields {
+            body.append(Data("--\(boundary)\r\nContent-Disposition: form-data; name=\"\(key)\"\r\n\r\n\(value)\r\n".utf8))
+        }
+        for (i, file) in files.enumerated() {
+            body.append(Data("--\(boundary)\r\nContent-Disposition: form-data; name=\"files\"; filename=\"foto\(i + 1).jpg\"\r\nContent-Type: image/jpeg\r\n\r\n".utf8))
+            body.append(file)
+            body.append(Data("\r\n".utf8))
+        }
+        body.append(Data("--\(boundary)--\r\n".utf8))
+        var req = URLRequest(url: url, timeoutInterval: timeout)
+        req.httpMethod = "POST"
+        req.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
+        if let token { req.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization") }
+        let (data, response) = try await URLSession.shared.upload(for: req, from: body, delegate: UploadProgress(report: progress))
+        let code = (response as? HTTPURLResponse)?.statusCode ?? 0
+        guard (200..<300).contains(code) else { throw APIError.http(code) }
+        return try decoder.decode(T.self, from: data)
+    }
+}
+
+/// Meldet den Sende-Fortschritt eines Uploads.
+final class UploadProgress: NSObject, URLSessionTaskDelegate, @unchecked Sendable {
+    let report: @Sendable (Double) -> Void
+
+    init(report: @escaping @Sendable (Double) -> Void) { self.report = report }
+
+    func urlSession(_ session: URLSession, task: URLSessionTask, didSendBodyData bytesSent: Int64, totalBytesSent: Int64,
+                    totalBytesExpectedToSend: Int64) {
+        report(Double(totalBytesSent) / Double(max(totalBytesExpectedToSend, 1)))
+    }
 }
 
 /// Token gehört in den Schlüsselbund, nicht in UserDefaults.
@@ -162,6 +201,7 @@ struct IngredientDTO: Codable, Hashable {
     var inPantry: Bool?  // fehlt bei eigenen Rezepten (nur Name, Menge, Einheit)
     var packAmount: Double?
     var packPriceCents: Int?
+    var estimated: Bool? = nil  // Import (5): Menge von der KI geschätzt
 }
 
 struct RecipeDTO: Codable, Identifiable, Hashable {
@@ -354,6 +394,7 @@ struct HouseholdPatch: Encodable {
     var maxCookMinutes: Int?
     var radiusKm: Int?
     var stores: [StoreDTO]?
+    var stepImages: Bool?
 }
 
 /// App-Zustand: lädt und hält Haushalt, Angebote und Plan.
@@ -375,6 +416,7 @@ final class AppStore {
     var nutrition: PlanNutritionDTO?  // Tagesringe (2)
     var recipesVersion = 0  // +1 nach Anlegen/Ändern/Bewerten → Listen und Detail laden neu
     var recipeFilter: String?  // Start-Karte → Rezepte-Tab mit diesem Filter
+    var scanning = false  // Kühlschrank-Foto (69): Sheet aus Schnell-Aktion, Start-Karte, Vorrat
     var watchlist: Set<Int> = Persist.load("watchlist") ?? [] { didSet { Persist.save(watchlist, "watchlist") } }
 
     /// Toast oben, optional mit Aktions-Knopf (bleibt dann länger stehen).

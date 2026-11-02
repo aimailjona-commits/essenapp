@@ -77,6 +77,7 @@ struct StartView: View {
                     .padding(.horizontal, -Theme.pagePadding)
                     BudgetCard(plan: plan, budgetCents: store.household?.budgetFoodWeekCents ?? 0).appear(delay: 0.1)
                     FavoriteDealsCard().appear(delay: 0.12)
+                    FridgeCard().appear(delay: 0.14)
                     DealsTeaser().appear(delay: 0.15)
                 } else {
                     EmptyState(emoji: "🥘", title: "Noch kein Wochenplan",
@@ -108,6 +109,32 @@ struct StartView: View {
                 EmptyState(emoji: "🔍", title: "Nichts gefunden", text: "Versuch einen anderen Begriff.")
             }
         }
+    }
+}
+
+/// Start-Karte „Kühlschrank scannen“ (69) → Kamera-Sheet.
+struct FridgeCard: View {
+    @Environment(AppStore.self) private var store
+
+    var body: some View {
+        Button { store.scanning = true } label: {
+            HStack(spacing: 14) {
+                Text("📸").font(.system(size: 26))
+                    .frame(width: 52, height: 52)
+                    .background(Theme.C.carbs.opacity(0.14), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Kühlschrank scannen").font(Theme.F.callout)
+                    Text("Fotos machen – wir füllen den Vorrat und schlagen Gerichte vor").font(Theme.F.micro)
+                        .foregroundStyle(Theme.C.text2).multilineTextAlignment(.leading)
+                }
+                Spacer(minLength: 0)
+                Image(systemName: "chevron.right").font(.system(size: 12, weight: .bold)).foregroundStyle(Theme.C.text3)
+            }
+            .foregroundStyle(Theme.C.text1)
+            .padding(16)
+            .card()
+        }
+        .buttonStyle(PressableStyle())
     }
 }
 

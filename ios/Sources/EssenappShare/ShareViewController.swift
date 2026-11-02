@@ -1,19 +1,22 @@
+import EssenappShareUI
 import SwiftUI
 import UIKit
 import UniformTypeIdentifiers
 
-/// Spike (Phase 9, A1): Teilen-Erweiterung „Essenapp“ – zeigt den geteilten Link und prüft die App Group.
+/// Teilen-Erweiterung „Essenapp“ (Feature 5): nimmt Link/Text aus Instagram & Co. und importiert das Rezept (S20).
+/// Anmeldung über Kopplungscode, Token im eigenen Schlüsselbund (keine App Group, E48).
 @objc(ShareViewController)
 final class ShareViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
-        let group = UserDefaults(suiteName: "group.de.jsenf.essenapp")
-        let groupOK = group?.string(forKey: "probe") ?? "keine App Group"
-        Task { @MainActor in
-            let url = await sharedURL()
-            let host = UIHostingController(rootView: SpikeView(url: url, group: groupOK) { [weak self] in
+        view.backgroundColor = UIColor(red: 0xF3 / 255, green: 0xF3 / 255, blue: 0xF3 / 255, alpha: 1)
+        Task { @MainActor [weak self] in
+            guard let self else { return }
+            let (url, text) = await sharedContent()
+            let root = ShareFlowView(input: ShareInput.parse(url: url, text: text), session: ShareKeychain.load(), persist: true) { [weak self] in
                 self?.extensionContext?.completeRequest(returningItems: nil)
-            })
+            }
+            let host = UIHostingController(rootView: root)
             addChild(host)
             host.view.frame = view.bounds
             host.view.autoresizingMask = [.flexibleWidth, .flexibleHeight]
@@ -22,33 +25,16 @@ final class ShareViewController: UIViewController {
         }
     }
 
-    private func sharedURL() async -> String {
-        let providers = (extensionContext?.inputItems as? [NSExtensionItem])?.flatMap { $0.attachments ?? [] } ?? []
-        for p in providers where p.hasItemConformingToTypeIdentifier(UTType.url.identifier) {
-            if let url = try? await p.loadItem(forTypeIdentifier: UTType.url.identifier) as? URL { return url.absoluteString }
+    /// Erster Link und Text aus den Anhängen (Instagram schickt den Link mal als URL, mal als Text).
+    private func sharedContent() async -> (String?, String?) {
+        let providers = (extensionContext?.inputItems as? [NSExtensionItem])?.flatMap { item in item.attachments ?? [] } ?? []
+        var url: String?, text: String?
+        for p in providers where url == nil && p.hasItemConformingToTypeIdentifier(UTType.url.identifier) {
+            url = (try? await p.loadItem(forTypeIdentifier: UTType.url.identifier) as? URL)?.absoluteString
         }
-        for p in providers where p.hasItemConformingToTypeIdentifier(UTType.plainText.identifier) {
-            if let text = try? await p.loadItem(forTypeIdentifier: UTType.plainText.identifier) as? String { return text }
+        for p in providers where text == nil && p.hasItemConformingToTypeIdentifier(UTType.plainText.identifier) {
+            text = try? await p.loadItem(forTypeIdentifier: UTType.plainText.identifier) as? String
         }
-        return "(nichts erkannt)"
-    }
-}
-
-struct SpikeView: View {
-    let url: String
-    let group: String
-    let done: () -> Void
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            Text("Essenapp").font(.title.bold())
-            Text("Geteilt:").font(.footnote).foregroundStyle(.secondary)
-            Text(url).font(.callout).lineLimit(4)
-            Text("App Group: \(group)").font(.footnote).foregroundStyle(.secondary)
-            Button("Fertig", action: done).buttonStyle(.borderedProminent).tint(.orange)
-        }
-        .padding(24)
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-        .background(Color(white: 0.96))
+        return (url, text)
     }
 }

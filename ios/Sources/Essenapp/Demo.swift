@@ -1,9 +1,13 @@
 import Foundation
+import UIKit
 
 /// Demo-Modus für Screenshots im Simulator (CI): App starten mit `-demoScreen <name>`.
 /// Namen: onboarding, start, quick, generator, generating, offers, offer, plan, recipe, shopping, list, pantry, settings, profile,
 /// notifications, stores, empty, cooking (Kochmodus Schritt 2 mit Timer), sharecard (Bildkarte),
-/// recipes (Meine Rezepte), myrecipe (eigenes Rezept mit Bewertungen + Blüte), recipeform (Rezept-Formular, Seite Zutaten)
+/// recipes (Meine Rezepte), myrecipe (eigenes Rezept mit Bewertungen + Blüte), recipeform (Rezept-Formular, Seite Zutaten),
+/// imported (Instagram-Import mit Original-Reel, geschätzten Mengen, Schritt-Bildern), instagram (Teilen aus Instagram, S21),
+/// sharepair / shareimport / shareresult (Teilen-Erweiterung S20), importlink (Link einfügen S22),
+/// fridgecam / fridgereview / cooknow (Kühlschrank-Foto S23–S25)
 enum Demo {
     static let screen: String? = {
         let args = ProcessInfo.processInfo.arguments
@@ -15,7 +19,8 @@ enum Demo {
         id: 1, name: "Zuhause", plz: "50667", persons: 2, diet: "alles", allergies: ["Laktose"], excludedIngredients: [],
         cuisines: [], mealTypes: ["mittag", "abend"], planDays: [0, 1, 2, 3, 4], budgetFoodWeekCents: 6000,
         budgetDrugstoreCents: nil, nutritionGoal: "ausgewogen", maxCookMinutes: 45, radiusKm: 3, lat: 50.9375, lng: 6.9603,
-        stores: nearby.prefix(4).map { StoreDTO(chain: $0.chain, storeName: $0.name, osmId: $0.osmId, lat: $0.lat, lng: $0.lng, address: $0.address) })
+        stores: nearby.prefix(4).map { StoreDTO(chain: $0.chain, storeName: $0.name, osmId: $0.osmId, lat: $0.lat, lng: $0.lng, address: $0.address) },
+        stepImages: true, stepImagesAvailable: true)
 
     static let nearby: [NearbyStore] = [
         NearbyStore(osmId: "n1", chain: "rewe", name: "REWE Hohe Straße", address: "Hohe Str. 30, 50667 Köln", lat: 50.9378, lng: 6.9568, distanceKm: 0.3),
@@ -52,7 +57,7 @@ enum Demo {
             cuisine: "Indisch", mealType: type, servings: 2, prepMinutes: minutes, ingredients: ings,
             steps: ["Zwiebel würfeln und 5 Minuten glasig anbraten.", "Hähnchen dazugeben und 8–10 Min. rundum anbraten.",
                     "Tomaten und Gewürze zugeben, 15 Minuten köcheln.", "Mit Reis servieren."],
-            imageUrl: "", favorite: day == 1 && type == "mittag",
+            imageUrl: "", stepImages: [photo("chef"), photo("pasta"), photo("bowl"), photo("table")], favorite: day == 1 && type == "mittag",
             nutrition: NutritionDTO(kcal: Double(380 + cost / 2), protein: Double(14 + minutes), carbs: 62, fat: 19, fiber: 7),
             composition: composition(ings.map { i in (i.name, i.unit == "stk" ? i.amount * 120 : i.amount) })),
             portions: portions, portionsTotal: portions.map(\.factor).reduce(0, +))
@@ -89,9 +94,67 @@ enum Demo {
     static let pushSettings = PushSettingsDTO(pushEnabled: true, planPromptEnabled: true, planPromptWeekday: 6, planPromptTime: "18:00",
                                               quietHours: .init(start: "22:00", end: "07:00"))
 
-    static func ing(_ name: String, _ amount: Double, _ unit: String = "g", offer: Int? = nil, pantry: Bool = false) -> IngredientDTO {
-        IngredientDTO(name: name, amount: amount, unit: unit, offerId: offer, inPantry: pantry)
+    static func ing(_ name: String, _ amount: Double, _ unit: String = "g", offer: Int? = nil, pantry: Bool = false,
+                    estimated: Bool? = nil) -> IngredientDTO {
+        IngredientDTO(name: name, amount: amount, unit: unit, offerId: offer, inPantry: pantry, estimated: estimated)
     }
+
+    /// Foto aus den App-Ressourcen als Datei-URL (Schritt-Bilder, Kamera-Vorschau im Demo).
+    static func photo(_ name: String) -> String { Bundle.module.url(forResource: name, withExtension: "jpg")?.absoluteString ?? "" }
+
+    // MARK: Import (5), Schritt-Bilder (9), Kühlschrank-Foto (69), Angebots-Nährwerte (2)
+
+    static let importedRecipe = RecipeDTO(
+        id: 102, title: "One-Pot-Pasta mit Feta", description: "Alles in einem Topf – fertig in 20 Minuten.", cuisine: "Italienisch",
+        mealType: "abend", servings: 2, prepMinutes: 20,
+        ingredients: [ing("Spaghetti", 250), ing("Kirschtomaten", 300, offer: 3), ing("Feta", 200, offer: 8),
+                      ing("Knoblauch", 2, "stk", estimated: true), ing("Olivenöl", 2, "el", estimated: true), ing("Salz", 1, "prise", estimated: true)],
+        steps: ["Spaghetti, Tomaten, Knoblauch und 500 ml Wasser in einen Topf geben.", "Aufkochen und 10 Minuten köcheln, dabei umrühren.",
+                "Feta zerbröseln und unterheben.", "Mit Olivenöl, Salz und Basilikum servieren."],
+        imageUrl: photo("pasta"), stepImages: [photo("pasta"), photo("bowl"), "", ""], source: "instagram",
+        sourceUrl: "https://www.instagram.com/reel/C9xYz12AbCd/", sourceAuthor: "@koch_xy", tags: ["Pasta", "One-Pot"],
+        nutrition: NutritionDTO(kcal: 640, protein: 24, carbs: 82, fat: 22, fiber: 6),
+        composition: composition([("Spaghetti", 250), ("Kirschtomaten", 300), ("Feta", 200), ("Olivenöl", 20), ("Knoblauch", 10)]),
+        avgStars: nil, lastCooked: nil, costPerServingCents: 180, offerShare: 0.2, ratings: [])
+
+    static let pairedTokens = [PairedTokenDTO(id: 1, label: "Teilen-Erweiterung", createdAt: "2026-11-02T10:12:00")]
+
+    static let offerNutrition = OfferNutritionDTO(
+        status: "ok", food: "Chicken, broiler or fryers, breast, skinless, boneless, meat only, raw",
+        per100g: NutritionDTO(kcal: 120, protein: 22.5, carbs: 0, fat: 2.6, fiber: 0),
+        perPack: NutritionDTO(kcal: 480, protein: 90, carbs: 0, fat: 10.4, fiber: 0))
+
+    static var fridgePhotos: [UIImage] {
+        ["chef", "bowl"].compactMap { name in Bundle.module.url(forResource: name, withExtension: "jpg").flatMap { u in UIImage(contentsOfFile: u.path) } }
+    }
+
+    static func scan(_ name: String, _ amount: Double?, _ unit: String, _ category: String, _ confidence: String, days: Double?,
+                     location: String = "kuehlschrank") -> ScanItemDTO {
+        ScanItemDTO(name: name, amount: amount, unit: unit, location: location, category: category, confidence: confidence,
+                    bestBefore: days.map { d in Date.now.addingTimeInterval(d * 86400).formatted(PantryDTO.day) }, checked: confidence != "niedrig")
+    }
+
+    static let scanItems = [
+        scan("Milch", 1000, "ml", "kuehlung", "hoch", days: 5),
+        scan("Eier", 6, "stk", "kuehlung", "hoch", days: 14),
+        scan("Paprika rot", 2, "stk", "obst_gemuese", "hoch", days: 6),
+        scan("Gouda", 250, "g", "kuehlung", "mittel", days: 12),
+        scan("Joghurt", 500, "g", "kuehlung", "hoch", days: 4),
+        scan("Frühlingszwiebeln", 1, "stk", "obst_gemuese", "mittel", days: 3),
+        scan("Pesto", nil, "", "vorrat", "niedrig", days: nil),
+    ]
+
+    static func idea(_ id: Int, _ title: String, _ minutes: Int, _ missing: [CookIdeaDTO.Missing]) -> CookIdeaDTO {
+        CookIdeaDTO(recipe: RecipeDTO(id: id, title: title, description: "", cuisine: "Deutsch", mealType: "abend", servings: 2,
+                                      prepMinutes: minutes, ingredients: [ing("Eier", 4, "stk")], steps: ["Alles anbraten."], imageUrl: ""),
+                    missing: missing)
+    }
+
+    static let cookIdeas = [
+        idea(201, "Rührei mit Paprika & Gouda", 15, []),
+        idea(202, "Frittata mit Frühlingszwiebeln", 25, [.init(name: "Sahne", amount: 100, unit: "ml")]),
+        idea(203, "Joghurt-Pfannkuchen", 20, [.init(name: "Mehl", amount: 200, unit: "g"), .init(name: "Zitrone", amount: 1, unit: "stk")]),
+    ]
 
     static let plan = PlanDTO(id: 1, week: "2026-W45", totalCents: 3820, savedCents: 1240, entries: [
         meal(0, "mittag", "Shakshuka mit Feta", 320, 25, [ing("Eier", 4, "stk"), ing("Rispentomaten", 400, offer: 3), ing("Feta", 100, offer: 8)]),

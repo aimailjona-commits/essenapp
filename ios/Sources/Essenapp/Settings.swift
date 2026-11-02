@@ -238,6 +238,23 @@ struct SettingsView: View {
                         .buttonStyle(PressableStyle())
                     }
                 }
+                group("REZEPTE") {
+                    NavigationLink { InstagramShareView() } label: {
+                        row("square.and.arrow.down.fill", Theme.C.protein, "Teilen aus Instagram", "Kopplung")
+                    }
+                    if store.household?.stepImagesAvailable == true {
+                        Toggle(isOn: Binding(get: { store.stepImagesOn }, set: { on in Task { await store.setStepImages(on) } })) {
+                            HStack(spacing: 12) {
+                                icon("photo.stack.fill", Theme.C.carbs)
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text("Schritt-Bilder erzeugen").font(.system(.body, weight: .semibold)).foregroundStyle(Theme.C.text1)
+                                    Text("ca. 2 Cent/Rezept").font(Theme.F.caption).foregroundStyle(Theme.C.text2)
+                                }
+                            }
+                        }
+                        .tint(Theme.C.accent)
+                    }
+                }
                 group("BENACHRICHTIGUNGEN") {
                     NavigationLink { NotificationsView() } label: {
                         row("bell.fill", Theme.C.accent, "Mitteilungen", "Erinnerung, Ruhezeit")

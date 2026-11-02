@@ -394,6 +394,7 @@ final class VoiceControl {
 /// Vollbild, dunkel, Bildschirm bleibt an. Seite 0 Vorbereitung, dann ein Schritt pro Seite, zuletzt „Fertig! 🎉“.
 struct CookingView: View {
     let meal: MealDTO
+    var imagesLoading = false  // Schritt-Bilder entstehen noch → leere Plätze schimmern (9)
     var factor = 1.0  // Portionen-Stepper aus S3
     var person: (emoji: String, factor: Double)?  // „Deine Portion“ aus S3
     let onFinish: () -> Void
@@ -553,10 +554,8 @@ struct CookingView: View {
         return VStack(alignment: .leading, spacing: 12) {
             ScrollView {
                 VStack(alignment: .leading, spacing: 18) {
-                    if let images = meal.recipe.stepImages, i < images.count, !images[i].isEmpty {
-                        RemoteImage(url: URL(string: images[i]), contentMode: .fill) { Theme.C.cookSurface }
-                            .frame(maxWidth: .infinity).frame(height: 200)
-                            .clipShape(RoundedRectangle(cornerRadius: Theme.R.card, style: .continuous))
+                    if let images = meal.recipe.stepImages, i < images.count, !images[i].isEmpty || imagesLoading {
+                        StepImage(path: images[i], dark: true)
                     }
                     Text("Schritt \(i + 1)").font(Theme.F.callout).foregroundStyle(Theme.C.accent)
                     Text(step).font(Theme.F.cookStep).fixedSize(horizontal: false, vertical: true)

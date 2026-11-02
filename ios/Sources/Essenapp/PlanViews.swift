@@ -214,8 +214,16 @@ struct RecipeDetailView: View {
     @State private var planIt = false
     @State private var editing = false
     @State private var confirmDelete = false
+    @State private var stepImages: [String]?  // nachgeladene Schritt-Bilder (9)
+    @State private var imagesSettled = false  // Erzeugung fertig oder aus → leere Plätze ausblenden
+    @Environment(\.openURL) private var openURL
 
     private var recipe: RecipeDTO { meal.recipe }
+    private var images: [String] { stepImages ?? info?.stepImages ?? recipe.stepImages ?? [] }
+    /// Bildfläche für Schritt i: Bild da, oder es wird noch erzeugt (Schimmer).
+    private func showsImage(_ i: Int) -> Bool {
+        i < images.count && (!images[i].isEmpty || (store.stepImagesOn && !imagesSettled))
+    }
     private var details: RecipeDTO { info ?? recipe }
     private var nutrition: NutritionDTO? { recipe.nutrition ?? info?.nutrition }
     private var composition: [CompositionItem]? { recipe.composition ?? info?.composition }
@@ -269,6 +277,7 @@ struct RecipeDetailView: View {
                             }
                         }
                     }
+                    if ["instagram", "web"].contains(recipe.source) { sourceRow }
                     // Infozeile mit Trennstrichen (Vorlage „Grilled Chicken Breast“)
                     HStack(spacing: 0) {
                         infoCell("clock", "\(recipe.prepMinutes) min")
@@ -327,6 +336,7 @@ struct RecipeDetailView: View {
                                             StoreChip(chain: offer.chain)
                                         }
                                         if ing.inPantry == true { DealBadge(text: "im Vorrat", style: .ok) }
+                                        if ing.estimated == true { DealBadge(text: "Menge geschätzt", style: .soft) }
                                     }
                                 }
                                 Spacer()
@@ -357,6 +367,7 @@ struct RecipeDetailView: View {
                         Text("Zubereitung").font(Theme.F.headline)
                         ForEach(Array(recipe.steps.enumerated()), id: \.offset) { i, step in
                             let isDone = done.contains(i)
+                            if showsImage(i) { StepImage(path: images[i]).opacity(isDone ? 0.5 : 1).transition(.opacity) }
                             Button {
                                 withAnimation(Theme.spring) { if done.remove(i) == nil { done.insert(i) } }
                             } label: {
@@ -377,6 +388,7 @@ struct RecipeDetailView: View {
                         }
                     }
                     .padding(16).card()
+                    .animation(Theme.spring, value: images)
                     if let ratings = details.ratings, !ratings.isEmpty { ratingsCard(ratings) }
                 }
                 .padding(.horizontal, Theme.pagePadding)
@@ -402,10 +414,11 @@ struct RecipeDetailView: View {
         }
         .toolbar(.hidden, for: .navigationBar)
         .task(id: store.recipesVersion) { await loadInfo() }
+        .task(id: recipe.id) { await pollStepImages() }
         .fullScreenCover(isPresented: $cooking, onDismiss: {
             if rateAfterCooking { rateAfterCooking = false; showRating = true }  // Abschluss → Bewertung + Vorrat (S8)
         }) {
-            CookingView(meal: meal, factor: factor, person: who.flatMap { w in mine.map { m in (w.emoji, m * meal.scale / base) } }) {
+            CookingView(meal: cookMeal, imagesLoading: store.stepImagesOn && !imagesSettled, factor: factor, person: who.flatMap { w in mine.map { m in (w.emoji, m * meal.scale / base) } }) {
                 rateAfterCooking = true
                 cooking = false
             }
@@ -435,6 +448,29 @@ struct RecipeDetailView: View {
         if let again = try? await store.recipe(recipe.id) { withAnimation(Theme.spring) { info = again } }
     }
 
+    /// Schritt-Bilder: anfordern (startet die Erzeugung) und mit wachsendem Abstand nachfragen, solange sie entstehen.
+    private func pollStepImages() async {
+        guard !store.demo else { return }  // Demo: leere Plätze schimmern weiter
+        guard store.stepImagesOn, !recipe.steps.isEmpty else { imagesSettled = true; return }
+        var wait = 2.0
+        while !Task.isCancelled {
+            if images.count == recipe.steps.count && !images.contains("") { break }
+            guard let out = try? await store.stepImages(recipe.id) else { break }  // 422: aus oder nicht eingerichtet
+            withAnimation(Theme.spring) { stepImages = out.stepImages }
+            guard out.pending, out.stepImages.contains("") else { break }
+            try? await Task.sleep(for: .seconds(wait))
+            wait = min(wait * 2, 30)
+        }
+        imagesSettled = true
+    }
+
+    /// Kochmodus bekommt die nachgeladenen Schritt-Bilder.
+    private var cookMeal: MealDTO {
+        var m = meal
+        m.recipe.stepImages = images
+        return m
+    }
+
     private func toggleFavorite() {
         let new = !isFavorite
         withAnimation(Theme.spring) { favorite = new }
@@ -443,6 +479,28 @@ struct RecipeDetailView: View {
 }
 
 extension RecipeDetailView {
+    /// Quelle-Chip „Instagram · @autor“ + „▶︎ Original-Reel“ (öffnet Instagram-App bzw. Safari, 5/9).
+    fileprivate var sourceRow: some View {
+        let insta = recipe.source == "instagram"
+        let host = URL(string: recipe.sourceUrl)?.host()?.replacingOccurrences(of: "www.", with: "") ?? ""
+        return HStack(spacing: 8) {
+            Label("\(insta ? "Instagram" : "Web") · \(recipe.sourceAuthor.isEmpty ? host : recipe.sourceAuthor)",
+                  systemImage: insta ? "camera.fill" : "globe")
+                .font(Theme.F.micro).foregroundStyle(Theme.C.text2).lineLimit(1)
+                .padding(.horizontal, 10).frame(height: 28).background(Theme.C.surface, in: Capsule())
+            Spacer(minLength: 0)
+            if insta, let url = URL(string: recipe.sourceUrl), !recipe.sourceUrl.isEmpty {
+                Button { openURL(url) } label: {
+                    Label("Original-Reel", systemImage: "play.fill")
+                        .font(Theme.F.callout).foregroundStyle(.white)
+                        .padding(.horizontal, 14).frame(minHeight: 44)
+                        .background(Theme.C.action, in: Capsule())
+                }
+                .buttonStyle(PressableStyle())
+            }
+        }
+    }
+
     fileprivate func infoCell(_ symbol: String, _ text: String) -> some View {
         Label(text, systemImage: symbol).font(.system(.footnote, weight: .semibold)).foregroundStyle(Theme.C.text1)
             .frame(maxWidth: .infinity)

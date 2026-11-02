@@ -41,13 +41,15 @@
 		<true/>
 	</dict>
 	<key>NSCameraUsageDescription</key>
-	<string>Zum Scannen von Barcodes für deine Merkliste und für Fotos deiner eigenen Rezepte.</string>
+	<string>Zum Fotografieren von Kühlschrank und Vorrat (Lebensmittel erkennen), für Fotos deiner eigenen Rezepte und zum Scannen von Barcodes.</string>
 	<key>NSLocalNetworkUsageDescription</key>
 	<string>Verbindet sich mit deinem Essenapp-Server im Heimnetz.</string>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>Für die Sprachsteuerung im Kochmodus („weiter“, „Timer starten“). Es wird nichts aufgenommen oder gespeichert.</string>
 	<key>NSPhotoLibraryAddUsageDescription</key>
 	<string>Zum Sichern von Rezept-Bildkarten in deinen Fotos.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Zum Auswählen von Fotos deines Kühlschranks oder deiner Rezepte.</string>
 	<key>NSSpeechRecognitionUsageDescription</key>
 	<string>Erkennt deine Sprachbefehle im Kochmodus, wenn möglich direkt auf dem iPhone.</string>
 	<key>UILaunchScreen</key>

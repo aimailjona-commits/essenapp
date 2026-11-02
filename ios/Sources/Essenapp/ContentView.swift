@@ -1,3 +1,4 @@
+import EssenappShareUI
 import SwiftUI
 
 struct ContentView: View {
@@ -50,11 +51,14 @@ struct MainView: View {
     private static var demoTab: AppTab {
         switch Demo.screen {
         case "offers", "offer", "stores": .angebote
-        case "plan", "recipe", "cooking", "sharecard", "recipes", "myrecipe", "recipeform": .rezepte
-        case "shopping", "list", "pantry": .einkauf
+        case "plan", "recipe", "cooking", "sharecard", "recipes", "myrecipe", "recipeform", "imported", "importlink": .rezepte
+        case "shopping", "list", "pantry", "fridgecam", "fridgereview", "cooknow": .einkauf
         default: .start
         }
     }
+
+    /// Demo-Screens, die in der App als Sheet bzw. in der Erweiterung ohne Tab-Leiste erscheinen.
+    private static let modalDemo = ["recipeform", "fridgecam", "fridgereview", "cooknow", "sharepair", "shareimport", "shareresult", "importlink"]
 
     @ViewBuilder private var tabContent: some View {
         switch tab {
@@ -75,6 +79,15 @@ struct MainView: View {
                     case ("recipe", _), ("cooking", _), ("sharecard", _): RecipeDetailView(meal: Demo.plan.entries[2])
                     case ("myrecipe", _): SavedRecipeView(recipeId: Demo.savedRecipe.id)
                     case ("recipeform", _): RecipeFormSheet(editing: Demo.savedRecipe, page: 1)
+                    case ("imported", _): SavedRecipeView(recipeId: Demo.importedRecipe.id)
+                    case ("instagram", _): InstagramShareView()
+                    case ("fridgecam", _): FridgeScanSheet()
+                    case ("fridgereview", _): FridgeScanSheet(stage: .review)
+                    case ("cooknow", _): FridgeScanSheet(stage: .cook)
+                    case ("sharepair", _): ShareFlowView(input: nil, session: nil, demo: .pair) {}
+                    case ("shareimport", _): ShareFlowView(input: nil, session: nil, demo: .importing) {}
+                    case ("shareresult", _): ShareFlowView(input: nil, session: nil, demo: .result) {}
+                    case ("importlink", _): ShareFlowView(input: nil, session: nil, demo: .link, onOpen: { _ in }) {}
                     case ("offer", _): OfferDetailView(offer: Demo.offers[0])
                     case ("stores", _): StoreMapView()
                     case ("list", _): ShoppingListView(chain: "rewe")
@@ -103,6 +116,7 @@ struct MainView: View {
                     case .list: tab = .einkauf
                     case .offers: tab = .angebote
                     case .recipe: showRecipeForm = true
+                    case .scan: store.scanning = true
                     }
                 }
                 .padding(.horizontal, 16)
@@ -110,7 +124,12 @@ struct MainView: View {
                 .transition(.scale(scale: 0.85, anchor: .bottom).combined(with: .opacity))
             }
 
-            TabBar(selected: $tab, quickOpen: $quickOpen) { resetToken += 1 }
+            if !Self.modalDemo.contains(Demo.screen ?? "") {
+                TabBar(selected: $tab, quickOpen: $quickOpen) { resetToken += 1 }
+            }
+        }
+        .sheet(isPresented: Binding(get: { store.scanning }, set: { on in store.scanning = on })) {
+            FridgeScanSheet().presentationDetents([.large]).presentationCornerRadius(Theme.R.sheet)
         }
         .sheet(isPresented: $showGenerator) { PlanGeneratorSheet().presentationDetents([.large]) }
         .sheet(isPresented: $showRecipeForm) { RecipeFormSheet().presentationDetents([.large]).presentationCornerRadius(Theme.R.sheet) }
@@ -153,7 +172,7 @@ struct MainView: View {
 
 /// Schnell-Aktionen hinter dem Mittel-Button (E14).
 struct QuickActions: View {
-    enum Action { case plan, offers, list, recipe }
+    enum Action { case plan, offers, list, recipe, scan }
     let select: (Action) -> Void
 
     var body: some View {
@@ -167,6 +186,9 @@ struct QuickActions: View {
                 GridRow {
                     tile(.list, "🛒", "Einkaufsliste", "Artikel abhaken & ergänzen", color: Theme.C.kcal)
                     tile(.recipe, "📝", "Rezept anlegen", "Eigenes Rezept speichern", color: Color(hex: 0x8E7CFF))
+                }
+                GridRow {
+                    tile(.scan, "📸", "Kühlschrank scannen", "Fotos → Vorrat & Kochideen", color: Theme.C.carbs).gridCellColumns(2)
                 }
             }
         }
