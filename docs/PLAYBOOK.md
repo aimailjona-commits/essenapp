@@ -41,6 +41,7 @@ Nutzer: der Entwickler selbst (iOS-App) + Familie/Freunde (Web-Version).
 | E20 (C) | Wochenplan liegt im Tab „Rezepte“ (Umschalter Wochenplan / Meine Rezepte), zusätzlich über Start erreichbar | |
 | E21 (C) | Arbeitstitel **„Essenapp“**, Bundle-ID `de.jsenf.essenapp`; Anzeigename später änderbar | Bundle-ID sollte danach nicht mehr wechseln |
 | E22 (C) | Schrift: System-Schrift SF Pro (iOS), Inter/Systemschrift im Web | Keine Schrift-Einbindung, beste Barrierefreiheit |
+| E23 | iPhone ↔ WSL über **usbipd (Weg A)** funktioniert | Einmalig `usbipd bind --busid <ID>` (Admin). Danach je Sitzung: WSL muss laufen, dann `usbipd attach --wsl --busid <ID>` (BUSID mit `usbipd list`, Apple = `05ac:…`). Gerät ist dann nur noch in WSL sichtbar. Prüfen: `idevice_id -l` |
 
 ---
 

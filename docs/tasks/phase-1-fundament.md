@@ -5,24 +5,24 @@ Ziel: Toolchain läuft, eine leere App mit dem Design-System läuft auf dem iPho
 ## Vorbereitung
 
 - [ ] 👤 Xcode 27.1 `.xip` herunterladen: https://developer.apple.com/download/all/?q=Xcode
-- [ ] 👤 `winget install usbipd` (USB-Durchreichung für WSL)
-- [ ] Git-Repo anlegen, `.gitignore` (u.a. `.env`, `.build/`, `*.ipa`, `__pycache__/`)
+- [x] 👤 `winget install usbipd` (USB-Durchreichung für WSL)
+- [x] Git-Repo anlegen, `.gitignore` (u.a. `.env`, `.build/`, `*.ipa`, `__pycache__/`)
 
 ## WSL-Toolchain
 
-- [ ] Swift 6.4 installieren (swift.org/install/linux bzw. swiftly), `swift --version` prüfen
-- [ ] `usbmuxd`, `libimobiledevice-utils` installieren
-- [ ] xtool AppImage nach `/usr/local/bin/xtool`, `xtool --help` prüfen
+- [x] Swift 6.4 installieren (swift.org/install/linux bzw. swiftly), `swift --version` prüfen → 6.4.2 via swiftly
+- [x] `usbmuxd`, `libimobiledevice-utils` installieren
+- [x] xtool AppImage nach `/usr/local/bin/xtool`, `xtool --help` prüfen
 - [ ] 👤 `xtool setup`: Login-Modus „Password“, Apple-ID selbst eingeben, Pfad zum `.xip` angeben
 - [ ] `swift sdk list` zeigt `darwin`
-- [ ] Python 3.12 + `uv` in WSL
+- [x] Python 3.12 + `uv` in WSL
 
 ## iPhone-Verbindung
 
-- [ ] 👤 iPhone per USB anschließen, „Vertrauen“ bestätigen
-- [ ] Weg A: `usbipd bind/attach` → in WSL `ideviceinfo` zeigt das Gerät
-- [ ] Weg B (falls `AFCClient.Error.muxError`): Relay über Windows-Apple-Gerätedienst, `USBMUXD_SOCKET_ADDRESS=<Windows-Host>:27015` (xtool Issue #19)
-- [ ] Funktionierenden Weg im Playbook dokumentieren
+- [x] 👤 iPhone per USB anschließen, „Vertrauen“ bestätigen
+- [x] Weg A: `usbipd bind/attach` → in WSL `ideviceinfo` zeigt das Gerät (iPhone 12, iOS 26.3, Pairing ok)
+- [-] nicht nötig – Weg B (falls `AFCClient.Error.muxError`): Relay über Windows-Apple-Gerätedienst, `USBMUXD_SOCKET_ADDRESS=<Windows-Host>:27015` (xtool Issue #19)
+- [x] Funktionierenden Weg im Playbook dokumentieren
 
 ## iOS-Grundgerüst
 

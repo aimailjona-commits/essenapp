@@ -18,10 +18,8 @@
 | Was | Wofür | Phase |
 |---|---|---|
 | Xcode 27.1 `.xip` herunterladen (https://developer.apple.com/download/all/?q=Xcode) | iOS-SDK für xtool | 1 |
-| `winget install usbipd` | iPhone in WSL | 1 |
 | `xtool setup` mit Apple-ID (Claude startet es, du tippst Login/2FA) | Signieren | 1 |
 | iPhone per USB, „Vertrauen“, Entwicklermodus | App installieren | 1 |
-| Anthropic-API-Key in `backend/.env` (`ANTHROPIC_API_KEY=`) | KI-Wochenplan | 3 |
 | Offene (C)-Entscheidungen im Playbook prüfen (E17–E21) | optional | – |
 
 ## Regeln
