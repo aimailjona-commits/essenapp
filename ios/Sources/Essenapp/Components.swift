@@ -578,6 +578,36 @@ struct PillSegment<T: Hashable>: View {
     }
 }
 
+/// Fester Aktionsbereich unten (CTA): liegt als Safe-Area-Einschub unter dem Scroll-Inhalt – der letzte Inhalt
+/// bleibt erreichbar – mit Verlauf von transparent nach `bg`, damit nichts zwischen den Buttons durchscheint.
+struct CTABar<Bar: View>: ViewModifier {
+    var bottom: CGFloat
+    var horizontal: CGFloat
+    @ViewBuilder let bar: () -> Bar
+
+    func body(content: Content) -> some View {
+        content.safeAreaInset(edge: .bottom, spacing: 0) {
+            bar()
+                .padding(.horizontal, horizontal)
+                .padding(.top, 28)
+                .padding(.bottom, bottom)
+                .background(
+                    LinearGradient(stops: [.init(color: Theme.C.bg.opacity(0), location: 0), .init(color: Theme.C.bg, location: 0.3)],
+                                   startPoint: .top, endPoint: .bottom)
+                        .ignoresSafeArea(edges: .bottom)
+                )
+        }
+    }
+}
+
+extension View {
+    /// `bottom`: Abstand nach unten (Standard: über der Tab-Leiste), `horizontal`: 0, wenn der Container schon Rand hat.
+    func ctaBar<B: View>(bottom: CGFloat = Theme.ctaAboveTabBar, horizontal: CGFloat = Theme.pagePadding,
+                         @ViewBuilder _ bar: @escaping () -> B) -> some View {
+        modifier(CTABar(bottom: bottom, horizontal: horizontal, bar: bar))
+    }
+}
+
 // MARK: Rezepte (3) & Nährwerte (2)
 
 /// Herz für Favoriten (Rezeptdetail, Karten): hüpft beim Umschalten, mit Haptik.
@@ -617,7 +647,7 @@ struct StarsView: View {
         .font(.system(size: size, weight: .semibold))
         .foregroundStyle(Theme.C.warning)
         .accessibilityElement()
-        .accessibilityLabel("\(value.formatted(.number.precision(.fractionLength(0...1)))) von 5 Sternen")
+        .accessibilityLabel("\(num(value)) von 5 Sternen")
     }
 }
 

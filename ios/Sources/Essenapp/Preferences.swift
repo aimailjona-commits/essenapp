@@ -140,9 +140,10 @@ struct PreferencesView: View {
                     PreferencesForm(prefs: $prefs)
                 }
                 .padding(.horizontal, Theme.pagePadding)
-                .padding(.bottom, 200)
+                .padding(.bottom, 16)
             }
             .scrollDismissesKeyboard(.immediately)
+            .ctaBar {
             Button {
                 saving = true
                 Task {
@@ -158,7 +159,7 @@ struct PreferencesView: View {
             } label: { Text(saving ? "Speichere …" : "Speichern") }
             .buttonStyle(PrimaryButtonStyle())
             .disabled(saving)
-            .padding(.horizontal, Theme.pagePadding).padding(.bottom, Theme.ctaAboveTabBar)
+            }
         }
         .toolbar(.hidden, for: .navigationBar)
         .onAppear { if let h = store.household { prefs = Prefs(h) } }

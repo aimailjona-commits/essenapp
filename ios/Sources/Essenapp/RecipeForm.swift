@@ -201,7 +201,7 @@ struct RecipeFormSheet: View {
                             TextField("Zutat", text: $line.name)
                                 .focused($focus, equals: line.id)
                                 .padding(12).background(Theme.C.card, in: RoundedRectangle(cornerRadius: Theme.R.chip))
-                            TextField("Menge", value: $line.amount, format: .number)
+                            TextField("Menge", value: $line.amount, format: .number.locale(.de))
                                 .keyboardType(.decimalPad).multilineTextAlignment(.trailing)
                                 .frame(width: 60)
                                 .padding(12).background(Theme.C.card, in: RoundedRectangle(cornerRadius: Theme.R.chip))

@@ -239,7 +239,7 @@ struct ItemRow: View {
                 Text(offer?.title ?? item.name).font(.system(.body, weight: .semibold)).strikethrough(item.checked)
                     .foregroundStyle(item.checked ? Theme.C.text3 : Theme.C.text1)
                 let who = item.checked && !item.checkedBy.isEmpty ? "✓ \(item.checkedBy)" : (item.source == "manual" && !item.addedBy.isEmpty ? "von \(item.addedBy)" : "")
-                let amount = item.amount.map { "\($0.formatted()) \(item.unit == "stk" ? "Stück" : item.unit)" } ?? ""
+                let amount = item.amount.map { "\(num($0, 0...2)) \(item.unit == "stk" ? "Stück" : item.unit)" } ?? ""
                 if !(amount + who).isEmpty {
                     Text([amount, who].filter { !$0.isEmpty }.joined(separator: " · ")).font(Theme.F.micro).foregroundStyle(Theme.C.text2)
                 }

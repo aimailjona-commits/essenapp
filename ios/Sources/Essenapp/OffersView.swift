@@ -84,7 +84,7 @@ extension OfferDTO {
     var baseUnitLabel: String { unit == "stk" ? "Stk" : unit == "ml" ? "l" : "kg" }
 
     var amountText: String? {
-        amount.map { "\($0.formatted()) \(unit == "stk" ? "Stück" : unit)" }
+        amount.map { "\(num($0, 0...2)) \(unit == "stk" ? "Stück" : unit)" }
     }
 
     var daysLeft: Int? {
@@ -293,16 +293,17 @@ struct OfferDetailView: View {
                     }
                 }
                 .padding(.horizontal, Theme.pagePadding)
-                .padding(.bottom, 200)
+                .padding(.bottom, 16)
             }
             .ignoresSafeArea(edges: .top)
+            .ctaBar {
             Button { withAnimation(Theme.spring) { store.addToList(offer) } } label: {
                 Label(onList ? "Auf der Einkaufsliste" : "Zur Einkaufsliste", systemImage: onList ? "checkmark" : "cart.badge.plus")
                     .contentTransition(.symbolEffect(.replace))
             }
             .buttonStyle(PrimaryButtonStyle(color: onList ? Theme.C.accentDeep : Theme.C.action))
             .sensoryFeedback(.success, trigger: onList)
-            .padding(.horizontal, Theme.pagePadding).padding(.bottom, Theme.ctaAboveTabBar)
+            }
         }
         .toolbar(.hidden, for: .navigationBar)
     }

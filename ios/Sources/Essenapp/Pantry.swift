@@ -56,7 +56,7 @@ extension PantryDTO {
 
     var amountText: String {
         guard let amount else { return "Menge offen" }
-        return "\(amount.formatted(.number.precision(.fractionLength(0...1)))) \(unit == "stk" ? "Stück" : unit)"
+        return "\(num(amount)) \(unit == "stk" ? "Stück" : unit)"
     }
 }
 

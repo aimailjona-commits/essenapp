@@ -15,7 +15,7 @@ extension AppStore {
         lines.append("\n🛒 Einkaufsliste")
         for (chain, items) in Dictionary(grouping: listItems.filter { !$0.checked }, by: \.chain).sorted(by: { $0.key < $1.key }) {
             lines.append("\n\(chain.isEmpty ? "Überall" : Labels.chain(chain)):")
-            lines += items.map { i in "◻︎ \(i.name)" + (i.amount.map { " – \($0.formatted()) \(i.unit == "stk" ? "Stück" : i.unit)" } ?? "") }
+            lines += items.map { i in "◻︎ \(i.name)" + (i.amount.map { " – \(num($0, 0...2)) \(i.unit == "stk" ? "Stück" : i.unit)" } ?? "") }
         }
         if let plan { lines.append("\nGeschätzt \(euro(plan.totalCents)), davon \(euro(plan.savedCents)) gespart 💚") }
         return lines.joined(separator: "\n")

@@ -127,6 +127,7 @@ struct MealRow: View {
     let meal: MealDTO
     var actions = false
     @State private var rolling = false
+    @State private var replacing = false  // S2 „ersetzen durch eigenes Rezept“ → S19
 
     var body: some View {
         let deals = meal.recipe.ingredients.filter { $0.offerId != nil }.count
@@ -146,12 +147,16 @@ struct MealRow: View {
             }
             .buttonStyle(PressableStyle())
             if actions && meal.id != nil {
-                VStack(spacing: 6) {
+                Grid(horizontalSpacing: 6, verticalSpacing: 6) {
+                  GridRow {
                     small(meal.recipe.favorite ? "heart.fill" : "heart", on: meal.recipe.favorite,
                           label: meal.recipe.favorite ? "Aus Favoriten entfernen" : "Als Favorit merken") {
                         Task { _ = await store.toggleFavorite(meal.recipe.id, current: meal.recipe.favorite) }
                     }
                     .symbolEffect(.bounce, value: meal.recipe.favorite)
+                    small("arrow.triangle.2.circlepath", on: false, label: "Durch eigenes Rezept ersetzen") { replacing = true }
+                  }
+                  GridRow {
                     small(meal.locked ? "lock.fill" : "lock.open", on: meal.locked, label: meal.locked ? "Lösen" : "Fixieren") {
                         Task { await store.setLocked(meal, !meal.locked) }
                     }
@@ -164,11 +169,15 @@ struct MealRow: View {
                     }
                     .disabled(meal.locked || rolling)
                     .opacity(meal.locked ? 0.35 : 1)
+                  }
                 }
             }
         }
         .padding(12)
         .card()
+        .sheet(isPresented: $replacing) {
+            PlanSlotSheet(entry: meal).presentationDetents([.medium, .large]).presentationCornerRadius(Theme.R.sheet)
+        }
     }
 
     private func small(_ symbol: String, on: Bool, label: String, action: @escaping () -> Void) -> some View {
@@ -255,7 +264,7 @@ struct RecipeDetailView: View {
                         if let avg = details.avgStars {
                             HStack(spacing: 6) {
                                 StarsView(value: avg)
-                                Text("\(avg.formatted(.number.precision(.fractionLength(1)))) · \(details.ratings?.count ?? 0) Bewertungen")
+                                Text("\(num(avg, 1...1)) · \(details.ratings?.count ?? 0) Bewertungen")
                                     .font(Theme.F.caption).foregroundStyle(Theme.C.text2)
                             }
                         }
@@ -297,7 +306,7 @@ struct RecipeDetailView: View {
                             Text("Zutaten").font(Theme.F.headline)
                             Spacer()
                             Stepper(value: Binding(get: { servings ?? max(Int(base.rounded()), 1) }, set: { servings = $0 }), in: 1...12) {
-                                Text("\(servings.map { Double($0) } ?? base, format: .number.precision(.fractionLength(0...2))) Portionen")
+                                Text("\(num(servings.map { Double($0) } ?? base, 0...2)) Portionen")
                                     .font(Theme.F.callout).contentTransition(.numericText())
                             }
                             .fixedSize()
@@ -371,8 +380,9 @@ struct RecipeDetailView: View {
                     if let ratings = details.ratings, !ratings.isEmpty { ratingsCard(ratings) }
                 }
                 .padding(.horizontal, Theme.pagePadding)
-                .padding(.bottom, 270)
+                .padding(.bottom, 16)
             }
+            .ctaBar {
             VStack(spacing: 10) {
                 // Kochmodus S18 (Feature 4)
                 Button { cooking = true } label: { Label("Kochen starten", systemImage: "play.fill") }
@@ -388,7 +398,7 @@ struct RecipeDetailView: View {
                         .buttonStyle(PrimaryButtonStyle())
                 }
             }
-            .padding(.horizontal, Theme.pagePadding).padding(.bottom, Theme.ctaAboveTabBar)
+            }
         }
         .toolbar(.hidden, for: .navigationBar)
         .task(id: store.recipesVersion) { await loadInfo() }
@@ -488,7 +498,7 @@ extension RecipeDetailView {
         let isMe = who.memberId == store.profile?.memberId
         let grams = recipe.ingredients.filter { ["g", "ml"].contains($0.unit) }.map(\.amount).reduce(0, +) * (mine ?? 0) * meal.scale / base
         let parts = [grams > 0 ? "\(Int(grams.rounded())) g" : nil, mine.map { euro(Int(Double(meal.costCents) * $0 / base)) },
-                     mine.map { "×\($0.formatted()) von \(base.formatted()) Portionen" }].compactMap { $0 }
+                     mine.map { "×\(num($0, 0...2)) von \(num(base, 0...2)) Portionen" }].compactMap { $0 }
         return VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 8) {
                 PersonPicker(person: $person)
@@ -509,7 +519,7 @@ extension RecipeDetailView {
 
 /// Menge mit Einheit, z. B. „400 g“, „1 Stück“ (Rezept, Kochmodus, Bildkarte).
 func qty(_ amount: Double, _ unit: String) -> String {
-    "\(amount.formatted(.number.precision(.fractionLength(0...1)))) \(Labels.unit(unit))"
+    "\(num(amount)) \(Labels.unit(unit))"
 }
 
 /// Eckrahmen wie Referenz 02.
@@ -667,10 +677,10 @@ struct PlanGeneratorSheet: View {
                         PreferencesForm(prefs: $prefs, showDiet: false)
                         Toggle("Als Standard speichern", isOn: $saveAsDefault).tint(Theme.C.accent).padding(16).card()
                     }
-                    .padding(.bottom, 90)
+                    .padding(.bottom, 16)
                 }
                 .scrollDismissesKeyboard(.immediately)
-                .overlay(alignment: .bottom) {
+                .ctaBar(bottom: 0, horizontal: 0) {
                     Button { start() } label: { Label("Plan erstellen", systemImage: "sparkles") }
                         .buttonStyle(PrimaryButtonStyle())
                         .disabled(prefs.mealTypes.isEmpty || prefs.planDays.isEmpty)

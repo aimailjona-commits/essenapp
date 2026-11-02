@@ -10,7 +10,7 @@ Tab-Bar (Komponente `TabBar`):
 |---|---|---|
 | 1 | **Start** | Überblick der Woche |
 | 2 | **Angebote** | Angebote + Merkliste (Lieblingsprodukte) |
-| Mitte | **Schwarzer Button** | Öffnet **Schnell-Aktionen** (E14): Wochenplan erstellen, Barcode scannen, Zur Einkaufsliste, Rezept anlegen |
+| Mitte | **Schwarzer Button** | Öffnet **Schnell-Aktionen** (E14): Wochenplan erstellen, Barcode scannen, Zur Einkaufsliste, Rezept anlegen (→ S17, auch `essenapp://recipe/new`). Solange es keinen Barcode-Scanner gibt, steht an seiner Stelle „Angebote stöbern“ |
 | 3 | **Einkauf** | Einkaufslisten |
 | 4 | **Rezepte** | Wochenplan-Gerichte, gespeicherte und eigene Rezepte |
 
@@ -36,7 +36,7 @@ Einstellungen/Profil: über den Avatar oben rechts auf dem Start-Screen.
 - Tageswerte unten: kcal, Protein, KH, Fett gegen Ziel
   - Umsetzung (Feature 2/48): Karte „Tageswerte“ unter den Gerichten, rechts „Für: 🧑‍🍳 Jona ▾“. Pro Person Ringe (außen kcal, innen Protein gegen das Ziel aus dem Profil, Emoji in der Mitte, Name darunter; gewählte Person auf `accentSoft`, Tippen wählt sie). Darunter 4 `NutrientStat` (kcal, Protein, KH, Fett) der gewählten Person und „Ziel Jona: 2500 kcal · 140 g Protein“. Fehlen Nährwerte (`complete = false`) → Schimmer über Ringen/Werten + „Nährwerte werden noch berechnet …“, einmal nach ~3 s neu laden. Ringe animieren nach Würfeln/Ersetzen.
   - Kopf: Wochenschnitt der gewählten Person „🧑‍🍳 Ø 1980 / 2500 kcal · 104 / 140 g Protein pro Tag“.
-  - Gericht-Zeile: zusätzlich Herz (Favorit) über Schloss und Würfel.
+  - Gericht-Zeile: Aktionen als 2×2 runde Knöpfe – Herz (Favorit), Ersetzen (→ S19 „Durch eigenes Rezept ersetzen“), Schloss, Würfel.
 - Zustände: wird erstellt → Skeleton + Text „Angebote werden ausgewertet …“
 
 ### S3 Rezeptdetail
@@ -181,6 +181,11 @@ Mockups: `mockups/weitere-screens-v1.html`.
 - Titel „Diese Woche einplanen“, Satz „„Ofen-Lachs“ ersetzt das Gericht im gewählten Slot.“
 - Zeilen aller Plan-Gerichte nach Tag und Mahlzeit: kleines Tellerfoto, „Dienstag · Mittag“, aktuelles Gericht, Schloss bei fixierten, Ersetzen-Symbol. Tippen → `POST /plans/current/entries/{id}/replace` (Mengen auf die Esser skaliert, Liste und Nährwerte neu), Toast „Eingeplant: Di · Mittag“.
 - Kein Plan → `EmptyState` „Noch kein Wochenplan“.
+- Aus S2 (Ersetzen-Knopf der Gericht-Zeile) umgekehrt: Titel „Durch eigenes Rezept ersetzen“, Satz „Dienstag · Mittag: „Tikka Masala“ wird ersetzt.“, Zeilen aus Meine Rezepte (Tellerfoto, Titel, „3,10 € / Portion · 40 min“); das aktuelle Gericht ist ausgegraut. Laden → Skeleton-Zeilen, Fehler → `ErrorState`, leer → `EmptyState` „Noch keine Rezepte gespeichert“.
+
+### Fester Aktionsbereich (alle Screens mit Buttons über der Tab-Leiste)
+- S3, S9, S14, S15, Präferenzen, S7: die festen Buttons liegen in einem Bereich unter dem Scroll-Inhalt (Safe-Area-Einschub) mit Verlauf von transparent nach `bg`; der letzte Inhalt lässt sich ganz hochscrollen.
+- Zahlen, Uhrzeiten und Datumsangaben immer deutsch (Komma, 24 h), auch bei englischer Gerätesprache; Portionen ohne „,0“ (z. B. „2,25 Portionen“, „2 Portionen“).
 
 ### S18 Kochmodus (Vollbild aus S3, Feature 4 + 8)
 - Dunkler Grund `cookBg` (#111), weiße Schrift, Bildschirm bleibt an. Oben: runder Schließen-Knopf ✕, „Schritt 2 von 4“ + Fortschrittsbalken (`accent`, gleitet mit Feder), rechts 🎙-Knopf (an = `accent`).

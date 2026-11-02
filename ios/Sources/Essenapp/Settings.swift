@@ -52,8 +52,9 @@ struct StoreMapView: View {
                     }
                 }
                 .padding(.horizontal, Theme.pagePadding)
-                .padding(.bottom, 200)
+                .padding(.bottom, 16)
             }
+            .ctaBar(bottom: onDone == nil ? Theme.ctaAboveTabBar : 12) {
             Button(action: save) {
                 Text(saving ? "Speichere …" : selected.isEmpty ? "Mindestens einen Laden wählen" : "\(selected.count) Läden übernehmen")
                     .contentTransition(.numericText())
@@ -61,7 +62,7 @@ struct StoreMapView: View {
             .buttonStyle(PrimaryButtonStyle())
             .disabled(selected.isEmpty || saving)
             .opacity(selected.isEmpty ? 0.5 : 1)
-            .padding(.horizontal, Theme.pagePadding).padding(.bottom, onDone == nil ? Theme.ctaAboveTabBar : 12)
+            }
         }
         .toolbar(.hidden, for: .navigationBar)
         .task {
@@ -127,7 +128,7 @@ struct StoreMapView: View {
                     Text(s.address.isEmpty ? Labels.chain(s.chain) : s.address).font(Theme.F.micro).foregroundStyle(Theme.C.text2).lineLimit(1)
                 }
                 Spacer()
-                Text(String(format: "%.1f km", s.distanceKm)).font(Theme.F.micro).foregroundStyle(Theme.C.text2)
+                Text("\(num(s.distanceKm, 1...1)) km").font(Theme.F.micro).foregroundStyle(Theme.C.text2)
                 Image(systemName: on ? "checkmark.circle.fill" : "circle")
                     .font(.system(size: 22)).foregroundStyle(on ? Theme.C.accent : Theme.C.text3)
                     .contentTransition(.symbolEffect(.replace))

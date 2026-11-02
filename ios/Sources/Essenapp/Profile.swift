@@ -84,14 +84,15 @@ struct ProfileView: View {
                     }
                 }
                 .padding(.horizontal, Theme.pagePadding)
-                .padding(.bottom, 200)
+                .padding(.bottom, 16)
             }
             .scrollDismissesKeyboard(.immediately)
-            if loaded == true {
-                Button(action: save) { Text(saving ? "Speichere …" : "Speichern") }
-                    .buttonStyle(PrimaryButtonStyle())
-                    .disabled(saving || p.name.trimmingCharacters(in: .whitespaces).isEmpty)
-                    .padding(.horizontal, Theme.pagePadding).padding(.bottom, Theme.ctaAboveTabBar)
+            .ctaBar {
+                if loaded == true {
+                    Button(action: save) { Text(saving ? "Speichere …" : "Speichern") }
+                        .buttonStyle(PrimaryButtonStyle())
+                        .disabled(saving || p.name.trimmingCharacters(in: .whitespaces).isEmpty)
+                }
             }
         }
         .toolbar(.hidden, for: .navigationBar)
@@ -130,7 +131,7 @@ struct ProfileView: View {
                 ring(.kcal, p.kcal, "kcal", Double(p.kcal) / 5000)
                 ring(.protein, p.proteinG, "g Protein", Double(p.proteinG) / 400)
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("Portion ×\(((Double(p.kcal) / 2000 * 4).rounded() / 4).formatted())").font(Theme.F.callout)
+                    Text("Portion ×\(num(p.portionFactor, 0...2))").font(Theme.F.callout)
                         .contentTransition(.numericText())
                     Text("gemessen an 2000 kcal").font(Theme.F.micro).foregroundStyle(Theme.C.text2)
                 }

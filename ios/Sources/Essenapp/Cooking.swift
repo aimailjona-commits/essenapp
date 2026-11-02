@@ -652,7 +652,7 @@ struct CookingView: View {
 
     private func spoken(_ ing: IngredientDTO) -> String {
         let units = ["g": "Gramm", "kg": "Kilogramm", "ml": "Milliliter", "l": "Liter", "stk": "Stück", "el": "Esslöffel", "tl": "Teelöffel"]
-        return "\(ing.amount.formatted(.number.precision(.fractionLength(0...1)))) \(units[ing.unit.lowercased()] ?? ing.unit) \(ing.name)"
+        return "\(num(ing.amount)) \(units[ing.unit.lowercased()] ?? ing.unit) \(ing.name)"
     }
 
     /// Sprachbefehl ausführen. false = (noch) nicht passend, weiter zuhören.

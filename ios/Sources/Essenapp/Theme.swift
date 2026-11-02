@@ -138,6 +138,15 @@ struct PressableStyle: ButtonStyle {
     }
 }
 
+extension Locale {
+    static let de = Locale(identifier: "de_DE")  // App ist deutsch, unabhängig von der Gerätesprache
+}
+
+/// Zahl im deutschen Format: 2,25 / 2 (Nachkommastellen nur, wenn nötig).
+func num(_ value: Double, _ digits: ClosedRange<Int> = 0...1) -> String {
+    value.formatted(.number.precision(.fractionLength(digits)).locale(.de))
+}
+
 /// Cent → "12,49 €"
 func euro(_ cents: Int) -> String {
     (Double(cents) / 100).formatted(.currency(code: "EUR").locale(Locale(identifier: "de_DE")))

@@ -30,6 +30,7 @@ struct ContentView: View {
         }
         .environment(store)
         .environment(store.api)
+        .environment(\.locale, .de)  // 24-h-Uhrzeiten, Komma – auch wenn das iPhone auf Englisch steht
         .preferredColorScheme(.light)  // nur heller Modus in v1 (E15); sonst wird Systemtext im Dark Mode weiß
         .foregroundStyle(Theme.C.text1)
         .tint(Theme.C.accentDeep)
@@ -44,6 +45,7 @@ struct MainView: View {
     @State private var resetToken = 0  // erneutes Tippen auf den aktiven Tab → zurück zum Anfang
     @State private var quickOpen = Demo.screen == "quick"
     @State private var showGenerator = ["generator", "generating"].contains(Demo.screen ?? "")
+    @State private var showRecipeForm = false  // Schnell-Aktion „Rezept anlegen“ (S17)
 
     private static var demoTab: AppTab {
         switch Demo.screen {
@@ -100,7 +102,7 @@ struct MainView: View {
                     case .plan: showGenerator = true
                     case .list: tab = .einkauf
                     case .offers: tab = .angebote
-                    case .recipe: tab = .rezepte
+                    case .recipe: showRecipeForm = true
                     }
                 }
                 .padding(.horizontal, 16)
@@ -111,6 +113,7 @@ struct MainView: View {
             TabBar(selected: $tab, quickOpen: $quickOpen) { resetToken += 1 }
         }
         .sheet(isPresented: $showGenerator) { PlanGeneratorSheet().presentationDetents([.large]) }
+        .sheet(isPresented: $showRecipeForm) { RecipeFormSheet().presentationDetents([.large]).presentationCornerRadius(Theme.R.sheet) }
         .task { await store.loadAll() }
         .modifier(PushAsk(active: store.askPush))
         .onOpenURL { url in Task { await open(url) } }
@@ -124,7 +127,7 @@ struct MainView: View {
         }
     }
 
-    /// Router für essenapp://start, essenapp://generator, essenapp://offer/<id>.
+    /// Router für essenapp://start, essenapp://generator, essenapp://offer/<id>, essenapp://recipe/new.
     private func open(_ url: URL) async {
         guard url.scheme == "essenapp" else { return }
         withAnimation(Theme.spring) { quickOpen = false }
@@ -133,6 +136,8 @@ struct MainView: View {
             withAnimation(Theme.spring) { tab = .start }
         case "generator":
             showGenerator = true
+        case "recipe" where url.lastPathComponent == "new":
+            showRecipeForm = true
         case "offer":
             guard let id = Int(url.lastPathComponent) else { return }
             if !store.offers.contains(where: { o in o.id == id }) { await store.loadAll() }
@@ -161,7 +166,7 @@ struct QuickActions: View {
                 }
                 GridRow {
                     tile(.list, "🛒", "Einkaufsliste", "Artikel abhaken & ergänzen", color: Theme.C.kcal)
-                    tile(.recipe, "📖", "Wochenplan ansehen", "Gerichte würfeln & fixieren", color: Color(hex: 0x8E7CFF))
+                    tile(.recipe, "📝", "Rezept anlegen", "Eigenes Rezept speichern", color: Color(hex: 0x8E7CFF))
                 }
             }
         }

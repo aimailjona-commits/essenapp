@@ -338,52 +338,95 @@ struct SavedRecipeView: View {
     }
 }
 
-/// S19 „Diese Woche einplanen“: Tag/Mahlzeit wählen → ersetzt das Gericht im Slot (wie Würfeln, ohne KI).
+/// S19 „Diese Woche einplanen“: Rezept steht fest → Tag/Mahlzeit wählen; aus S2 („ersetzen durch eigenes Rezept“)
+/// steht der Slot fest → Rezept aus „Meine Rezepte“ wählen. Ersetzt das Gericht im Slot (wie Würfeln, ohne KI).
 struct PlanSlotSheet: View {
     @Environment(AppStore.self) private var store
     @Environment(\.dismiss) private var dismiss
-    let recipeId: Int
-    let title: String
+    var recipeId = 0
+    var title = ""
+    var entry: MealDTO?  // gesetzt = Rezept wählen
     @State private var busy: Int?
+    @State private var cards: [RecipeCard]?
+    @State private var error: String?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("Diese Woche einplanen").font(Theme.F.title)
-            Text("„\(title)“ ersetzt das Gericht im gewählten Slot.").font(Theme.F.caption).foregroundStyle(Theme.C.text2)
-            if let plan = store.plan, !plan.entries.isEmpty {
-                ScrollView {
-                    VStack(spacing: 8) {
-                        ForEach(plan.entries.sorted { a, b in (a.day, order(a.mealType)) < (b.day, order(b.mealType)) }, id: \.self) { e in
-                            Button { Task { await pick(e) } } label: { row(e) }
-                                .buttonStyle(PressableStyle())
-                                .disabled(busy != nil)
-                        }
-                    }
-                    .padding(.bottom, 20)
-                }
+            if let entry {
+                Text("Durch eigenes Rezept ersetzen").font(Theme.F.title)
+                Text("\(Labels.dayNames[entry.day]) · \(Labels.meal(entry.mealType)): „\(entry.recipe.title)“ wird ersetzt.")
+                    .font(Theme.F.caption).foregroundStyle(Theme.C.text2)
+                recipeChoice(entry)
             } else {
-                EmptyState(emoji: "📅", title: "Noch kein Wochenplan", text: "Erstelle zuerst einen Plan – dann kannst du Rezepte einsetzen.")
+                Text("Diese Woche einplanen").font(Theme.F.title)
+                Text("„\(title)“ ersetzt das Gericht im gewählten Slot.").font(Theme.F.caption).foregroundStyle(Theme.C.text2)
+                slotChoice
             }
         }
         .padding(Theme.pagePadding)
         .frame(maxHeight: .infinity, alignment: .top)
         .background(Theme.C.bg)
+        .task { if entry != nil { await loadCards() } }
+    }
+
+    @ViewBuilder private var slotChoice: some View {
+        if let plan = store.plan, !plan.entries.isEmpty {
+            ScrollView {
+                VStack(spacing: 8) {
+                    ForEach(plan.entries.sorted { a, b in (a.day, order(a.mealType)) < (b.day, order(b.mealType)) }, id: \.self) { e in
+                        Button { Task { await pick(e, recipeId) } } label: {
+                            row(e.recipe.imageUrl, e.recipe.title, "\(Labels.dayNames[e.day]) · \(Labels.meal(e.mealType))", e.recipe.title,
+                                busy: busy == e.id, locked: e.locked)
+                        }
+                        .buttonStyle(PressableStyle())
+                        .disabled(busy != nil)
+                    }
+                }
+                .padding(.bottom, 20)
+            }
+        } else {
+            EmptyState(emoji: "📅", title: "Noch kein Wochenplan", text: "Erstelle zuerst einen Plan – dann kannst du Rezepte einsetzen.")
+        }
+    }
+
+    @ViewBuilder private func recipeChoice(_ entry: MealDTO) -> some View {
+        if let cards, !cards.isEmpty {
+            ScrollView {
+                VStack(spacing: 8) {
+                    ForEach(cards) { c in
+                        Button { Task { await pick(entry, c.id) } } label: {
+                            row(c.imageUrl, c.title, c.title, "\(euro(c.costPerServingCents)) / Portion · \(c.prepMinutes) min",
+                                busy: busy == c.id, locked: false)
+                        }
+                        .buttonStyle(PressableStyle())
+                        .disabled(busy != nil || c.id == entry.recipe.id)
+                    }
+                }
+                .padding(.bottom, 20)
+            }
+        } else if cards != nil {
+            EmptyState(emoji: "📖", title: "Noch keine Rezepte gespeichert", text: "Merk dir Gerichte mit dem Herz oder lege eigene Rezepte an.")
+        } else if let error {
+            ErrorState(message: error) { Task { await loadCards() } }
+        } else {
+            ForEach(0..<4, id: \.self) { _ in SkeletonCard(height: 68) }
+        }
     }
 
     private func order(_ mealType: String) -> Int { Labels.mealTypes.firstIndex { m in m.0 == mealType } ?? 9 }
 
-    private func row(_ e: MealDTO) -> some View {
+    private func row(_ image: String, _ seed: String, _ line1: String, _ line2: String, busy: Bool, locked: Bool) -> some View {
         HStack(spacing: 12) {
-            Plate(url: mediaURL(e.recipe.imageUrl), size: 44, seed: e.recipe.title)
+            Plate(url: mediaURL(image), size: 44, seed: seed)
             VStack(alignment: .leading, spacing: 2) {
-                Text("\(Labels.dayNames[e.day]) · \(Labels.meal(e.mealType))").font(Theme.F.callout).foregroundStyle(Theme.C.text1)
-                Text(e.recipe.title).font(Theme.F.caption).foregroundStyle(Theme.C.text2).lineLimit(1)
+                Text(line1).font(Theme.F.callout).foregroundStyle(Theme.C.text1).lineLimit(1)
+                Text(line2).font(Theme.F.caption).foregroundStyle(Theme.C.text2).lineLimit(1)
             }
             Spacer()
-            if busy == e.id {
+            if busy {
                 ProgressView()
             } else {
-                if e.locked { Image(systemName: "lock.fill").foregroundStyle(Theme.C.text3).accessibilityLabel("fixiert") }
+                if locked { Image(systemName: "lock.fill").foregroundStyle(Theme.C.text3).accessibilityLabel("fixiert") }
                 Image(systemName: "arrow.triangle.2.circlepath").foregroundStyle(Theme.C.accentDeep).accessibilityHidden(true)
             }
         }
@@ -392,10 +435,19 @@ struct PlanSlotSheet: View {
         .card(radius: Theme.R.tile)
     }
 
-    private func pick(_ e: MealDTO) async {
-        busy = e.id
+    private func loadCards() async {
+        do {
+            cards = try await store.recipes(q: "")
+            error = nil
+        } catch {
+            self.error = error.localizedDescription
+        }
+    }
+
+    private func pick(_ e: MealDTO, _ recipe: Int) async {
+        busy = entry == nil ? e.id : recipe
         defer { busy = nil }
-        if await store.replace(e, with: recipeId) {
+        if await store.replace(e, with: recipe) {
             store.flash("Eingeplant: \(Labels.days[e.day]) · \(Labels.meal(e.mealType))")
             dismiss()
         }
