@@ -10,3 +10,5 @@ __pycache__/
 backend/tests/fixtures/
 .debug/
 backend/image_cache.json
+backend/media/
+backend/secrets/

@@ -38,3 +38,14 @@ def euro_to_cents(text: str | float) -> int:
 def cents(value: float) -> int:
     """Kaufmännisch runden (Python-round rundet 598,5 auf 598)."""
     return math.floor(value + 0.5 + 1e-9)
+
+
+def ingredient_key(name: str) -> str:
+    """Normalisierter Zutatenname für Vorrat ↔ Rezept: 'Basmati  Reis ' -> 'basmati reis'."""
+    return " ".join(name.lower().split())
+
+
+def base_unit(amount: float | None, unit: str) -> tuple[float | None, str]:
+    """(1, 'l') -> (1000, 'ml'); unbekannte Einheit -> Menge ohne Einheit."""
+    base, factor = _UNITS.get(unit.strip().lower(), ("", 1))
+    return (amount * factor if amount is not None else None), base

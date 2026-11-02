@@ -2,7 +2,7 @@
 import math
 from dataclasses import dataclass
 
-from app.services.normalize import cents
+from app.services.normalize import cents, ingredient_key
 
 
 @dataclass(frozen=True)
@@ -57,3 +57,32 @@ def sum_needs(recipes: list[list[tuple[str, float]]]) -> dict[str, float]:
         for slug, amount in items:
             needs[slug] = needs.get(slug, 0) + amount
     return needs
+
+
+class Stock:
+    """Vorrat für Kosten und Einkaufsliste (60). Basics gelten als vorhanden (leer gemeldet: nicht),
+    sonst zählen Mengen gleicher Einheit; ohne Vorrats-Eintrag bleibt die in_pantry-Schätzung der KI."""
+
+    def __init__(self, items=()):
+        self.basics = {i.ingredient_key: i.amount != 0 for i in items if i.is_basic}
+        self.left: dict[tuple[str, str], float] = {}
+        for i in items:
+            if not i.is_basic:
+                k = (i.ingredient_key, i.unit)
+                self.left[k] = self.left.get(k, 0) + (math.inf if i.amount is None else i.amount)
+
+    def basic(self, name: str) -> bool | None:
+        key = ingredient_key(name)
+        # shortcut: Komposita wie "Olivenöl" zählen zum Basic "Öl", Wortgruppen nicht; bei Fehltreffern Synonymliste
+        return next((full for b, full in self.basics.items() if key == b or (" " not in key and key.endswith(b))), None)
+
+    def take(self, name: str, unit: str, needed: float, ai_in_pantry: bool = False) -> float:
+        """Menge aus dem Vorrat (inf = unbegrenzt) und zieht sie für weitere Zeilen ab."""
+        if (basic := self.basic(name)) is not None:
+            return math.inf if basic else 0.0
+        k = (ingredient_key(name), unit)
+        if k not in self.left:
+            return math.inf if ai_in_pantry else 0.0
+        took = min(self.left[k], needed)
+        self.left[k] -= took
+        return took

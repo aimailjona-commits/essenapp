@@ -5,11 +5,11 @@ Details, Abläufe und Abnahmekriterien: [`docs/features/spec-p09-rezepte-import.
 ## Aufgaben
 
 - [ ] Spike: Share Extension mit xtool + kostenlose Apple-ID (App Group/Keychain?) → Ergebnis ins Playbook (A1)
-- [ ] 3 Modelle `recipe_favorite`, `rating`, Felder source/source_url/tags; Endpunkte /recipes …
+- [x] 3 Modelle `recipe_favorite`, `rating`, Felder source/source_url/source_author/tags; Endpunkte /recipes …, Foto-Upload `/media/recipes`, `…/replace` (Backend, E50)
 - [ ] 3 iOS: Meine Rezepte (Filter, Suche, Raster), Rezept-Formular S17, Bewertung speichern, „Diese Woche einplanen“
-- [ ] 3 Planner: Favoriten/Bewertungen/Nie-Liste, „Rezept im Angebot“-Karte
+- [x] 3 Planner: Favoriten/Bewertungen/Nie-Liste, 3-Wochen-Regel, „Rezept im Angebot“ (`GET /recipes/deals`) (Backend, E50; Start-Karte in der App folgt mit 3 iOS)
 - [ ] 1 Zutat antippen → Angebot / Sheet „Angebote für …“ / Vorrat
-- [ ] 2 USDA-Import `food`, `ingredient_map` (Haiku-Zuordnung, Cache), Nährwert-Rechnung pro Person
+- [x] 2 USDA-Import `food`, `ingredient_map` (Haiku-Zuordnung, Cache), Nährwert-Rechnung pro Person (Backend, E51)
 - [ ] 2 iOS: Nährwert-Kacheln, Blüten-Diagramm (animiert), Tagesringe pro Person
 - [ ] 5 `POST /import`: Instagram-Einbettungsseite, schema.org-Recipe, Haiku → Rezept
 - [ ] 5 Share Extension `EssenappShare` (bzw. Ersatz laut Spike), Vorschau-Sheet, Speichern/Einplanen

@@ -127,7 +127,7 @@ def test_plan_options_override_only_this_plan(client, auth, monkeypatch):
     body = {"persons": 4, "meal_types": ["mittag"], "plan_days": [2], "wishes": "mehr Fisch, ein Gericht mit Kürbis"}
     r = client.post("/plans", headers=auth, json=body)
     assert r.status_code == 201, r.text
-    assert "Personen: 4" in seen["prompt"] and "Wünsche: mehr Fisch, ein Gericht mit Kürbis" in seen["prompt"]
+    assert "portionen=4" in seen["prompt"] and "Wünsche: mehr Fisch, ein Gericht mit Kürbis" in seen["prompt"]
     assert "day=2 (Mittwoch), meal_type=mittag" in seen["prompt"] and "abend" not in seen["prompt"]
     h = client.get("/household", headers=auth).json()
     assert (h["persons"], h["meal_types"], h["plan_days"]) == (2, ["abend"], [0, 1])

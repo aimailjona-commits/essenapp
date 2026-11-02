@@ -37,3 +37,17 @@ def no_image_lookup(monkeypatch, request):
         return
     from app.services import recipe_images
     monkeypatch.setattr(recipe_images, "find_image", lambda q: "")
+
+
+@pytest.fixture(autouse=True)
+def no_food_mapping(monkeypatch):
+    """Keine KI-Zuordnung im Hintergrund (die liefe gegen die echte DB); test_nutrition testet map_missing selbst."""
+    from app.services import food_map
+    monkeypatch.setattr(food_map, "map_later", lambda names: None)
+
+
+@pytest.fixture(autouse=True)
+def no_local_env(monkeypatch):
+    """Tests unabhängig von backend/.env (z.B. REINSTALL_BASE des Entwicklers)."""
+    from app.core.config import settings
+    monkeypatch.setattr(settings, "reinstall_base", None)
