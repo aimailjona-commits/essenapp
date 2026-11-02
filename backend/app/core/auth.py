@@ -6,7 +6,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.core.db import get_db
-from app.models import Member
+from app.models import Member, MemberToken
 
 
 def new_token() -> tuple[str, str]:
@@ -21,7 +21,9 @@ def hash_token(token: str) -> str:
 
 def current_member(authorization: str = Header(""), db: Session = Depends(get_db)) -> Member:
     token = authorization.removeprefix("Bearer ").strip()
-    member = token and db.scalar(select(Member).where(Member.token_hash == hash_token(token)))
+    h = hash_token(token)
+    member = token and (db.scalar(select(Member).where(Member.token_hash == h))  # Haupt-Token oder gekoppeltes (E48)
+                        or db.scalar(select(Member).join(MemberToken).where(MemberToken.token_hash == h)))
     if not member:
         raise HTTPException(401, "Ungültiges Token")
     return member

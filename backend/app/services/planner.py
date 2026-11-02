@@ -11,7 +11,7 @@ import anthropic
 from pydantic import BaseModel, ConfigDict
 
 from app.core.config import settings
-from app.models import Household, MemberProfile, Offer, PantryItem
+from app.models import AiCost, Household, MemberProfile, Offer, PantryItem
 from app.services import recipe_images
 from app.services.normalize import cents
 from app.services.pricing import Pack, Stock, cost_line
@@ -105,6 +105,12 @@ def cost_cents(usage: dict) -> float:
     total = (usage.get("input_tokens", 0) * p_in + usage.get("cache_read_input_tokens", 0) * p_read
              + usage.get("cache_creation_input_tokens", 0) * p_in * 1.25 + usage.get("output_tokens", 0) * p_out)
     return round(total / 1_000_000, 4)
+
+
+def log_cost(db, household_id: int | None, kind: str, cost: float, model: str = "", info: str = "") -> None:
+    """Kostenprotokoll (ai_cost) für KI-Aufrufe außerhalb der Pläne; Pläne speichern ihren Verbrauch in params.usage."""
+    db.add(AiCost(household_id=household_id, kind=kind, model=model[:60], cost_cents=round(cost, 4), info=info[:200]))
+    logger.info("KI-Kosten %s: %.4f ct (%s) %s", kind, cost, model, info)
 
 
 def add_usage(total: dict, usage: dict) -> dict:

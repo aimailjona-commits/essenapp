@@ -51,3 +51,4 @@ def no_local_env(monkeypatch):
     """Tests unabhängig von backend/.env (z.B. REINSTALL_BASE des Entwicklers)."""
     from app.core.config import settings
     monkeypatch.setattr(settings, "reinstall_base", None)
+    monkeypatch.setattr(settings, "fal_key", "")  # sonst starten Schritt-Bilder echte fal.ai-Aufrufe gegen die echte DB

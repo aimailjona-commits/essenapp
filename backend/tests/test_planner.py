@@ -86,7 +86,8 @@ def test_plan_endpoint(client, auth, db, monkeypatch):
     assert body["total_cents"] == 399 + 200
     assert "1|Hähnchen|399|400g|rewe" in seen["prompt"] and "Wünsche" not in seen["prompt"]
     assert client.get("/plans/current", headers=auth).json()["id"] == body["id"]
-    assert client.get("/usage", headers=auth).json() == {"plans": 1, "cost_cents_total": 0.5, "cost_cents_last": 0.5}
+    assert client.get("/usage", headers=auth).json() == {"plans": 1, "cost_cents_total": 0.5, "cost_cents_last": 0.5,
+                                                         "by_kind": {"plan": 0.5}, "recent": []}
 
 
 def test_reroll_and_lock_entry(client, auth, db, monkeypatch):

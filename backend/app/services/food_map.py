@@ -68,7 +68,9 @@ def piece_g(key: str) -> float | None:
     return next((g for k, g in PIECE_G.items() if last == k or (len(k) >= 4 and last.endswith(k))), None)
 
 
-def ask_claude(prompt: str, schema: type[BaseModel]) -> tuple[BaseModel, dict]:
+def ask_claude(prompt: str | list[dict], schema: type[BaseModel]) -> tuple[BaseModel, dict]:
+    """Haiku (MODEL_FAST) mit strukturierter Ausgabe; prompt = Text oder Inhaltsblöcke (z.B. Bilder). Auch für Import,
+    Kühlschrank-Scan und „Was koche ich jetzt?“ (5/69)."""
     client = anthropic.Anthropic(api_key=settings.anthropic_api_key or None)
     response = client.messages.parse(model=settings.model_fast, max_tokens=8000, output_config={"effort": "low"},
                                      messages=[{"role": "user", "content": prompt}], output_format=schema)
@@ -77,9 +79,9 @@ def ask_claude(prompt: str, schema: type[BaseModel]) -> tuple[BaseModel, dict]:
              "cache_read_input_tokens": u.cache_read_input_tokens or 0,
              "cache_creation_input_tokens": u.cache_creation_input_tokens or 0}
     usage["cost_cents"] = cost_cents(usage)
-    log.info("Zutaten-Zuordnung (%s): %s", schema.__name__, usage)
+    log.info("KI-Aufruf %s: %s", schema.__name__, usage)
     if response.stop_reason != "end_turn" or response.parsed_output is None:
-        raise RuntimeError(f"Zuordnung fehlgeschlagen (stop_reason={response.stop_reason})")
+        raise RuntimeError(f"KI-Antwort unbrauchbar (stop_reason={response.stop_reason})")
     return response.parsed_output, usage
 
 

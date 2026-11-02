@@ -1,29 +1,34 @@
 import base64
 import secrets
+import shutil
+import threading
 import time
+from concurrent.futures import ThreadPoolExecutor
 from datetime import date, datetime, timedelta
 from pathlib import Path
 from types import SimpleNamespace
 
 import httpx
-from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response
+from fastapi import APIRouter, Body, Depends, File, Form, HTTPException, Query, Request, Response, UploadFile
 from sqlalchemy import or_, select
 from sqlalchemy.orm import Session
 
 from app.core.auth import current_member, new_token
+from app.core.config import settings
 from app.core.db import get_db
-from app.models import (Household, HouseholdStore, Invite, MealPlan, MealPlanEntry, Member, MemberProfile, Offer,
-                        PantryItem, PricePoint, PushDevice, Rating, Recipe, RecipeFavorite, ShoppingItem,
-                        ShoppingList)
-from app.schemas import (ConsumeIn, DeviceIn, EntryUpdate, FavoriteOut, HouseholdCreate, HouseholdCreated,
-                         HouseholdOut, HouseholdSettings, InviteOut, ItemCreate, ItemOut, ItemPatchOut, ItemUpdate, JoinIn,
-                         ListCreate, ListOut, ListSummary, MemberOut, MemberProfileOut, NearbyStoreOut,
-                         OfferHistoryOut, OfferOut, PantryIn, PantryOut, PantryUpdate, PlanNutritionOut, PlanOptions,
-                         PlanOut, ProfileOut, ProfileUpdate, PushSettings, PushSettingsUpdate, RatingIn,
-                         RatingOut, RecipeCard, RecipeCostOut, RecipeDetail, RecipeIn, RecipePatch, ReplaceIn,
-                         ShareOut, UsageOut)
-from app.services import (food_map, nearby_stores, nutrition, offers_import, planner, prices, push, recipe_images,
-                          recipes)
+from app.models import (AiCost, Household, HouseholdStore, Invite, MealPlan, MealPlanEntry, Member, MemberProfile,
+                        MemberToken, Offer, PairingCode, PantryItem, PricePoint, PushDevice, Rating, Recipe,
+                        RecipeFavorite, ShoppingItem, ShoppingList)
+from app.schemas import (ConsumeIn, CookIdeaOut, DeviceIn, EntryUpdate, FavoriteOut, HouseholdCreate,
+                         HouseholdCreated, HouseholdOut, HouseholdSettings, ImportIn, InviteOut, ItemCreate, ItemOut,
+                         ItemPatchOut, ItemUpdate, JoinIn, ListCreate, ListOut, ListSummary, MemberOut,
+                         MemberProfileOut, NearbyStoreOut, OfferHistoryOut, OfferNutritionOut, OfferOut,
+                         PairedTokenOut, PairIn, PairingCodeOut, PairOut, PantryIn, PantryOut, PantryUpdate,
+                         PlanNutritionOut, PlanOptions, PlanOut, ProfileOut, ProfileUpdate, PushSettings,
+                         PushSettingsUpdate, RatingIn, RatingOut, RecipeCard, RecipeCostOut, RecipeDetail, RecipeIn,
+                         RecipeOut, RecipePatch, ReplaceIn, ScanOut, ShareOut, StepImagesOut, UsageOut)
+from app.services import (food_map, nearby_stores, nutrition, offers_import, pantry_ai, planner, prices, push,
+                          recipe_images, recipe_import, recipes)
 from app.services.normalize import base_unit, cents, ingredient_key
 from app.services.pricing import Stock
 
@@ -91,6 +96,32 @@ def offer_history(offer_id: int, member: Member = Depends(current_member), db: S
         db.commit()
     points = list(db.scalars(select(PricePoint).where(PricePoint.product_id == offer.product_id)))
     return prices.history(points, offer.price_cents, offer.regular_price_cents, prices.point_week(offer, date.today()))
+
+
+NUTRITION_CATEGORIES = (*planner.FOOD_CATEGORIES, "getraenke")
+
+
+@router.get("/offers/{offer_id}/nutrition", response_model=OfferNutritionOut)
+def offer_nutrition(offer_id: int, member: Member = Depends(current_member), db: Session = Depends(get_db)):
+    """Nährwerte im Angebotsdetail (2), nur bei sicherer Zuordnung (hoch). Die erste Anfrage startet die Zuordnung im
+    Hintergrund (status pending); Drogerie/Haushalt bekommen keine."""
+    offer = db.get(Offer, offer_id)
+    if offer is None:
+        raise HTTPException(404, "Angebot nicht gefunden")
+    none = {"status": "none", "food": "", "per_100g": None, "per_pack": None}
+    if offer.category not in NUTRITION_CATEGORIES:
+        return none
+    hit = food_map.load(db, [offer.title]).get(ingredient_key(offer.title))
+    if hit is None:
+        food_map.map_later([offer.title])
+        return none | {"status": "pending"}
+    m, food = hit
+    if food is None or m.confidence != "hoch":
+        return none
+    per_100 = nutrition.per_100(food)
+    grams = nutrition.grams(offer.amount, offer.unit, m.grams_per_piece) if offer.amount else None
+    return {"status": "ok", "food": food.description, "per_100g": per_100.rounded(),
+            "per_pack": per_100.scaled(grams / 100).rounded() if grams else None}
 
 
 @router.get("/stores/nearby", response_model=list[NearbyStoreOut])
@@ -187,7 +218,13 @@ def usage(member: Member = Depends(current_member), db: Session = Depends(get_db
     """Geschätzte KI-Kosten des Haushalts (Pläne inkl. Neu würfeln)."""
     plans = db.scalars(select(MealPlan).where(MealPlan.household_id == member.household_id).order_by(MealPlan.id))
     costs = [(p.params or {}).get("usage", {}).get("cost_cents", 0) for p in plans]
-    return {"plans": len(costs), "cost_cents_total": round(sum(costs), 4), "cost_cents_last": costs[-1] if costs else 0}
+    log = list(db.scalars(select(AiCost).where(AiCost.household_id == member.household_id)
+                          .order_by(AiCost.id.desc())))
+    by_kind = {"plan": round(sum(costs), 4)}
+    for row in log:
+        by_kind[row.kind] = round(by_kind.get(row.kind, 0) + row.cost_cents, 4)
+    return {"plans": len(costs), "cost_cents_total": round(sum(by_kind.values()), 4),
+            "cost_cents_last": costs[-1] if costs else 0, "by_kind": by_kind, "recent": log[:20]}
 
 
 def _recipe(household: Household, meal: planner.PlannedMeal, image: str = "") -> Recipe:
@@ -373,6 +410,78 @@ def remove_member(member_id: int, member: Member = Depends(current_member), db: 
     if not other or other.household_id != member.household_id:
         raise HTTPException(404, "Mitglied nicht gefunden")
     db.delete(other)
+    db.commit()
+    return Response(status_code=204)
+
+
+# --- Kopplungscode für die Teilen-Erweiterung (E48: keine App Group mit kostenloser Apple-ID) ---
+
+PAIRING_MINUTES, PAIR_MAX_FAILS, PAIR_WINDOW = 10, 5, 600
+_pair_fails: dict[str, list[float]] = {}  # shortcut: Fehlversuche je IP im Speicher (weg nach Neustart), reicht für 1 Prozess
+_pair_lock = threading.Lock()
+
+
+@router.post("/me/pairing-code", response_model=PairingCodeOut, status_code=201)
+def create_pairing_code(member: Member = Depends(current_member), db: Session = Depends(get_db)):
+    """Neuer 6-stelliger Code für dieses Mitglied (ältere Codes des Mitglieds verfallen), 10 min gültig, einmalig."""
+    now = datetime.now()
+    for old in db.scalars(select(PairingCode).where(or_(PairingCode.member_id == member.id,
+                                                        PairingCode.expires_at < now - timedelta(days=1)))):
+        db.delete(old)
+    db.flush()
+    taken = set(db.scalars(select(PairingCode.code)))
+    code = f"{secrets.randbelow(10**6):06d}"
+    while code in taken:
+        code = f"{secrets.randbelow(10**6):06d}"
+    pairing = PairingCode(member_id=member.id, code=code, expires_at=now + timedelta(minutes=PAIRING_MINUTES))
+    db.add(pairing)
+    db.commit()
+    return pairing
+
+
+def _pair_failed(ip: str, status: int, detail: str):
+    with _pair_lock:
+        _pair_fails.setdefault(ip, []).append(time.time())
+    raise HTTPException(status, detail)
+
+
+@router.post("/pair", response_model=PairOut, status_code=201)
+def pair(body: PairIn, request: Request, db: Session = Depends(get_db)):
+    """Code einlösen (ohne Auth) → eigenes, widerrufbares Token für dasselbe Mitglied. 404 unbekannt, 410 abgelaufen
+    oder schon benutzt, 429 nach 5 Fehlversuchen in 10 min je IP."""
+    ip = request.client.host if request.client else "?"
+    with _pair_lock:
+        recent = [t for t in _pair_fails.get(ip, []) if time.time() - t < PAIR_WINDOW]
+        _pair_fails[ip] = recent
+    if len(recent) >= PAIR_MAX_FAILS:
+        raise HTTPException(429, "Zu viele Fehlversuche – bitte in 10 Minuten erneut versuchen")
+    pairing = db.scalar(select(PairingCode).where(PairingCode.code == body.code))
+    if pairing is None:
+        _pair_failed(ip, 404, "Code ungültig")
+    if pairing.used_at is not None:
+        _pair_failed(ip, 410, "Code wurde schon benutzt")
+    if pairing.expires_at < datetime.now():
+        _pair_failed(ip, 410, "Code abgelaufen")
+    token, token_hash = new_token()
+    pairing.used_at = datetime.now()
+    member = db.get(Member, pairing.member_id)
+    db.add(MemberToken(member_id=member.id, token_hash=token_hash, label=body.label))
+    db.commit()
+    return {"token": token, "household": member.household, "member_id": member.id, "member_name": member.name}
+
+
+@router.get("/me/tokens", response_model=list[PairedTokenOut])
+def paired_tokens(member: Member = Depends(current_member)):
+    """Gekoppelte Erweiterungen/Geräte dieses Mitglieds (zum Widerrufen)."""
+    return member.tokens
+
+
+@router.delete("/me/tokens/{token_id}", status_code=204)
+def revoke_token(token_id: int, member: Member = Depends(current_member), db: Session = Depends(get_db)):
+    token = db.get(MemberToken, token_id)
+    if token is None or token.member_id != member.id:
+        raise HTTPException(404, "Kopplung nicht gefunden")
+    db.delete(token)
     db.commit()
     return Response(status_code=204)
 
@@ -568,18 +677,31 @@ def item_to_pantry(item_id: int, member: Member = Depends(current_member), db: S
     """Abgehakten Artikel in den Vorrat: gleiche Zutat+Einheit wird aufaddiert, ein Basic gilt wieder als vorhanden."""
     item = member_item(db, member, item_id)
     amount, unit = base_unit(item.amount, item.unit)
-    key = ingredient_key(item.name)
-    pantry = next((p for p in household_pantry(db, member.household_id)
+    pantry = add_pantry(db, member.household_id, item.name, amount, unit, "list")
+    db.commit()
+    return pantry
+
+
+def add_pantry(db: Session, household_id: int, name: str, amount: float | None, unit: str, source: str,
+               best_before: date | None = None) -> PantryItem:
+    """In den Vorrat: gleiche Zutat+Einheit wird aufaddiert, ein Basic gilt wieder als vorhanden;
+    Haltbarkeit = die frühere."""
+    key = ingredient_key(name)
+    pantry = next((p for p in household_pantry(db, household_id)
                    if p.ingredient_key == key and (p.is_basic or p.unit == unit)), None)
     if pantry is None:
-        pantry = PantryItem(household_id=member.household_id, name=item.name, ingredient_key=key, amount=amount,
-                            unit=unit, source="list")
+        pantry = PantryItem(household_id=household_id, name=name, ingredient_key=key, amount=amount, unit=unit,
+                            source=source, best_before=best_before)
         db.add(pantry)
-    elif pantry.is_basic or amount is None or pantry.amount is None:
+        db.flush()
+        return pantry
+    if pantry.is_basic or amount is None or pantry.amount is None:
         pantry.amount = None  # Basic wieder voll bzw. Menge unbekannt
     else:
         pantry.amount += amount
-    db.commit()
+    if best_before and (pantry.best_before is None or best_before < pantry.best_before):
+        pantry.best_before = best_before
+    db.flush()
     return pantry
 
 
@@ -736,6 +858,73 @@ def empty_basic(item_id: int, member: Member = Depends(current_member), db: Sess
     return entry
 
 
+MAX_SCAN_IMAGES, MAX_SCAN_BYTES = 5, 5 * 1024 * 1024
+
+
+@router.post("/pantry/scan", response_model=ScanOut)
+def pantry_scan(files: list[UploadFile] = File(...),
+                mode: str = Form("kuehlschrank", pattern="^(kuehlschrank|vorrat|gefrierfach)$"),
+                member: Member = Depends(current_member), db: Session = Depends(get_db)):
+    """Kühlschrank-Foto (69): 1–5 JPEGs (multipart „files“, App verkleinert auf 1024 px), Modus kuehlschrank|vorrat|
+    gefrierfach → erkannte Lebensmittel. Speichert nichts; übernehmen über POST /pantry/bulk nach dem Prüf-Bildschirm."""
+    if not 1 <= len(files) <= MAX_SCAN_IMAGES:
+        raise HTTPException(422, "1 bis 5 Fotos")
+    images = [f.file.read(MAX_SCAN_BYTES + 1) for f in files]
+    if any(len(i) > MAX_SCAN_BYTES or not i.startswith(b"\xff\xd8\xff") for i in images):
+        raise HTTPException(422, "Fotos müssen JPEGs bis 5 MB sein")
+    try:
+        items, usage = pantry_ai.scan(images, mode)
+    except RuntimeError as e:
+        raise HTTPException(502, str(e))
+    planner.log_cost(db, member.household_id, "scan", usage["cost_cents"], usage["model"],
+                     f"{len(images)} Foto(s), {len(items)} erkannt")
+    db.commit()
+    return {"items": items, "cost_cents": usage["cost_cents"]}
+
+
+@router.post("/pantry/bulk", response_model=list[PantryOut], status_code=201)
+def pantry_bulk(body: list[PantryIn] = Body(min_length=1, max_length=100), member: Member = Depends(current_member),
+                db: Session = Depends(get_db)):
+    """„In den Vorrat übernehmen“ (Prüf-Bildschirm 69, source scan): mehrere Einträge auf einmal, gleiche
+    Zutat+Einheit wird aufaddiert (wie Abhaken → Vorrat). Gibt die betroffenen Einträge zurück."""
+    out: dict[int, PantryItem] = {}
+    for item in body:
+        p = add_pantry(db, member.household_id, item.name, item.amount, item.unit, item.source, item.best_before)
+        out[p.id] = p
+    db.commit()
+    return list(out.values())
+
+
+@router.post("/pantry/cook-now", response_model=list[CookIdeaOut])
+def cook_now(member: Member = Depends(current_member), db: Session = Depends(get_db)):
+    """„Was koche ich jetzt?“ (69): bis zu 3 Gerichte (max. 30 min) aus Vorrat + Basics, höchstens 2 fehlende Zutaten
+    (im Code geprüft), wenigste fehlende zuerst. Die Gerichte werden als Rezepte (source ai) gespeichert, damit
+    Rezeptdetail und „Heute kochen“ (POST /plans/current/entries/{id}/replace) funktionieren."""
+    household = member.household
+    pantry = household_pantry(db, household.id)
+    if not any(not p.is_basic and p.amount != 0 for p in pantry):
+        raise HTTPException(422, "Vorrat ist leer")
+    try:
+        ideas, usage = pantry_ai.cook_now(_prefs(household, {}), pantry)
+    except RuntimeError as e:
+        raise HTTPException(502, str(e))
+    planner.log_cost(db, household.id, "cook_now", usage["cost_cents"], usage["model"], f"{len(ideas)} Vorschläge")
+    with ThreadPoolExecutor(max_workers=3) as pool:
+        images = list(pool.map(recipe_images.find_image, [i.image_query or i.title for i, _ in ideas]))
+    out = []
+    for (idea, missing), image in zip(ideas, images):
+        recipe = Recipe(household_id=household.id, title=idea.title[:200], description=idea.description[:500],
+                        cuisine=idea.cuisine[:30], meal_type=idea.meal_type, servings=min(max(idea.servings, 1), 20),
+                        prep_minutes=min(max(idea.prep_minutes, 1), 600), image_url=image[:500],
+                        ingredients=[ingredient_row(i.model_dump()) for i in idea.ingredients][:60],
+                        steps=[s[:1000] for s in idea.steps][:40])
+        db.add(recipe)
+        out.append((recipe, missing))
+    db.commit()
+    food_map.map_later([i["name"] for r, _ in out for i in r.ingredients])
+    return [{"recipe": recipe_out(db, r, False), "missing": m} for r, m in out]
+
+
 @router.post("/pantry/consume", response_model=list[PantryOut])
 def consume(body: ConsumeIn, member: Member = Depends(current_member), db: Session = Depends(get_db)):
     """Gekocht: zieht die Rezeptmengen × servings_factor vom Vorrat ab (gleicher Name und Einheit, bald ablaufende
@@ -803,6 +992,10 @@ def save_image(recipe: Recipe, data: str) -> None:
         raise HTTPException(422, "Bild zu groß (max. 2 MB)")
     if not raw.startswith(b"\xff\xd8\xff"):
         raise HTTPException(422, "Bild muss ein JPEG sein")
+    store_jpeg(recipe, raw)
+
+
+def store_jpeg(recipe: Recipe, raw: bytes) -> None:
     folder = MEDIA / "recipes"
     folder.mkdir(parents=True, exist_ok=True)
     (folder / f"{recipe.id}.jpg").write_bytes(raw)
@@ -818,6 +1011,9 @@ def apply_recipe(db: Session, recipe: Recipe, body: RecipePatch) -> None:
     changes = body.model_dump(exclude_unset=True, exclude={"image"})
     if changes.get("ingredients") is not None:
         changes["ingredients"] = [ingredient_row(i) for i in changes["ingredients"]]
+    if recipe.id and changes.get("steps") is not None and changes["steps"] != recipe.steps:
+        recipe.step_images = []  # Schritte geändert → Schritt-Bilder passen nicht mehr (9)
+        shutil.rmtree(MEDIA / "steps" / str(recipe.id), ignore_errors=True)
     for key, value in changes.items():
         if value is not None:
             setattr(recipe, key, value)
@@ -893,9 +1089,86 @@ def recipe_detail(db: Session, member: Member, recipe: Recipe) -> dict:
                      "again": r.again, "note": r.note, "cooked_at": r.cooked_at} for r in ratings]}
 
 
+def start_step_images(member: Member, recipe: Recipe) -> bool:
+    """Fehlende Schritt-Bilder im Hintergrund erzeugen (9), wenn FAL_KEY gesetzt und eingeschaltet; True = läuft."""
+    todo = [*(recipe.step_images or []), *[""] * len(recipe.steps)][:len(recipe.steps)]
+    if settings.fal_key and member.household.step_images and not all(todo):
+        recipe_images.step_images_later(recipe.id, MEDIA)
+    return recipe_images.steps_pending(recipe.id)
+
+
 @router.get("/recipes/{recipe_id}", response_model=RecipeDetail)
 def get_recipe(recipe_id: int, member: Member = Depends(current_member), db: Session = Depends(get_db)):
-    return recipe_detail(db, member, household_recipe(db, member, recipe_id))
+    """Beim Öffnen starten fehlende Schritt-Bilder im Hintergrund (Platzhalter-Schimmer, bis step_images gefüllt)."""
+    recipe = household_recipe(db, member, recipe_id)
+    start_step_images(member, recipe)
+    return recipe_detail(db, member, recipe)
+
+
+@router.post("/recipes/{recipe_id}/step-images", response_model=StepImagesOut, status_code=202)
+def step_images(recipe_id: int, member: Member = Depends(current_member), db: Session = Depends(get_db)):
+    """Schritt-Bilder anfordern (z.B. Kochmodus mit Plan-Gericht). Vorhandene werden nie neu erzeugt."""
+    recipe = household_recipe(db, member, recipe_id)
+    if not settings.fal_key:
+        raise HTTPException(422, "Schritt-Bilder nicht eingerichtet (FAL_KEY fehlt)")
+    if not member.household.step_images:
+        raise HTTPException(422, "Schritt-Bilder sind in den Einstellungen ausgeschaltet")
+    pending = start_step_images(member, recipe)
+    return {"step_images": RecipeOut.model_validate(recipe).step_images, "pending": pending}
+
+
+@router.post("/import", response_model=RecipeDetail, status_code=201)
+def import_recipe(body: ImportIn, response: Response, member: Member = Depends(current_member),
+                  db: Session = Depends(get_db)):
+    """Rezept-Import (5) aus Instagram-Beitrag/Reel oder Webseite. Gleiche URL schon importiert → dieses Rezept (200).
+    422 „Kein Rezept gefunden“, 502 Seite/KI nicht erreichbar."""
+    url = recipe_import.canonical(str(body.url))
+    existing = db.scalar(select(Recipe).where(Recipe.household_id == member.household_id, Recipe.source_url == url,
+                                              Recipe.source.in_(("instagram", "web"))).limit(1))
+    if existing:
+        response.status_code = 200
+        return recipe_detail(db, member, existing)
+    try:
+        found = recipe_import.read(url, body.text)
+    except recipe_import.NoRecipe as e:
+        if e.usage:
+            planner.log_cost(db, member.household_id, "import", e.usage["cost_cents"], e.usage["model"],
+                             f"kein Rezept: {url}")
+            db.commit()
+        raise HTTPException(422, "Kein Rezept gefunden")
+    except httpx.HTTPStatusError as e:
+        raise HTTPException(502, f"Seite nicht abrufbar (HTTP {e.response.status_code})")
+    except httpx.HTTPError:
+        raise HTTPException(502, "Seite nicht erreichbar")
+    except RuntimeError as e:
+        raise HTTPException(502, str(e))
+    r = found.recipe
+    recipe = Recipe(household_id=member.household_id, source=found.source, source_url=url[:500],
+                    source_author=found.author, title=r.title.strip()[:200] or "Rezept",
+                    description=r.description[:500], cuisine=r.cuisine[:30], meal_type=r.meal_type,
+                    servings=min(max(r.servings, 1), 20), prep_minutes=min(max(r.prep_minutes, 1), 600),
+                    tags=[t.strip()[:50] for t in r.tags if t.strip()][:20],
+                    steps=[s.strip()[:1000] for s in r.steps if s.strip()][:40],
+                    ingredients=[{**ingredient_row({"name": i.name[:100], "amount": max(i.amount, 0), "unit": i.unit}),
+                                  **({"estimated": True} if i.estimated else {})} for i in r.ingredients][:60])
+    db.add(recipe)
+    db.flush()
+    planner.log_cost(db, member.household_id, "import", found.usage["cost_cents"], found.usage["model"], url)
+    raw = None
+    if found.image_url:
+        try:
+            raw = recipe_images.download_jpeg(found.image_url)
+        except httpx.HTTPError:
+            pass  # Vorschaubild ist fürs Rezept nicht nötig
+    if raw:
+        store_jpeg(recipe, raw)  # Instagram-Bild-URLs verfallen, darum lokal gespeichert
+    elif found.source == "web" and found.image_url:
+        recipe.image_url = found.image_url[:500]
+    else:
+        recipe.image_url = recipe_images.find_image(r.image_query or r.title)[:500]
+    db.commit()
+    food_map.map_later([i["name"] for i in recipe.ingredients])
+    return recipe_detail(db, member, recipe)
 
 
 @router.get("/recipes/{recipe_id}/cost", response_model=RecipeCostOut)
@@ -942,6 +1215,7 @@ def delete_recipe(recipe_id: int, member: Member = Depends(current_member), db: 
         recipe.source = "ai"
     else:
         (MEDIA / "recipes" / f"{recipe.id}.jpg").unlink(missing_ok=True)
+        shutil.rmtree(MEDIA / "steps" / str(recipe.id), ignore_errors=True)
         db.delete(recipe)
     db.commit()
     return Response(status_code=204)

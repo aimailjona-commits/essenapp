@@ -1,0 +1,14 @@
+<!DOCTYPE html>
+<!-- Synthetisch: Rezeptseite mit schema.org/Recipe in @graph -->
+<html><head><title>Linsen-Dal</title>
+<script type="application/ld+json">{"@context": "https://schema.org", "@type": "WebSite", "name": "Beispielküche"}</script>
+<script type="application/ld+json">{"@context": "https://schema.org", "@graph": [
+ {"@type": "Organization", "name": "Beispielküche"},
+ {"@type": "Person", "@id": "#anna", "name": "Anna Beispiel"},
+ {"@type": ["Recipe"], "name": "Roter Linsen-Dal", "author": [{"@id": "#anna"}],
+  "image": [{"@type": "ImageObject", "url": "/bilder/dal.jpg"}], "recipeYield": "4 Portionen", "totalTime": "PT30M",
+  "recipeIngredient": ["200 g rote Linsen", "1 Dose Kokosmilch (400 ml)", "1 Zwiebel", "1 TL Currypulver"],
+  "recipeInstructions": [{"@type": "HowToStep", "text": "Zwiebel anbraten."}, {"@type": "HowToStep", "text": "Linsen und Kokosmilch zugeben, 15 Minuten köcheln."}],
+  "aggregateRating": {"ratingValue": "4.8"}}
+]}</script></head>
+<body><nav>Menü</nav><h1>Roter Linsen-Dal</h1><p>Cremig und schnell.</p></body></html>

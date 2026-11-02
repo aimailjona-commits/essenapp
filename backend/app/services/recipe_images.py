@@ -3,6 +3,7 @@ import json
 import logging
 import re
 import threading
+from collections.abc import Callable
 from pathlib import Path
 
 import httpx
@@ -14,6 +15,12 @@ CACHE = Path(__file__).resolve().parents[2] / "image_cache.json"  # backend/imag
 TIMEOUT = 8
 HEADERS = {"User-Agent": "Essenapp/0.1 (privat)"}
 FAL_PROMPT = "appetizing overhead photo of {} on a white plate, soft natural light, food photography"
+FAL_URL = "https://fal.run/fal-ai/flux/schnell"
+# Schritt-Bilder (9): einheitlicher Stil laut Spezifikation, 16:10
+STEP_PROMPT = "{title}: {step}. bright overhead food photography, home kitchen, natural light"
+STEP_SIZE = {"width": 1024, "height": 640}
+FAL_CENTS = 0.3  # fal.ai FLUX schnell: 0,003 $ je angefangenem Megapixel (fal.ai/models/fal-ai/flux/schnell, 02.11.2026)
+MAX_DOWNLOAD = 5 * 1024 * 1024
 _lock = threading.Lock()
 
 
@@ -43,12 +50,16 @@ def openverse(query: str) -> dict | None:
     return None
 
 
-def fal(query: str) -> dict | None:
+def fal_generate(prompt: str, timeout: float = TIMEOUT, **params) -> str:
     """fal.ai synchron (POST https://fal.run/<model>, Header "Authorization: Key …"), Antwort images[].url."""
-    r = httpx.post("https://fal.run/fal-ai/flux/schnell", json={"prompt": FAL_PROMPT.format(query)},
-                   headers={"Authorization": f"Key {settings.fal_key}"}, timeout=TIMEOUT)
+    r = httpx.post(FAL_URL, json={"prompt": prompt, **params},
+                   headers={"Authorization": f"Key {settings.fal_key}"}, timeout=timeout)
     r.raise_for_status()
-    return {"url": r.json()["images"][0]["url"], "credit": "KI-generiert (FLUX.1 schnell)"}
+    return r.json()["images"][0]["url"]
+
+
+def fal(query: str) -> dict | None:
+    return {"url": fal_generate(FAL_PROMPT.format(query)), "credit": "KI-generiert (FLUX.1 schnell)"}
 
 
 def _load() -> dict:
@@ -77,3 +88,74 @@ def find_image(query: str) -> str:
                 CACHE.write_text(json.dumps(cache, ensure_ascii=False, indent=1), encoding="utf-8")
             return hit["url"]
     return ""
+
+
+def download_jpeg(url: str, timeout: float = 10) -> bytes | None:
+    """Bild laden; nur JPEG bis 5 MB, sonst None."""
+    r = httpx.get(url, headers=HEADERS, timeout=timeout, follow_redirects=True)
+    r.raise_for_status()
+    raw = r.content
+    return raw if raw.startswith(b"\xff\xd8\xff") and len(raw) <= MAX_DOWNLOAD else None
+
+
+# --- KI-Bild pro Rezeptschritt (9) ---
+
+def make_step_images(db, recipe, media: Path, generate: Callable[..., str] | None = None) -> int:
+    """Fehlende Schritt-Bilder erzeugen und unter media/steps/<id>/<n>.jpg speichern (n ab 1). Vorhandene Bilder
+    (Spalte oder Datei) werden nie neu erzeugt. Nach jedem Bild gespeichert, damit die App den Fortschritt sieht."""
+    from app.services.planner import log_cost  # planner importiert dieses Modul
+    generate = generate or fal_generate
+    folder = media / "steps" / str(recipe.id)
+    images = [*(recipe.step_images or []), *[""] * len(recipe.steps)][:len(recipe.steps)]
+    made = 0
+    for n, step in enumerate(recipe.steps, 1):
+        if images[n - 1]:
+            continue
+        path = folder / f"{n}.jpg"
+        if not path.exists():
+            url = generate(STEP_PROMPT.format(title=recipe.title, step=step), timeout=60, image_size=STEP_SIZE,
+                           output_format="jpeg")
+            log_cost(db, recipe.household_id, "step_image", FAL_CENTS, "fal-ai/flux/schnell", f"Rezept {recipe.id}/{n}")
+            raw = download_jpeg(url, timeout=30)
+            if raw is None:
+                db.commit()
+                raise RuntimeError(f"Schritt-Bild {n} ist kein JPEG")
+            folder.mkdir(parents=True, exist_ok=True)
+            path.write_bytes(raw)
+            made += 1
+        images[n - 1] = f"/media/steps/{recipe.id}/{n}.jpg"
+        recipe.step_images = list(images)
+        db.commit()
+    return made
+
+
+_steps_running: set[int] = set()
+
+
+def _steps_run(recipe_id: int, media: Path) -> None:
+    from app.core.db import SessionLocal
+    from app.models import Recipe
+    try:
+        with SessionLocal() as db:
+            if recipe := db.get(Recipe, recipe_id):
+                logger.info("Schritt-Bilder Rezept %s: %s neu", recipe_id, make_step_images(db, recipe, media))
+    except Exception:
+        logger.exception("Schritt-Bilder Rezept %s fehlgeschlagen", recipe_id)
+    finally:
+        with _lock:
+            _steps_running.discard(recipe_id)
+
+
+def step_images_later(recipe_id: int, media: Path) -> bool:
+    """Erzeugung im Hintergrund starten; False, wenn für dieses Rezept schon eine läuft (nie doppelt)."""
+    with _lock:
+        if recipe_id in _steps_running:
+            return False
+        _steps_running.add(recipe_id)
+    threading.Thread(target=_steps_run, args=(recipe_id, media), name="step_images", daemon=True).start()
+    return True
+
+
+def steps_pending(recipe_id: int) -> bool:
+    with _lock:
+        return recipe_id in _steps_running

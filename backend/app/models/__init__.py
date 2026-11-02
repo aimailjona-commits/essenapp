@@ -31,6 +31,7 @@ class Household(Base):
     nutrition_goal: Mapped[str] = mapped_column(String(30), default="ausgewogen")
     max_cook_minutes: Mapped[int] = mapped_column(default=45)
     radius_km: Mapped[int] = mapped_column(default=5, server_default="5")  # Umkreis für die Ladensuche
+    step_images: Mapped[bool] = mapped_column(default=True, server_default=true())  # KI-Schritt-Bilder (9), nur mit FAL_KEY
     created_at: Mapped[datetime] = mapped_column(server_default=func.now())
 
     members: Mapped[list["Member"]] = relationship(back_populates="household")
@@ -54,6 +55,43 @@ class Member(Base):
     household: Mapped[Household] = relationship(back_populates="members")
     profile: Mapped["MemberProfile | None"] = relationship(cascade="all, delete-orphan")
     devices: Mapped[list["PushDevice"]] = relationship(cascade="all, delete-orphan")
+    tokens: Mapped[list["MemberToken"]] = relationship(cascade="all, delete-orphan")
+    pairing_codes: Mapped[list["PairingCode"]] = relationship(cascade="all, delete-orphan")
+
+
+class MemberToken(Base):
+    """Zusätzliches Token desselben Mitglieds, z.B. für die Teilen-Erweiterung (Kopplungscode, E48); widerrufbar."""
+    __tablename__ = "member_token"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    member_id: Mapped[int] = mapped_column(ForeignKey("member.id"), index=True)
+    token_hash: Mapped[str] = mapped_column(String(64), unique=True)
+    label: Mapped[str] = mapped_column(String(50), default="Teilen-Erweiterung")
+    created_at: Mapped[datetime] = mapped_column(server_default=func.now())
+
+
+class PairingCode(Base):
+    """6-stelliger Kopplungscode (E48): 10 min gültig, einmal einlösbar. Klartext, weil kurzlebig und rate-limitiert."""
+    __tablename__ = "pairing_code"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    member_id: Mapped[int] = mapped_column(ForeignKey("member.id"), index=True)
+    code: Mapped[str] = mapped_column(String(6), unique=True)
+    expires_at: Mapped[datetime]
+    used_at: Mapped[datetime | None]
+
+
+class AiCost(Base):
+    """Kostenprotokoll für KI-Aufrufe außerhalb der Pläne (Import, Scan, Vorschläge, Schritt-Bilder). Cent (USD), Bruchteile."""
+    __tablename__ = "ai_cost"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    household_id: Mapped[int | None] = mapped_column(ForeignKey("household.id"), index=True)
+    kind: Mapped[str] = mapped_column(String(20))  # import | scan | cook_now | step_image
+    model: Mapped[str] = mapped_column(String(60), default="")
+    cost_cents: Mapped[float]
+    info: Mapped[str] = mapped_column(String(200), default="")
+    created_at: Mapped[datetime] = mapped_column(server_default=func.now())
 
 
 class PushDevice(Base):
@@ -186,6 +224,8 @@ class Recipe(Base):
     source_author: Mapped[str] = mapped_column(String(100), default="", server_default="")  # z.B. "@koch_xy"
     tags: Mapped[list[str]] = mapped_column(JSON, default=list, server_default="[]")
     image_url: Mapped[str] = mapped_column(String(500), default="")
+    # KI-Bild je Schritt (9): "/media/steps/<id>/<n>.jpg" oder "" = noch keins; Länge kann < steps sein
+    step_images: Mapped[list[str]] = mapped_column(JSON, default=list, server_default="[]")
     created_at: Mapped[datetime] = mapped_column(server_default=func.now())
 
 

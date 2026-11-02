@@ -2,7 +2,9 @@
 from datetime import date, datetime
 from typing import Annotated, Literal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, HttpUrl, computed_field, model_validator
+
+from app.core.config import settings
 
 
 class StoreIn(BaseModel):
@@ -35,6 +37,7 @@ class HouseholdSettings(BaseModel):
     nutrition_goal: str | None = None
     max_cook_minutes: int | None = Field(None, ge=5)
     radius_km: int | None = Field(None, ge=1, le=30)
+    step_images: bool | None = None  # Schalter „Schritt-Bilder erzeugen (ca. 2 Cent/Rezept)“ (9)
     stores: list[StoreIn] | None = None
 
 
@@ -58,7 +61,14 @@ class HouseholdOut(BaseModel):
     nutrition_goal: str
     max_cook_minutes: int
     radius_km: int
+    step_images: bool  # Schalter (Standard an); wirkt nur, wenn step_images_available
     stores: list[StoreOut]
+
+    @computed_field
+    @property
+    def step_images_available(self) -> bool:
+        """FAL_KEY im Backend gesetzt → Schalter „Schritt-Bilder“ anzeigen."""
+        return bool(settings.fal_key)
 
 
 class HouseholdCreate(BaseModel):
@@ -125,6 +135,13 @@ class RecipeOut(BaseModel):
     favorite: bool = False  # Favorit des Haushalts
     nutrition: NutritionOut | None = None  # null = Zuordnung läuft noch
     composition: list[CompositionItem] | None = None  # Blüten-Diagramm, null wie nutrition
+    # KI-Bild je Schritt (9), gleich lang wie steps: "/media/steps/<id>/<n>.jpg" oder "" = (noch) keins
+    step_images: list[str] = []
+
+    @model_validator(mode="after")
+    def _pad_step_images(self):
+        self.step_images = [*self.step_images, *[""] * len(self.steps)][:len(self.steps)]
+        return self
 
 
 class Portion(BaseModel):
@@ -184,10 +201,22 @@ class PlanOptions(BaseModel):
     save_as_default: bool = False  # zusätzlich (ohne wishes) in den Haushalt schreiben
 
 
+class CostEntry(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    kind: str  # import | scan | cook_now | step_image
+    model: str
+    cost_cents: float
+    info: str
+    created_at: datetime
+
+
 class UsageOut(BaseModel):
     plans: int
-    cost_cents_total: float  # geschätzte KI-Kosten in Cent
-    cost_cents_last: float
+    cost_cents_total: float  # geschätzte KI-Kosten in Cent (Pläne + Kostenprotokoll)
+    cost_cents_last: float  # letzter Plan
+    by_kind: dict[str, float]  # plan, import, scan, cook_now, step_image
+    recent: list[CostEntry]  # Kostenprotokoll, neueste 20
 
 
 # --- Teilen: Einladungen, gemeinsame Einkaufslisten (E40) ---
@@ -315,6 +344,28 @@ class PantryIn(BaseModel):
     best_before: date | None = None
     is_basic: bool = False
     source: Literal["manual", "list", "scan", "barcode"] = "manual"
+
+
+class ScanItem(BaseModel):
+    """Erkanntes Lebensmittel (69), noch nicht gespeichert. confidence niedrig → im Prüf-Bildschirm vorab abgewählt."""
+    name: str
+    amount: float | None
+    unit: PantryUnit
+    location: Literal["kuehlschrank", "vorrat", "gefrierfach"]
+    category: str  # obst_gemuese | fleisch_fisch | kuehlung | vorrat | getraenke | sonstiges
+    confidence: Literal["hoch", "mittel", "niedrig"]
+    best_before: date | None  # nur bei Frischem: geschätzte Haltbarkeit
+
+
+class ScanOut(BaseModel):
+    items: list[ScanItem]
+    cost_cents: float
+
+
+class MissingIngredient(BaseModel):
+    name: str
+    amount: float
+    unit: str
 
 
 class PantryUpdate(BaseModel):
@@ -531,3 +582,53 @@ class MemberGoal(BaseModel):
 class PlanNutritionOut(BaseModel):
     members: list[MemberGoal]
     days: list[DayNutrition]
+
+
+class OfferNutritionOut(BaseModel):
+    """Nährwerte im Angebotsdetail (2): nur bei sicherer Zuordnung (confidence hoch)."""
+    status: Literal["ok", "pending", "none"]  # pending = Zuordnung läuft, später erneut abrufen
+    food: str  # USDA-Eintrag (englisch)
+    per_100g: NutritionOut | None
+    per_pack: NutritionOut | None  # Packung laut Angebot (g/ml bzw. Stück mit bekanntem Gewicht)
+
+
+# --- Kopplungscode für die Teilen-Erweiterung (E48) ---
+
+class PairingCodeOut(BaseModel):
+    code: str  # 6 Ziffern
+    expires_at: datetime  # 10 min, einmal einlösbar
+
+
+class PairIn(BaseModel):
+    code: str = Field(pattern=r"^\d{6}$")
+    label: str = Field("Teilen-Erweiterung", min_length=1, max_length=50)
+
+
+class PairOut(HouseholdCreated):
+    member_id: int
+    member_name: str
+
+
+class PairedTokenOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    label: str
+    created_at: datetime
+
+
+# --- Rezept-Import (5), Schritt-Bilder (9), „Was koche ich jetzt?“ (69) ---
+
+class ImportIn(BaseModel):
+    url: HttpUrl  # Instagram-Beitrag/Reel oder Webseite mit Rezept
+    text: str = Field("", max_length=10000)  # Text aus dem Teilen-Menü, falls Instagram ihn mitgibt
+
+
+class StepImagesOut(BaseModel):
+    step_images: list[str]  # wie RecipeOut.step_images
+    pending: bool  # Erzeugung läuft im Hintergrund → später erneut abrufen
+
+
+class CookIdeaOut(BaseModel):
+    recipe: RecipeOut  # gespeichert (source ai) → Rezeptdetail, „Heute kochen“ über …/replace
+    missing: list[MissingIngredient]  # höchstens 2, „Zur Liste“
