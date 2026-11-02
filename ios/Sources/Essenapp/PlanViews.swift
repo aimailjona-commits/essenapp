@@ -1,10 +1,12 @@
 import SwiftUI
 
-/// Tab „Rezepte“: S2 Wochenplan + (Phase 4) Meine Rezepte.
+/// Tab „Rezepte“: S2 Wochenplan + S12 Meine Rezepte.
 struct RecipesTab: View {
     @Environment(AppStore.self) private var store
     @Binding var showGenerator: Bool
-    @State private var mine = false
+    @State private var mine = Demo.screen == "recipes"
+    @State private var filter = "alle"
+    @State private var person: Int?  // „Für:“ in der Tagesansicht (48), nil = ich
     @State private var day = Demo.screen != nil ? 1 : (Calendar(identifier: .iso8601).component(.weekday, from: .now) + 5) % 7
     @Namespace private var dayPill
 
@@ -14,7 +16,7 @@ struct RecipesTab: View {
                 PillSegment(options: [(false, "Wochenplan"), (true, "Meine Rezepte")], selection: $mine)
 
                 if mine {
-                    EmptyState(emoji: "📖", title: "Meine Rezepte", text: "Gespeicherte und eigene Rezepte kommen in Phase 4.")
+                    MyRecipesList(filter: $filter)
                 } else if let plan = store.plan {
                     HStack(alignment: .bottom) {
                         DisplayHeader(line1: "KW \(plan.week.suffix(2))", line2: "Dein Plan")
@@ -36,6 +38,7 @@ struct RecipesTab: View {
                         }
                         .animation(Theme.spring, value: eaters)
                     }
+                    weekAverage
                     HStack(spacing: 10) {
                         summary("eurosign.circle.fill", Theme.C.warning, euro(plan.totalCents), "von \(euro(store.household?.budgetFoodWeekCents ?? 0))")
                         summary("arrow.down.circle.fill", Theme.C.accent, euro(plan.savedCents), "gespart")
@@ -54,6 +57,7 @@ struct RecipesTab: View {
                         .appear(delay: Double(i) * 0.06)
                     }
                     .id(day)
+                    DayNutritionCard(day: day, person: $person)  // Tageswerte unten (S2)
                 } else {
                     EmptyState(emoji: "📅", title: "Noch kein Wochenplan", text: "Erstelle deinen ersten Plan.",
                                buttonTitle: "Plan erstellen") { showGenerator = true }
@@ -61,6 +65,21 @@ struct RecipesTab: View {
             }
             .padding(.horizontal, Theme.pagePadding)
             .padding(.bottom, 120)
+        }
+        .onAppear {  // Start-Karte „Lieblingsrezepte günstig“ → gefilterte Liste
+            if let f = store.recipeFilter { mine = true; filter = f; store.recipeFilter = nil }
+        }
+    }
+
+    /// Wochenschnitt der gewählten Person im Kopf (2).
+    @ViewBuilder private var weekAverage: some View {
+        let id = person ?? store.profile?.memberId
+        if let n = store.nutrition, let m = n.members.first(where: { m in m.memberId == id }) ?? n.members.first {
+            Label("\(m.emoji) Ø \(Int(m.avgKcal.rounded())) / \(m.kcalGoal) kcal · \(Int(m.avgProtein.rounded())) / \(m.proteinGoal) g Protein pro Tag",
+                  systemImage: "flame.fill")
+                .font(Theme.F.caption).foregroundStyle(Theme.C.text2).lineLimit(2)
+                .contentTransition(.numericText())
+                .animation(Theme.spring, value: m)
         }
     }
 
@@ -114,7 +133,7 @@ struct MealRow: View {
         HStack(spacing: 14) {
             NavigationLink { RecipeDetailView(meal: meal) } label: {
                 HStack(spacing: 14) {
-                    Plate(url: URL(string: meal.recipe.imageUrl), size: 72, seed: meal.recipe.title)
+                    Plate(url: mediaURL(meal.recipe.imageUrl), size: 72, seed: meal.recipe.title)
                         .rotationEffect(.degrees(rolling ? 360 : 0))
                     VStack(alignment: .leading, spacing: 4) {
                         Text(meal.recipe.title).font(.system(.subheadline, design: .rounded, weight: .bold)).lineLimit(2)
@@ -127,7 +146,12 @@ struct MealRow: View {
             }
             .buttonStyle(PressableStyle())
             if actions && meal.id != nil {
-                VStack(spacing: 8) {
+                VStack(spacing: 6) {
+                    small(meal.recipe.favorite ? "heart.fill" : "heart", on: meal.recipe.favorite,
+                          label: meal.recipe.favorite ? "Aus Favoriten entfernen" : "Als Favorit merken") {
+                        Task { _ = await store.toggleFavorite(meal.recipe.id, current: meal.recipe.favorite) }
+                    }
+                    .symbolEffect(.bounce, value: meal.recipe.favorite)
                     small(meal.locked ? "lock.fill" : "lock.open", on: meal.locked, label: meal.locked ? "Lösen" : "Fixieren") {
                         Task { await store.setLocked(meal, !meal.locked) }
                     }
@@ -161,7 +185,7 @@ struct MealRow: View {
     }
 }
 
-/// S3 Rezeptdetail.
+/// S3 Rezeptdetail – Plan-Gericht oder gespeichertes Rezept (`meal.id == nil`, siehe `SavedRecipeView`).
 struct RecipeDetailView: View {
     @Environment(AppStore.self) private var store
     @Environment(\.dismiss) private var dismiss
@@ -176,38 +200,49 @@ struct RecipeDetailView: View {
     @State private var cooking = Demo.screen == "cooking"
     @State private var rateAfterCooking = false
     @State private var shareCard = Demo.screen == "sharecard"
+    @State private var info: RecipeDTO?  // GET /recipes/{id}: Bewertungen, Favorit, Nährwerte, falls im Plan noch null
+    @State private var favorite: Bool?
+    @State private var planIt = false
+    @State private var editing = false
+    @State private var confirmDelete = false
 
     private var recipe: RecipeDTO { meal.recipe }
+    private var details: RecipeDTO { info ?? recipe }
+    private var nutrition: NutritionDTO? { recipe.nutrition ?? info?.nutrition }
+    private var composition: [CompositionItem]? { recipe.composition ?? info?.composition }
+    private var isFavorite: Bool { favorite ?? details.favorite }
 
     var body: some View {
         let base = meal.basePortions  // Rezeptmengen gelten für so viele Portionen
-        let factor = servings.map { Double($0) / base } ?? 1  // Portionen-Stepper skaliert das ganze Rezept
+        let factor = (servings.map { Double($0) / base } ?? 1) * meal.scale  // Stepper skaliert das ganze Rezept; scale = eingesetztes Rezept
         let who = store.profiles.first { $0.memberId == (person ?? store.profile?.memberId) } ?? store.profile
-        // Anteil der gewählten Person; alte Pläne ohne Portionen: 1 Portion je Person
-        let mine: Double? = meal.portions.isEmpty ? 1 : meal.portions.first { $0.memberId == who?.memberId }?.factor
+        // Anteil der gewählten Person; ohne Esser-Liste (gespeichertes Rezept, alter Plan) der Portionsfaktor aus dem Profil
+        let mine: Double? = meal.portions.isEmpty ? (who?.portionFactor ?? 1) : meal.portions.first { $0.memberId == who?.memberId }?.factor
         ZStack(alignment: .bottom) {
             Theme.C.bg.ignoresSafeArea()
             ScrollView {
                 VStack(alignment: .leading, spacing: 16) {
-                    HStack {
+                    HStack(spacing: 10) {
                         RoundIconButton(systemName: "chevron.left", label: "Zurück") { dismiss() }
                         Spacer()
+                        HeartButton(on: isFavorite) { toggleFavorite() }
+                        if recipe.source != "ai" {  // eigene und importierte Rezepte
+                            Menu {
+                                Button("Bearbeiten", systemImage: "pencil") { editing = true }
+                                Button("Löschen", systemImage: "trash", role: .destructive) { confirmDelete = true }
+                            } label: { roundLabel("ellipsis") }
+                            .accessibilityLabel("Rezept bearbeiten oder löschen")
+                        }
                         Menu {
                             Button("Als Bild teilen", systemImage: "photo") { shareCard = true }
                             Button("Als Link teilen (kommt bald)", systemImage: "link") {}.disabled(true)  // Feature 56
-                        } label: {
-                            Image(systemName: "square.and.arrow.up").font(.system(size: 16, weight: .semibold))
-                                .frame(width: 44, height: 44)
-                                .foregroundStyle(Theme.C.text1)
-                                .background(Theme.C.card, in: Circle())
-                                .overlay(Circle().strokeBorder(Theme.C.line, lineWidth: 0.5))
-                        }
+                        } label: { roundLabel("square.and.arrow.up") }
                         .accessibilityLabel("Rezept teilen")
                     }
                     ZStack {
                         CornerFrame().stroke(Theme.C.accent, style: StrokeStyle(lineWidth: 4, lineCap: .round)).frame(width: 276, height: 276)
                             .scaleEffect(spin ? 1 : 1.12).opacity(spin ? 1 : 0)
-                        Plate(url: URL(string: recipe.imageUrl), size: 236, seed: recipe.title)
+                        Plate(url: mediaURL(recipe.imageUrl), size: 236, seed: recipe.title)
                             .rotationEffect(.degrees(spin ? 0 : -40))
                     }
                     .frame(maxWidth: .infinity)
@@ -217,6 +252,13 @@ struct RecipeDetailView: View {
                         (Text(words.prefix(1).joined()).font(.system(.title, weight: .bold))
                             + Text(" " + words.dropFirst().joined(separator: " ")).font(.system(.title, weight: .regular)).foregroundStyle(Theme.C.text2))
                         if !recipe.cuisine.isEmpty { Text(recipe.cuisine).font(Theme.F.caption).foregroundStyle(Theme.C.text2) }
+                        if let avg = details.avgStars {
+                            HStack(spacing: 6) {
+                                StarsView(value: avg)
+                                Text("\(avg.formatted(.number.precision(.fractionLength(1)))) · \(details.ratings?.count ?? 0) Bewertungen")
+                                    .font(Theme.F.caption).foregroundStyle(Theme.C.text2)
+                            }
+                        }
                     }
                     // Infozeile mit Trennstrichen (Vorlage „Grilled Chicken Breast“)
                     HStack(spacing: 0) {
@@ -231,8 +273,24 @@ struct RecipeDetailView: View {
                     if !recipe.description.isEmpty {
                         Text(recipe.description).font(Theme.F.body).foregroundStyle(Theme.C.text2)
                     }
-                    // Nährwerte: werden berechnet, sobald Zutaten-Stammdaten da sind (E10)
+                    if meal.id == nil {  // gespeichertes Rezept → Slot im Wochenplan ersetzen (3)
+                        Button { planIt = true } label: { Label("Diese Woche einplanen", systemImage: "calendar.badge.plus") }
+                            .buttonStyle(SecondaryButtonStyle())
+                    }
                     if let who { portionCard(who, mine: mine, base: base) }
+                    nutritionTiles(mine ?? 1)  // pro Portion der gewählten Person (2)
+                    if composition.map({ c in !c.isEmpty }) ?? true {
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("Zusammensetzung").font(Theme.F.headline)
+                            Text("Anteile der Zutaten am Gewicht").font(Theme.F.caption).foregroundStyle(Theme.C.text2)
+                            if let composition {
+                                ShareBloom(items: composition, photo: mediaURL(recipe.imageUrl), seed: recipe.title)
+                            } else {
+                                SkeletonCard(height: 300).padding(.top, 8)
+                            }
+                        }
+                        .padding(16).card()
+                    }
 
                     VStack(alignment: .leading, spacing: 0) {
                         HStack {
@@ -250,7 +308,7 @@ struct RecipeDetailView: View {
                             // Feature 1: Zutat antippen → Angebot (oder passende Angebote)
                             Button { if let offer { openOffer = offer } else { searchIngredient = ing } } label: {
                             HStack(spacing: 12) {
-                                Text(offer.map { Theme.hue(category: $0.category).emoji } ?? (ing.inPantry ? "🧂" : "🥄")).font(.system(size: 22))
+                                Text(offer.map { Theme.hue(category: $0.category).emoji } ?? (ing.inPantry == true ? "🧂" : "🥄")).font(.system(size: 22))
                                     .frame(width: 40, height: 40).background(Theme.C.surface, in: RoundedRectangle(cornerRadius: 12))
                                 VStack(alignment: .leading, spacing: 4) {
                                     Text(ing.name).font(.system(.body, weight: .semibold))
@@ -259,7 +317,7 @@ struct RecipeDetailView: View {
                                             DealBadge(text: offer.discount.map { "−\($0) %" } ?? "Angebot")
                                             StoreChip(chain: offer.chain)
                                         }
-                                        if ing.inPantry { DealBadge(text: "im Vorrat", style: .ok) }
+                                        if ing.inPantry == true { DealBadge(text: "im Vorrat", style: .ok) }
                                     }
                                 }
                                 Spacer()
@@ -267,10 +325,11 @@ struct RecipeDetailView: View {
                                     Text(qty(ing.amount * factor, ing.unit))
                                         .monospacedDigit().foregroundStyle(Theme.C.text2).contentTransition(.numericText())
                                     if let who, let mine {
-                                        Text("\(who.emoji) \(qty(ing.amount * mine / base, ing.unit))")
+                                        let own = qty(ing.amount * mine * meal.scale / base, ing.unit)
+                                        Text("\(who.emoji) \(own)")
                                             .font(Theme.F.micro).monospacedDigit().foregroundStyle(Theme.C.accentDeep)
                                             .contentTransition(.numericText())
-                                            .accessibilityLabel("Portion \(who.name): \(qty(ing.amount * mine / base, ing.unit))")
+                                            .accessibilityLabel("Portion \(who.name): \(own)")
                                     }
                                 }
                                 Image(systemName: "chevron.right").font(.system(size: 11, weight: .bold)).foregroundStyle(Theme.C.text3)
@@ -309,6 +368,7 @@ struct RecipeDetailView: View {
                         }
                     }
                     .padding(16).card()
+                    if let ratings = details.ratings, !ratings.isEmpty { ratingsCard(ratings) }
                 }
                 .padding(.horizontal, Theme.pagePadding)
                 .padding(.bottom, 270)
@@ -331,18 +391,44 @@ struct RecipeDetailView: View {
             .padding(.horizontal, Theme.pagePadding).padding(.bottom, Theme.ctaAboveTabBar)
         }
         .toolbar(.hidden, for: .navigationBar)
+        .task(id: store.recipesVersion) { await loadInfo() }
         .fullScreenCover(isPresented: $cooking, onDismiss: {
             if rateAfterCooking { rateAfterCooking = false; showRating = true }  // Abschluss → Bewertung + Vorrat (S8)
         }) {
-            CookingView(meal: meal, factor: factor, person: who.flatMap { w in mine.map { m in (w.emoji, m / base) } }) {
+            CookingView(meal: meal, factor: factor, person: who.flatMap { w in mine.map { m in (w.emoji, m * meal.scale / base) } }) {
                 rateAfterCooking = true
                 cooking = false
             }
         }
         .sheet(isPresented: $shareCard) { ShareCardSheet(meal: meal).presentationDetents([.large]).presentationCornerRadius(Theme.R.sheet) }
         .sheet(isPresented: $showRating) { RatingSheet(meal: meal).presentationDetents([.medium, .large]).presentationCornerRadius(Theme.R.sheet) }
+        .sheet(isPresented: $planIt) { PlanSlotSheet(recipeId: recipe.id, title: recipe.title).presentationDetents([.medium, .large]).presentationCornerRadius(Theme.R.sheet) }
+        .sheet(isPresented: $editing) { RecipeFormSheet(editing: details).presentationDetents([.large]).presentationCornerRadius(Theme.R.sheet) }
+        .confirmationDialog("Rezept löschen?", isPresented: $confirmDelete, titleVisibility: .visible) {
+            Button("Löschen", role: .destructive) {
+                let id = recipe.id
+                dismiss()
+                Task { await store.deleteRecipe(id) }
+            }
+        } message: {
+            Text("„\(recipe.title)“ verschwindet aus Meine Rezepte. Steht es im Wochenplan, bleibt es dort.")
+        }
         .navigationDestination(item: $openOffer) { OfferDetailView(offer: $0) }
         .sheet(item: $searchIngredient) { IngredientOffersSheet(ingredient: $0).presentationDetents([.medium, .large]).presentationCornerRadius(Theme.R.sheet) }
+    }
+
+    /// Plan-Gerichte holen Bewertungen/Favorit nach; fehlen Nährwerte (Berechnung läuft), einmal nach ~3 s neu laden.
+    private func loadInfo() async {
+        if recipe.ratings == nil { info = (try? await store.recipe(recipe.id)) ?? info }
+        guard nutrition == nil || composition == nil else { return }
+        try? await Task.sleep(for: .seconds(3))
+        if let again = try? await store.recipe(recipe.id) { withAnimation(Theme.spring) { info = again } }
+    }
+
+    private func toggleFavorite() {
+        let new = !isFavorite
+        withAnimation(Theme.spring) { favorite = new }
+        Task { favorite = await store.toggleFavorite(recipe.id, current: !new) }
     }
 }
 
@@ -352,29 +438,60 @@ extension RecipeDetailView {
             .frame(maxWidth: .infinity)
     }
 
+    fileprivate func roundLabel(_ symbol: String) -> some View {
+        Image(systemName: symbol).font(.system(size: 16, weight: .semibold))
+            .frame(width: 44, height: 44)
+            .foregroundStyle(Theme.C.text1)
+            .background(Theme.C.card, in: Circle())
+            .overlay(Circle().strokeBorder(Theme.C.line, lineWidth: 0.5))
+    }
+
+    /// 4 Kacheln kcal, Protein, KH, Fett; Schimmer, solange die Berechnung läuft.
+    fileprivate func nutritionTiles(_ k: Double) -> some View {
+        HStack(spacing: 8) {
+            if let n = nutrition {
+                NutrientTile(nutrient: .kcal, value: "\(Int((n.kcal * k).rounded()))")
+                NutrientTile(nutrient: .protein, value: "\(Int((n.protein * k).rounded())) g")
+                NutrientTile(nutrient: .carbs, value: "\(Int((n.carbs * k).rounded())) g")
+                NutrientTile(nutrient: .fat, value: "\(Int((n.fat * k).rounded())) g")
+            } else {
+                ForEach(0..<4, id: \.self) { _ in SkeletonCard(height: 92) }
+            }
+        }
+        .animation(Theme.spring, value: k)
+    }
+
+    fileprivate func ratingsCard(_ ratings: [RatingDTO]) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Bewertungen").font(Theme.F.headline)
+            ForEach(ratings) { r in
+                VStack(alignment: .leading, spacing: 4) {
+                    HStack(spacing: 8) {
+                        Text(r.memberName).font(.system(.subheadline, weight: .semibold))
+                        StarsView(value: Double(r.stars))
+                        Spacer()
+                        Text(shortDate(r.cookedAt)).font(Theme.F.micro).foregroundStyle(Theme.C.text2)
+                    }
+                    Text("Wieder kochen: \(Labels.again.first { $0.0 == r.again }?.1 ?? r.again)")
+                        .font(Theme.F.micro).foregroundStyle(r.again == "nie" ? Theme.C.danger : Theme.C.text2)
+                    if !r.note.isEmpty { Text(r.note).font(Theme.F.body) }
+                }
+                .accessibilityElement(children: .combine)
+                if r.id != ratings.last?.id { Divider() }
+            }
+        }
+        .padding(16).card()
+    }
+
     /// „Für: 🧑‍🍳 Jona ▾“ + „Deine Portion: 520 g · 2,10 €“ (48).
     fileprivate func portionCard(_ who: ProfileDTO, mine: Double?, base: Double) -> some View {
         let isMe = who.memberId == store.profile?.memberId
-        let grams = recipe.ingredients.filter { ["g", "ml"].contains($0.unit) }.map(\.amount).reduce(0, +) * (mine ?? 0) / base
+        let grams = recipe.ingredients.filter { ["g", "ml"].contains($0.unit) }.map(\.amount).reduce(0, +) * (mine ?? 0) * meal.scale / base
         let parts = [grams > 0 ? "\(Int(grams.rounded())) g" : nil, mine.map { euro(Int(Double(meal.costCents) * $0 / base)) },
                      mine.map { "×\($0.formatted()) von \(base.formatted()) Portionen" }].compactMap { $0 }
         return VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 8) {
-                Text("Für:").font(Theme.F.callout).foregroundStyle(Theme.C.text2)
-                Menu {
-                    ForEach(store.profiles) { p in
-                        Button("\(p.emoji) \(p.name)") { withAnimation(Theme.spring) { person = p.memberId } }
-                    }
-                } label: {
-                    HStack(spacing: 6) {
-                        Text("\(who.emoji) \(who.name)")
-                        Image(systemName: "chevron.down").font(.system(size: 11, weight: .bold))
-                    }
-                    .font(Theme.F.callout).foregroundStyle(Theme.C.text1)
-                    .padding(.horizontal, 14).frame(minHeight: 44)
-                    .background(Theme.C.surface, in: Capsule())
-                }
-                .accessibilityLabel("Portion für \(who.name), ändern")
+                PersonPicker(person: $person)
                 Spacer()
             }
             if mine == nil {
@@ -392,7 +509,7 @@ extension RecipeDetailView {
 
 /// Menge mit Einheit, z. B. „400 g“, „1 Stück“ (Rezept, Kochmodus, Bildkarte).
 func qty(_ amount: Double, _ unit: String) -> String {
-    "\(amount.formatted(.number.precision(.fractionLength(0...1)))) \(unit == "stk" ? "Stück" : unit)"
+    "\(amount.formatted(.number.precision(.fractionLength(0...1)))) \(Labels.unit(unit))"
 }
 
 /// Eckrahmen wie Referenz 02.
@@ -408,7 +525,7 @@ struct CornerFrame: Shape {
     }
 }
 
-/// S8 Bewertung. shortcut: speichert noch nicht im Backend (Phase 4).
+/// S8 Bewertung: Sterne, „Wieder kochen?“, Notiz → POST /recipes/{id}/rate (wer/wann setzt das Backend), dann Vorrat abziehen.
 struct RatingSheet: View {
     @Environment(AppStore.self) private var store
     @Environment(\.dismiss) private var dismiss
@@ -416,6 +533,7 @@ struct RatingSheet: View {
     @State private var rating = 0
     @State private var again = "bald"
     @State private var note = ""
+    @State private var saving = false
     @State private var consumed: [PantryDTO]?  // nach „Speichern“: vom Vorrat abgezogene Einträge (editierbar)
 
     var body: some View {
@@ -454,27 +572,30 @@ struct RatingSheet: View {
     private var ratingForm: some View {
         VStack(alignment: .leading, spacing: 16) {
             HStack(spacing: 14) {
-                Plate(url: URL(string: meal.recipe.imageUrl), size: 64, seed: meal.recipe.title)
+                Plate(url: mediaURL(meal.recipe.imageUrl), size: 64, seed: meal.recipe.title)
                 Text(meal.recipe.title).font(Theme.F.headline)
             }
             Text("Wie war's?").font(Theme.F.title)
             RatingStars(rating: $rating).frame(maxWidth: .infinity)
             Picker("Wieder kochen?", selection: $again) {
-                Text("Bald").tag("bald"); Text("Irgendwann").tag("irgendwann"); Text("Nie").tag("nie")
+                ForEach(Labels.again, id: \.0) { a in Text(a.1).tag(a.0) }
             }
             .pickerStyle(.segmented)
             TextField("Notiz, z.B. mehr Chili …", text: $note).padding(14)
                 .background(Theme.C.card, in: RoundedRectangle(cornerRadius: Theme.R.tile))
-            Button("Speichern") {
-                store.flash(rating >= 4 ? "Gespeichert – kommt öfter 🎉" : "Danke für deine Bewertung")
+            Button(saving ? "Speichere …" : "Speichern") {
+                saving = true
                 Task {
+                    defer { saving = false }
+                    guard await store.rate(meal.recipe.id, stars: rating, again: again, note: note) else { return }
+                    store.flash(rating >= 4 ? "Gespeichert – kommt öfter 🎉" : "Danke für deine Bewertung")
                     let changed = await store.consume(meal)
                     if changed.isEmpty { dismiss(); return }
                     store.flash("Vorrat aktualisiert")
                     withAnimation(Theme.spring) { consumed = changed }
                 }
             }
-            .buttonStyle(PrimaryButtonStyle()).disabled(rating == 0).opacity(rating == 0 ? 0.5 : 1)
+            .buttonStyle(PrimaryButtonStyle()).disabled(rating == 0 || saving).opacity(rating == 0 ? 0.5 : 1)
         }
         .padding(Theme.pagePadding)
         .background(Theme.C.bg)

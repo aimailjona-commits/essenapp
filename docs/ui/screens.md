@@ -25,6 +25,7 @@ Einstellungen/Profil: über den Avatar oben rechts auf dem Start-Screen.
 - **Diese Woche:** horizontal scrollende `MealCard`s, „Alle ansehen“ → Wochenplan
 - **Budget-Karte:** geplant vs. Budget (Fortschrittsbalken), Ersparnis durch Angebote → Ersparnis-Screen
 - **Im Angebot:** Hinweis „3 deiner Lieblingsrezepte sind diese Woche günstig“ / Merkliste-Treffer
+  - Karte unter dem Budget (Feature 3, `GET /recipes/deals`): bis zu 3 überlappende Tellerfotos, Text „N Lieblingsrezepte sind diese Woche günstig“, darunter die ersten Titel, Chevron. Tippen → Tab Rezepte › Meine Rezepte mit Filter „Im Angebot“. Keine Treffer → Karte fehlt.
 - Zustände: kein Plan → `EmptyState` „Noch kein Wochenplan“ + `PrimaryButton` „Plan erstellen“; Laden → Skeleton
 
 ### S2 Wochenplan
@@ -33,6 +34,9 @@ Einstellungen/Profil: über den Avatar oben rechts auf dem Start-Screen.
 - Pro Mahlzeit eine Karte: Tellerbild, Name, Zeit, Preis/Portion, `NutrientStat`s
 - Aktionen pro Gericht: neu würfeln, fixieren (Schloss), ersetzen durch eigenes Rezept, entfernen
 - Tageswerte unten: kcal, Protein, KH, Fett gegen Ziel
+  - Umsetzung (Feature 2/48): Karte „Tageswerte“ unter den Gerichten, rechts „Für: 🧑‍🍳 Jona ▾“. Pro Person Ringe (außen kcal, innen Protein gegen das Ziel aus dem Profil, Emoji in der Mitte, Name darunter; gewählte Person auf `accentSoft`, Tippen wählt sie). Darunter 4 `NutrientStat` (kcal, Protein, KH, Fett) der gewählten Person und „Ziel Jona: 2500 kcal · 140 g Protein“. Fehlen Nährwerte (`complete = false`) → Schimmer über Ringen/Werten + „Nährwerte werden noch berechnet …“, einmal nach ~3 s neu laden. Ringe animieren nach Würfeln/Ersetzen.
+  - Kopf: Wochenschnitt der gewählten Person „🧑‍🍳 Ø 1980 / 2500 kcal · 104 / 140 g Protein pro Tag“.
+  - Gericht-Zeile: zusätzlich Herz (Favorit) über Schloss und Würfel.
 - Zustände: wird erstellt → Skeleton + Text „Angebote werden ausgewertet …“
 
 ### S3 Rezeptdetail
@@ -45,6 +49,14 @@ Einstellungen/Profil: über den Avatar oben rechts auf dem Start-Screen.
 - Zubereitungsschritte nummeriert
 - Unten fest: `PrimaryButton` „Gekocht – bewerten“
 - Darüber fest: `PrimaryButton` in `accent` „▶︎ Kochen starten“ → S18. Oben rechts runder Teilen-Knopf → Menü „Als Bild teilen“ (Bildkarte, Feature 10), „Als Link teilen“ (kommt mit Feature 56)
+- Phase 9 (Features 2 + 3), gilt für Plan-Gerichte und gespeicherte Rezepte (aus S12):
+  - Kopfzeile: Zurück · Herz (Favorit des Haushalts, `symbolEffect(.bounce)` + Haptik) · bei eigenen/importierten Rezepten runder „…“-Knopf (Bearbeiten → S17, Löschen → Rückfrage „Rezept löschen?“; steht es im Plan, bleibt es dort) · Teilen.
+  - Unter dem Namen: Sterne-Durchschnitt + „4,5 · 2 Bewertungen“ (nur wenn bewertet).
+  - Gespeichertes Rezept: `SecondaryButton` „Diese Woche einplanen“ → S19. Preis = Live-Kosten aus den aktuellen Angeboten, Angebotszutaten mit `DealBadge` + `StoreChip`.
+  - „Für:“-Karte, darunter 4 `NutrientTile` (kcal, Protein, KH, Fett) pro Portion der gewählten Person (Portion × Faktor aus dem kcal-Ziel). Werte fehlen noch → 4 Schimmer-Kacheln, einmal nach ~3 s neu laden.
+  - Karte „Zusammensetzung“ mit `ShareBloom`: Tellerfoto in der Mitte, je Zutat ein Blütenblatt mit Verlauf (Länge nach Anteil), außen Prozent + Name; Anteile < 3 % → „Sonstiges“ (grau); ganze Prozent, Summe 100. Blätter wachsen nacheinander auf (bei „Bewegung reduzieren“ ohne Versatz). Fehlt die Zusammensetzung noch → Schimmer.
+  - Zutatenmengen im Plan = Rezeptmenge × `scale`; „Deine Portion“ = Menge × scale × Faktor / portions_total.
+  - Unten Karte „Bewertungen“: Name, Sterne, Datum, „Wieder kochen: Bald/Irgendwann/Nie“ (Nie rot), Notiz.
 
 ### S4 Angebote
 - Oben: Filiale/Ort mit Umschalter (wie Referenz 08), rechts Merkliste-Button
@@ -89,6 +101,7 @@ Mockups: `mockups/weitere-screens-v1.html`.
 - Kleines Tellerfoto + Gericht-Name.
 - „Wie war's?“ + `RatingStars` (groß).
 - „Wieder kochen?“ Segment: Bald / Irgendwann / Nie. „Nie“ = Rezept wird nicht mehr vorgeschlagen.
+- Speichern → `POST /recipes/{id}/rate` (wer und wann setzt der Server); Fehler → Toast, Sheet bleibt offen.
 - Optionale Notiz (einzeilig, wächst).
 - `PrimaryButton` „Speichern“. Nach dem Speichern: kurzer Haken-Toast „Gespeichert – kommt öfter“ (bei 4–5 Sternen).
 
@@ -119,10 +132,11 @@ Mockups: `mockups/weitere-screens-v1.html`.
 - Verlauf nach Woche (wie Referenz 08): Datum-Gruppen, Zeilen „Rewe · 14 Artikel  +4,60 €“.
 
 ### S12 Meine Rezepte (Tab „Rezepte“, Segment „Meine Rezepte“)
-- `SearchField` + Filter-Chips: Alle, Favoriten ♥, Eigene, Zuletzt gekocht, Im Angebot.
-- Raster 2-spaltig mit `MealCard` (klein): Tellerfoto, Name, Sterne-Durchschnitt, Preis/Portion, Badge „im Angebot“ wenn ≥ 40 % der Kosten im Angebot.
-- Rechts oben runder Button „+“ → Rezept anlegen (Formular: Name, Foto optional, Portionen, Zutaten-Zeilen mit Menge/Einheit, Schritte, Küche, Mahlzeit, Zeit).
-- Leer: `EmptyState` „Noch keine Rezepte gespeichert“.
+- Kopf: `DisplayHeader` „Meine Rezepte / N gespeichert“, rechts runder schwarzer Button „+“ → S17.
+- `SearchField` („Rezept oder Tag suchen“, sucht im Backend in Titel und Tags) + `FilterChips` mit Anzahl (Spezifikation Phase 9): Alle · ♥ Favoriten · Eigene · Importiert · Im Angebot · Zuletzt gekocht (nach letztem Kochen sortiert).
+- Bei „Alle“ ohne Suche oben Abschnitt **„🔥 Im Angebot diese Woche“** (`GET /recipes/deals`): horizontale Karten.
+- Raster 2-spaltig mit `MealCard` (klein): Tellerfoto, Name, Sterne-Durchschnitt (sonst „noch nicht bewertet“), Preis/Portion aktuell, Badge „im Angebot“ wenn ≥ 40 % der Kosten im Angebot, Badge „Instagram“ bei Imports; Herz oben rechts. Lange drücken → „Diese Woche einplanen“ (S19). Tippen → S3.
+- Zustände: Laden → 4 Skeleton-Karten; Fehler → `ErrorState`; leer → `EmptyState` „Noch keine Rezepte gespeichert“ + „Rezept anlegen“; Filter/Suche ohne Treffer → `EmptyState` „Nichts gefunden“.
 
 ### S13 Einstellungen (Push-Screen über Avatar)
 - Kopf: Avatar groß, Name, Haushaltsname.
@@ -131,7 +145,7 @@ Mockups: `mockups/weitere-screens-v1.html`.
   - **Haushalt:** Personen, Ernährung, Allergien, Mag ich nicht
   - **Einkaufen:** Ort (PLZ), Läden & Filialen, Budget Lebensmittel, Budget Drogerie
   - **Planung:** Mahlzeiten, Tage, Küchen, Nährwertziel, Max. Kochzeit
-  - **Benachrichtigungen** (Push über Apple/APNs, kein ntfy): Status der iOS-Erlaubnis (abgelehnt → „In iOS-Einstellungen öffnen“), „Test-Push senden“, Push an/aus, Wochenplan-Erinnerung (an/aus, Wochentag, Uhrzeit), Ruhezeit (an/aus, Von/Bis), Angebotsalarme an/aus. Vor der iOS-Abfrage einmal ein Erklär-Sheet „Nichts verpassen“ (nach dem Onboarding bzw. beim ersten Öffnen der Einstellungen). Antippen einer Mitteilung öffnet `essenapp://start|generator|offer/<id>`.
+  - **Benachrichtigungen** (Push über Apple/APNs, kein ntfy; Test-Push: 422 → Toast „Erst Mitteilungen erlauben“, 502 → „Apple hat abgelehnt“; die Wochenplan-Erinnerung hat die Aktionen „Plan erstellen“ → S7 und „Später“): Status der iOS-Erlaubnis (abgelehnt → „In iOS-Einstellungen öffnen“), „Test-Push senden“, Push an/aus, Wochenplan-Erinnerung (an/aus, Wochentag, Uhrzeit), Ruhezeit (an/aus, Von/Bis), Angebotsalarme an/aus. Vor der iOS-Abfrage einmal ein Erklär-Sheet „Nichts verpassen“ (nach dem Onboarding bzw. beim ersten Öffnen der Einstellungen). Antippen einer Mitteilung öffnet `essenapp://start|generator|offer/<id>`.
   - **Familie:** Mitglieder (Avatare), „Einladungslink teilen“
   - **App:** Server-Adresse, Version, „Neu installieren fällig in 5 Tagen“ (7-Tage-Signatur, E2)
 - Änderungen werden sofort gespeichert (kein Speichern-Button), Fehler als Banner.
@@ -154,6 +168,19 @@ Mockups: `mockups/weitere-screens-v1.html`.
 - „+“-Sheet: Name, Menge (optional), Einheit (g/ml/Stück/ohne), Haltbarkeit optional, Schalter „Basic“.
 - Leer: `EmptyState` „📸 Kühlschrank fotografieren“, Knopf deaktiviert „kommt bald“ (Feature 69). Laden → Skeleton, Fehler → `ErrorState`.
 - Abhaken in S5b: haltbare Artikel → Toast „„Reis“ abgehakt“ mit Aktion „In den Vorrat“. „Gekocht ★“ (S8): nach dem Speichern wird der Vorrat abgezogen, Liste „Vom Vorrat abgezogen“ mit korrigierbaren Mengen, Toast „Vorrat aktualisiert“.
+
+### S17 Rezept-Formular (Sheet, Feature 3)
+- Kopf: „Neues Rezept“ bzw. „Rezept bearbeiten“, runder Schließen-Knopf; darunter 4 Fortschritts-Striche und „Schritt 2 von 4 · Zutaten“.
+- Seite 1 **Das Rezept:** Tellerfoto-Vorschau (rund), `SecondaryButton`s „Kamera“ (nur wenn vorhanden) und „Fotos“; Foto wird auf ≤ 1600 px / ≤ 2 MB JPEG verkleinert. Titel, Stepper Portionen (1–20) und Zeit (5er-Schritte), Mahlzeit als Chips, Küche als Chips (optional).
+- Seite 2 **Zutaten:** Zeilen mit Name, Menge (Zahlentastatur), Einheit (Menü: g, kg, ml, l, Stück, EL, TL, Prise), Entfernen; unter der aktiven Zeile Vorschläge aus bekannten Zutaten (Plan, Vorrat) als Chips; „+ Zutat hinzufügen“.
+- Seite 3 **Zubereitung:** nummerierte Schritte, mehrzeilig, mit Griff sortierbar, Wischen löscht; „+ Schritt hinzufügen“.
+- Seite 4 **Tags:** Feld + „+“, Tags als Chips (Tippen entfernt), Zusammenfassung „Titel · N Zutaten · M Schritte“.
+- Unten „Zurück“ (`SecondaryButton`) + „Weiter“ / „Speichern“ (`PrimaryButton`, erst aktiv mit Titel bzw. ≥ 1 Zutat). Speichern → `POST /recipes` (`source=user`) bzw. `PATCH`, Toast „Rezept gespeichert“; Fehler → Toast, Sheet bleibt offen.
+
+### S19 Diese Woche einplanen (Sheet, Feature 3)
+- Titel „Diese Woche einplanen“, Satz „„Ofen-Lachs“ ersetzt das Gericht im gewählten Slot.“
+- Zeilen aller Plan-Gerichte nach Tag und Mahlzeit: kleines Tellerfoto, „Dienstag · Mittag“, aktuelles Gericht, Schloss bei fixierten, Ersetzen-Symbol. Tippen → `POST /plans/current/entries/{id}/replace` (Mengen auf die Esser skaliert, Liste und Nährwerte neu), Toast „Eingeplant: Di · Mittag“.
+- Kein Plan → `EmptyState` „Noch kein Wochenplan“.
 
 ### S18 Kochmodus (Vollbild aus S3, Feature 4 + 8)
 - Dunkler Grund `cookBg` (#111), weiße Schrift, Bildschirm bleibt an. Oben: runder Schließen-Knopf ✕, „Schritt 2 von 4“ + Fortschrittsbalken (`accent`, gleitet mit Feder), rechts 🎙-Knopf (an = `accent`).

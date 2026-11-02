@@ -27,6 +27,8 @@ enum Theme {
         static let protein = Color(hex: 0xFF5A5F)
         static let carbs = Color(hex: 0x3DBE6B)
         static let fat = Color(hex: 0xF7B731)
+        // Blüten-Diagramm (ShareBloom): Blätter der Reihe nach, „Sonstiges“ in text3
+        static let bloom: [Color] = [0xFF5B2E, 0x3DBE6B, 0xF7B731, 0x3E9BFF, 0x8E7CFF, 0xFF5DA2, 0x22B5C9, 0xFF8A3D].map { Color(hex: $0) }
         static let listTints: [Color] = [0xFFE8E2, 0xE3F6EA, 0xEEEBFF, 0xFFF4D6, 0xE3F0FF, 0xFFE6F1].map { Color(hex: $0) }
         // Kochmodus (S18): dunkler Grund, weiße Schrift
         static let cookBg = Color(hex: 0x111111)

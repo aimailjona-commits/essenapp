@@ -17,6 +17,9 @@ struct ProfileDTO: Codable, Identifiable, Hashable {
 
     var id: Int { memberId }
 
+    /// Portion relativ zu 2000 kcal, auf 0,25 gerundet (= Backend planner.portion_factor).
+    var portionFactor: Double { max(0.25, (Double(kcal) / 2000 * 4).rounded() / 4) }
+
     /// Isst am Tag bei mindestens einer der Mahlzeiten mit (fehlende Angabe = ja).
     func eatsOn(day: Int, mealTypes: [String]) -> Bool {
         mealTypes.contains { t in eats[t].map { d in d.indices.contains(day) ? d[day] : true } ?? true }

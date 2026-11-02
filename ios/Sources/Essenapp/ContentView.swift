@@ -48,7 +48,7 @@ struct MainView: View {
     private static var demoTab: AppTab {
         switch Demo.screen {
         case "offers", "offer", "stores": .angebote
-        case "plan", "recipe", "cooking", "sharecard": .rezepte
+        case "plan", "recipe", "cooking", "sharecard", "recipes", "myrecipe", "recipeform": .rezepte
         case "shopping", "list", "pantry": .einkauf
         default: .start
         }
@@ -71,6 +71,8 @@ struct MainView: View {
                 Group {
                     switch (Demo.screen, tab) {
                     case ("recipe", _), ("cooking", _), ("sharecard", _): RecipeDetailView(meal: Demo.plan.entries[2])
+                    case ("myrecipe", _): SavedRecipeView(recipeId: Demo.savedRecipe.id)
+                    case ("recipeform", _): RecipeFormSheet(editing: Demo.savedRecipe, page: 1)
                     case ("offer", _): OfferDetailView(offer: Demo.offers[0])
                     case ("stores", _): StoreMapView()
                     case ("list", _): ShoppingListView(chain: "rewe")
@@ -112,6 +114,9 @@ struct MainView: View {
         .task { await store.loadAll() }
         .modifier(PushAsk(active: store.askPush))
         .onOpenURL { url in Task { await open(url) } }
+        .onChange(of: store.recipeFilter) { _, f in  // Start-Karte → Rezepte-Tab (RecipesTab übernimmt den Filter)
+            if f != nil { withAnimation(Theme.spring) { tab = .rezepte } }
+        }
         .onReceive(delegate.$pendingURL) { url in  // Mitteilung angetippt
             guard let url else { return }
             delegate.pendingURL = nil

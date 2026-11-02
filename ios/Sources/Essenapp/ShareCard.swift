@@ -26,7 +26,7 @@ struct RecipeShareCard: View {
                 .lineLimit(2).minimumScaleFactor(0.8)
             HStack(spacing: 12) {
                 Label("\(recipe.prepMinutes) min", systemImage: "clock")
-                if let kcal = recipe.kcal { Label("\(kcal) kcal", systemImage: "flame.fill") }
+                if let kcal = recipe.nutrition?.kcal { Label("\(Int(kcal.rounded())) kcal", systemImage: "flame.fill") }
                 Label("\(euro(Int(Double(meal.costCents) / meal.basePortions))) / Portion", systemImage: "eurosign.circle")
             }
             .font(Theme.F.caption).foregroundStyle(Theme.C.text1)
@@ -58,7 +58,7 @@ struct RecipeShareCard: View {
                     Circle().fill(Theme.C.accent).frame(width: 5, height: 5)
                     Text(ing.name).lineLimit(1)
                     Spacer(minLength: 4)
-                    Text(qty(ing.amount, ing.unit)).foregroundStyle(Theme.C.text2).monospacedDigit()
+                    Text(qty(ing.amount * meal.scale, ing.unit)).foregroundStyle(Theme.C.text2).monospacedDigit()
                 }
             }
         }
@@ -112,7 +112,7 @@ struct ShareCardSheet: View {
 
     private func render() async -> UIImage? {
         var photo: UIImage?
-        if let url = URL(string: meal.recipe.imageUrl), let loaded = try? await URLSession.shared.data(from: url) {
+        if let url = mediaURL(meal.recipe.imageUrl), let loaded = try? await URLSession.shared.data(from: url) {
             photo = UIImage(data: loaded.0)
         }
         let renderer = ImageRenderer(content: RecipeShareCard(meal: meal, photo: photo))

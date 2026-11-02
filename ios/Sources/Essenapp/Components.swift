@@ -577,3 +577,219 @@ struct PillSegment<T: Hashable>: View {
         .sensoryFeedback(.selection, trigger: selection)
     }
 }
+
+// MARK: Rezepte (3) & Nährwerte (2)
+
+/// Herz für Favoriten (Rezeptdetail, Karten): hüpft beim Umschalten, mit Haptik.
+struct HeartButton: View {
+    let on: Bool
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            Image(systemName: on ? "heart.fill" : "heart")
+                .font(.system(size: 16, weight: .semibold))
+                .foregroundStyle(on ? Theme.C.accent : Theme.C.text1)
+                .symbolEffect(.bounce, value: on)
+                .frame(width: 44, height: 44)
+                .background(Theme.C.card, in: Circle())
+                .overlay(Circle().strokeBorder(Theme.C.line, lineWidth: 0.5))
+                .contentTransition(.symbolEffect(.replace))
+        }
+        .buttonStyle(PressableStyle())
+        .sensoryFeedback(.impact(weight: .medium), trigger: on)
+        .accessibilityLabel(on ? "Aus Favoriten entfernen" : "Als Favorit merken")
+    }
+}
+
+/// Kleine Sterne-Anzeige (Durchschnitt, halbe Sterne).
+struct StarsView: View {
+    let value: Double
+    var size: CGFloat = 11
+
+    var body: some View {
+        HStack(spacing: 1) {
+            ForEach(1...5, id: \.self) { i in
+                let v = value - Double(i - 1)
+                Image(systemName: v >= 0.75 ? "star.fill" : v >= 0.25 ? "star.leadinghalf.filled" : "star")
+            }
+        }
+        .font(.system(size: size, weight: .semibold))
+        .foregroundStyle(Theme.C.warning)
+        .accessibilityElement()
+        .accessibilityLabel("\(value.formatted(.number.precision(.fractionLength(0...1)))) von 5 Sternen")
+    }
+}
+
+/// „Für: 🧑‍🍳 Jona ▾“ – Mitglied wählen (Rezept, Tagesansicht; 48).
+struct PersonPicker: View {
+    @Environment(AppStore.self) private var store
+    @Binding var person: Int?
+
+    var body: some View {
+        let who = store.profiles.first { $0.memberId == (person ?? store.profile?.memberId) } ?? store.profile
+        if let who {
+            HStack(spacing: 8) {
+                Text("Für:").font(Theme.F.callout).foregroundStyle(Theme.C.text2)
+                Menu {
+                    ForEach(store.profiles) { p in
+                        Button("\(p.emoji) \(p.name)") { withAnimation(Theme.spring) { person = p.memberId } }
+                    }
+                } label: {
+                    HStack(spacing: 6) {
+                        Text("\(who.emoji) \(who.name)")
+                        Image(systemName: "chevron.down").font(.system(size: 11, weight: .bold))
+                    }
+                    .font(Theme.F.callout).foregroundStyle(Theme.C.text1)
+                    .padding(.horizontal, 14).frame(minHeight: 44)
+                    .background(Theme.C.surface, in: Capsule())
+                }
+                .accessibilityLabel("Für \(who.name), ändern")
+            }
+            .sensoryFeedback(.selection, trigger: person)
+        }
+    }
+}
+
+/// Anteile für das Blüten-Diagramm: unter 3 % → „Sonstiges“, ganze Prozent mit Summe genau 100.
+enum Bloom {
+    struct Part: Equatable {
+        var name: String
+        var percent: Int
+    }
+
+    static func parts(_ items: [CompositionItem]) -> [Part] {
+        let total = items.map(\.share).reduce(0, +)
+        guard total > 0 else { return [] }
+        var groups = items.map { ($0.name, $0.share / total) }.filter { $0.1 >= 0.03 }.sorted { $0.1 > $1.1 }
+        let rest = 1 - groups.map(\.1).reduce(0, +)
+        if rest > 0.0001 { groups.append(("Sonstiges", rest)) }
+        // größte Reste bekommen die fehlenden Prozentpunkte
+        let raw = groups.map { $0.1 * 100 }
+        var pct = raw.map { Int($0) }
+        let order = raw.indices.sorted { raw[$0] - Double(pct[$0]) > raw[$1] - Double(pct[$1]) }
+        for i in order.prefix(max(0, 100 - pct.reduce(0, +))) { pct[i] += 1 }
+        return zip(groups, pct).map { g, p in Part(name: g.0, percent: p) }.filter { $0.percent > 0 }
+    }
+
+    static func selfTest() {
+        let p = parts([.init(name: "Reis", grams: 160, share: 0.333), .init(name: "Huhn", grams: 160, share: 0.333),
+                       .init(name: "Sauce", grams: 150, share: 0.314), .init(name: "Salz", grams: 2, share: 0.01),
+                       .init(name: "Öl", grams: 2, share: 0.01)])
+        assert(p.map(\.percent).reduce(0, +) == 100, "Blüte summiert nicht 100 %")
+        assert(p.count == 4 && p.last?.name == "Sonstiges", "Anteile < 3 % nicht gruppiert")
+        assert(parts([]).isEmpty)
+    }
+}
+
+/// Blütenblatt: Tropfen von unten (Mitte der Blüte) nach oben (Spitze).
+struct Petal: Shape {
+    func path(in r: CGRect) -> Path {
+        var p = Path()
+        p.move(to: CGPoint(x: r.midX, y: r.maxY))
+        p.addCurve(to: CGPoint(x: r.midX, y: r.minY),
+                   control1: CGPoint(x: r.minX - r.width * 0.15, y: r.maxY - r.height * 0.45),
+                   control2: CGPoint(x: r.minX, y: r.minY))
+        p.addCurve(to: CGPoint(x: r.midX, y: r.maxY),
+                   control1: CGPoint(x: r.maxX, y: r.minY),
+                   control2: CGPoint(x: r.maxX + r.width * 0.15, y: r.maxY - r.height * 0.45))
+        p.closeSubpath()
+        return p
+    }
+}
+
+/// `ShareBloom`: Zutatenanteile nach Gewicht als Blüte, Tellerfoto in der Mitte; Blätter wachsen nacheinander auf.
+struct ShareBloom: View {
+    let items: [CompositionItem]
+    var photo: URL?
+    var seed = ""
+    @State private var grown = false
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    var body: some View {
+        let parts = Bloom.parts(items)
+        let top = Double(parts.map(\.percent).max() ?? 1)
+        GeometryReader { geo in
+            let size = min(geo.size.width, geo.size.height)
+            let inner = size * 0.17, outer = size * 0.32
+            let width = min(size * 0.2, 2 * .pi * inner * 1.5 / Double(max(parts.count, 1)))
+            ZStack {
+                ForEach(Array(parts.enumerated()), id: \.offset) { i, part in
+                    let angle = Double(i) / Double(parts.count) * 2 * .pi
+                    let length = inner + (outer - inner) * (0.3 + 0.7 * Double(part.percent) / top)
+                    let color = part.name == "Sonstiges" ? Theme.C.text3 : Theme.C.bloom[i % Theme.C.bloom.count]
+                    let delay = reduceMotion ? 0 : Double(i) * 0.09
+                    Petal()
+                        .fill(LinearGradient(colors: [color.opacity(0.3), color], startPoint: .bottom, endPoint: .top))
+                        .frame(width: width, height: length)
+                        .scaleEffect(grown ? 1 : 0.01, anchor: .bottom)
+                        .offset(y: -length / 2)
+                        .rotationEffect(.radians(angle))
+                        .animation(.spring(response: 0.6, dampingFraction: 0.7).delay(delay), value: grown)
+                    VStack(spacing: 0) {
+                        Text("\(part.percent) %").font(.system(.footnote, design: .rounded, weight: .bold)).monospacedDigit()
+                        Text(part.name).font(Theme.F.micro).foregroundStyle(Theme.C.text2).lineLimit(2).multilineTextAlignment(.center)
+                    }
+                    .frame(width: 66)
+                    .offset(x: sin(angle) * (length + 24), y: -cos(angle) * (length + 24))
+                    .opacity(grown ? 1 : 0)
+                    .animation(.easeOut(duration: 0.3).delay(delay + 0.25), value: grown)
+                    .accessibilityElement(children: .combine)
+                }
+                Plate(url: photo, size: inner * 2 + 8, seed: seed)
+            }
+            .frame(width: geo.size.width, height: geo.size.height)
+        }
+        .frame(height: 320)
+        .onAppear {
+            #if DEBUG
+            Bloom.selfTest()
+            #endif
+            grown = true
+        }
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel("Zusammensetzung nach Gewicht")
+    }
+}
+
+/// Ring gegen ein Ziel (Tagesringe, 2).
+struct GoalRing: View {
+    let fraction: Double
+    let color: Color
+    var lineWidth: CGFloat = 7
+
+    var body: some View {
+        ZStack {
+            Circle().stroke(color.opacity(0.15), lineWidth: lineWidth)
+            Circle().trim(from: 0, to: min(fraction, 1))
+                .stroke(color, style: StrokeStyle(lineWidth: lineWidth, lineCap: .round))
+                .rotationEffect(.degrees(-90))
+        }
+        .animation(Theme.spring, value: fraction)
+    }
+}
+
+/// Schimmer über einem Inhalt, solange Werte noch berechnet werden.
+struct Shimmer: ViewModifier {
+    let active: Bool
+    @State private var phase: CGFloat = -1
+
+    func body(content: Content) -> some View {
+        content.overlay {
+            if active {
+                LinearGradient(colors: [.clear, .white.opacity(0.8), .clear], startPoint: .leading, endPoint: .trailing)
+                    .offset(x: phase * 120)
+                    .onAppear { withAnimation(.linear(duration: 1.3).repeatForever(autoreverses: false)) { phase = 1 } }
+                    .allowsHitTesting(false)
+                    .accessibilityLabel("Wird berechnet")
+            }
+        }
+        .clipped()
+    }
+}
+
+/// "2026-11-02T18:30:00" → "2.11.2026"
+func shortDate(_ iso: String) -> String {
+    let parts = iso.prefix(10).split(separator: "-").compactMap { Int($0) }
+    return parts.count == 3 ? "\(parts[2]).\(parts[1]).\(parts[0])" : iso
+}

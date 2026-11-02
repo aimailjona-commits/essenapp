@@ -2,7 +2,8 @@ import Foundation
 
 /// Demo-Modus für Screenshots im Simulator (CI): App starten mit `-demoScreen <name>`.
 /// Namen: onboarding, start, quick, generator, generating, offers, offer, plan, recipe, shopping, list, pantry, settings, profile,
-/// notifications, stores, empty, cooking (Kochmodus Schritt 2 mit Timer), sharecard (Bildkarte)
+/// notifications, stores, empty, cooking (Kochmodus Schritt 2 mit Timer), sharecard (Bildkarte),
+/// recipes (Meine Rezepte), myrecipe (eigenes Rezept mit Bewertungen + Blüte), recipeform (Rezept-Formular, Seite Zutaten)
 enum Demo {
     static let screen: String? = {
         let args = ProcessInfo.processInfo.arguments
@@ -51,7 +52,10 @@ enum Demo {
             cuisine: "Indisch", mealType: type, servings: 2, prepMinutes: minutes, ingredients: ings,
             steps: ["Zwiebel würfeln und 5 Minuten glasig anbraten.", "Hähnchen dazugeben und 8–10 Min. rundum anbraten.",
                     "Tomaten und Gewürze zugeben, 15 Minuten köcheln.", "Mit Reis servieren."],
-            imageUrl: ""), portions: portions, portionsTotal: portions.map(\.factor).reduce(0, +))
+            imageUrl: "", favorite: day == 1 && type == "mittag",
+            nutrition: NutritionDTO(kcal: Double(380 + cost / 2), protein: Double(14 + minutes), carbs: 62, fat: 19, fiber: 7),
+            composition: composition(ings.map { i in (i.name, i.unit == "stk" ? i.amount * 120 : i.amount) })),
+            portions: portions, portionsTotal: portions.map(\.factor).reduce(0, +))
     }
 
     // MARK: Profile (48), Vorrat (60), Mitteilungen
@@ -99,6 +103,59 @@ enum Demo {
         meal(2, "mittag", "Pasta al Pomodoro", 210, 15, [ing("Spaghetti", 250), ing("Rispentomaten", 300, offer: 3)]),
         meal(3, "mittag", "Ofengemüse mit Feta", 380, 30, [ing("Paprika", 2, "stk"), ing("Feta", 100, offer: 8)]),
     ])
+
+    // MARK: Meine Rezepte (3), Nährwerte (2)
+
+    static func composition(_ parts: [(String, Double)]) -> [CompositionItem] {
+        let total = max(parts.map(\.1).reduce(0, +), 1)
+        return parts.map { p in CompositionItem(name: p.0, grams: p.1 / 2, share: p.1 / total) }
+    }
+
+    static func card(_ id: Int, _ title: String, _ source: String, fav: Bool, stars: Double?, cooked: String?, cost: Int,
+                     share: Double) -> RecipeCard {
+        RecipeCard(id: id, title: title, imageUrl: "", cuisine: "", mealType: "abend", prepMinutes: 30, servings: 2, source: source,
+                   sourceAuthor: source == "instagram" ? "koch_xy" : "", favorite: fav, avgStars: stars, lastCooked: cooked,
+                   costPerServingCents: cost, offerShare: share)
+    }
+
+    static let cards = [
+        card(100, "Ofen-Lachs mit Kartoffeln", "user", fav: true, stars: 4.5, cooked: "2026-10-29T19:10:00", cost: 310, share: 0.55),
+        card(12, "Chicken Tikka Masala", "ai", fav: true, stars: 5, cooked: "2026-10-27T18:40:00", cost: 245, share: 0.62),
+        card(102, "One-Pot-Pasta mit Feta", "instagram", fav: false, stars: nil, cooked: nil, cost: 180, share: 0.2),
+        card(103, "Omas Linsensuppe", "user", fav: false, stars: 4, cooked: "2026-10-20T12:30:00", cost: 120, share: 0.1),
+        card(1, "Shakshuka mit Feta", "ai", fav: true, stars: 3.5, cooked: nil, cost: 160, share: 0.45),
+        card(105, "Gnocchi-Pfanne", "web", fav: false, stars: nil, cooked: nil, cost: 210, share: 0),
+    ]
+
+    static let savedRecipe = RecipeDTO(
+        id: 100, title: "Ofen-Lachs mit Kartoffeln", description: "Unser Sonntagsessen – alles auf einem Blech.", cuisine: "Deutsch",
+        mealType: "abend", servings: 2, prepMinutes: 40,
+        ingredients: [ing("Lachsfilet", 250, offer: 4), ing("Kartoffeln", 600), ing("Brokkoli", 300), ing("Zitrone", 1, "stk"),
+                      ing("Olivenöl", 2, "el"), ing("Salz", 1, "prise")],
+        steps: ["Ofen auf 200 °C vorheizen.", "Kartoffeln vierteln, mit Öl mischen und 20 Minuten backen.",
+                "Lachs und Brokkoli dazulegen, 15 Minuten weiterbacken.", "Mit Zitrone servieren."],
+        imageUrl: "", source: "user", tags: ["Ofen", "Sonntag"], favorite: true,
+        nutrition: NutritionDTO(kcal: 610, protein: 38, carbs: 52, fat: 26, fiber: 8),
+        composition: composition([("Kartoffeln", 600), ("Brokkoli", 300), ("Lachsfilet", 250), ("Zitrone", 60), ("Olivenöl", 20), ("Salz", 1)]),
+        avgStars: 4.5, lastCooked: "2026-10-29T19:10:00", costPerServingCents: 310, offerShare: 0.55,
+        ratings: [RatingDTO(id: 1, memberId: 1, memberName: "Jona", stars: 5, again: "bald", note: "Mit mehr Zitrone noch besser.",
+                            cookedAt: "2026-10-29T19:10:00"),
+                  RatingDTO(id: 2, memberId: 2, memberName: "Malina", stars: 4, again: "irgendwann", note: "", cookedAt: "2026-10-12T18:45:00")])
+
+    static func dayValues(_ d: Int, _ jona: [Double], _ malina: [Double], complete: Bool = true) -> PlanNutritionDTO.Day {
+        PlanNutritionDTO.Day(day: d, members: [
+            PlanNutritionDTO.MemberDay(memberId: 1, kcal: jona[0], protein: jona[1], carbs: jona[2], fat: jona[3], fiber: jona[4], complete: true),
+            PlanNutritionDTO.MemberDay(memberId: 2, kcal: malina[0], protein: malina[1], carbs: malina[2], fat: malina[3], fiber: malina[4],
+                                       complete: complete)])
+    }
+
+    static let nutrition = PlanNutritionDTO(
+        members: [PlanNutritionDTO.Member(memberId: 1, name: "Jona", emoji: "🧑‍🍳", kcalGoal: 2500, proteinGoal: 140, avgKcal: 1980, avgProtein: 104),
+                  PlanNutritionDTO.Member(memberId: 2, name: "Malina", emoji: "🦊", kcalGoal: 1900, proteinGoal: 80, avgKcal: 1520, avgProtein: 71)],
+        days: [dayValues(0, [1650, 92, 180, 60, 22], [1320, 70, 150, 48, 18]),
+               dayValues(1, [2180, 128, 230, 78, 28], [1740, 98, 190, 62, 22]),
+               dayValues(2, [900, 40, 110, 30, 12], [1010, 44, 120, 33, 12]),
+               dayValues(3, [1100, 64, 120, 41, 15], [880, 51, 95, 30, 11], complete: false)])
 
     static let householdList = ListDTO(id: 1, name: "Haushalt", kind: "household", shareUrl: nil, items: [
         item(1, "Hähnchenbrustfilet", 400, "g", "rewe", 1),

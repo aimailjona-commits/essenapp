@@ -10,6 +10,12 @@ final class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCent
     func application(_ application: UIApplication,
                      didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil) -> Bool {
         UNUserNotificationCenter.current().delegate = self
+        // Wochenplan-Erinnerung (Backend-Job plan_prompt): „Plan erstellen“ öffnet den Generator, „Später“ schließt nur
+        UNUserNotificationCenter.current().setNotificationCategories([UNNotificationCategory(
+            identifier: "PLAN_PROMPT",
+            actions: [UNNotificationAction(identifier: "PLAN_CREATE", title: "Plan erstellen", options: [.foreground]),
+                      UNNotificationAction(identifier: "LATER", title: "Später", options: [])],
+            intentIdentifiers: [])])
         Task {  // schon erlaubt → Token bei jedem Start auffrischen
             if await UNUserNotificationCenter.current().notificationSettings().authorizationStatus == .authorized {
                 application.registerForRemoteNotifications()
@@ -21,7 +27,12 @@ final class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCent
     func application(_ application: UIApplication, didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data) {
         struct Body: Encodable { var token: String; var environment: String }
         let token = deviceToken.map { String(format: "%02x", $0) }.joined()
-        Task { _ = try? await API().send("POST", "/me/push/device", body: Body(token: token, environment: "development")) }
+        #if DEBUG
+        let environment = "development"  // Debug-Build → APNs-Sandbox
+        #else
+        let environment = "production"
+        #endif
+        Task { _ = try? await API().send("POST", "/me/push/device", body: Body(token: token, environment: environment)) }
     }
 
     nonisolated func userNotificationCenter(_ center: UNUserNotificationCenter, willPresent notification: UNNotification,
@@ -34,8 +45,9 @@ final class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCent
     nonisolated func userNotificationCenter(_ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse,
                                             withCompletionHandler completionHandler: @escaping () -> Void) {
         let url = (response.notification.request.content.userInfo["url"] as? String).flatMap(URL.init(string:))
+            ?? (response.actionIdentifier == "PLAN_CREATE" ? URL(string: "essenapp://generator") : nil)
         completionHandler()
-        guard let url else { return }
+        guard response.actionIdentifier != "LATER", let url else { return }
         Task { @MainActor in self.pendingURL = url }
     }
 }
@@ -77,6 +89,10 @@ extension AppStore {
         do {
             if !demo { try await api.send("POST", "/me/push/test") }
             flash("Test-Push gesendet")
+        } catch APIError.http(422) {  // kein Gerät registriert
+            flash("Erst Mitteilungen erlauben")
+        } catch APIError.http(502) {
+            flash("Apple hat abgelehnt")
         } catch {
             flash("Push konnte nicht gesendet werden")
         }

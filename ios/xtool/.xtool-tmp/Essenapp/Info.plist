@@ -41,7 +41,7 @@
 		<true/>
 	</dict>
 	<key>NSCameraUsageDescription</key>
-	<string>Zum Scannen von Barcodes für deine Merkliste.</string>
+	<string>Zum Scannen von Barcodes für deine Merkliste und für Fotos deiner eigenen Rezepte.</string>
 	<key>NSLocalNetworkUsageDescription</key>
 	<string>Verbindet sich mit deinem Essenapp-Server im Heimnetz.</string>
 	<key>NSMicrophoneUsageDescription</key>

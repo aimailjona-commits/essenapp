@@ -601,7 +601,7 @@ struct CookingView: View {
     private var finishPage: some View {
         VStack(spacing: 18) {
             Spacer()
-            Plate(url: URL(string: meal.recipe.imageUrl), size: 200, seed: meal.recipe.title)
+            Plate(url: mediaURL(meal.recipe.imageUrl), size: 200, seed: meal.recipe.title)
             Text("Fertig! 🎉").font(Theme.F.cookTitle)
             Text("Guten Appetit! Bewerte das Gericht – danach ziehen wir die Zutaten vom Vorrat ab.")
                 .font(Theme.F.body).foregroundStyle(Theme.C.cookText2).multilineTextAlignment(.center)

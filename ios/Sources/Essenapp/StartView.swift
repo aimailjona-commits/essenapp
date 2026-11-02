@@ -76,6 +76,7 @@ struct StartView: View {
                     }
                     .padding(.horizontal, -Theme.pagePadding)
                     BudgetCard(plan: plan, budgetCents: store.household?.budgetFoodWeekCents ?? 0).appear(delay: 0.1)
+                    FavoriteDealsCard().appear(delay: 0.12)
                     DealsTeaser().appear(delay: 0.15)
                 } else {
                     EmptyState(emoji: "🥘", title: "Noch kein Wochenplan",
@@ -165,7 +166,7 @@ struct MealCardBig: View {
     var body: some View {
         let deals = meal.recipe.ingredients.filter { $0.offerId != nil }.count
         VStack(spacing: 4) {
-            Plate(url: URL(string: meal.recipe.imageUrl), size: 170, seed: meal.recipe.title).padding(.top, -78).padding(.bottom, 12)
+            Plate(url: mediaURL(meal.recipe.imageUrl), size: 170, seed: meal.recipe.title).padding(.top, -78).padding(.bottom, 12)
             Text(meal.recipe.title).font(.system(.title3, design: .rounded, weight: .bold)).multilineTextAlignment(.center)
                 .foregroundStyle(Theme.C.text1)
             HStack(spacing: 14) {
@@ -189,7 +190,7 @@ struct MealCardSmall: View {
 
     var body: some View {
         VStack(spacing: 4) {
-            Plate(url: URL(string: meal.recipe.imageUrl), size: 96, seed: meal.recipe.title).padding(.top, -36)
+            Plate(url: mediaURL(meal.recipe.imageUrl), size: 96, seed: meal.recipe.title).padding(.top, -36)
             Text(meal.recipe.title).font(.system(.subheadline, design: .rounded, weight: .bold)).lineLimit(2)
                 .multilineTextAlignment(.center).frame(minHeight: 36).foregroundStyle(Theme.C.text1)
             Text("\(euro(meal.costCents)) · \(meal.recipe.prepMinutes) min").font(Theme.F.micro).foregroundStyle(Theme.C.text2)

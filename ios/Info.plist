@@ -26,7 +26,7 @@
 	<key>NSPhotoLibraryAddUsageDescription</key>
 	<string>Zum Sichern von Rezept-Bildkarten in deinen Fotos.</string>
 	<key>NSCameraUsageDescription</key>
-	<string>Zum Scannen von Barcodes für deine Merkliste.</string>
+	<string>Zum Scannen von Barcodes für deine Merkliste und für Fotos deiner eigenen Rezepte.</string>
 	<!-- shortcut: HTTP zum lokalen Backend erlaubt; entfernen, sobald der VPS mit HTTPS läuft (Phase 7) -->
 	<key>NSAppTransportSecurity</key>
 	<dict>

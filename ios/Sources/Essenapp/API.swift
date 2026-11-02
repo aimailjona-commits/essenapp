@@ -159,7 +159,7 @@ struct IngredientDTO: Codable, Hashable {
     var amount: Double
     var unit: String
     var offerId: Int?
-    var inPantry: Bool
+    var inPantry: Bool?  // fehlt bei eigenen Rezepten (nur Name, Menge, Einheit)
     var packAmount: Double?
     var packPriceCents: Int?
 }
@@ -176,7 +176,97 @@ struct RecipeDTO: Codable, Identifiable, Hashable {
     var steps: [String]
     var imageUrl: String
     var stepImages: [String]? = nil  // Schritt-Bilder (Feature 9), leer = keine Bildfläche im Kochmodus
-    var kcal: Int? = nil  // pro Portion, sobald das Backend sie liefert (Bildkarte, Feature 10)
+    var source = "ai"  // ai | user | instagram | web | shared
+    var sourceUrl = ""
+    var sourceAuthor = ""
+    var tags: [String] = []
+    var favorite = false
+    var nutrition: NutritionDTO? = nil  // pro Portion; null = Berechnung läuft noch
+    var composition: [CompositionItem]? = nil  // Blüten-Diagramm, null wie nutrition
+    // nur GET /recipes/{id} (RecipeDetail)
+    var avgStars: Double? = nil
+    var lastCooked: String? = nil
+    var costPerServingCents: Int? = nil
+    var offerShare: Double? = nil
+    var ratings: [RatingDTO]? = nil
+}
+
+/// Pro Portion (1 Portion = Esser mit 2000 kcal/Tag); pro Person × Portionsfaktor.
+struct NutritionDTO: Codable, Hashable {
+    var kcal: Double
+    var protein: Double
+    var carbs: Double
+    var fat: Double
+    var fiber: Double
+}
+
+struct CompositionItem: Codable, Hashable {
+    var name: String
+    var grams: Double
+    var share: Double  // 0–1, Summe 1
+}
+
+struct RatingDTO: Codable, Hashable, Identifiable {
+    var id: Int
+    var memberId: Int
+    var memberName: String
+    var stars: Int
+    var again: String
+    var note: String
+    var cookedAt: String
+}
+
+/// = backend RecipeCard (Meine Rezepte).
+struct RecipeCard: Codable, Hashable, Identifiable {
+    var id: Int
+    var title: String
+    var imageUrl: String
+    var cuisine: String
+    var mealType: String
+    var prepMinutes: Int
+    var servings: Int
+    var source: String
+    var sourceAuthor: String
+    var favorite: Bool
+    var avgStars: Double?
+    var lastCooked: String?
+    var costPerServingCents: Int
+    var offerShare: Double  // Badge „im Angebot“ ab 0,4
+}
+
+/// = backend PlanNutritionOut (Tagesringe, Wochenschnitt).
+struct PlanNutritionDTO: Codable, Hashable {
+    struct Member: Codable, Hashable, Identifiable {
+        var memberId: Int
+        var name: String
+        var emoji: String
+        var kcalGoal: Int
+        var proteinGoal: Int
+        var avgKcal: Double
+        var avgProtein: Double
+        var id: Int { memberId }
+    }
+    struct MemberDay: Codable, Hashable {
+        var memberId: Int
+        var kcal: Double
+        var protein: Double
+        var carbs: Double
+        var fat: Double
+        var fiber: Double
+        var complete: Bool  // false = ein Gericht noch ohne Zuordnung
+    }
+    struct Day: Codable, Hashable {
+        var day: Int
+        var members: [MemberDay]
+    }
+    var members: [Member]
+    var days: [Day]
+}
+
+/// Fotos eigener Rezepte kommen relativ (/media/…) – hier zentral um die Server-Adresse ergänzt.
+func mediaURL(_ path: String) -> URL? {
+    guard path.hasPrefix("/") else { return URL(string: path) }
+    return URL(string: (UserDefaults.standard.string(forKey: "backendURL") ?? "").trimmingCharacters(in: .whitespaces) + path)
 }
 
 struct MealDTO: Codable, Hashable {
@@ -188,6 +278,7 @@ struct MealDTO: Codable, Hashable {
     var recipe: RecipeDTO
     var portions: [PortionDTO] = []  // Esser dieses Gerichts (48)
     var portionsTotal: Double = 0  // Rezeptmengen gelten für so viele Portionen; 0 = alter Plan → recipe.servings
+    var scale: Double = 1  // Menge im Plan = Rezeptmenge × scale (eingesetzte Rezepte)
 
     var basePortions: Double { portionsTotal > 0 ? portionsTotal : Double(max(recipe.servings, 1)) }
 }
@@ -231,6 +322,10 @@ enum Labels {
 
     static let mealTypes = [("fruehstueck", "Frühstück"), ("mittag", "Mittag"), ("abend", "Abend"), ("dessert", "Dessert")]
     static func meal(_ key: String) -> String { mealTypes.first { $0.0 == key }?.1 ?? key }
+
+    static let units = [("g", "g"), ("kg", "kg"), ("ml", "ml"), ("l", "l"), ("stk", "Stück"), ("el", "EL"), ("tl", "TL"), ("prise", "Prise")]
+    static func unit(_ key: String) -> String { units.first { $0.0 == key }?.1 ?? key }
+    static let again = [("bald", "Bald"), ("irgendwann", "Irgendwann"), ("nie", "Nie")]
 
     static let days = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"]
     static let dayNames = ["Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag", "Sonntag"]
@@ -277,6 +372,9 @@ final class AppStore {
     var pantry: [PantryDTO] = []
     var lists: [ListSummaryDTO] = []
     var householdList: ListDTO?
+    var nutrition: PlanNutritionDTO?  // Tagesringe (2)
+    var recipesVersion = 0  // +1 nach Anlegen/Ändern/Bewerten → Listen und Detail laden neu
+    var recipeFilter: String?  // Start-Karte → Rezepte-Tab mit diesem Filter
     var watchlist: Set<Int> = Persist.load("watchlist") ?? [] { didSet { Persist.save(watchlist, "watchlist") } }
 
     /// Toast oben, optional mit Aktions-Knopf (bleibt dann länger stehen).
@@ -316,7 +414,7 @@ final class AppStore {
         if demo, Demo.screen != "empty" {
             household = Demo.household; offers = Demo.offers; plan = Demo.plan
             householdList = Demo.householdList; lists = Demo.lists
-            profiles = Demo.profiles; profile = Demo.profiles.first; pantry = Demo.pantry
+            profiles = Demo.profiles; profile = Demo.profiles.first; pantry = Demo.pantry; nutrition = Demo.nutrition
         }
     }
 
@@ -353,6 +451,7 @@ final class AppStore {
             await loadProfiles()
             try? await loadPantry()
             error = nil
+            await loadNutrition()
         } catch {
             self.error = error.localizedDescription
         }
@@ -376,6 +475,7 @@ final class AppStore {
             plan = try await api.request("POST", "/plans", body: options, timeout: 300)  // KI-Plan dauert bis ~2 min
             await loadLists()  // Backend übernimmt die Zutaten in die Haushaltsliste
             error = nil
+            await loadNutrition()
         } catch {
             self.error = error.localizedDescription
         }
@@ -398,6 +498,7 @@ extension AppStore {
         guard let id = meal.id else { return }
         do {
             plan = try await api.request("POST", "/plans/current/entries/\(id)/reroll", timeout: 180)
+            await loadNutrition()  // Tagesringe reagieren aufs Würfeln
         } catch {
             self.error = error.localizedDescription
         }

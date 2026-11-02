@@ -123,7 +123,6 @@ extension AppStore {
 
     /// „Gekocht“: zieht die Mengen des Plan-Gerichts vom Vorrat ab; gibt die geänderten Einträge zurück (0 = aufgebraucht).
     func consume(_ meal: MealDTO) async -> [PantryDTO] {
-        guard let id = meal.id else { return [] }
         var changed: [PantryDTO] = []
         if demo {
             for ing in meal.recipe.ingredients {
@@ -133,8 +132,10 @@ extension AppStore {
                 changed.append(pantry[i])
             }
         } else {
-            struct Body: Encodable { var entryId: Int }
-            changed = (try? await api.request("POST", "/pantry/consume", body: Body(entryId: id))) ?? []
+            // Plan-Gericht: ganze Menge des Slots; gespeichertes Rezept (ohne Slot): Rezeptmenge
+            struct Body: Encodable { var entryId: Int?; var recipeId: Int? }
+            let body = meal.id.map { id in Body(entryId: id) } ?? Body(recipeId: meal.recipe.id)
+            changed = (try? await api.request("POST", "/pantry/consume", body: body)) ?? []
             changed.forEach(replacePantry)
         }
         withAnimation(Theme.spring) { pantry.removeAll { $0.amount == 0 && !$0.isBasic } }  // Backend löscht aufgebrauchte Einträge
