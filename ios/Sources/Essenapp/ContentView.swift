@@ -13,6 +13,9 @@ struct ContentView: View {
         }
         .environment(store)
         .environment(store.api)
+        .preferredColorScheme(.light)  // nur heller Modus in v1 (E15); sonst wird Systemtext im Dark Mode weiß
+        .foregroundStyle(Theme.C.text1)
+        .tint(Theme.C.text1)
     }
 }
 

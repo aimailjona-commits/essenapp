@@ -33,7 +33,7 @@ Nutzer: der Entwickler selbst (iOS-App) + Familie/Freunde (Web-Version).
 | E12 | UI wird vor dem Bauen vollständig spezifiziert (`docs/ui/`), Phase 0 | Stil „hell & natürlich“: Referenz 01/02, Angebote wie 08, Listen wie 07 |
 | E13 | Rezeptbilder: **KI-generiertes, freigestelltes Tellerfoto von oben**, einmal pro Rezept erzeugt und gespeichert | Bild-API im Backend nötig (Anbieter in Phase 3 wählen), Kosten wenige Cent pro Rezept |
 | E14 | Mittel-Button der Tab-Bar öffnet **Schnell-Aktionen** (Plan erstellen, Scannen, Zur Liste, Rezept anlegen) | |
-| E15 | **Nur heller Modus** in v1 | Dark Mode später möglich, da alle Farben Tokens sind |
+| E15 | **Nur heller Modus** in v1, erzwungen per `UIUserInterfaceStyle=Light` + `.preferredColorScheme(.light)` | Ohne Erzwingen wurde Systemtext im Dark Mode weiß auf hellem Grund. Dark Mode später möglich, da alle Farben Tokens sind |
 | E16 | **Autonomer Modus** (2026-11-02): Claude arbeitet ohne Rückfragen weiter, entscheidet Offenes selbst mit der empfohlenen Option. Solche Entscheidungen sind mit **(C)** markiert und jederzeit änderbar | Nutzer ist nicht erreichbar. 👤-Schritte bleiben offen, Claude arbeitet an allem, was nicht blockiert ist |
 | E17 (C) | Rabatt-Farbe bleibt Orange-Rot (`deal`); Limettengrün bedeutet „ok / im Vorrat / erledigt“ | Klare Trennung: Rot = Angebot, Grün = erledigt |
 | E18 (C) | Einkaufslisten in sanften Pastelltönen aus fester Palette, in Reihenfolge der Läden vergeben (keine Markenfarben) | Keine Händler-Branding-Nachahmung |
