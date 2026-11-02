@@ -85,12 +85,9 @@ struct StoreMapView: View {
                 Annotation(s.name, coordinate: CLLocationCoordinate2D(latitude: s.lat, longitude: s.lng)) {
                     let on = selected.contains(s.id)
                     Button { toggle(s) } label: {
-                        Text(String(Labels.chain(s.chain).prefix(1)))
-                            .font(.system(size: 13, weight: .bold, design: .rounded))
-                            .foregroundStyle(on ? .white : Theme.storeColor(s.chain))
-                            .frame(width: 30, height: 30)
-                            .background(on ? Theme.storeColor(s.chain) : .white, in: Circle())
-                            .overlay(Circle().strokeBorder(Theme.storeColor(s.chain), lineWidth: 2))
+                        StoreLogo(chain: s.chain, size: 32)
+                            .overlay(RoundedRectangle(cornerRadius: 9, style: .continuous).strokeBorder(on ? Theme.C.accent : .clear, lineWidth: 3))
+                            .opacity(on ? 1 : 0.55)
                             .scaleEffect(on ? 1.15 : 1)
                             .animation(Theme.spring, value: on)
                     }
@@ -124,9 +121,7 @@ struct StoreMapView: View {
         let on = selected.contains(s.id)
         return Button { toggle(s) } label: {
             HStack(spacing: 12) {
-                Text(String(Labels.chain(s.chain).prefix(1)))
-                    .font(.system(size: 16, weight: .bold, design: .rounded)).foregroundStyle(.white)
-                    .frame(width: 40, height: 40).background(Theme.storeColor(s.chain), in: RoundedRectangle(cornerRadius: 12))
+                StoreLogo(chain: s.chain, size: 42)
                 VStack(alignment: .leading, spacing: 2) {
                     Text(s.name).font(.system(.body, weight: .semibold)).lineLimit(1)
                     Text(s.address.isEmpty ? Labels.chain(s.chain) : s.address).font(Theme.F.micro).foregroundStyle(Theme.C.text2).lineLimit(1)

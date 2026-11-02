@@ -1,4 +1,5 @@
 from datetime import date
+from types import SimpleNamespace
 
 import httpx
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -9,7 +10,7 @@ from app.core.auth import current_member, new_token
 from app.core.db import get_db
 from app.models import Household, HouseholdStore, MealPlan, MealPlanEntry, Member, Offer, Recipe
 from app.schemas import (EntryUpdate, HouseholdCreate, HouseholdCreated, HouseholdOut, HouseholdSettings,
-                         NearbyStoreOut, OfferOut, PlanOut)
+                         NearbyStoreOut, OfferOut, PlanOptions, PlanOut, UsageOut)
 from app.services import nearby_stores, offers_import, planner
 
 router = APIRouter()
@@ -65,7 +66,7 @@ def list_offers(chain: str | None = None, category: str | None = None, q: str | 
 @router.get("/stores/nearby", response_model=list[NearbyStoreOut])
 def stores_nearby(radius_km: int | None = Query(None, ge=1, le=30),
                   member: Member = Depends(current_member), db: Session = Depends(get_db)):
-    """Läden bekannter Ketten im Umkreis (OpenStreetMap). Ohne radius_km gilt der Umkreis des Haushalts."""
+    """Läden bekannter Ketten im Umkreis (kaufDA, Ersatz OpenStreetMap). Ohne radius_km gilt der Umkreis des Haushalts."""
     household = member.household
     try:
         if household.lat is None:
@@ -76,8 +77,8 @@ def stores_nearby(radius_km: int | None = Query(None, ge=1, le=30),
         return nearby_stores.nearby(household.lat, household.lng, radius_km or household.radius_km)
     except ValueError as e:
         raise HTTPException(422, str(e))
-    except httpx.HTTPError as e:
-        raise HTTPException(502, f"Kartendienst nicht erreichbar: {e}")
+    except (httpx.HTTPError, RuntimeError) as e:
+        raise HTTPException(502, f"Ladensuche nicht erreichbar: {e}")
 
 
 @router.post("/offers/refresh")
@@ -90,22 +91,49 @@ def refresh_offers(member: Member = Depends(current_member), db: Session = Depen
     return {"imported": count}
 
 
+def _prefs(household: Household, options: dict) -> SimpleNamespace:
+    """Haushaltswerte mit den Plan-Optionen überschrieben, ohne den Haushalt selbst zu ändern."""
+    values = {c.key: getattr(household, c.key) for c in Household.__table__.columns}
+    return SimpleNamespace(**(values | {k: v for k, v in options.items() if k != "wishes"}))
+
+
 @router.post("/plans", response_model=PlanOut, status_code=201)
-def create_plan(member: Member = Depends(current_member), db: Session = Depends(get_db)):
+def create_plan(options: PlanOptions | None = None, member: Member = Depends(current_member),
+                db: Session = Depends(get_db)):
+    """Optionaler Body PlanOptions gilt nur für diesen Plan; save_as_default schreibt ihn (ohne wishes) in den Haushalt."""
     household = member.household
-    slots = planner.week_slots(household)
+    opts = options.model_dump(exclude_none=True, exclude={"save_as_default"}) if options else {}
+    prefs = _prefs(household, opts)
+    slots = planner.week_slots(prefs)
     if not slots:
         raise HTTPException(422, "Keine Mahlzeiten oder Tage eingestellt")
-    priced = planner.make_plan(household, household_offers(db, household), slots, favorites=[])
+    try:
+        priced = planner.make_plan(prefs, household_offers(db, household), slots, favorites=[],
+                                   wishes=opts.get("wishes", ""))
+    except RuntimeError as e:
+        raise HTTPException(502, str(e))
+    if options and options.save_as_default:
+        for key, value in opts.items():
+            if key != "wishes":
+                setattr(household, key, value)
     year, week, _ = date.today().isocalendar()
     plan = MealPlan(household_id=household.id, week=f"{year}-W{week:02d}", total_cents=priced.total_cents,
-                    saved_cents=priced.saved_cents, params={"budget": household.budget_food_week_cents})
+                    saved_cents=priced.saved_cents,
+                    params={"budget": prefs.budget_food_week_cents, "options": opts, "usage": priced.usage})
     for meal, cost in zip(priced.draft.meals, priced.meal_costs):
         plan.entries.append(MealPlanEntry(day=meal.day, meal_type=meal.meal_type, recipe=_recipe(household, meal),
                                           cost_cents=cost))
     db.add(plan)
     db.commit()
     return plan
+
+
+@router.get("/usage", response_model=UsageOut)
+def usage(member: Member = Depends(current_member), db: Session = Depends(get_db)):
+    """Geschätzte KI-Kosten des Haushalts (Pläne inkl. Neu würfeln)."""
+    plans = db.scalars(select(MealPlan).where(MealPlan.household_id == member.household_id).order_by(MealPlan.id))
+    costs = [(p.params or {}).get("usage", {}).get("cost_cents", 0) for p in plans]
+    return {"plans": len(costs), "cost_cents_total": round(sum(costs), 4), "cost_cents_last": costs[-1] if costs else 0}
 
 
 def _recipe(household: Household, meal: planner.PlannedMeal) -> Recipe:
@@ -151,11 +179,14 @@ def reroll_entry(entry_id: int, member: Member = Depends(current_member), db: Se
         raise HTTPException(409, "Gericht ist fixiert")
     offers = household_offers(db, household)
     others = [e.recipe.title for e in plan.entries if e is not entry]
+    opts = (plan.params or {}).get("options", {})
     try:
-        meal = planner.reroll_meal(household, offers, (entry.day, entry.meal_type), [entry.recipe.title, *others])
+        meal, call_usage = planner.reroll_meal(_prefs(household, opts), offers, (entry.day, entry.meal_type),
+                                               [entry.recipe.title, *others], wishes=opts.get("wishes", ""))
     except RuntimeError as e:
         raise HTTPException(502, str(e))
     entry.recipe = _recipe(household, meal)
+    plan.params = {**plan.params, "usage": planner.add_usage(plan.params.get("usage", {}), call_usage)}
 
     draft = planner.PlanDraft(meals=[planner.PlannedMeal(
         day=e.day, meal_type=e.meal_type, title=e.recipe.title, description=e.recipe.description,

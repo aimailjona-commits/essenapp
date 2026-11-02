@@ -194,6 +194,10 @@ enum Labels {
     ]
     static func chain(_ key: String) -> String { chains.first { $0.key == key }?.name ?? key }
 
+    /// Offizielle Logos als PNG-Thumbnails von Wikimedia Commons (geprüfte URLs, nur verlinkt, E39).
+    static let logos: [String: String] = [:]
+    static func logoURL(_ key: String) -> URL? { logos[key].flatMap(URL.init(string:)) }
+
     static let mealTypes = [("fruehstueck", "Frühstück"), ("mittag", "Mittag"), ("abend", "Abend"), ("dessert", "Dessert")]
     static func meal(_ key: String) -> String { mealTypes.first { $0.0 == key }?.1 ?? key }
 

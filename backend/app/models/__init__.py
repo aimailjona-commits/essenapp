@@ -55,8 +55,9 @@ class HouseholdStore(Base):
     chain: Mapped[str] = mapped_column(String(30))
     store_ref: Mapped[str] = mapped_column(String(50), default="")  # Filial-ID, leer = regional
     store_name: Mapped[str] = mapped_column(String(100), default="")
-    osm_id: Mapped[str] = mapped_column(String(30), default="", server_default="")  # z.B. "node/123"
-    lat: Mapped[float | None]  # Filial-Koordinaten aus OpenStreetMap
+    # z.B. "node/123" (OpenStreetMap) oder "kaufda/edeka/EDEKA-RR_10008482"
+    osm_id: Mapped[str] = mapped_column(String(60), default="", server_default="")
+    lat: Mapped[float | None]  # Filial-Koordinaten (kaufDA oder OpenStreetMap)
     lng: Mapped[float | None]
     address: Mapped[str] = mapped_column(String(200), default="", server_default="")
     enabled: Mapped[bool] = mapped_column(default=True)

@@ -1,5 +1,6 @@
 """API-Vertrag. Die Swift-Modelle (Codable) in ios/ richten sich nach diesen Klassen."""
 from datetime import date
+from typing import Annotated
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -137,3 +138,23 @@ class NearbyStoreOut(BaseModel):
     lat: float
     lng: float
     distance_km: float
+
+
+class PlanOptions(BaseModel):
+    """Einstellungen nur für diesen Plan (POST /plans). Fehlende Felder = Werte des Haushalts."""
+    cuisines: list[str] | None = None
+    meal_types: list[str] | None = None
+    plan_days: list[Annotated[int, Field(ge=0, le=6)]] | None = None
+    budget_food_week_cents: int | None = Field(None, ge=0)
+    nutrition_goal: str | None = None
+    persons: int | None = Field(None, ge=1, le=20)
+    max_cook_minutes: int | None = Field(None, ge=5)
+    diet: str | None = None
+    wishes: str | None = Field(None, max_length=300)  # Freitext, wird nie gespeichert
+    save_as_default: bool = False  # zusätzlich (ohne wishes) in den Haushalt schreiben
+
+
+class UsageOut(BaseModel):
+    plans: int
+    cost_cents_total: float  # geschätzte KI-Kosten in Cent
+    cost_cents_last: float

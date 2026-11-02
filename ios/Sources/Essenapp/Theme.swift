@@ -1,24 +1,25 @@
 import SwiftUI
 
-/// Alle Werte aus docs/ui/design-system.md (v2, E35). Views nutzen nur diese Tokens.
+/// Alle Werte aus docs/ui/design-system.md (v3, E38). Views nutzen nur diese Tokens.
 enum Theme {
     enum C {
-        static let bg = Color(hex: 0xF5F4F0)
-        static let surface = Color(hex: 0xEDECE7)
+        static let bg = Color(hex: 0xF3F3F3)
+        static let surface = Color(hex: 0xEAEAEA)
         static let card = Color.white
         static let cardTop = Color.white  // Alias für ältere Stellen
         static let line = Color.black.opacity(0.06)
-        static let text1 = Color(hex: 0x14161A)
-        static let text2 = Color(hex: 0x6E7178)
-        static let text3 = Color(hex: 0xA9ACB2)
-        static let action = Color(hex: 0x14161A)
+        static let text1 = Color(hex: 0x111111)
+        static let text2 = Color(hex: 0x8A8A8E)
+        static let text3 = Color(hex: 0xB4B4B8)
+        static let action = Color(hex: 0x111111)
         static let onAction = Color.white
-        static let accent = Color(hex: 0x22B573)  // Basilikum-Grün: Marke, Auswahl, Fortschritt
-        static let accentSoft = Color(hex: 0xDDF5E8)
-        static let accentDeep = Color(hex: 0x15804F)
-        static let highlight = Color(hex: 0xC6F36B)  // Limette für kleine Akzente
+        static let accent = Color(hex: 0xFF5B2E)  // Orange: Marke, Auswahl, Preise-Akzent (v3)
+        static let accentSoft = Color(hex: 0xFFE9E1)
+        static let accentDeep = Color(hex: 0xE0461C)
+        static let highlight = Color(hex: 0xFFB199)  // helles Orange für kleine Akzente
         static let deal = Color(hex: 0xFF5A36)
-        static let success = Color(hex: 0x15804F)
+        static let success = Color(hex: 0x1FA35C)
+        static let successSoft = Color(hex: 0xDFF5E8)
         static let warning = Color(hex: 0xF7B731)
         static let danger = Color(hex: 0xE5483B)
         static let tabInactive = Color(hex: 0xA9ACB2)
@@ -58,14 +59,16 @@ enum Theme {
 
     /// iOS-Textstile (Dynamic Type). Überschriften und Zahlen „rounded“ für einen freundlichen, modernen Look.
     enum F {
-        static let display = Font.system(.largeTitle, design: .rounded, weight: .bold)
-        static let title = Font.system(.title2, design: .rounded, weight: .bold)
-        static let headline = Font.system(.headline, design: .rounded, weight: .bold)
+        static let display = Font.system(.largeTitle, weight: .bold)
+        static let displayLight = Font.system(.largeTitle, weight: .regular)
+        static let hero = Font.system(size: 44, weight: .black).width(.condensed)  // „HEY, JONA.“
+        static let title = Font.system(.title2, weight: .bold)
+        static let headline = Font.system(.headline, weight: .bold)
         static let body = Font.body
         static let callout = Font.system(.subheadline, weight: .semibold)
         static let caption = Font.system(.footnote, weight: .medium)
         static let micro = Font.system(.caption2, weight: .semibold)
-        static let price = Font.system(.title3, design: .rounded, weight: .bold)
+        static let price = Font.system(.title3, weight: .bold)
     }
 
     enum R {
@@ -91,13 +94,12 @@ extension View {
     func softShadow() -> some View { shadow(color: .black.opacity(0.06), radius: 6, y: 3) }
     func floatShadow() -> some View { shadow(color: .black.opacity(0.12), radius: 12, y: 8) }
 
-    /// Karte: weiß, Radius 24, Haarlinie + leichter Schatten.
+    /// Karte: weiß, Radius 24, ohne Rand, sehr weicher Schatten (v3).
     func card(radius: CGFloat = Theme.R.card) -> some View {
         background(
             RoundedRectangle(cornerRadius: radius, style: .continuous)
                 .fill(Theme.C.card)
-                .overlay(RoundedRectangle(cornerRadius: radius, style: .continuous).strokeBorder(Theme.C.line, lineWidth: 0.5))
-                .softShadow()
+                .shadow(color: .black.opacity(0.05), radius: 10, y: 4)
         )
     }
 

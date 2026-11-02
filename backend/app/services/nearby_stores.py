@@ -1,4 +1,4 @@
-"""Läden in der Nähe aus OpenStreetMap (Overpass API) für die Kartenauswahl."""
+"""Läden in der Nähe für die Kartenauswahl: kaufDA-Shelf (closestStore), OpenStreetMap nur als Ersatz."""
 import math
 import time
 
@@ -18,7 +18,10 @@ CHAIN_RULES = [
 ]
 NETTO_SCOTTIE = "Q552652"  # Wikidata-ID von Netto (Salling Group), nicht Netto Marken-Discount
 
-_cache: dict[tuple, tuple[float, list[dict]]] = {}  # shortcut: Cache im Prozessspeicher, bei mehreren Workern auf DB/Redis umstellen
+# shortcut: Caches im Prozessspeicher, bei mehreren Workern auf DB/Redis umstellen
+_cache: dict[tuple, tuple[float, list[dict]]] = {}
+_shelf_cache: dict[tuple, tuple[float, list[dict]]] = {}
+DAY = 24 * 3600
 
 
 def chain_of(tags: dict) -> str | None:
@@ -61,20 +64,66 @@ def parse_overpass(data: dict, lat: float, lng: float) -> list[dict]:
     return sorted(out, key=lambda s: s["distance_km"])
 
 
+def stores_from_shelf(brochures: list[dict], lat: float, lng: float, radius_km: float) -> list[dict]:
+    """closestStore der Prospekte -> ein Laden je (Kette, Filial-ID) im Umkreis, nach Entfernung sortiert."""
+    found = {}
+    for b in brochures:
+        s = b["store"]
+        if not s.get("externalId") or s.get("latitude") is None or s.get("longitude") is None:
+            continue
+        dist = round(distance_km(lat, lng, s["latitude"], s["longitude"]), 2)
+        if dist > radius_km:
+            continue
+        street = " ".join(filter(None, [s.get("street"), s.get("streetNumber")]))
+        city = " ".join(filter(None, [s.get("zip"), s.get("city")]))
+        found.setdefault((b["chain"], str(s["externalId"])), {
+            "osm_id": f"kaufda/{b['chain']}/{s['externalId']}", "chain": b["chain"], "name": s.get("name") or b["chain"],
+            "address": ", ".join(filter(None, [street, city])),
+            "lat": s["latitude"], "lng": s["longitude"], "distance_km": dist,
+        })
+    return sorted(found.values(), key=lambda s: s["distance_km"])
+
+
+def shelf(lat: float, lng: float) -> list[dict]:
+    """kaufDA-Shelf am Ort, 24 h gecacht."""
+    key = (round(lat, 5), round(lng, 5))
+    if key not in _shelf_cache or time.time() - _shelf_cache[key][0] > DAY:
+        _shelf_cache[key] = (time.time(), kaufda.fetch_shelf(lat, lng))
+    return _shelf_cache[key][1]
+
+
 def nearby(lat: float, lng: float, radius_km: int) -> list[dict]:
-    """Live-Abfrage bei Overpass, 24 h gecacht. Fehler (auch 429/504 bei Überlast) gehen als Exception raus."""
+    """Hauptquelle kaufDA; Overpass nur, wenn kaufDA nichts liefert. Fehler gehen nur raus, wenn beide scheitern."""
+    try:
+        stores, kaufda_failed = stores_from_shelf(shelf(lat, lng), lat, lng, radius_km), False
+    except (httpx.HTTPError, RuntimeError):
+        stores, kaufda_failed = [], True
+    if stores:
+        return stores
+    try:
+        return overpass(lat, lng, radius_km)
+    except httpx.HTTPError:
+        if kaufda_failed:
+            raise
+        return []
+
+
+def overpass(lat: float, lng: float, radius_km: int) -> list[dict]:
+    """Live-Abfrage bei Overpass (höchstens ~10 s über alle Mirrors), 24 h gecacht."""
     key = (round(lat, 5), round(lng, 5), radius_km)
-    if key in _cache and time.time() - _cache[key][0] < 24 * 3600:
+    if key in _cache and time.time() - _cache[key][0] < DAY:
         return _cache[key][1]
-    query = (f'[out:json][timeout:25];nwr["shop"~"supermarket|chemist|convenience"]'
+    query = (f'[out:json][timeout:10];nwr["shop"~"supermarket|chemist|convenience"]'
              f"(around:{radius_km * 1000},{lat},{lng});out center tags;")
+    deadline = time.time() + 10
     for url in OVERPASS_URLS:
         try:
-            r = httpx.post(url, data={"data": query}, timeout=30, headers={"User-Agent": kaufda.HEADERS["User-Agent"]})
+            r = httpx.post(url, data={"data": query}, timeout=max(deadline - time.time(), 1),
+                           headers={"User-Agent": kaufda.HEADERS["User-Agent"]})
             r.raise_for_status()
             break
         except httpx.HTTPError:
-            if url == OVERPASS_URLS[-1]:
+            if url == OVERPASS_URLS[-1] or time.time() >= deadline:
                 raise
     stores = parse_overpass(r.json(), lat, lng)
     _cache[key] = (time.time(), stores)

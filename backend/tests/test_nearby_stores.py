@@ -1,4 +1,13 @@
+import json
+from pathlib import Path
+
+import httpx
+import pytest
+
 from app.services import nearby_stores, offers_import
+from app.sources import kaufda
+
+FIX = Path(__file__).parent / "fixtures" / "sources" / "kaufda"
 
 OVERPASS = {"elements": [
     {"type": "node", "id": 1, "lat": 50.9400, "lon": 6.9600,
@@ -39,3 +48,35 @@ def test_nearby_endpoint_geocodes_and_saves_coordinates(client, auth, monkeypatc
     client.get("/stores/nearby?radius_km=10", headers=auth)
     assert seen["args"][2] == 10
     assert client.get("/stores/nearby?radius_km=31", headers=auth).status_code == 422
+
+
+def test_stores_from_kaufda_shelf_dedup_radius_and_ids():
+    brochures = kaufda.parse_shelf(json.loads((FIX / "shelf_koeln_50667_page0.json").read_text(encoding="utf-8")))
+    stores = nearby_stores.stores_from_shelf(brochures, 50.9386, 6.9550, 5)
+    ids = [s["osm_id"] for s in stores]
+    assert len(ids) == len(set(ids))  # Lidl 5741 und Netto 2575 stehen doppelt im Shelf
+    assert "kaufda/rewe/1763159" in ids and "kaufda/edeka/EDEKA-RR_10008482" in ids
+    assert "kaufda/edeka/EDEKA-RR_4260031" not in ids  # Marktkauf Frechen liegt außerhalb von 5 km
+    assert {s["chain"] for s in stores} <= set(kaufda.CHAINS.values())  # MediaMarkt, KiK usw. fallen weg
+    assert [s["distance_km"] for s in stores] == sorted(s["distance_km"] for s in stores)
+    lidl = next(s for s in stores if s["chain"] == "lidl")
+    assert lidl["name"] == "Lidl" and lidl["address"] == "Neumarkt 8-10, 50667 Köln-Altstadt-Süd"
+    assert (lidl["lat"], lidl["lng"]) == (50.936687, 6.94843)
+
+
+def test_nearby_prefers_kaufda_and_tolerates_overpass_outage(monkeypatch):
+    store = {"externalId": "1", "name": "", "latitude": 50.0, "longitude": 7.0}
+    shelf = [{"chain": "penny", "store": store}]
+    monkeypatch.setattr(nearby_stores, "_shelf_cache", {})
+    monkeypatch.setattr(nearby_stores, "_cache", {})
+    monkeypatch.setattr(kaufda, "fetch_shelf", lambda lat, lng: shelf)
+
+    def down(*a, **k):
+        raise httpx.ConnectError("Overpass weg")
+
+    monkeypatch.setattr(httpx, "post", down)
+    assert [s["osm_id"] for s in nearby_stores.nearby(50.0, 7.0, 5)] == ["kaufda/penny/1"]
+    assert nearby_stores.nearby(52.0, 7.0, 5) == []  # kaufDA ohne Laden im Umkreis, Overpass-Fehler ignoriert
+    monkeypatch.setattr(kaufda, "fetch_shelf", down)
+    with pytest.raises(httpx.HTTPError):  # beide Quellen gestört -> 502 im Endpunkt
+        nearby_stores.nearby(53.0, 7.0, 5)

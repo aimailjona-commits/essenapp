@@ -1,6 +1,7 @@
 """KI-Wochenplan: Claude plant Gerichte rund um die Angebote, der Code rechnet die Kosten (E10)."""
+import logging
 from collections.abc import Callable
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Literal
 
 import anthropic
@@ -11,8 +12,15 @@ from app.models import Household, Offer
 from app.services.normalize import cents
 from app.services.pricing import Pack, cost_line
 
+logger = logging.getLogger(__name__)
+
 MEAL_TYPES = {"fruehstueck": "Frühstück", "mittag": "Mittagessen", "abend": "Abendessen", "dessert": "Dessert"}
 DAYS = ["Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag", "Sonntag"]
+FOOD_CATEGORIES = ("fleisch_fisch", "obst_gemuese", "kuehlung", "vorrat", "sonstiges")  # ohne Getränke/Drogerie/Haushalt
+MAX_OFFERS = 120
+# Cent pro Mio. Tokens (Eingabe, Ausgabe, Cache-Lesen), Prompts bis 100K Tokens; Cache-Schreiben = 1,25 × Eingabe.
+PRICES = {"claude-haiku-5-5": (10, 50, 1), "claude-sonnet-5-5": (200, 1000, 20), "claude-opus-5-5": (400, 2000, 20)}
+USAGE_KEYS = ("input_tokens", "cache_read_input_tokens", "cache_creation_input_tokens", "output_tokens", "cost_cents")
 
 
 class PlannedIngredient(BaseModel):
@@ -59,14 +67,47 @@ class PricedPlan:
     total_cents: int
     saved_cents: int
     meal_costs: list[int]
+    usage: dict = field(default_factory=dict)
+
+
+def select_offers(offers: list[Offer], limit: int = MAX_OFFERS) -> list[Offer]:
+    """Vorauswahl für den Prompt: nur Lebensmittel, keine Titel-Dubletten, Rabatt und bekannte Menge zuerst,
+    reihum je Kategorie, damit jede Kategorie gleich viele Plätze bekommt."""
+    queues: dict[str, list[Offer]] = {c: [] for c in FOOD_CATEGORIES}
+    seen = set()
+    for o in sorted(offers, key=lambda o: (o.regular_price_cents is None, o.amount is None, o.price_cents, o.id or 0)):
+        title = o.title.strip().lower()
+        if o.category in queues and title not in seen:
+            seen.add(title)
+            queues[o.category].append(o)
+    picked, rank = [], 0
+    while len(picked) < limit and any(len(q) > rank for q in queues.values()):
+        picked += [q[rank] for q in queues.values() if len(q) > rank][:limit - len(picked)]
+        rank += 1
+    return picked
+
+
+def cost_cents(usage: dict) -> float:
+    """Geschätzte Kosten eines Aufrufs in Cent (Bruchteile, darum float; kein Geldbetrag der App)."""
+    model = usage.get("model", "")
+    p_in, p_out, p_read = next((p for k, p in PRICES.items() if model.startswith(k)), PRICES["claude-opus-5-5"])
+    total = (usage.get("input_tokens", 0) * p_in + usage.get("cache_read_input_tokens", 0) * p_read
+             + usage.get("cache_creation_input_tokens", 0) * p_in * 1.25 + usage.get("output_tokens", 0) * p_out)
+    return round(total / 1_000_000, 4)
+
+
+def add_usage(total: dict, usage: dict) -> dict:
+    out = {k: round(total.get(k, 0) + usage.get(k, 0), 4) for k in USAGE_KEYS}
+    out["model"] = usage.get("model") or total.get("model", "")
+    return out
 
 
 def build_prompt(household: Household, offers: list[Offer], slots: list[tuple[int, str]],
-                 favorites: list[str], feedback: str = "") -> str:
+                 favorites: list[str], wishes: str = "", note: str = "") -> list[dict]:
+    """Zwei Blöcke: Angebotsliste (stabil und gecacht, gleich für Plan, Korrektur und Neu würfeln), dann Haushalt/Auftrag."""
     offer_lines = "\n".join(
-        f"{o.id} | {o.chain} | {o.title}{' (' + o.brand + ')' if o.brand else ''} | {o.price_cents} ct"
-        f" | {o.amount or '?'} {o.unit} | {o.category}"
-        for o in offers if o.category not in ("drogerie", "haushalt")
+        f"{o.id}|{o.title}|{o.price_cents}|{f'{o.amount:g}{o.unit}' if o.amount else '?'}|{o.chain}"
+        for o in select_offers(offers)
     )
     slot_lines = "\n".join(f"- day={d} ({DAYS[d]}), meal_type={m}" for d, m in slots)
     parts = [
@@ -79,30 +120,37 @@ def build_prompt(household: Household, offers: list[Offer], slots: list[tuple[in
         f"Max. Kochzeit: {household.max_cook_minutes} min",
         f"Budget für alle Einkäufe der Woche: {household.budget_food_week_cents} ct",
         f"Lieblingsgerichte (gern wieder einplanen): {', '.join(favorites) or '-'}",
-        f"\nZu planende Mahlzeiten:\n{slot_lines}",
-        f"\nAngebote dieser Woche (id | laden | produkt | preis | menge | kategorie):\n{offer_lines or '-'}",
     ]
-    if feedback:
-        parts.append(f"\nKorrektur zum vorigen Entwurf: {feedback}")
-    return "\n".join(parts)
+    if wishes:
+        parts.append(f"Wünsche: {wishes}")
+    parts.append(f"\nZu planende Mahlzeiten:\n{slot_lines}")
+    if note:
+        parts.append(f"\n{note}")
+    return [
+        {"type": "text", "text": f"Angebote dieser Woche (id|produkt|preis ct|menge|laden):\n{offer_lines or '-'}",
+         "cache_control": {"type": "ephemeral"}},
+        {"type": "text", "text": "\n".join(parts)},
+    ]
 
 
-def ask_claude(prompt: str) -> PlanDraft:
+def ask_claude(content: list[dict]) -> tuple[PlanDraft, dict]:
     client = anthropic.Anthropic(api_key=settings.anthropic_api_key or None)
-    response = client.beta.messages.parse(
-        model=settings.model_planner,
-        max_tokens=16000,
-        betas=["server-side-fallback-2026-07-01"],
-        fallbacks="default",
-        output_config={"effort": settings.planner_effort},
-        cache_control={"type": "ephemeral"},
-        system=SYSTEM,
-        messages=[{"role": "user", "content": prompt}],
-        output_format=PlanDraft,
-    )
+    model = settings.model_planner
+    params = dict(model=model, max_tokens=16000, output_config={"effort": settings.planner_effort}, system=SYSTEM,
+                  messages=[{"role": "user", "content": content}], output_format=PlanDraft)
+    if model.startswith(("claude-opus", "claude-sonnet")):
+        response = client.beta.messages.parse(**params, betas=["server-side-fallback-2026-07-01"], fallbacks="default")
+    else:  # Haiku 5.5 hat keinen serverseitigen Fallback bei Ablehnung
+        response = client.messages.parse(**params)
+    u = response.usage
+    usage = {"model": response.model, "input_tokens": u.input_tokens, "output_tokens": u.output_tokens,
+             "cache_read_input_tokens": u.cache_read_input_tokens or 0,
+             "cache_creation_input_tokens": u.cache_creation_input_tokens or 0}
+    usage["cost_cents"] = cost_cents(usage)
+    logger.info("Claude-Aufruf: %s", usage)
     if response.stop_reason != "end_turn" or response.parsed_output is None:
         raise RuntimeError(f"Plan nicht erzeugt (stop_reason={response.stop_reason})")
-    return response.parsed_output
+    return response.parsed_output, usage
 
 
 def price(draft: PlanDraft, offers_by_id: dict[int, Offer]) -> PricedPlan:
@@ -134,31 +182,37 @@ def price(draft: PlanDraft, offers_by_id: dict[int, Offer]) -> PricedPlan:
 
 
 def make_plan(household: Household, offers: list[Offer], slots: list[tuple[int, str]], favorites: list[str],
-              ask: Callable[[str], PlanDraft] = ask_claude, max_repairs: int = 2) -> PricedPlan:
+              wishes: str = "", ask: Callable[[list[dict]], tuple[PlanDraft, dict]] | None = None,
+              max_repairs: int = 1) -> PricedPlan:
+    ask = ask or ask_claude
     offers_by_id = {o.id: o for o in offers}
-    feedback = ""
+    note, usage = "", {}
     best: PricedPlan | None = None
     for _ in range(max_repairs + 1):
-        draft = ask(build_prompt(household, offers, slots, favorites, feedback))
+        draft, call_usage = ask(build_prompt(household, offers, slots, favorites, wishes, note))
+        usage = add_usage(usage, call_usage)
         draft.meals = [m for m in draft.meals if (m.day, m.meal_type) in set(slots)]
         planned = price(draft, offers_by_id)
         if best is None or planned.total_cents < best.total_cents:
             best = planned
         if planned.total_cents <= household.budget_food_week_cents:
-            return planned
-        feedback = (f"Der Entwurf kostet {planned.total_cents} ct, das Budget ist {household.budget_food_week_cents} ct. "
-                    "Ersetze die teuersten Gerichte durch günstigere mit mehr Angeboten.")
-    return best  # Budget nicht erreichbar: günstigster Entwurf, Nutzer entscheidet (S7 „Trotzdem übernehmen“)
+            break
+        note = (f"Korrektur zum vorigen Entwurf: Er kostet {planned.total_cents} ct, das Budget ist "
+                f"{household.budget_food_week_cents} ct. Ersetze die teuersten Gerichte durch günstigere mit mehr Angeboten.")
+    best.usage = usage
+    return best  # Budget evtl. nicht erreicht: günstigster Entwurf, Nutzer entscheidet (S7 „Trotzdem übernehmen“)
 
 
-def reroll_meal(household: Household, offers: list[Offer], slot: tuple[int, str], avoid: list[str]) -> PlannedMeal:
+def reroll_meal(household: Household, offers: list[Offer], slot: tuple[int, str], avoid: list[str],
+                wishes: str = "") -> tuple[PlannedMeal, dict]:
     """Genau ein neues Gericht für einen Platz im Plan; avoid[0] ist das alte Gericht, danach die übrigen der Woche."""
-    prompt = build_prompt(household, offers, [slot], favorites=[])
-    prompt += f"\n\nPlane genau EIN neues Gericht, anders als: {avoid[0]} und andere Gerichte der Woche ({', '.join(avoid[1:]) or '-'})."
-    meal = next((m for m in ask_claude(prompt).meals if (m.day, m.meal_type) == slot), None)
+    note = (f"Plane genau EIN neues Gericht, anders als: {avoid[0]} und andere Gerichte der Woche "
+            f"({', '.join(avoid[1:]) or '-'}).")
+    draft, usage = ask_claude(build_prompt(household, offers, [slot], favorites=[], wishes=wishes, note=note))
+    meal = next((m for m in draft.meals if (m.day, m.meal_type) == slot), None)
     if meal is None:
         raise RuntimeError("Kein neues Gericht erzeugt")
-    return meal
+    return meal, usage
 
 
 def week_slots(household: Household) -> list[tuple[int, str]]:

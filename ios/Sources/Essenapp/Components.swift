@@ -7,8 +7,9 @@ struct DisplayHeader: View {
     let line2: String
 
     var body: some View {
-        (Text(line1 + "\n").foregroundStyle(Theme.C.text1) + Text(line2).foregroundStyle(Theme.C.text3))
-            .font(Theme.F.display)
+        (Text(line1 + "\n").font(Theme.F.display).foregroundStyle(Theme.C.text1)
+            + Text(line2).font(Theme.F.displayLight).foregroundStyle(Theme.C.text2))
+            .tracking(-0.5)
             .frame(maxWidth: .infinity, alignment: .leading)
     }
 }
@@ -225,12 +226,12 @@ struct StoreChip: View {
 
     var body: some View {
         HStack(spacing: 5) {
-            Circle().fill(Theme.storeColor(chain)).frame(width: 7, height: 7)
+            StoreLogo(chain: chain, size: 16)
             Text(Labels.chain(chain))
         }
         .font(Theme.F.micro)
         .foregroundStyle(Theme.C.text2)
-        .padding(.horizontal, 9)
+        .padding(.leading, 3).padding(.trailing, 9)
         .frame(height: 22)
         .background(Theme.C.surface, in: Capsule())
     }
@@ -382,6 +383,7 @@ enum AppTab: CaseIterable {
     }
 }
 
+/// Dunkle, schwebende Tab-Leiste (v3, wie DashBite): aktiver Tab = oranger Kreis, Mitte = weißer Plus-Knopf.
 struct TabBar: View {
     @Binding var selected: AppTab
     @Binding var quickOpen: Bool
@@ -389,33 +391,27 @@ struct TabBar: View {
     @Namespace private var pill
 
     var body: some View {
-        HStack(spacing: 0) {
+        HStack(spacing: 4) {
             item(.start)
             item(.angebote)
             Button { withAnimation(Theme.spring) { quickOpen.toggle() } } label: {
                 Image(systemName: "plus")
-                    .font(.system(size: 24, weight: .bold))
+                    .font(.system(size: 20, weight: .bold))
                     .rotationEffect(.degrees(quickOpen ? 45 : 0))
-                    .foregroundStyle(Theme.C.onAction)
-                    .frame(width: 60, height: 60)
-                    .background(quickOpen ? Theme.C.accent : Theme.C.action, in: Circle())
-                    .overlay(Circle().strokeBorder(Theme.C.bg, lineWidth: 4))
-                    .shadow(color: .black.opacity(0.2), radius: 10, y: 6)
+                    .foregroundStyle(quickOpen ? .white : Theme.C.text1)
+                    .frame(width: 52, height: 52)
+                    .background(quickOpen ? Theme.C.accent : .white, in: Circle())
             }
             .buttonStyle(PressableStyle())
-            .offset(y: -16)
-            .padding(.horizontal, 6)
             .sensoryFeedback(.impact(weight: .medium), trigger: quickOpen)
             .accessibilityLabel("Schnell-Aktionen")
             item(.einkauf)
             item(.rezepte)
         }
-        .padding(.horizontal, 8)
-        .frame(height: 70)
-        .background(.white, in: RoundedRectangle(cornerRadius: 30, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: 30, style: .continuous).strokeBorder(Theme.C.line, lineWidth: 0.5))
-        .floatShadow()
-        .padding(.horizontal, 16)
+        .padding(7)
+        .background(Color(hex: 0x141414), in: Capsule())
+        .shadow(color: .black.opacity(0.25), radius: 16, y: 8)
+        .padding(.horizontal, 28)
         .sensoryFeedback(.selection, trigger: selected)
     }
 
@@ -425,20 +421,92 @@ struct TabBar: View {
             if selected == tab { reselect() }
             withAnimation(Theme.spring) { selected = tab; quickOpen = false }
         } label: {
-            VStack(spacing: 3) {
-                Image(systemName: tab.symbol).font(.system(size: 18)).symbolEffect(.bounce, value: on)
-                Text(tab.title).font(.system(size: 10, weight: .semibold))
-            }
-            .foregroundStyle(on ? Theme.C.accentDeep : Theme.C.tabInactive)
-            .frame(maxWidth: .infinity, minHeight: 52)
-            .background {
-                if on {
-                    RoundedRectangle(cornerRadius: 18, style: .continuous).fill(Theme.C.accentSoft)
-                        .matchedGeometryEffect(id: "pill", in: pill)
+            Image(systemName: tab.symbol)
+                .font(.system(size: 18, weight: .semibold))
+                .symbolEffect(.bounce, value: on)
+                .foregroundStyle(on ? .white : Color.white.opacity(0.55))
+                .frame(maxWidth: .infinity, minHeight: 52)
+                .background {
+                    if on {
+                        Circle().fill(Theme.C.accent).frame(width: 52, height: 52)
+                            .matchedGeometryEffect(id: "pill", in: pill)
+                    }
                 }
-            }
         }
         .buttonStyle(PressableStyle())
+        .accessibilityLabel(tab.title)
         .accessibilityAddTraits(on ? .isSelected : [])
+    }
+}
+
+/// Großes Stimmungsfoto aus den App-Ressourcen (Resources/hero, freie Lizenz, siehe CREDITS.md).
+struct HeroImage: View {
+    let name: String
+
+    var body: some View {
+        if let url = Bundle.module.url(forResource: name, withExtension: "jpg"), let image = UIImage(contentsOfFile: url.path) {
+            Image(uiImage: image).resizable().scaledToFill()
+        } else {
+            LinearGradient(colors: [Theme.C.accent, Theme.C.accentDeep], startPoint: .topLeading, endPoint: .bottomTrailing)
+        }
+    }
+}
+
+/// Offizielles Händler-Logo (zur Laufzeit von Wikimedia Commons geladen, nicht im Repo, E39). Fallback: Buchstabe.
+struct StoreLogo: View {
+    let chain: String
+    var size: CGFloat = 36
+
+    var body: some View {
+        RemoteImage(url: Labels.logoURL(chain)) {
+            Text(String(Labels.chain(chain).prefix(1)))
+                .font(.system(size: size * 0.45, weight: .bold)).foregroundStyle(.white)
+                .frame(width: size, height: size)
+                .background(Theme.storeColor(chain))
+        }
+        .padding(size * 0.12)
+        .frame(width: size, height: size)
+        .background(.white)
+        .clipShape(RoundedRectangle(cornerRadius: size * 0.28, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: size * 0.28, style: .continuous).strokeBorder(Theme.C.line, lineWidth: 0.5))
+    }
+}
+
+/// Runde Kategorie-Bilder mit Unterstrich unter der Auswahl (wie DashBite).
+struct CategoryCircles: View {
+    let items: [(key: String, label: String, emoji: String)]
+    @Binding var selected: String?
+    @Namespace private var underline
+
+    var body: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 14) {
+                ForEach(items, id: \.key) { item in
+                    let on = selected == item.key
+                    Button { withAnimation(Theme.spring) { selected = on ? nil : item.key } } label: {
+                        VStack(spacing: 6) {
+                            Text(item.emoji).font(.system(size: 28))
+                                .frame(width: 62, height: 62)
+                                .background(.white, in: Circle())
+                                .shadow(color: .black.opacity(on ? 0.12 : 0.05), radius: on ? 10 : 6, y: 3)
+                                .scaleEffect(on ? 1.08 : 1)
+                            Text(item.label).font(Theme.F.micro).foregroundStyle(on ? Theme.C.text1 : Theme.C.text2).lineLimit(1)
+                            ZStack {
+                                if on {
+                                    Capsule().fill(Theme.C.text1).frame(width: 18, height: 3)
+                                        .matchedGeometryEffect(id: "u", in: underline)
+                                }
+                            }
+                            .frame(height: 3)
+                        }
+                        .frame(width: 70)
+                    }
+                    .buttonStyle(PressableStyle())
+                }
+            }
+            .padding(.horizontal, Theme.pagePadding).padding(.vertical, 6)
+        }
+        .padding(.horizontal, -Theme.pagePadding)
+        .sensoryFeedback(.selection, trigger: selected)
     }
 }

@@ -30,8 +30,13 @@ def refresh_household(db: Session, household: Household,
     if household.lat is None:
         household.lat, household.lng = locate(household.plz)
     enabled = [s for s in household.stores if s.enabled]
-    # Rewe/Edeka mit Kartenposition: Markt-ID über den kaufDA-Shelf an der Filiale selbst bestimmen
-    located = [s for s in enabled if s.chain in kaufda.STORE_CHAINS and s.lat is not None and s.lng is not None]
+    # Läden aus der kaufDA-Suche ("kaufda/<chain>/<externalId>") bringen ihre Markt-ID schon mit
+    from_kaufda = [s for s in enabled if s.osm_id.startswith("kaufda/")]
+    for store in from_kaufda:
+        store.store_ref = store.osm_id.split("/", 2)[2] if store.chain in kaufda.STORE_CHAINS else ""
+    # Rewe/Edeka mit Kartenposition (OpenStreetMap): Markt-ID über den kaufDA-Shelf an der Filiale selbst bestimmen
+    located = [s for s in enabled if s.chain in kaufda.STORE_CHAINS and s.lat is not None and s.lng is not None
+               and s not in from_kaufda]
     wanted = []
     for store in located:
         found = fetch(store.lat, store.lng, {store.chain}, nearest_only=True)

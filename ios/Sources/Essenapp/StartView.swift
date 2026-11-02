@@ -8,26 +8,38 @@ struct StartView: View {
 
     private var greeting: String {
         switch Calendar.current.component(.hour, from: .now) {
-        case 5..<11: "Guten Morgen ☀️"
-        case 11..<17: "Mahlzeit 🍽️"
-        default: "Guten Abend 🌙"
+        case 5..<11: "Guten\nMorgen."
+        case 11..<17: "Mahl-\nzeit."
+        default: "Guten\nAbend."
         }
     }
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
-                HStack {
-                    Text(greeting).font(Theme.F.callout).foregroundStyle(Theme.C.text2)
-                    Spacer()
+                // Großes Foto mit Begrüßung (Vorlage „HEY, ALEX.“)
+                ZStack(alignment: .bottomLeading) {
+                    HeroImage(name: "grill").frame(height: 330).frame(maxWidth: .infinity).clipped()
+                    LinearGradient(colors: [.black.opacity(0.35), .clear, .black.opacity(0.65)], startPoint: .top, endPoint: .bottom)
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text(greeting.uppercased()).font(Theme.F.hero).foregroundStyle(.white).lineSpacing(-6)
+                        Text(store.plan.map { "KW \($0.week.suffix(2)) · \($0.entries.count) Gerichte geplant" } ?? "Was kochen wir diese Woche?")
+                            .font(Theme.F.callout).foregroundStyle(.white.opacity(0.85))
+                    }
+                    .padding(20)
+                    .padding(.bottom, 10)
+                }
+                .overlay(alignment: .topTrailing) {
                     NavigationLink { SettingsView() } label: {
-                        Text("👩‍🍳").font(.system(size: 22)).frame(width: 44, height: 44)
-                            .background(Theme.C.accentSoft, in: Circle()).overlay(Circle().strokeBorder(.white, lineWidth: 2))
+                        Image(systemName: "person.crop.circle").font(.system(size: 20, weight: .semibold)).foregroundStyle(Theme.C.text1)
+                            .frame(width: 44, height: 44).background(.white.opacity(0.9), in: Circle())
                     }
                     .buttonStyle(PressableStyle())
                     .accessibilityLabel("Einstellungen")
+                    .padding(.top, 56).padding(.trailing, 20)
                 }
-                DisplayHeader(line1: "Was kochen wir", line2: "diese Woche?")
+                .clipShape(UnevenRoundedRectangle(bottomLeadingRadius: 36, bottomTrailingRadius: 36, style: .continuous))
+                .padding(.horizontal, -Theme.pagePadding)
                 SearchField(text: $search, placeholder: "Gericht oder Angebot suchen")
 
                 if !search.isEmpty {
@@ -74,6 +86,7 @@ struct StartView: View {
             .padding(.horizontal, Theme.pagePadding)
             .padding(.bottom, 120)
         }
+        .ignoresSafeArea(edges: .top)
         .scrollDismissesKeyboard(.immediately)
         .refreshable { await store.loadAll() }
     }

@@ -183,16 +183,22 @@ struct RecipeDetailView: View {
                     }
                     .frame(maxWidth: .infinity)
                     .onAppear { withAnimation(.spring(response: 0.7, dampingFraction: 0.7)) { spin = true } }
-                    VStack(spacing: 6) {
-                        Text(recipe.title).font(Theme.F.title).multilineTextAlignment(.center)
-                        HStack(spacing: 14) {
-                            Label("\(recipe.prepMinutes) min", systemImage: "clock")
-                            Label("\(euro(meal.costCents / max(recipe.servings, 1))) p. P.", systemImage: "eurosign.circle")
-                            if !recipe.cuisine.isEmpty { Label(recipe.cuisine, systemImage: "globe.europe.africa") }
-                        }
-                        .font(Theme.F.caption).foregroundStyle(Theme.C.text2)
+                    VStack(alignment: .leading, spacing: 4) {
+                        let words = recipe.title.split(separator: " ")
+                        (Text(words.prefix(1).joined()).font(.system(.title, weight: .bold))
+                            + Text(" " + words.dropFirst().joined(separator: " ")).font(.system(.title, weight: .regular)).foregroundStyle(Theme.C.text2))
+                        if !recipe.cuisine.isEmpty { Text(recipe.cuisine).font(Theme.F.caption).foregroundStyle(Theme.C.text2) }
                     }
-                    .frame(maxWidth: .infinity)
+                    // Infozeile mit Trennstrichen (Vorlage „Grilled Chicken Breast“)
+                    HStack(spacing: 0) {
+                        infoCell("clock", "\(recipe.prepMinutes) min")
+                        Divider().frame(height: 22)
+                        infoCell("eurosign.circle", "\(euro(meal.costCents / max(recipe.servings, 1))) p. P.")
+                        Divider().frame(height: 22)
+                        infoCell("tag", "\(recipe.ingredients.filter { $0.offerId != nil }.count) im Angebot")
+                    }
+                    .padding(.vertical, 12)
+                    .card(radius: Theme.R.tile)
                     if !recipe.description.isEmpty {
                         Text(recipe.description).font(Theme.F.body).foregroundStyle(Theme.C.text2)
                     }
@@ -261,16 +267,31 @@ struct RecipeDetailView: View {
                 .padding(.horizontal, Theme.pagePadding)
                 .padding(.bottom, 200)
             }
-            Button { showRating = true } label: { Label("Gekocht – jetzt bewerten", systemImage: "star.fill") }
-                .buttonStyle(PrimaryButtonStyle())
-                .padding(.horizontal, Theme.pagePadding).padding(.bottom, Theme.ctaAboveTabBar)
+            HStack(spacing: 10) {
+                Button {
+                    let offers = recipe.ingredients.compactMap { ing in store.offers.first { $0.id == ing.offerId } }
+                    withAnimation(Theme.spring) { offers.forEach(store.addToList) }
+                    if offers.isEmpty { store.flash("Keine Angebotszutaten") }
+                } label: { Text("Zur Liste") }
+                .buttonStyle(SecondaryButtonStyle())
+                Button { showRating = true } label: { Text("Gekocht ★") }
+                    .buttonStyle(PrimaryButtonStyle())
+            }
+            .padding(.horizontal, Theme.pagePadding).padding(.bottom, Theme.ctaAboveTabBar)
         }
         .toolbar(.hidden, for: .navigationBar)
         .sheet(isPresented: $showRating) { RatingSheet(meal: meal).presentationDetents([.medium]).presentationCornerRadius(Theme.R.sheet) }
     }
 }
 
-/// Limetten-Eckrahmen wie Referenz 02.
+extension RecipeDetailView {
+    fileprivate func infoCell(_ symbol: String, _ text: String) -> some View {
+        Label(text, systemImage: symbol).font(.system(.footnote, weight: .semibold)).foregroundStyle(Theme.C.text1)
+            .frame(maxWidth: .infinity)
+    }
+}
+
+/// Eckrahmen wie Referenz 02.
 struct CornerFrame: Shape {
     func path(in r: CGRect) -> Path {
         var p = Path()

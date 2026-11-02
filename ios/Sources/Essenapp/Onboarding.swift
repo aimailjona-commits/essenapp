@@ -126,27 +126,35 @@ struct OnboardingView: View {
 
     private var welcome: some View {
         @Bindable var api = store.api
-        return ZStack(alignment: .bottomLeading) {
-            Color(hex: 0x14161A).ignoresSafeArea()
-            FloatingPlates().frame(maxWidth: .infinity, maxHeight: .infinity)
-            LinearGradient(colors: [.clear, Color(hex: 0x14161A)], startPoint: .center, endPoint: .bottom).ignoresSafeArea()
-            VStack(alignment: .leading, spacing: 16) {
-                (Text("Kochen nach\n").foregroundStyle(.white) + Text("Angebot.").foregroundStyle(Theme.C.highlight))
-                    .font(.system(size: 42, weight: .bold, design: .rounded))
-                Text("Wir lesen die Prospekte deiner Läden und planen daraus deine Woche – passend zu Budget, Geschmack und Zielen.")
-                    .foregroundStyle(Color(hex: 0xBDBDBD))
-                TextField("", text: $api.baseURL, prompt: Text("Server, z.B. http://192.168.178.20:8000").foregroundStyle(Color(hex: 0x8F8F8A)))
+        return ZStack(alignment: .bottom) {
+            HeroImage(name: "bowl").ignoresSafeArea()
+            LinearGradient(colors: [.clear, .white.opacity(0.85), .white], startPoint: .init(x: 0.5, y: 0.35), endPoint: .init(x: 0.5, y: 0.7))
+                .ignoresSafeArea()
+            VStack(spacing: 14) {
+                Text("Kochen nach\nAngebot.").font(.system(size: 36, weight: .bold)).multilineTextAlignment(.center)
+                Text("Wir lesen die Prospekte deiner Läden und planen daraus deine Woche.")
+                    .font(Theme.F.caption).foregroundStyle(Theme.C.text2).multilineTextAlignment(.center)
+                TextField("Server, z.B. http://192.168.178.20:8000", text: $api.baseURL)
                     .keyboardType(.URL).textInputAutocapitalization(.never).autocorrectionDisabled()
-                    .foregroundStyle(.white)
-                    .padding(14)
-                    .background(Color.white.opacity(0.1), in: RoundedRectangle(cornerRadius: Theme.R.chip))
+                    .font(Theme.F.caption)
+                    .padding(12)
+                    .background(Theme.C.surface, in: Capsule())
                 Button("Los geht's") { step = 1 }
-                    .buttonStyle(PrimaryButtonStyle(color: Theme.C.accent))
+                    .buttonStyle(PrimaryButtonStyle())
                     .disabled(api.baseURL.isEmpty)
                     .opacity(api.baseURL.isEmpty ? 0.5 : 1)
             }
             .padding(24)
             .appear(delay: 0.2)
+        }
+        .overlay(alignment: .top) {
+            HStack(spacing: 6) {
+                Capsule().fill(.white).frame(height: 4)
+                Capsule().fill(.white.opacity(0.4)).frame(height: 4)
+                Capsule().fill(.white.opacity(0.4)).frame(height: 4)
+                Capsule().fill(.white.opacity(0.4)).frame(height: 4)
+            }
+            .padding(.horizontal, 24).padding(.top, 8)
         }
     }
 
@@ -239,22 +247,6 @@ struct OnboardingView: View {
         }
         .buttonStyle(PressableStyle())
         .sensoryFeedback(.selection, trigger: persons)
-    }
-}
-
-/// Langsam schwebende Teller im Willkommens-Screen.
-struct FloatingPlates: View {
-    @State private var float = false
-
-    var body: some View {
-        ZStack {
-            Plate(url: nil, size: 220, seed: "a").offset(x: -120, y: float ? -250 : -230)
-            Plate(url: nil, size: 170, seed: "f").offset(x: 135, y: float ? -300 : -280)
-            Plate(url: nil, size: 190, seed: "c").offset(x: 40, y: float ? -60 : -80)
-            Plate(url: nil, size: 120, seed: "b").offset(x: -150, y: float ? 10 : 30)
-        }
-        .rotationEffect(.degrees(float ? 3 : -3))
-        .onAppear { withAnimation(.easeInOut(duration: 3.5).repeatForever()) { float = true } }
     }
 }
 

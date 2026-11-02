@@ -85,6 +85,7 @@ def parse_shelf(data: dict) -> list[dict]:
         out.append({
             "chain": chain, "content_id": c["contentId"],
             "store_id": str((c.get("closestStore") or {}).get("externalId") or ""),
+            "store": c.get("closestStore") or {},
             "valid_from": _day(c["validFrom"]), "valid_to": _day(c["validUntil"]),
         })
     return out
@@ -160,23 +161,38 @@ def parse_search(data: dict) -> list[dict]:
     return out
 
 
+def _getter(http: httpx.Client):
+    def get(url, **params):
+        time.sleep(1)
+        r = http.get(url, params=params)
+        if r.status_code in (403, 429):
+            raise RuntimeError(f"kaufDA blockt ({r.status_code}): {url}")
+        r.raise_for_status()
+        return r.json()
+    return get
+
+
+def _shelf(get, lat: float, lng: float) -> list[dict]:
+    brochures, page, pages = [], 0, 1
+    while page < pages:
+        data = get(SHELF_URL, lat=lat, lng=lng, size=50, page=page, sectorIds="")
+        brochures += parse_shelf(data)
+        pages, page = data.get("page", {}).get("totalPages", 0), page + 1
+    return brochures
+
+
+def fetch_shelf(lat: float, lng: float) -> list[dict]:
+    """Alle Prospekte bekannter Händler am Ort (alle Shelf-Seiten), je mit closestStore."""
+    with httpx.Client(headers=HEADERS, timeout=20, follow_redirects=True) as http:
+        return _shelf(_getter(http), lat, lng)
+
+
 def fetch_offers(lat: float, lng: float, chains: set[str], nearest_only: bool = False) -> list[dict]:
     """Live-Abruf bei kaufDA. Höchstens 1 Anfrage/s; 403/429 und andere Fehler brechen mit Exception ab.
     nearest_only: bei Rewe/Edeka nur die Prospekte des ersten (nächsten) Markts im Shelf laden."""
     with httpx.Client(headers=HEADERS, timeout=20, follow_redirects=True) as http:
-        def get(url, **params):
-            time.sleep(1)
-            r = http.get(url, params=params)
-            if r.status_code in (403, 429):
-                raise RuntimeError(f"kaufDA blockt ({r.status_code}): {url}")
-            r.raise_for_status()
-            return r.json()
-
-        offers, brochures, page, pages = [], [], 0, 1
-        while page < pages:
-            data = get(SHELF_URL, lat=lat, lng=lng, size=50, page=page, sectorIds="")
-            brochures += parse_shelf(data)
-            pages, page = data.get("page", {}).get("totalPages", 0), page + 1
+        get = _getter(http)
+        offers, brochures = [], _shelf(get, lat, lng)
         done, nearest = set(), {}
         for b in brochures:
             if nearest_only and b["chain"] in STORE_CHAINS and nearest.setdefault(b["chain"], b["store_id"]) != b["store_id"]:

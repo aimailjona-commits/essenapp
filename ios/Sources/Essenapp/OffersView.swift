@@ -44,7 +44,7 @@ struct OffersView: View {
                     HStack(spacing: 8) {
                         FilterChip(label: "Alle", count: all.count, selected: chain == nil) { withAnimation(Theme.spring) { chain = nil } }
                         ForEach(chains, id: \.self) { c in
-                            FilterChip(label: Labels.chain(c), count: byChain[c]?.count, color: Theme.storeColor(c), selected: chain == c) {
+                            FilterChip(label: Labels.chain(c), count: byChain[c]?.count, selected: chain == c) {
                                 withAnimation(Theme.spring) { chain = chain == c ? nil : c }
                             }
                         }
@@ -52,18 +52,9 @@ struct OffersView: View {
                     .padding(.horizontal, Theme.pagePadding)
                 }
                 .padding(.horizontal, -Theme.pagePadding)
-                ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: 8) {
-                        ForEach(Labels.categories, id: \.0) { c in
-                            let hue = Theme.hue(category: c.0)
-                            FilterChip(label: c.1, color: hue.color, selected: category == c.0) {
-                                withAnimation(Theme.spring) { category = category == c.0 ? nil : c.0 }
-                            }
-                        }
-                    }
-                    .padding(.horizontal, Theme.pagePadding)
-                }
-                .padding(.horizontal, -Theme.pagePadding)
+                CategoryCircles(items: Labels.categories.map { c in
+                    (key: c.0, label: String(c.1.split(separator: " ").dropFirst().joined(separator: " ")), emoji: Theme.hue(category: c.0).emoji)
+                }, selected: $category)
 
                 if store.offers.isEmpty {
                     EmptyState(emoji: "🏷️", title: "Noch keine Angebote", text: "Die Angebote deiner Läden werden wöchentlich geladen.",
@@ -115,46 +106,47 @@ struct OfferCard: View {
     var body: some View {
         let hue = Theme.hue(category: offer.category)
         let onList = store.isOnList(offer)
-        VStack(alignment: .leading, spacing: 4) {
-            ZStack(alignment: .topLeading) {
-                RoundedRectangle(cornerRadius: 18, style: .continuous).fill(hue.tint)
-                RemoteImage(url: URL(string: offer.imageUrl)) { Text(hue.emoji).font(.system(size: 44)) }
-                    .padding(12)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                DealBadge(text: offer.discount.map { "−\($0) %" } ?? "Angebot").padding(8)
-            }
-            .frame(height: 122)
-            .overlay(alignment: .bottomTrailing) {
-                Button {
-                    withAnimation(Theme.spring) { store.addToList(offer) }
-                } label: {
-                    Image(systemName: onList ? "checkmark" : "plus")
-                        .font(.system(size: 15, weight: .bold))
-                        .foregroundStyle(onList ? Theme.C.text1 : .white)
-                        .frame(width: 34, height: 34)
-                        .background(onList ? Theme.C.highlight : Theme.C.action, in: Circle())
-                        .contentTransition(.symbolEffect(.replace))
-                }
-                .buttonStyle(PressableStyle())
-                .sensoryFeedback(.success, trigger: onList)
-                .padding(8)
-                .accessibilityLabel(onList ? "Auf der Liste" : "Zur Einkaufsliste")
-            }
-            Text(offer.title).font(.system(.subheadline, weight: .bold)).lineLimit(2).foregroundStyle(Theme.C.text1).padding(.top, 6)
+        VStack(spacing: 6) {
+            RemoteImage(url: URL(string: offer.imageUrl)) { Text(hue.emoji).font(.system(size: 50)) }
+                .padding(10)
+                .frame(maxWidth: .infinity)
+                .frame(height: 118)
+                .background(Color(hex: 0xF7F7F7), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+                .overlay(alignment: .topLeading) { StoreLogo(chain: offer.chain, size: 26).padding(8) }
+            Text(offer.discount.map { "−\($0) %" } ?? "Angebot")
+                .font(.system(size: 11, weight: .bold)).foregroundStyle(.white)
+                .padding(.horizontal, 9).frame(height: 20).background(Theme.C.action, in: Capsule())
+            Text(offer.title).font(.system(.subheadline, weight: .semibold)).lineLimit(2).multilineTextAlignment(.center)
+                .foregroundStyle(Theme.C.text1).frame(minHeight: 36)
             if let amount = offer.amountText {
                 Text("\(amount)\(offer.basePriceCents.map { " · \(euro($0))/\(offer.baseUnitLabel)" } ?? "")")
                     .font(Theme.F.micro).foregroundStyle(Theme.C.text2).lineLimit(1)
             }
-            HStack(alignment: .firstTextBaseline, spacing: 6) {
-                Text(euro(offer.priceCents)).font(Theme.F.price).monospacedDigit().foregroundStyle(Theme.C.text1)
-                if let regular = offer.regularPriceCents {
-                    Text(euro(regular)).font(Theme.F.micro).strikethrough().foregroundStyle(Theme.C.text3)
+            HStack(alignment: .center) {
+                VStack(alignment: .leading, spacing: 0) {
+                    (Text(euro(offer.priceCents).replacingOccurrences(of: " €", with: "")).font(.system(.title3, weight: .bold))
+                        + Text(" €").font(.system(.subheadline, weight: .bold)).foregroundStyle(Theme.C.accent))
+                        .monospacedDigit()
+                    if let regular = offer.regularPriceCents {
+                        Text(euro(regular)).font(Theme.F.micro).strikethrough().foregroundStyle(Theme.C.text3)
+                    }
                 }
+                Spacer()
+                Button { withAnimation(Theme.spring) { store.addToList(offer) } } label: {
+                    Image(systemName: onList ? "checkmark" : "plus")
+                        .font(.system(size: 14, weight: .bold))
+                        .foregroundStyle(.white)
+                        .frame(width: 34, height: 34)
+                        .background(onList ? Theme.C.success : Theme.C.action, in: Circle())
+                        .contentTransition(.symbolEffect(.replace))
+                }
+                .buttonStyle(PressableStyle())
+                .sensoryFeedback(.success, trigger: onList)
+                .accessibilityLabel(onList ? "Auf der Liste" : "Zur Einkaufsliste")
             }
-            .padding(.top, 2)
-            StoreChip(chain: offer.chain)
+            .foregroundStyle(Theme.C.text1)
         }
-        .padding(8)
+        .padding(10)
         .card(radius: 22)
     }
 }
@@ -181,41 +173,54 @@ struct OfferDetailView: View {
             Theme.C.bg.ignoresSafeArea()
             ScrollView {
                 VStack(alignment: .leading, spacing: 18) {
-                    ZStack(alignment: .top) {
-                        RoundedRectangle(cornerRadius: Theme.R.sheet, style: .continuous).fill(hue.tint)
+                    // Dunkler Kopf mit großem Produktbild rechts (Vorlage „Pizza Mojo“)
+                    ZStack(alignment: .topLeading) {
+                        Color(hex: 0x141414)
                         RemoteImage(url: URL(string: offer.imageUrl)) { Text(hue.emoji).font(.system(size: 110)) }
-                            .padding(36)
-                            .frame(maxWidth: .infinity, maxHeight: .infinity)
-                            .scaleEffect(zoom ? 1 : 0.85)
+                            .padding(18)
+                            .frame(width: 210, height: 210)
+                            .background(.white, in: Circle())
+                            .offset(x: 190, y: 120)
+                            .scaleEffect(zoom ? 1 : 0.8, anchor: .trailing)
                             .opacity(zoom ? 1 : 0)
-                        HStack {
-                            RoundIconButton(systemName: "chevron.left", label: "Zurück") { dismiss() }
-                            Spacer()
-                            if let d = offer.discount { DealBadge(text: "−\(d) %").scaleEffect(1.2) }
-                            Spacer()
-                            RoundIconButton(systemName: watched ? "heart.fill" : "heart", label: "Merken") {
-                                withAnimation(Theme.spring) { store.toggleWatch(offer) }
+                        VStack(alignment: .leading, spacing: 12) {
+                            HStack {
+                                RoundIconButton(systemName: "chevron.left", label: "Zurück") { dismiss() }
+                                Spacer()
+                                RoundIconButton(systemName: watched ? "heart.fill" : "heart", label: "Merken") {
+                                    withAnimation(Theme.spring) { store.toggleWatch(offer) }
+                                }
+                                .foregroundStyle(watched ? Theme.C.accent : Theme.C.text1)
+                                .symbolEffect(.bounce, value: watched)
                             }
-                            .foregroundStyle(watched ? Theme.C.deal : Theme.C.text1)
-                            .symbolEffect(.bounce, value: watched)
+                            StoreLogo(chain: offer.chain, size: 40).padding(.top, 8)
+                            Text(offer.title).font(.system(.title, weight: .bold)).foregroundStyle(.white)
+                                .frame(maxWidth: 190, alignment: .leading).lineLimit(3)
+                            if !offer.brand.isEmpty { Text(offer.brand).font(Theme.F.caption).foregroundStyle(.white.opacity(0.6)) }
+                            VStack(alignment: .leading, spacing: 6) {
+                                if let d = offer.discount { darkChip("tag.fill", "−\(d) %") }
+                                darkChip("calendar", offer.daysLeft.map { $0 <= 0 ? "nur heute" : "noch \($0) Tage" } ?? "diese Woche")
+                            }
                         }
-                        .padding(14)
+                        .padding(16)
+                        .padding(.top, 48)
                     }
-                    .frame(height: 320)
-                    .onAppear { withAnimation(.spring(response: 0.5, dampingFraction: 0.75)) { zoom = true } }
+                    .frame(height: 400)
+                    .clipShape(UnevenRoundedRectangle(bottomLeadingRadius: 40, bottomTrailingRadius: 40, style: .continuous))
+                    .padding(.horizontal, -Theme.pagePadding)
+                    .onAppear { withAnimation(.spring(response: 0.55, dampingFraction: 0.75)) { zoom = true } }
 
-                    VStack(alignment: .leading, spacing: 6) {
-                        HStack { StoreChip(chain: offer.chain); if !offer.brand.isEmpty { Text(offer.brand).font(Theme.F.micro).foregroundStyle(Theme.C.text2) } }
-                        Text(offer.title).font(Theme.F.title)
-                        HStack(alignment: .firstTextBaseline, spacing: 10) {
-                            Text(euro(offer.priceCents)).font(.system(size: 38, weight: .bold, design: .rounded)).monospacedDigit()
-                            if let regular = offer.regularPriceCents {
-                                Text(euro(regular)).font(.system(.body, design: .rounded)).strikethrough().foregroundStyle(Theme.C.text3)
-                            }
+                    HStack(alignment: .firstTextBaseline, spacing: 10) {
+                        (Text(euro(offer.priceCents).replacingOccurrences(of: " €", with: "")).font(.system(size: 40, weight: .bold))
+                            + Text(" €").font(.system(size: 26, weight: .bold)).foregroundStyle(Theme.C.accent))
+                            .monospacedDigit()
+                        if let regular = offer.regularPriceCents {
+                            Text(euro(regular)).font(.body).strikethrough().foregroundStyle(Theme.C.text3)
                         }
+                        Spacer()
                         if let regular = offer.regularPriceCents, regular > offer.priceCents {
-                            Label("Du sparst \(euro(regular - offer.priceCents))", systemImage: "arrow.down.circle.fill")
-                                .font(Theme.F.callout).foregroundStyle(Theme.C.success)
+                            Text("− \(euro(regular - offer.priceCents))").font(Theme.F.callout).foregroundStyle(Theme.C.success)
+                                .padding(.horizontal, 10).frame(height: 30).background(Theme.C.successSoft, in: Capsule())
                         }
                     }
                     .appear()
@@ -247,9 +252,7 @@ struct OfferDetailView: View {
                             }
                             ForEach(stores, id: \.self) { s in
                                 HStack(spacing: 12) {
-                                    Text(String(Labels.chain(s.chain).prefix(1))).font(.system(size: 15, weight: .bold, design: .rounded))
-                                        .foregroundStyle(.white).frame(width: 36, height: 36)
-                                        .background(Theme.storeColor(s.chain), in: RoundedRectangle(cornerRadius: 11))
+                                    StoreLogo(chain: s.chain, size: 38)
                                     VStack(alignment: .leading, spacing: 2) {
                                         Text(s.storeName.isEmpty ? Labels.chain(s.chain) : s.storeName).font(.system(.subheadline, weight: .semibold))
                                         if let a = s.address, !a.isEmpty { Text(a).font(Theme.F.micro).foregroundStyle(Theme.C.text2) }
@@ -296,6 +299,7 @@ struct OfferDetailView: View {
                 .padding(.horizontal, Theme.pagePadding)
                 .padding(.bottom, 200)
             }
+            .ignoresSafeArea(edges: .top)
             Button { withAnimation(Theme.spring) { store.addToList(offer) } } label: {
                 Label(onList ? "Auf der Einkaufsliste" : "Zur Einkaufsliste", systemImage: onList ? "checkmark" : "cart.badge.plus")
                     .contentTransition(.symbolEffect(.replace))
@@ -305,6 +309,11 @@ struct OfferDetailView: View {
             .padding(.horizontal, Theme.pagePadding).padding(.bottom, Theme.ctaAboveTabBar)
         }
         .toolbar(.hidden, for: .navigationBar)
+    }
+
+    private func darkChip(_ symbol: String, _ text: String) -> some View {
+        Label(text, systemImage: symbol).font(Theme.F.micro).foregroundStyle(.white)
+            .padding(.horizontal, 10).frame(height: 26).background(Color.white.opacity(0.14), in: Capsule())
     }
 
     private func fact(_ symbol: String, _ color: Color, _ title: String, _ value: String) -> some View {
