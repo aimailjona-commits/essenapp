@@ -19,6 +19,12 @@
 	<string>Light</string>
 	<key>NSLocalNetworkUsageDescription</key>
 	<string>Verbindet sich mit deinem Essenapp-Server im Heimnetz.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Für die Sprachsteuerung im Kochmodus („weiter“, „Timer starten“). Es wird nichts aufgenommen oder gespeichert.</string>
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>Erkennt deine Sprachbefehle im Kochmodus, wenn möglich direkt auf dem iPhone.</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>Zum Sichern von Rezept-Bildkarten in deinen Fotos.</string>
 	<key>NSCameraUsageDescription</key>
 	<string>Zum Scannen von Barcodes für deine Merkliste.</string>
 	<!-- shortcut: HTTP zum lokalen Backend erlaubt; entfernen, sobald der VPS mit HTTPS läuft (Phase 7) -->

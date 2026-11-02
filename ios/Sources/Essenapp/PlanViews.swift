@@ -173,6 +173,9 @@ struct RecipeDetailView: View {
     @State private var person: Int?  // Mitglied für „Deine Portion“ (48), nil = ich
     @State private var done: Set<Int> = []
     @State private var spin = false
+    @State private var cooking = Demo.screen == "cooking"
+    @State private var rateAfterCooking = false
+    @State private var shareCard = Demo.screen == "sharecard"
 
     private var recipe: RecipeDTO { meal.recipe }
 
@@ -186,7 +189,21 @@ struct RecipeDetailView: View {
             Theme.C.bg.ignoresSafeArea()
             ScrollView {
                 VStack(alignment: .leading, spacing: 16) {
-                    RoundIconButton(systemName: "chevron.left", label: "Zurück") { dismiss() }
+                    HStack {
+                        RoundIconButton(systemName: "chevron.left", label: "Zurück") { dismiss() }
+                        Spacer()
+                        Menu {
+                            Button("Als Bild teilen", systemImage: "photo") { shareCard = true }
+                            Button("Als Link teilen (kommt bald)", systemImage: "link") {}.disabled(true)  // Feature 56
+                        } label: {
+                            Image(systemName: "square.and.arrow.up").font(.system(size: 16, weight: .semibold))
+                                .frame(width: 44, height: 44)
+                                .foregroundStyle(Theme.C.text1)
+                                .background(Theme.C.card, in: Circle())
+                                .overlay(Circle().strokeBorder(Theme.C.line, lineWidth: 0.5))
+                        }
+                        .accessibilityLabel("Rezept teilen")
+                    }
                     ZStack {
                         CornerFrame().stroke(Theme.C.accent, style: StrokeStyle(lineWidth: 4, lineCap: .round)).frame(width: 276, height: 276)
                             .scaleEffect(spin ? 1 : 1.12).opacity(spin ? 1 : 0)
@@ -294,21 +311,35 @@ struct RecipeDetailView: View {
                     .padding(16).card()
                 }
                 .padding(.horizontal, Theme.pagePadding)
-                .padding(.bottom, 200)
+                .padding(.bottom, 270)
             }
-            HStack(spacing: 10) {
-                Button {
-                    let offers = recipe.ingredients.compactMap { ing in store.offers.first { $0.id == ing.offerId } }
-                    withAnimation(Theme.spring) { offers.forEach(store.addToList) }
-                    if offers.isEmpty { store.flash("Keine Angebotszutaten") }
-                } label: { Text("Zur Liste") }
-                .buttonStyle(SecondaryButtonStyle())
-                Button { showRating = true } label: { Text("Gekocht ★") }
-                    .buttonStyle(PrimaryButtonStyle())
+            VStack(spacing: 10) {
+                // Kochmodus S18 (Feature 4)
+                Button { cooking = true } label: { Label("Kochen starten", systemImage: "play.fill") }
+                    .buttonStyle(PrimaryButtonStyle(color: Theme.C.accent))
+                HStack(spacing: 10) {
+                    Button {
+                        let offers = recipe.ingredients.compactMap { ing in store.offers.first { $0.id == ing.offerId } }
+                        withAnimation(Theme.spring) { offers.forEach(store.addToList) }
+                        if offers.isEmpty { store.flash("Keine Angebotszutaten") }
+                    } label: { Text("Zur Liste") }
+                    .buttonStyle(SecondaryButtonStyle())
+                    Button { showRating = true } label: { Text("Gekocht ★") }
+                        .buttonStyle(PrimaryButtonStyle())
+                }
             }
             .padding(.horizontal, Theme.pagePadding).padding(.bottom, Theme.ctaAboveTabBar)
         }
         .toolbar(.hidden, for: .navigationBar)
+        .fullScreenCover(isPresented: $cooking, onDismiss: {
+            if rateAfterCooking { rateAfterCooking = false; showRating = true }  // Abschluss → Bewertung + Vorrat (S8)
+        }) {
+            CookingView(meal: meal, factor: factor, person: who.flatMap { w in mine.map { m in (w.emoji, m / base) } }) {
+                rateAfterCooking = true
+                cooking = false
+            }
+        }
+        .sheet(isPresented: $shareCard) { ShareCardSheet(meal: meal).presentationDetents([.large]).presentationCornerRadius(Theme.R.sheet) }
         .sheet(isPresented: $showRating) { RatingSheet(meal: meal).presentationDetents([.medium, .large]).presentationCornerRadius(Theme.R.sheet) }
         .navigationDestination(item: $openOffer) { OfferDetailView(offer: $0) }
         .sheet(item: $searchIngredient) { IngredientOffersSheet(ingredient: $0).presentationDetents([.medium, .large]).presentationCornerRadius(Theme.R.sheet) }
@@ -319,10 +350,6 @@ extension RecipeDetailView {
     fileprivate func infoCell(_ symbol: String, _ text: String) -> some View {
         Label(text, systemImage: symbol).font(.system(.footnote, weight: .semibold)).foregroundStyle(Theme.C.text1)
             .frame(maxWidth: .infinity)
-    }
-
-    fileprivate func qty(_ amount: Double, _ unit: String) -> String {
-        "\(amount.formatted(.number.precision(.fractionLength(0...1)))) \(unit == "stk" ? "Stück" : unit)"
     }
 
     /// „Für: 🧑‍🍳 Jona ▾“ + „Deine Portion: 520 g · 2,10 €“ (48).
@@ -361,6 +388,11 @@ extension RecipeDetailView {
         .padding(14)
         .card(radius: Theme.R.tile)
     }
+}
+
+/// Menge mit Einheit, z. B. „400 g“, „1 Stück“ (Rezept, Kochmodus, Bildkarte).
+func qty(_ amount: Double, _ unit: String) -> String {
+    "\(amount.formatted(.number.precision(.fractionLength(0...1)))) \(unit == "stk" ? "Stück" : unit)"
 }
 
 /// Eckrahmen wie Referenz 02.

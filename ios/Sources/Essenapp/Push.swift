@@ -26,7 +26,9 @@ final class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCent
 
     nonisolated func userNotificationCenter(_ center: UNUserNotificationCenter, willPresent notification: UNNotification,
                                             withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void) {
-        completionHandler([.banner, .list, .sound])  // auch im Vordergrund als Banner
+        // auch im Vordergrund als Banner; Koch-Timer klingeln bei offenem Kochmodus in der App selbst (Ton, Haptik, Banner)
+        let cookTimer = notification.request.identifier.hasPrefix("timer-") && CookTimers.cookingOpen
+        completionHandler(cookTimer ? [.list] : [.banner, .list, .sound])
     }
 
     nonisolated func userNotificationCenter(_ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse,
@@ -111,11 +113,11 @@ struct PushAsk: ViewModifier {
 /// Erklär-Sheet vor der iOS-Abfrage.
 struct PushPermissionSheet: View {
     @Environment(\.dismiss) private var dismiss
+    var text = "Wir erinnern dich ans Planen der Woche und melden, wenn deine Lieblingsprodukte im Angebot sind. Ruhezeiten stellst du selbst ein."
 
     var body: some View {
         VStack(spacing: 14) {
-            EmptyState(emoji: "🔔", title: "Nichts verpassen",
-                       text: "Wir erinnern dich ans Planen der Woche und melden, wenn deine Lieblingsprodukte im Angebot sind. Ruhezeiten stellst du selbst ein.")
+            EmptyState(emoji: "🔔", title: "Nichts verpassen", text: text)
             Button("Mitteilungen erlauben") { Task { _ = await PushPermission.request(); dismiss() } }
                 .buttonStyle(PrimaryButtonStyle())
             Button("Später") { dismiss() }.buttonStyle(SecondaryButtonStyle())

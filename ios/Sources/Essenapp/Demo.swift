@@ -2,7 +2,7 @@ import Foundation
 
 /// Demo-Modus für Screenshots im Simulator (CI): App starten mit `-demoScreen <name>`.
 /// Namen: onboarding, start, quick, generator, generating, offers, offer, plan, recipe, shopping, list, pantry, settings, profile,
-/// notifications, stores, empty
+/// notifications, stores, empty, cooking (Kochmodus Schritt 2 mit Timer), sharecard (Bildkarte)
 enum Demo {
     static let screen: String? = {
         let args = ProcessInfo.processInfo.arguments
@@ -49,7 +49,7 @@ enum Demo {
         return MealDTO(id: day * 10 + (type == "mittag" ? 1 : 2), day: day, mealType: type, costCents: cost, locked: day == 1 && type == "mittag", recipe: RecipeDTO(
             id: day * 10 + (type == "mittag" ? 1 : 2), title: title, description: "Schnell, würzig und mit Angeboten der Woche.",
             cuisine: "Indisch", mealType: type, servings: 2, prepMinutes: minutes, ingredients: ings,
-            steps: ["Zwiebel würfeln und anbraten.", "Hähnchen dazugeben und rundum anbraten.",
+            steps: ["Zwiebel würfeln und 5 Minuten glasig anbraten.", "Hähnchen dazugeben und 8–10 Min. rundum anbraten.",
                     "Tomaten und Gewürze zugeben, 15 Minuten köcheln.", "Mit Reis servieren."],
             imageUrl: ""), portions: portions, portionsTotal: portions.map(\.factor).reduce(0, +))
     }

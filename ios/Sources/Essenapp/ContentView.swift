@@ -48,7 +48,7 @@ struct MainView: View {
     private static var demoTab: AppTab {
         switch Demo.screen {
         case "offers", "offer", "stores": .angebote
-        case "plan", "recipe": .rezepte
+        case "plan", "recipe", "cooking", "sharecard": .rezepte
         case "shopping", "list", "pantry": .einkauf
         default: .start
         }
@@ -70,7 +70,7 @@ struct MainView: View {
             NavigationStack {
                 Group {
                     switch (Demo.screen, tab) {
-                    case ("recipe", _): RecipeDetailView(meal: Demo.plan.entries[2])
+                    case ("recipe", _), ("cooking", _), ("sharecard", _): RecipeDetailView(meal: Demo.plan.entries[2])
                     case ("offer", _): OfferDetailView(offer: Demo.offers[0])
                     case ("stores", _): StoreMapView()
                     case ("list", _): ShoppingListView(chain: "rewe")

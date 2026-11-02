@@ -28,6 +28,10 @@ enum Theme {
         static let carbs = Color(hex: 0x3DBE6B)
         static let fat = Color(hex: 0xF7B731)
         static let listTints: [Color] = [0xFFE8E2, 0xE3F6EA, 0xEEEBFF, 0xFFF4D6, 0xE3F0FF, 0xFFE6F1].map { Color(hex: $0) }
+        // Kochmodus (S18): dunkler Grund, weiße Schrift
+        static let cookBg = Color(hex: 0x111111)
+        static let cookText2 = Color.white.opacity(0.6)
+        static let cookSurface = Color.white.opacity(0.1)
     }
 
     /// Farbe + Tönung + Emoji pro Kategorie (Angebote, Liste).
@@ -69,6 +73,10 @@ enum Theme {
         static let caption = Font.system(.footnote, weight: .medium)
         static let micro = Font.system(.caption2, weight: .semibold)
         static let price = Font.system(.title3, weight: .bold)
+        static let cookTitle = Font.system(.largeTitle, weight: .bold)
+        static let cookStep = Font.system(.title, weight: .semibold)  // 28 pt, wächst mit Dynamic Type
+        static let cookBody = Font.system(.title3, weight: .semibold)
+        static let cookTimer = Font.system(.title3, design: .rounded, weight: .bold)
     }
 
     enum R {

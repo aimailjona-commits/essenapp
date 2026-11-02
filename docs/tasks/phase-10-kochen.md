@@ -4,11 +4,11 @@ Details, Abläufe und Abnahmekriterien: [`docs/features/spec-p10-kochen.md`](../
 
 ## Aufgaben
 
-- [ ] 4 Kochmodus S18: Vorbereitung, Schritt-Seiten, Bildschirm an, Abschluss → Bewertung/Vorrat
-- [ ] 8 Mehrere Timer (Glas-Leiste, Benachrichtigung im Hintergrund)
-- [ ] 8 Sprachsteuerung on-device (Befehle laut Spezifikation), Vorlesen, Info.plist-Texte
+- [x] 4 Kochmodus S18: Vorbereitung, Schritt-Seiten, Bildschirm an, Abschluss → Bewertung/Vorrat
+- [x] 8 Mehrere Timer (Glas-Leiste, Benachrichtigung im Hintergrund)
+- [x] 8 Sprachsteuerung on-device (Befehle laut Spezifikation), Vorlesen, Info.plist-Texte
 - [ ] 7 Ersatzzutaten: Tabelle (~80) + Haiku-Fallback, Ersetzen im Rezept
-- [ ] 10 Bildkarte (ImageRenderer) teilen
+- [x] 10 Bildkarte (ImageRenderer) teilen
 - [ ] `docs/ui/screens.md` + `Demo.swift` + `ios/tools/screenshots.sh` um neue Screens ergänzt, CI-Screenshots geprüft
 - [ ] Playbook-Entscheidungslog aktualisiert
 

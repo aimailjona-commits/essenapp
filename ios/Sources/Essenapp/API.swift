@@ -175,6 +175,8 @@ struct RecipeDTO: Codable, Identifiable, Hashable {
     var ingredients: [IngredientDTO]
     var steps: [String]
     var imageUrl: String
+    var stepImages: [String]? = nil  // Schritt-Bilder (Feature 9), leer = keine Bildfläche im Kochmodus
+    var kcal: Int? = nil  // pro Portion, sobald das Backend sie liefert (Bildkarte, Feature 10)
 }
 
 struct MealDTO: Codable, Hashable {

@@ -44,6 +44,7 @@ Einstellungen/Profil: über den Avatar oben rechts auf dem Start-Screen.
 - Portionen-Stepper
 - Zubereitungsschritte nummeriert
 - Unten fest: `PrimaryButton` „Gekocht – bewerten“
+- Darüber fest: `PrimaryButton` in `accent` „▶︎ Kochen starten“ → S18. Oben rechts runder Teilen-Knopf → Menü „Als Bild teilen“ (Bildkarte, Feature 10), „Als Link teilen“ (kommt mit Feature 56)
 
 ### S4 Angebote
 - Oben: Filiale/Ort mit Umschalter (wie Referenz 08), rechts Merkliste-Button
@@ -153,3 +154,11 @@ Mockups: `mockups/weitere-screens-v1.html`.
 - „+“-Sheet: Name, Menge (optional), Einheit (g/ml/Stück/ohne), Haltbarkeit optional, Schalter „Basic“.
 - Leer: `EmptyState` „📸 Kühlschrank fotografieren“, Knopf deaktiviert „kommt bald“ (Feature 69). Laden → Skeleton, Fehler → `ErrorState`.
 - Abhaken in S5b: haltbare Artikel → Toast „„Reis“ abgehakt“ mit Aktion „In den Vorrat“. „Gekocht ★“ (S8): nach dem Speichern wird der Vorrat abgezogen, Liste „Vom Vorrat abgezogen“ mit korrigierbaren Mengen, Toast „Vorrat aktualisiert“.
+
+### S18 Kochmodus (Vollbild aus S3, Feature 4 + 8)
+- Dunkler Grund `cookBg` (#111), weiße Schrift, Bildschirm bleibt an. Oben: runder Schließen-Knopf ✕, „Schritt 2 von 4“ + Fortschrittsbalken (`accent`, gleitet mit Feder), rechts 🎙-Knopf (an = `accent`).
+- Seite 0 **Vorbereitung**: alle Zutaten mit den in S3 gewählten Portionen (+ Menge der gewählten Person) als Zeilen zum Abhaken („3 von 6“), Haken-Haptik.
+- Je **Schritt eine Seite** (wischen oder Pfeil-Knöpfe unten: runder ‹ + `PrimaryButton` in `accent` „Weiter ›“): Schritt-Bild oben (nur wenn vorhanden, Feature 9), „Schritt N“ (`accent`), Schritttext ≥ 28 pt (Dynamic Type). Erkannte Zeiten („15 Minuten“, „5–7 Min.“ → obere Grenze) als Timer-Knopf „⏲ Reis · 15:00“. Unten Chips „Zutaten in diesem Schritt“ (Zutaten, deren Name im Text vorkommt).
+- **Timer-Leiste** über den Knöpfen: je Timer eine Glas-Kapsel (iOS 26 Liquid Glass, sonst Material) mit Ring, Name, Restzeit, Pause/Weiter, „+1 min“, Stop. Ablauf: Ton + Haptik + oranges Banner „Reis ist fertig!“; im Hintergrund lokale Mitteilung. Erste Timer-Nutzung → Erklär-Sheet „Nichts verpassen“ vor der iOS-Abfrage.
+- **Sprachsteuerung**: Glas-Pille „🎙 hört zu …“ mit Pegel unter dem Kopf; erkannter Befehl blinkt kurz („weiter“). Befehle: weiter, zurück, wiederholen (liest vor), Timer starten, Timer N Minuten, wie viel {Zutat}, Zutaten. Fehlende Erlaubnis → Hinweis in der Pille.
+- Letzte Seite **„Fertig! 🎉“** mit Tellerbild und Konfetti (aus bei „Bewegung reduzieren“), Knopf „Bewerten ★“ → schließt und öffnet S8 (Bewertung + Vorrat abziehen).
