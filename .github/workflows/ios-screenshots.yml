@@ -1,0 +1,39 @@
+name: iOS Screenshots
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: ["ios/**", ".github/workflows/ios-screenshots.yml"]
+
+concurrency:
+  group: ios-screenshots
+  cancel-in-progress: true
+
+jobs:
+  screenshots:
+    runs-on: macos-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Xcode und Schemes
+        run: |
+          xcodebuild -version
+          xcodebuild -list -workspace ios/xtool/Essenapp.xcworkspace
+
+      - name: Bauen (Simulator, ohne Signatur)
+        run: |
+          set -o pipefail
+          xcodebuild -workspace ios/xtool/Essenapp.xcworkspace -scheme Essenapp-App \
+            -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' \
+            -derivedDataPath build CODE_SIGNING_ALLOWED=NO build | tail -40
+
+      - name: Screenshots
+        run: bash ios/tools/screenshots.sh build shots
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: screenshots
+          path: shots

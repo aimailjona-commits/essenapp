@@ -21,9 +21,27 @@ struct ContentView: View {
 
 struct MainView: View {
     @Environment(AppStore.self) private var store
-    @State private var tab = AppTab.start
-    @State private var quickOpen = false
-    @State private var showGenerator = false
+    @State private var tab = MainView.demoTab
+    @State private var quickOpen = Demo.screen == "quick"
+    @State private var showGenerator = Demo.screen == "generator"
+
+    private static var demoTab: AppTab {
+        switch Demo.screen {
+        case "offers": .angebote
+        case "plan", "recipe": .rezepte
+        case "shopping", "list": .einkauf
+        default: .start
+        }
+    }
+
+    @ViewBuilder private var tabContent: some View {
+        switch tab {
+        case .start: StartView(showGenerator: $showGenerator)
+        case .angebote: OffersView()
+        case .einkauf: ShoppingView()
+        case .rezepte: RecipesTab(showGenerator: $showGenerator)
+        }
+    }
 
     var body: some View {
         ZStack(alignment: .bottom) {
@@ -31,11 +49,11 @@ struct MainView: View {
 
             NavigationStack {
                 Group {
-                    switch tab {
-                    case .start: StartView(showGenerator: $showGenerator)
-                    case .angebote: OffersView()
-                    case .einkauf: ShoppingView()
-                    case .rezepte: RecipesTab(showGenerator: $showGenerator)
+                    switch (Demo.screen, tab) {
+                    case ("recipe", _): RecipeDetailView(meal: Demo.plan.entries[2])
+                    case ("list", _): ShoppingListView(chain: "rewe")
+                    case ("settings", _): SettingsView()
+                    default: tabContent
                     }
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)

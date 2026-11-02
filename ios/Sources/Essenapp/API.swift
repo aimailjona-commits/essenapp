@@ -212,9 +212,16 @@ final class AppStore {
     var error: String?
     var generating = false
 
-    init(api: API) { self.api = api }
+    let demo = Demo.screen != nil
 
-    var isOnboarded: Bool { api.token != nil }
+    init(api: API) {
+        self.api = api
+        if demo, Demo.screen != "empty" {
+            household = Demo.household; offers = Demo.offers; plan = Demo.plan
+        }
+    }
+
+    var isOnboarded: Bool { demo ? Demo.screen != "onboarding" : api.token != nil }
 
     func createHousehold(name: String, memberName: String) async throws {
         struct Body: Encodable { var name: String; var memberName: String }
@@ -228,6 +235,7 @@ final class AppStore {
     }
 
     func loadAll() async {
+        guard !demo else { return }
         do {
             household = try await api.request("GET", "/household")
             offers = try await api.request("GET", "/offers")
@@ -262,7 +270,7 @@ final class AppStore {
 
     /// Gericht für heute (erste Mahlzeit des heutigen Wochentags, Mittag bevorzugt).
     var todayMeal: MealDTO? {
-        let weekday = (Calendar(identifier: .iso8601).component(.weekday, from: .now) + 5) % 7  // 0 = Montag
+        let weekday = demo ? 1 : (Calendar(identifier: .iso8601).component(.weekday, from: .now) + 5) % 7  // 0 = Montag
         let today = plan?.entries.filter { $0.day == weekday } ?? []
         return today.first { $0.mealType == "mittag" } ?? today.first
     }
