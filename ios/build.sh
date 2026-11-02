@@ -4,7 +4,7 @@
 # Gebaut wird in ~/build/essenapp-ios, weil xtool auf /mnt/c an Dateirechten scheitert (E24).
 set -e
 src="$(cd "$(dirname "$0")" && pwd)"
-dst="$HOME/build/essenapp-ios"
+dst="${BUILD_DIR:-$HOME/build/essenapp-ios}"
 mkdir -p "$dst"
 rsync -a --delete --exclude .build --exclude xtool --exclude tools "$src/" "$dst/"
 cd "$dst"

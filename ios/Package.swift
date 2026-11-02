@@ -23,6 +23,8 @@ let package = Package(
             resources: [.process("Resources")]
         ),
         // Teilen-Erweiterung (Instagram-Import, Feature 5). Ohne App Group – Login über Kopplungscode (A1).
-        .target(name: "EssenappShare"),
+        // -ObjC: ShareViewController wird nur per Name (Info.plist) geladen; ohne das Flag wirft der Linker
+        // den Code weg, die Erweiterung hat kein __text und zsign kann nicht signieren.
+        .target(name: "EssenappShare", linkerSettings: [.unsafeFlags(["-Xlinker", "-ObjC"])]),
     ]
 )
