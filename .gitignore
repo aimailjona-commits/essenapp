@@ -1,0 +1,9 @@
+.env
+.build/
+*.ipa
+*.xip
+__pycache__/
+.venv/
+*.db
+.DS_Store
+.pytest_cache/
