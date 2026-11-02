@@ -7,7 +7,8 @@ import UIKit
 /// recipes (Meine Rezepte), myrecipe (eigenes Rezept mit Bewertungen + Blüte), recipeform (Rezept-Formular, Seite Zutaten),
 /// imported (Instagram-Import mit Original-Reel, geschätzten Mengen, Schritt-Bildern), instagram (Teilen aus Instagram, S21),
 /// sharepair / shareimport / shareresult (Teilen-Erweiterung S20), importlink (Link einfügen S22),
-/// fridgecam / fridgereview / cooknow (Kühlschrank-Foto S23–S25), offline (Einkauf mit Offline-Banner, 66).
+/// fridgecam / fridgereview / cooknow (Kühlschrank-Foto S23–S25), offline (Einkauf mit Offline-Banner, 66),
+/// voiceadd (Einkauf mit Sprach-Eingabe, 45), storeask (Benachrichtigungen mit Erklär-Sheet Standort-Erinnerung, 36).
 /// Erscheinungsbild (68): zusätzlich `-demoAppearance dark|light` (überschreibt die Einstellung).
 enum Demo {
     static let screen: String? = arg("-demoScreen")

@@ -59,16 +59,16 @@ extension AppStore {
 
     func list(_ id: Int) async throws -> ListDTO { try await api.request("GET", "/lists/\(id)") }
 
-    func addItem(name: String, chain: String = "", offerId: Int? = nil, to listID: Int) async {
-        struct Body: Encodable { var name: String; var chain: String; var offerId: Int? }
+    func addItem(name: String, amount: Double? = nil, unit: String = "", chain: String = "", offerId: Int? = nil, to listID: Int) async {
+        struct Body: Encodable { var name: String; var amount: Double?; var unit: String; var chain: String; var offerId: Int? }
         guard !demo else { return }
         let temp = api.newTempId()
         do {
-            let _: ListItemDTO = try await api.request("POST", "/lists/\(listID)/items", body: Body(name: name, chain: chain, offerId: offerId),
-                                                       tempId: temp)
+            let _: ListItemDTO = try await api.request("POST", "/lists/\(listID)/items",
+                                                       body: Body(name: name, amount: amount, unit: unit, chain: chain, offerId: offerId), tempId: temp)
         } catch APIError.queued {
             // offline: sofort in Liste und Cache, der Server bekommt es beim nächsten Netz (66)
-            let item = ListItemDTO(id: temp, name: name, amount: nil, unit: "", chain: chain, offerId: offerId, checked: false,
+            let item = ListItemDTO(id: temp, name: name, amount: amount, unit: unit, chain: chain, offerId: offerId, checked: false,
                                    addedBy: profile?.name ?? "", checkedBy: "", source: "manual")
             editList(listID) { l in
                 l.items.removeAll { i in i.id < 0 && !API.isTemp(i.id) && i.name == name }  // optimistischer Platzhalter
@@ -184,6 +184,7 @@ struct OneOffListView: View {
     let summary: ListSummaryDTO
     @State private var list: ListDTO?
     @State private var newItem = ""
+    @State private var voiceOpen = false
 
     var body: some View {
         ScrollView {
@@ -199,11 +200,7 @@ struct OneOffListView: View {
                     }
                 }
                 DisplayHeader(line1: summary.name, line2: "\(list?.items.filter { !$0.checked }.count ?? summary.openCount) offen")
-                HStack(spacing: 10) {
-                    TextField("Artikel hinzufügen …", text: $newItem).onSubmit(add)
-                        .padding(.horizontal, 16).frame(height: 46).background(Theme.C.card, in: Capsule())
-                    RoundIconButton(systemName: "plus", dark: true, label: "Hinzufügen", action: add)
-                }
+                AddItemField(text: $newItem, add: add) { withAnimation(Theme.spring) { voiceOpen = true } }
                 ForEach(list?.items ?? []) { item in
                     Button { toggle(item) } label: { ItemRow(item: item, offer: nil) }.buttonStyle(PressableStyle())
                 }
@@ -213,6 +210,14 @@ struct OneOffListView: View {
         }
         .background(Theme.C.bg)
         .toolbar(.hidden, for: .navigationBar)
+        .overlay {
+            if voiceOpen {
+                VoiceAddOverlay { items in
+                    withAnimation(Theme.spring) { voiceOpen = false }
+                    Task { await store.addSpoken(items, to: summary.id); list = try? await store.list(summary.id) }
+                } close: { withAnimation(Theme.spring) { voiceOpen = false } }
+            }
+        }
         .task {
             while !Task.isCancelled {  // gemeinsames Einkaufen: alle 10 s aktualisieren
                 list = try? await store.list(summary.id)

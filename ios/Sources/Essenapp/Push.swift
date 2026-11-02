@@ -10,6 +10,7 @@ final class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCent
     func application(_ application: UIApplication,
                      didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil) -> Bool {
         UNUserNotificationCenter.current().delegate = self
+        _ = StoreReminder.shared  // Region-Ereignisse (36) auch, wenn iOS die App im Hintergrund weckt
         // Wochenplan-Erinnerung (Backend-Job plan_prompt): „Plan erstellen“ öffnet den Generator, „Später“ schließt nur
         UNUserNotificationCenter.current().setNotificationCategories([UNNotificationCategory(
             identifier: "PLAN_PROMPT",
@@ -129,12 +130,16 @@ struct PushAsk: ViewModifier {
 /// Erklär-Sheet vor der iOS-Abfrage.
 struct PushPermissionSheet: View {
     @Environment(\.dismiss) private var dismiss
+    var emoji = "🔔"
+    var title = "Nichts verpassen"
     var text = "Wir erinnern dich ans Planen der Woche und melden, wenn deine Lieblingsprodukte im Angebot sind. Ruhezeiten stellst du selbst ein."
+    var allowTitle = "Mitteilungen erlauben"
+    var allow: @MainActor () async -> Void = { _ = await PushPermission.request() }
 
     var body: some View {
         VStack(spacing: 14) {
-            EmptyState(emoji: "🔔", title: "Nichts verpassen", text: text)
-            Button("Mitteilungen erlauben") { Task { _ = await PushPermission.request(); dismiss() } }
+            EmptyState(emoji: emoji, title: title, text: text)
+            Button(allowTitle) { Task { await allow(); dismiss() } }
                 .buttonStyle(PrimaryButtonStyle())
             Button("Später") { dismiss() }.buttonStyle(SecondaryButtonStyle())
         }
@@ -162,6 +167,7 @@ struct NotificationsView: View {
                 permissionCard
                 if let s = Binding($settings) {
                     settingsCard(s)
+                    StoreReminderCard()
                 } else if let error {
                     ErrorState(message: error) { Task { await load() } }
                 } else {

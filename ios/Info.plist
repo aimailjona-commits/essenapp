@@ -18,9 +18,13 @@
 	<key>NSLocalNetworkUsageDescription</key>
 	<string>Verbindet sich mit deinem Essenapp-Server im Heimnetz.</string>
 	<key>NSMicrophoneUsageDescription</key>
-	<string>Für die Sprachsteuerung im Kochmodus („weiter“, „Timer starten“). Es wird nichts aufgenommen oder gespeichert.</string>
+	<string>Für die Sprachsteuerung im Kochmodus („weiter“, „Timer starten“) und um Artikel per Sprache auf die Einkaufsliste zu setzen. Es wird nichts aufgenommen oder gespeichert.</string>
 	<key>NSSpeechRecognitionUsageDescription</key>
-	<string>Erkennt deine Sprachbefehle im Kochmodus, wenn möglich direkt auf dem iPhone.</string>
+	<string>Erkennt deine Sprachbefehle im Kochmodus und gesprochene Einkaufsartikel, wenn möglich direkt auf dem iPhone.</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>Erinnert dich, wenn du bei einem deiner Läden bist, an die offenen Artikel für diesen Laden. Dein Standort bleibt auf dem iPhone.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Erkennt, ob du bei einem deiner Läden bist, um dich an die Einkaufsliste zu erinnern. Dein Standort bleibt auf dem iPhone.</string>
 	<key>NSPhotoLibraryAddUsageDescription</key>
 	<string>Zum Sichern von Rezept-Bildkarten in deinen Fotos.</string>
 	<key>NSCameraUsageDescription</key>

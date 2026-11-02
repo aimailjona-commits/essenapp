@@ -25,8 +25,8 @@ enum CookParse {
         }
     }
 
-    // shortcut: nur ganze Zahlwörter, keine „halbe Stunde“ – bei Bedarf ergänzen
-    private static let numberWords = [
+    // shortcut: nur ganze Zahlwörter, keine „halbe Stunde“ – bei Bedarf ergänzen (auch für die Sprach-Liste, 45)
+    static let numberWords = [
         "ein": "1", "eine": "1", "einer": "1", "zwei": "2", "drei": "3", "vier": "4", "fünf": "5", "sechs": "6",
         "sieben": "7", "acht": "8", "neun": "9", "zehn": "10", "elf": "11", "zwölf": "12", "fünfzehn": "15",
         "zwanzig": "20", "fünfundzwanzig": "25", "dreißig": "30", "vierzig": "40", "fünfundvierzig": "45",
@@ -246,13 +246,16 @@ private final class AudioFeed: @unchecked Sendable {
     func append(_ b: AVAudioPCMBuffer) { lock.withLock { request?.append(b) } }
 }
 
-/// Lauscht nur, solange der Kochmodus offen und 🎙 an ist. Erkennung auf dem Gerät, wenn verfügbar.
+/// Lauscht nur, solange der Kochmodus (Befehle) bzw. die Sprach-Eingabe der Liste (Diktat, 45) offen und 🎙 an ist.
+/// Erkennung auf dem Gerät, wenn verfügbar.
 @MainActor @Observable
 final class VoiceControl {
     var listening = false
     var level: Float = 0  // Mikrofon-Pegel 0…1
     var heard: String?  // erkannter Befehl, blinkt kurz
     var note: String?  // Hinweis, z. B. fehlende Erlaubnis
+    var transcript = ""  // Diktat: bisher erkannter Text
+    @ObservationIgnored var dictation = false  // true = Text sammeln statt Befehle auswerten
     @ObservationIgnored var hints: [String] = []
     @ObservationIgnored var onCommand: (CookParse.Command) -> Bool = { _ in false }
     private let engine = AVAudioEngine()
@@ -332,6 +335,11 @@ final class VoiceControl {
 
     private func received(_ text: String?, ended: Bool, gen: Int) {
         guard gen == generation, listening else { return }
+        if dictation {
+            if let text { transcript = text }
+            if ended { stop() }  // Zeitlimit oder Fehler: Text bleibt, neu starten per 🎙
+            return
+        }
         if let text, !speaking, let cmd = CookParse.command(in: text), onCommand(cmd) {
             flash(cmd.label)
             listen()

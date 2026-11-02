@@ -10,6 +10,7 @@ struct ContentView: View {
         URLCache.shared = URLCache(memoryCapacity: 64 * 1024 * 1024, diskCapacity: 256 * 1024 * 1024)
         #if DEBUG
         PendingRequest.selfTest()
+        StoreReminder.selfTest()
         #endif
     }
 
@@ -78,6 +79,7 @@ struct MainView: View {
     @Environment(AppStore.self) private var store
     @EnvironmentObject private var delegate: AppDelegate
     @State private var deepOffer: OfferDTO?
+    @State private var deepList: String?  // Laden-Liste aus der Standort-Erinnerung (36)
     @State private var tab = MainView.demoTab
     @State private var resetToken = 0  // erneutes Tippen auf den aktiven Tab → zurück zum Anfang
     @State private var quickOpen = Demo.screen == "quick"
@@ -88,7 +90,7 @@ struct MainView: View {
         switch Demo.screen {
         case "offers", "offer", "stores": .angebote
         case "plan", "recipe", "cooking", "sharecard", "recipes", "myrecipe", "recipeform", "imported", "importlink": .rezepte
-        case "shopping", "list", "pantry", "fridgecam", "fridgereview", "cooknow", "offline": .einkauf
+        case "shopping", "list", "pantry", "fridgecam", "fridgereview", "cooknow", "offline", "voiceadd": .einkauf
         default: .start
         }
     }
@@ -129,7 +131,7 @@ struct MainView: View {
                     case ("list", _): ShoppingListView(chain: "rewe")
                     case ("settings", _): SettingsView()
                     case ("profile", _): ProfileView()
-                    case ("notifications", _): NotificationsView()
+                    case ("notifications", _), ("storeask", _): NotificationsView()
                     default: tabContent.id(tab).transition(.opacity)
                     }
                 }
@@ -137,6 +139,7 @@ struct MainView: View {
                 .background(Theme.C.bg)
                 .toolbar(.hidden, for: .navigationBar)
                 .navigationDestination(item: $deepOffer) { OfferDetailView(offer: $0) }
+                .navigationDestination(item: $deepList) { chain in ShoppingListView(chain: chain) }
             }
             .id("\(tab)-\(resetToken)")  // Tab-Wechsel schließt offene Detailseiten
             .animation(.easeInOut(duration: 0.2), value: tab)
@@ -185,7 +188,7 @@ struct MainView: View {
         }
     }
 
-    /// Router für essenapp://start, essenapp://generator, essenapp://offer/<id>, essenapp://recipe/new.
+    /// Router für essenapp://start, essenapp://generator, essenapp://offer/<id>, essenapp://recipe/new, essenapp://list/<kette>.
     private func open(_ url: URL) async {
         guard url.scheme == "essenapp" else { return }
         withAnimation(Theme.spring) { quickOpen = false }
@@ -203,6 +206,11 @@ struct MainView: View {
             withAnimation(Theme.spring) { tab = .angebote }
             try? await Task.sleep(for: .milliseconds(350))  // Tab-Wechsel baut den NavigationStack neu
             deepOffer = offer
+        case "list":
+            let chain = url.lastPathComponent
+            withAnimation(Theme.spring) { tab = .einkauf }
+            try? await Task.sleep(for: .milliseconds(350))
+            deepList = chain
         default:
             break
         }

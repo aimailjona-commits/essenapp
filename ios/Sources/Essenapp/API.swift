@@ -604,7 +604,9 @@ struct HouseholdPatch: Encodable {
 @MainActor @Observable
 final class AppStore {
     let api: API
-    var household: HouseholdDTO?
+    var household: HouseholdDTO? {
+        didSet { if !demo { StoreReminder.shared.update(household) } }  // Standort-Erinnerung (36) folgt den gewählten Läden
+    }
     var offers: [OfferDTO] = []
     var plan: PlanDTO?
     var error: String?

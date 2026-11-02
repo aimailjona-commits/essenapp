@@ -29,12 +29,21 @@ struct ShoppingView: View {
     @State private var newListName = ""
     @State private var askNewList = false
     @State private var pantryMode = Demo.screen == "pantry"
+    @State private var voiceOpen = Demo.screen == "voiceadd"
 
     var body: some View {
         VStack(spacing: 6) {
             PillSegment(options: [(false, "Liste"), (true, "Vorrat")], selection: $pantryMode)
                 .padding(.horizontal, Theme.pagePadding)
             if pantryMode { PantryView() } else { listPage }
+        }
+        .overlay {
+            if voiceOpen {
+                VoiceAddOverlay { items in
+                    withAnimation(Theme.spring) { voiceOpen = false }
+                    if let id = store.householdList?.id { Task { await store.addSpoken(items, to: id) } }
+                } close: { withAnimation(Theme.spring) { voiceOpen = false } }
+            }
         }
     }
 
@@ -48,13 +57,7 @@ struct ShoppingView: View {
                     DisplayHeader(line1: "Einkauf", line2: "\(items.filter { !$0.checked }.count) offen · gemeinsam")
                     ShareButton()
                 }
-                HStack(spacing: 10) {
-                    TextField("Artikel hinzufügen …", text: $newItem)
-                        .padding(.horizontal, 16).frame(height: 46)
-                        .background(Theme.C.card, in: Capsule())
-                        .onSubmit(add)
-                    RoundIconButton(systemName: "plus", dark: true, label: "Hinzufügen", action: add)
-                }
+                AddItemField(text: $newItem, add: add) { withAnimation(Theme.spring) { voiceOpen = true } }
                 if let plan = store.plan, plan.savedCents > 0 {
                     HStack(spacing: 14) {
                         Text("💰").font(.system(size: 28)).frame(width: 54, height: 54).background(Theme.C.successSoft, in: Circle())
