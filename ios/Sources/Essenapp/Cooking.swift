@@ -406,6 +406,7 @@ struct CookingView: View {
     var factor = 1.0  // Portionen-Stepper aus S3
     var person: (emoji: String, factor: Double)?  // „Deine Portion“ aus S3
     let onFinish: () -> Void
+    var onSubstitute: (MealDTO?) -> Void = { _ in }  // „Ersatz finden“ (7): gespeichertes Rezept → S3 übernimmt es
     @Environment(\.dismiss) private var dismiss
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -415,6 +416,7 @@ struct CookingView: View {
     @State private var timers = CookTimers()
     @State private var voice = VoiceControl()
     @State private var askPush = false
+    @State private var substituting: Int?
 
     private var steps: [String] { meal.recipe.steps }
     private var last: Int { steps.count + 1 }
@@ -471,6 +473,13 @@ struct CookingView: View {
             PushPermissionSheet(text: "Damit dein Timer klingelt, auch wenn das iPhone gesperrt ist oder du eine andere App offen hast.")
                 .presentationDetents([.medium]).presentationCornerRadius(Theme.R.sheet)
                 .foregroundStyle(Theme.C.text1).environment(\.colorScheme, appScheme)  // Sheet folgt dem App-Erscheinungsbild
+        }
+        .sheet(isPresented: Binding(get: { substituting != nil }, set: { on in if !on { substituting = nil } })) {
+            if let i = substituting {
+                SubstituteSheet(meal: meal, index: i, done: onSubstitute)
+                    .presentationDetents([.medium, .large]).presentationCornerRadius(Theme.R.sheet)
+                    .foregroundStyle(Theme.C.text1).environment(\.colorScheme, appScheme)
+            }
         }
     }
 
@@ -550,6 +559,10 @@ struct CookingView: View {
                     }
                     .buttonStyle(PressableStyle())
                     .accessibilityAddTraits(on ? .isSelected : [])
+                    .contextMenu {  // lange drücken → Ersatz (7)
+                        Button("Ersatz finden", systemImage: "arrow.left.arrow.right") { substituting = i }
+                    }
+                    .accessibilityAction(named: "Ersatz finden") { substituting = i }
                 }
             }
             .padding(.horizontal, Theme.pagePadding).padding(.bottom, 16)

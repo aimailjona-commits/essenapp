@@ -50,6 +50,9 @@ struct PlanOptions: Encodable {
     var maxCookMinutes: Int?
     var diet: String?
     var wishes: String?
+    var guests: [GuestSlot]?  // „+ Gäste“ je Tag/Mahlzeit (15)
+    var guestBudgetCents: Int?  // „Gäste-Budget extra“
+    var special: String?  // Special-Vorlage = key aus GET /specials (25)
     var saveAsDefault = false
 }
 
@@ -128,6 +131,7 @@ struct PreferencesView: View {
     @Environment(AppStore.self) private var store
     @Environment(\.dismiss) private var dismiss
     @State private var prefs = Prefs()
+    @State private var variety = VarietyDTO()  // Abwechslung (12)
     @State private var saving = false
 
     var body: some View {
@@ -138,10 +142,12 @@ struct PreferencesView: View {
                     RoundIconButton(systemName: "chevron.left", label: "Zurück") { dismiss() }
                     DisplayHeader(line1: "Präferenzen", line2: "für deine Pläne")
                     PreferencesForm(prefs: $prefs)
+                    VarietyForm(rules: $variety)
                 }
                 .padding(.horizontal, Theme.pagePadding)
                 .padding(.bottom, 16)
             }
+            .defaultScrollAnchor(Demo.screen == "variety" ? .bottom : .top)  // Demo: Abwechslung im Bild
             .scrollDismissesKeyboard(.immediately)
             .ctaBar {
             Button {
@@ -149,7 +155,9 @@ struct PreferencesView: View {
                 Task {
                     defer { saving = false }
                     do {
-                        try await store.save(prefs.patch)
+                        var patch = prefs.patch
+                        patch.variety = variety
+                        try await store.save(patch)
                         store.flash("Präferenzen gespeichert")
                         dismiss()
                     } catch {
@@ -162,6 +170,8 @@ struct PreferencesView: View {
             }
         }
         .toolbar(.hidden, for: .navigationBar)
-        .onAppear { if let h = store.household { prefs = Prefs(h) } }
+        .onAppear {
+            if let h = store.household { prefs = Prefs(h); variety = h.variety ?? VarietyDTO() }
+        }
     }
 }

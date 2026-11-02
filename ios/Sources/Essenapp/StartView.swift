@@ -5,6 +5,8 @@ struct StartView: View {
     @Environment(AppStore.self) private var store
     @Binding var showGenerator: Bool
     @State private var search = ""
+    @State private var banner: SpecialDTO?  // Feiertag/Saison in ≤ 14 Tagen (25)
+    @State private var noMood = false  // „Keine Lust“ (16)
 
     private var greeting: String {
         switch Calendar.current.component(.hour, from: .now) {
@@ -42,6 +44,13 @@ struct StartView: View {
                 .padding(.horizontal, -Theme.pagePadding)
                 SearchField(text: $search, placeholder: "Gericht oder Angebot suchen")
 
+                if search.isEmpty, let banner {
+                    SpecialBanner(banner: banner) {
+                        store.generatorSpecial = banner.key
+                        showGenerator = true
+                    }
+                    .appear()
+                }
                 if !search.isEmpty {
                     searchResults
                 } else if let error = store.error, store.plan == nil {
@@ -59,6 +68,8 @@ struct StartView: View {
                         }
                         NavigationLink { RecipeDetailView(meal: meal) } label: { MealCardBig(meal: meal) }
                             .buttonStyle(PressableStyle()).padding(.top, 70).appear()
+                        Button { noMood = true } label: { Text("😮‍💨 Keine Lust") }
+                            .buttonStyle(SecondaryButtonStyle()).appear(delay: 0.05)
                     }
                     HStack {
                         Text("Diese Woche").font(Theme.F.headline)
@@ -90,7 +101,12 @@ struct StartView: View {
         }
         .ignoresSafeArea(edges: .top)
         .scrollDismissesKeyboard(.immediately)
-        .refreshable { await store.loadAll() }
+        .refreshable {
+            await store.loadAll()
+            banner = await store.specials()?.banner
+        }
+        .task { banner = await store.specials()?.banner }
+        .sheet(isPresented: $noMood) { NoMoodSheet().presentationDetents([.large]).presentationCornerRadius(Theme.R.sheet) }
     }
 
     private var searchResults: some View {

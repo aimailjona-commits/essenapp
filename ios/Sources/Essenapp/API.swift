@@ -50,6 +50,7 @@ struct HouseholdDTO: Codable {
     var stores: [StoreDTO]
     var stepImages: Bool? = nil  // Schalter „Schritt-Bilder erzeugen“ (9)
     var stepImagesAvailable: Bool? = nil  // FAL_KEY im Backend gesetzt → Schalter zeigen
+    var variety: VarietyDTO? = nil  // Abwechslungsregeln (12)
 }
 
 struct HouseholdCreated: Codable {
@@ -522,6 +523,8 @@ struct MealDTO: Codable, Hashable {
     var portions: [PortionDTO] = []  // Esser dieses Gerichts (48)
     var portionsTotal: Double = 0  // Rezeptmengen gelten für so viele Portionen; 0 = alter Plan → recipe.servings
     var scale: Double = 1  // Menge im Plan = Rezeptmenge × scale (eingesetzte Rezepte)
+    var guests: Int? = nil  // Gäste (15), in portionsTotal enthalten
+    var rests: [RestBadgeDTO]? = nil  // „♻︎ Rest von Mo“ (19)
 
     var basePortions: Double { portionsTotal > 0 ? portionsTotal : Double(max(recipe.servings, 1)) }
 }
@@ -537,6 +540,8 @@ struct PlanDTO: Codable {
     var totalCents: Int
     var savedCents: Int
     var entries: [MealDTO]
+    var variety: VarietyCheckDTO? = nil  // Chip „✓ Abwechslung“ / „⚠ 2× Pasta“ (12)
+    var leftovers: LeftoversDTO? = nil  // Reste-Karte im Plan-Kopf (19)
 }
 
 /// Anzeige-Namen; Schlüssel wie im Backend.
@@ -563,8 +568,12 @@ enum Labels {
     ]
     static func logoURL(_ key: String) -> URL? { logos[key].flatMap(URL.init(string:)) }
 
-    static let mealTypes = [("fruehstueck", "Frühstück"), ("mittag", "Mittag"), ("abend", "Abend"), ("dessert", "Dessert")]
-    static func meal(_ key: String) -> String { mealTypes.first { $0.0 == key }?.1 ?? key }
+    /// Wählbare Mahlzeiten (Snack: 23c); Lunchbox (24) und Vorspeise (25) legt der Planer selbst an.
+    static let mealTypes = [("fruehstueck", "Frühstück"), ("mittag", "Mittag"), ("snack", "Snack"), ("abend", "Abend"), ("dessert", "Dessert")]
+    static let slotOrder = ["fruehstueck", "lunchbox", "mittag", "snack", "vorspeise", "abend", "dessert"]  // = Backend SLOT_ORDER
+    static func meal(_ key: String) -> String {
+        (mealTypes + [("lunchbox", "Lunchbox"), ("vorspeise", "Vorspeise")]).first { $0.0 == key }?.1 ?? key
+    }
 
     static let units = [("g", "g"), ("kg", "kg"), ("ml", "ml"), ("l", "l"), ("stk", "Stück"), ("el", "EL"), ("tl", "TL"), ("prise", "Prise")]
     static func unit(_ key: String) -> String { units.first { $0.0 == key }?.1 ?? key }
@@ -598,6 +607,7 @@ struct HouseholdPatch: Encodable {
     var radiusKm: Int?
     var stores: [StoreDTO]?
     var stepImages: Bool?
+    var variety: VarietyDTO?
 }
 
 /// App-Zustand: lädt und hält Haushalt, Angebote und Plan.
@@ -626,6 +636,7 @@ final class AppStore {
     var recipesVersion = 0  // +1 nach Anlegen/Ändern/Bewerten → Listen und Detail laden neu
     var recipeFilter: String?  // Start-Karte → Rezepte-Tab mit diesem Filter
     var scanning = false  // Kühlschrank-Foto (69): Sheet aus Schnell-Aktion, Start-Karte, Vorrat
+    var generatorSpecial: String?  // Start-Banner (25) → Plan-Generator mit dieser Special-Vorlage
     var watchlist: Set<Int> = Persist.load("watchlist") ?? [] { didSet { Persist.save(watchlist, "watchlist") } }
 
     /// Toast oben, optional mit Aktions-Knopf (bleibt dann länger stehen).
@@ -733,11 +744,13 @@ final class AppStore {
         }
     }
 
-    /// Gericht für heute (erste Mahlzeit des heutigen Wochentags, Mittag bevorzugt).
+    /// Heutiger Wochentag, 0 = Montag (Demo: Dienstag).
+    var today: Int { demo ? 1 : (Calendar(identifier: .iso8601).component(.weekday, from: .now) + 5) % 7 }
+
+    /// Gericht für heute (Hauptgericht des heutigen Wochentags, Mittag bevorzugt).
     var todayMeal: MealDTO? {
-        let weekday = demo ? 1 : (Calendar(identifier: .iso8601).component(.weekday, from: .now) + 5) % 7  // 0 = Montag
-        let today = plan?.entries.filter { $0.day == weekday } ?? []
-        return today.first { $0.mealType == "mittag" } ?? today.first
+        let meals = plan?.entries.filter { $0.day == today } ?? []
+        return meals.first { $0.mealType == "mittag" } ?? meals.first { $0.mealType == "abend" } ?? meals.first
     }
 }
 

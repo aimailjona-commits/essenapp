@@ -13,6 +13,7 @@ struct PantryDTO: Codable, Identifiable, Hashable {
     var isBasic: Bool
     var source: String
     var updatedAt: String
+    var location: String? = nil  // kuehlschrank | vorrat | gefrierfach (Kühlschrank-Foto), nil = unbekannt
 }
 
 /// Body für POST /pantry.
@@ -22,7 +23,8 @@ struct PantryIn: Encodable {
     var unit: String
     var bestBefore: String?
     var isBasic: Bool
-    var source = "manual"  // manual | scan (Kühlschrank-Foto, 69)
+    var source = "manual"  // manual | scan (Kühlschrank-Foto, 69) | rest (Reste nach dem Kochen, 19)
+    var location: String? = nil  // Ort aus dem Prüf-Bildschirm (S24)
 }
 
 extension PantryDTO {
@@ -251,6 +253,9 @@ struct PantryRow: View {
                         .foregroundStyle(item.isBasic && item.amount == 0 ? Theme.C.danger : Theme.C.text2)
                         .contentTransition(.numericText())
                     if let d = item.daysLeft { ExpiryChip(days: d) }
+                    if let loc = item.location, let label = ScanLabels.modes.first(where: { m in m.0 == loc })?.1 {
+                        Text("\(ScanLabels.modeEmoji[loc] ?? "") \(label)").font(Theme.F.micro).foregroundStyle(Theme.C.text2).lineLimit(1)
+                    }
                 }
             }
             Spacer(minLength: 0)

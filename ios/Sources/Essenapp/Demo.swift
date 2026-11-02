@@ -8,7 +8,9 @@ import UIKit
 /// imported (Instagram-Import mit Original-Reel, geschätzten Mengen, Schritt-Bildern), instagram (Teilen aus Instagram, S21),
 /// sharepair / shareimport / shareresult (Teilen-Erweiterung S20), importlink (Link einfügen S22),
 /// fridgecam / fridgereview / cooknow (Kühlschrank-Foto S23–S25), offline (Einkauf mit Offline-Banner, 66),
-/// voiceadd (Einkauf mit Sprach-Eingabe, 45), storeask (Benachrichtigungen mit Erklär-Sheet Standort-Erinnerung, 36).
+/// voiceadd (Einkauf mit Sprach-Eingabe, 45), storeask (Benachrichtigungen mit Erklär-Sheet Standort-Erinnerung, 36),
+/// substitute (Ersatz finden, 7), nomood („Keine Lust“, 16), guests (Gäste-Sheet über dem Wochenplan, 15),
+/// leftovers (Reste in den Vorrat, 19), basics (Frühstück & Snacks, 23), variety (Präferenzen › Abwechslung, 12).
 /// Erscheinungsbild (68): zusätzlich `-demoAppearance dark|light` (überschreibt die Einstellung).
 enum Demo {
     static let screen: String? = arg("-demoScreen")
@@ -101,9 +103,9 @@ enum Demo {
     static let week = [Bool](repeating: true, count: 7)
 
     static let pantry: [PantryDTO] = [
-        stock(1, "Feta", 200, "g", days: 2),
-        stock(2, "Eier", 6, "stk", days: 12),
-        stock(3, "Basmatireis", 500, "g"),
+        stock(1, "Feta", 200, "g", days: 2, location: "kuehlschrank"),
+        stock(2, "Eier", 6, "stk", days: 12, location: "kuehlschrank"),
+        stock(3, "Basmatireis", 500, "g", location: "vorrat"),
         stock(4, "Passierte Tomaten", 500, "g"),
         stock(5, "Spaghetti", 500, "g"),
         stock(6, "Öl", nil, "", basic: true),
@@ -111,14 +113,15 @@ enum Demo {
         stock(8, "Salz", nil, "", basic: true),
     ]
 
-    static func stock(_ id: Int, _ name: String, _ amount: Double?, _ unit: String, days: Double? = nil, basic: Bool = false) -> PantryDTO {
+    static func stock(_ id: Int, _ name: String, _ amount: Double?, _ unit: String, days: Double? = nil, basic: Bool = false,
+                      location: String? = nil) -> PantryDTO {
         PantryDTO(id: id, name: name, ingredientKey: name.lowercased(), amount: amount, unit: unit,
                   bestBefore: days.map { Date.now.addingTimeInterval($0 * 86400).formatted(PantryDTO.day) }, isBasic: basic,
-                  source: "manual", updatedAt: "")
+                  source: "manual", updatedAt: "", location: location)
     }
 
     static let pushSettings = PushSettingsDTO(pushEnabled: true, planPromptEnabled: true, planPromptWeekday: 6, planPromptTime: "18:00",
-                                              quietHours: .init(start: "22:00", end: "07:00"))
+                                              quietHours: .init(start: "22:00", end: "07:00"), lunchboxPush: "20:00")
 
     static func ing(_ name: String, _ amount: Double, _ unit: String = "g", offer: Int? = nil, pantry: Bool = false,
                     estimated: Bool? = nil) -> IngredientDTO {
@@ -182,7 +185,25 @@ enum Demo {
         idea(203, "Joghurt-Pfannkuchen", 20, [.init(name: "Mehl", amount: 200, unit: "g"), .init(name: "Zitrone", amount: 1, unit: "stk")]),
     ]
 
-    static let plan = PlanDTO(id: 1, week: "2026-W45", totalCents: 3820, savedCents: 1240, entries: [
+    static let plan: PlanDTO = {
+        var p = basePlan
+        p.entries[2].rests = [RestBadgeDTO(name: "Basmatireis", fromDay: 0)]  // Tikka nutzt den Reis-Rest vom Montag (19)
+        p.entries[3].guests = 2  // Lachs-Bowl für 2 Gäste (15)
+        p.entries[3].portionsTotal += 2
+        var lunch = meal(1, "lunchbox", "Couscous-Salat to go", 180, 15, [ing("Couscous", 120), ing("Rispentomaten", 150, offer: 3),
+                                                                           ing("Feta", 50, offer: 8)])
+        lunch.id = 13
+        lunch.recipe.id = 13
+        lunch.portions = [PortionDTO(memberId: 1, factor: 1.25)]  // nur Jona hat dienstags Lunchbox (24)
+        lunch.portionsTotal = 1.25
+        p.entries.append(lunch)
+        p.variety = VarietyCheckDTO(ok: false, issues: ["2× Pasta", "nur 1 vegetarischer Tag"])
+        p.leftovers = LeftoversDTO(planned: 3, left: [LeftoverDTO(name: "Sahne", amount: 100, unit: "ml", untilDay: 3,
+                                                                  suggestion: "Bis Do verbrauchen, z.B. im Frühstück, als Snack oder in einer Soße")])
+        return p
+    }()
+
+    private static let basePlan = PlanDTO(id: 1, week: "2026-W45", totalCents: 3820, savedCents: 1240, entries: [
         meal(0, "mittag", "Shakshuka mit Feta", 320, 25, [ing("Eier", 4, "stk"), ing("Rispentomaten", 400, offer: 3), ing("Feta", 100, offer: 8)]),
         meal(0, "abend", "Linsen-Dal mit Reis", 240, 30, [ing("Rote Linsen", 250), ing("Basmatireis", 160, offer: 7), ing("Currypulver", 2, "g", pantry: true)]),
         meal(1, "mittag", "Chicken Tikka Masala", 490, 35, [ing("Hähnchenbrustfilet", 400, offer: 1), ing("Basmatireis", 160, offer: 7),
@@ -192,6 +213,51 @@ enum Demo {
         meal(2, "mittag", "Pasta al Pomodoro", 210, 15, [ing("Spaghetti", 250), ing("Rispentomaten", 300, offer: 3)]),
         meal(3, "mittag", "Ofengemüse mit Feta", 380, 30, [ing("Paprika", 2, "stk"), ing("Feta", 100, offer: 8)]),
     ])
+
+    // MARK: Clever planen (Phase 11), Ersatz (7)
+
+    static func noMood(page: Int) -> [CookIdeaDTO] {
+        let all = [idea(301, "Rührei-Wrap mit Feta", 10, []), idea(302, "Tomaten-Reis-Pfanne", 15, []), idea(303, "Pasta aglio e olio", 12, []),
+                   idea(304, "Shakshuka light", 15, []), idea(305, "Feta-Omelett", 8, []), idea(306, "Joghurt-Bowl mit Ei", 5, [])]
+        return Array(all.dropFirst(page * 3).prefix(3))
+    }
+
+    static let entryLeftovers = [
+        EntryLeftoverDTO(name: "Joghurt", amount: 350, unit: "g", bestBefore: Date.now.addingTimeInterval(3 * 86400).formatted(PantryDTO.day)),
+        EntryLeftoverDTO(name: "Hähnchenbrustfilet", amount: 150, unit: "g", bestBefore: Date.now.addingTimeInterval(1 * 86400).formatted(PantryDTO.day)),
+        EntryLeftoverDTO(name: "Basmatireis", amount: 180, unit: "g", bestBefore: nil),
+    ]
+
+    static let christmas = SpecialDTO(key: "weihnachten", name: "Weihnachten", emoji: "🎄", date: "2026-12-24", daysUntil: 12,
+                                      template: "festtagsmenue", templateName: "Festtagsmenü", running: false,
+                                      text: "🎄 Weihnachten in 12 Tagen – Menü planen?")
+    static let specials = SpecialsDTO(banner: christmas, specials: [
+        christmas,
+        SpecialDTO(key: "plaetzchen", name: "Plätzchenzeit", emoji: "🍪", date: "2026-12-01", daysUntil: 0, template: "plaetzchen",
+                   templateName: "Plätzchen-Back-Plan", running: true),
+    ])
+    static let generator = GeneratorDTO(week: 46, topOffers: [offers[0], offers[3], offers[7]], banner: christmas)
+
+    static let weeklyBasics = [
+        WeeklyBasicDTO(id: 1, name: "Haferflocken", amount: 1000, unit: "g"),
+        WeeklyBasicDTO(id: 2, name: "Joghurt", amount: 1000, unit: "g"),
+        WeeklyBasicDTO(id: 3, name: "Bananen", amount: 6, unit: "stk"),
+        WeeklyBasicDTO(id: 4, name: "Brot", amount: nil, unit: ""),
+        WeeklyBasicDTO(id: 5, name: "Milch", amount: 2000, unit: "ml"),
+    ]
+
+    static let substitutes: SubstitutesDTO = {
+        func sub(_ name: String, _ amount: Double, _ unit: String, pantry: Bool = false, offer: Int? = nil) -> SubstitutesDTO.Ingredient {
+            let o = offer.flatMap { id in offers.first { x in x.id == id } }
+            return .init(name: name, amount: amount, unit: unit, inPantry: pantry,
+                         offer: o.map { x in .init(id: x.id, chain: x.chain, priceCents: x.priceCents) })
+        }
+        return SubstitutesDTO(ingredient: .init(name: "Joghurt", amount: 150, unit: "g"), source: "tabelle", options: [
+            .init(note: "etwas dicker und eiweißreicher – mit 2 EL Wasser glatt rühren", ingredients: [sub("Skyr", 130, "g", offer: 5), sub("Wasser", 20, "ml", pantry: true)]),
+            .init(note: "milder und cremiger, ähnliche Säure", ingredients: [sub("Saure Sahne", 150, "g")]),
+            .init(note: "laktosefrei, leicht süßlich – passt gut zu Curry", ingredients: [sub("Kokosmilch", 120, "ml", pantry: true)]),
+        ])
+    }()
 
     // MARK: Meine Rezepte (3), Nährwerte (2)
 

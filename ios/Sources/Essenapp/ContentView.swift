@@ -80,6 +80,7 @@ struct MainView: View {
     @EnvironmentObject private var delegate: AppDelegate
     @State private var deepOffer: OfferDTO?
     @State private var deepList: String?  // Laden-Liste aus der Standort-Erinnerung (36)
+    @State private var deepRecipe: Int?  // Rezept aus dem Lunchbox-Push (24)
     @State private var tab = MainView.demoTab
     @State private var resetToken = 0  // erneutes Tippen auf den aktiven Tab → zurück zum Anfang
     @State private var quickOpen = Demo.screen == "quick"
@@ -89,14 +90,15 @@ struct MainView: View {
     private static var demoTab: AppTab {
         switch Demo.screen {
         case "offers", "offer", "stores": .angebote
-        case "plan", "recipe", "cooking", "sharecard", "recipes", "myrecipe", "recipeform", "imported", "importlink": .rezepte
+        case "plan", "recipe", "cooking", "sharecard", "recipes", "myrecipe", "recipeform", "imported", "importlink", "guests": .rezepte
         case "shopping", "list", "pantry", "fridgecam", "fridgereview", "cooknow", "offline", "voiceadd": .einkauf
         default: .start
         }
     }
 
     /// Demo-Screens, die in der App als Sheet bzw. in der Erweiterung ohne Tab-Leiste erscheinen.
-    private static let modalDemo = ["recipeform", "fridgecam", "fridgereview", "cooknow", "sharepair", "shareimport", "shareresult", "importlink"]
+    private static let modalDemo = ["recipeform", "fridgecam", "fridgereview", "cooknow", "sharepair", "shareimport", "shareresult", "importlink",
+                                    "nomood", "substitute", "leftovers"]
 
     @ViewBuilder private var tabContent: some View {
         switch tab {
@@ -132,6 +134,11 @@ struct MainView: View {
                     case ("settings", _): SettingsView()
                     case ("profile", _): ProfileView()
                     case ("notifications", _), ("storeask", _): NotificationsView()
+                    case ("nomood", _): NoMoodSheet()
+                    case ("substitute", _): SubstituteSheet(meal: Demo.plan.entries[2], index: 3)
+                    case ("leftovers", _): RatingSheet(meal: Demo.plan.entries[2], demoRests: true)
+                    case ("basics", _): WeeklyBasicsView()
+                    case ("variety", _): PreferencesView()
                     default: tabContent.id(tab).transition(.opacity)
                     }
                 }
@@ -140,6 +147,13 @@ struct MainView: View {
                 .toolbar(.hidden, for: .navigationBar)
                 .navigationDestination(item: $deepOffer) { OfferDetailView(offer: $0) }
                 .navigationDestination(item: $deepList) { chain in ShoppingListView(chain: chain) }
+                .navigationDestination(item: $deepRecipe) { id in
+                    if let meal = store.plan?.entries.first(where: { e in e.recipe.id == id }) {
+                        RecipeDetailView(meal: meal)  // im Plan: Mengen des Slots
+                    } else {
+                        SavedRecipeView(recipeId: id)
+                    }
+                }
             }
             .id("\(tab)-\(resetToken)")  // Tab-Wechsel schließt offene Detailseiten
             .animation(.easeInOut(duration: 0.2), value: tab)
@@ -188,7 +202,8 @@ struct MainView: View {
         }
     }
 
-    /// Router für essenapp://start, essenapp://generator, essenapp://offer/<id>, essenapp://recipe/new, essenapp://list/<kette>.
+    /// Router für essenapp://start, essenapp://generator, essenapp://offer/<id>, essenapp://recipe/new, essenapp://recipe/<id>,
+    /// essenapp://list/<kette>.
     private func open(_ url: URL) async {
         guard url.scheme == "essenapp" else { return }
         withAnimation(Theme.spring) { quickOpen = false }
@@ -199,6 +214,12 @@ struct MainView: View {
             showGenerator = true
         case "recipe" where url.lastPathComponent == "new":
             showRecipeForm = true
+        case "recipe":  // Lunchbox-Push „für morgen vorbereiten“ (24)
+            guard let id = Int(url.lastPathComponent) else { return }
+            if store.plan == nil { await store.loadAll() }
+            withAnimation(Theme.spring) { tab = .rezepte }
+            try? await Task.sleep(for: .milliseconds(350))  // Tab-Wechsel baut den NavigationStack neu
+            deepRecipe = id
         case "offer":
             guard let id = Int(url.lastPathComponent) else { return }
             if !store.offers.contains(where: { o in o.id == id }) { await store.loadAll() }

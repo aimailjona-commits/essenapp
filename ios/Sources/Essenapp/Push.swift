@@ -65,6 +65,7 @@ struct PushSettingsDTO: Codable, Equatable {
     var planPromptWeekday: Int  // 0 = Montag
     var planPromptTime: String
     var quietHours: Quiet?
+    var lunchboxPush: String? = nil  // „Lunchbox für morgen vorbereiten“ um HH:MM (24), nil = aus
 
     func encode(to encoder: any Encoder) throws {
         var c = encoder.container(keyedBy: CodingKeys.self)
@@ -73,6 +74,7 @@ struct PushSettingsDTO: Codable, Equatable {
         try c.encode(planPromptWeekday, forKey: .planPromptWeekday)
         try c.encode(planPromptTime, forKey: .planPromptTime)
         try c.encode(quietHours, forKey: .quietHours)
+        try c.encode(lunchboxPush, forKey: .lunchboxPush)
     }
 }
 
@@ -244,6 +246,16 @@ struct NotificationsView: View {
                                                           set: { v in s.wrappedValue.quietHours?.end = v })), displayedComponents: .hourAndMinute)
                 Text("In der Ruhezeit kommen keine Mitteilungen.").font(Theme.F.micro).foregroundStyle(Theme.C.text2)
             }
+            Divider()
+            Toggle("Lunchbox-Erinnerung am Vorabend", isOn: Binding(get: { s.wrappedValue.lunchboxPush != nil }, set: { on in
+                s.wrappedValue.lunchboxPush = on ? "20:00" : nil
+            }))
+            if s.wrappedValue.lunchboxPush != nil {
+                DatePicker("Uhrzeit", selection: time(Binding(get: { s.wrappedValue.lunchboxPush ?? "20:00" },
+                                                              set: { v in s.wrappedValue.lunchboxPush = v })), displayedComponents: .hourAndMinute)
+            }
+            Text("🥡 „Lunchbox für morgen vorbereiten“ – nur am Abend vor deinen Lunchbox-Tagen (Mein Profil).")
+                .font(Theme.F.micro).foregroundStyle(Theme.C.text2)
         }
         .tint(Theme.C.accent)
         .padding(16).card()

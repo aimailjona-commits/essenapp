@@ -65,7 +65,8 @@ extension AppStore {
         if demo {
             for (i, n) in items.enumerated() {
                 pantry.insert(PantryDTO(id: -(pantry.count + i + 1), name: n.name, ingredientKey: n.name.lowercased(), amount: n.amount,
-                                        unit: n.unit, bestBefore: n.bestBefore, isBasic: false, source: "scan", updatedAt: ""), at: 0)
+                                        unit: n.unit, bestBefore: n.bestBefore, isBasic: false, source: n.source, updatedAt: "",
+                                        location: n.location), at: 0)
             }
             return
         }
@@ -373,7 +374,7 @@ struct FridgeScanSheet: View {
         let chosen = items.filter { i in i.checked && !i.name.trimmingCharacters(in: .whitespaces).isEmpty }
         let body = chosen.map { i in
             PantryIn(name: String(i.name.trimmingCharacters(in: .whitespaces).prefix(100)), amount: i.amount.map { a in min(max(a, 0), 100_000) },
-                     unit: i.unit, bestBefore: i.bestBefore, isBasic: false, source: "scan")
+                     unit: i.unit, bestBefore: i.bestBefore, isBasic: false, source: "scan", location: i.location)
         }
         saving = true
         Task {

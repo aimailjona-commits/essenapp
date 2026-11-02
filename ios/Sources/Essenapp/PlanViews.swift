@@ -8,6 +8,8 @@ struct RecipesTab: View {
     @State private var filter = "alle"
     @State private var person: Int?  // „Für:“ in der Tagesansicht (48), nil = ich
     @State private var day = Demo.screen != nil ? 1 : (Calendar(identifier: .iso8601).component(.weekday, from: .now) + 5) % 7
+    @State private var noMood = false  // „Keine Lust“ (16)
+    @State private var guestsFor: MealDTO? = Demo.screen == "guests" ? Demo.plan.entries[3] : nil  // „Gäste hinzufügen“ (15)
     @Namespace private var dayPill
 
     var body: some View {
@@ -38,25 +40,32 @@ struct RecipesTab: View {
                         }
                         .animation(Theme.spring, value: eaters)
                     }
+                    if let v = plan.variety { VarietyChip(check: v) }  // Abwechslung (12)
                     weekAverage
                     HStack(spacing: 10) {
                         summary("eurosign.circle.fill", Theme.C.warning, euro(plan.totalCents), "von \(euro(store.household?.budgetFoodWeekCents ?? 0))")
                         summary("arrow.down.circle.fill", Theme.C.accent, euro(plan.savedCents), "gespart")
                         summary("fork.knife.circle.fill", Theme.C.kcal, "\(plan.entries.count)", "Gerichte")
                     }
+                    if let l = plan.leftovers, l.planned > 0 || !l.left.isEmpty { LeftoversCard(leftovers: l) }  // Reste (19)
                     dayPicker(plan)
                     let meals = plan.entries.filter { $0.day == day }
+                        .sorted { a, b in (Labels.slotOrder.firstIndex(of: a.mealType) ?? 9) < (Labels.slotOrder.firstIndex(of: b.mealType) ?? 9) }
                     if meals.isEmpty {
                         EmptyState(emoji: "😴", title: "Nichts geplant", text: "Für \(Labels.dayNames[day]) ist kein Gericht geplant.")
                     }
                     ForEach(Array(meals.enumerated()), id: \.element) { i, meal in
                         VStack(alignment: .leading, spacing: 8) {
-                            Text(Labels.meal(meal.mealType).uppercased()).font(Theme.F.micro).foregroundStyle(Theme.C.text2)
-                            MealRow(meal: meal, actions: true)
+                            Text((meal.mealType == "lunchbox" ? "🥡 " : "") + Labels.meal(meal.mealType).uppercased())
+                                .font(Theme.F.micro).foregroundStyle(Theme.C.text2)
+                            MealRow(meal: meal, actions: true) { guestsFor = meal }
                         }
                         .appear(delay: Double(i) * 0.06)
                     }
                     .id(day)
+                    if day == store.today && !meals.isEmpty {
+                        Button { noMood = true } label: { Text("😮‍💨 Keine Lust") }.buttonStyle(SecondaryButtonStyle())
+                    }
                     DayNutritionCard(day: day, person: $person)  // Tageswerte unten (S2)
                 } else {
                     EmptyState(emoji: "📅", title: "Noch kein Wochenplan", text: "Erstelle deinen ersten Plan.",
@@ -69,6 +78,8 @@ struct RecipesTab: View {
         .onAppear {  // Start-Karte „Lieblingsrezepte günstig“ → gefilterte Liste
             if let f = store.recipeFilter { mine = true; filter = f; store.recipeFilter = nil }
         }
+        .sheet(isPresented: $noMood) { NoMoodSheet().presentationDetents([.large]).presentationCornerRadius(Theme.R.sheet) }
+        .sheet(item: $guestsFor) { m in GuestsSheet(meal: m).presentationDetents([.height(380), .medium]).presentationCornerRadius(Theme.R.sheet) }
     }
 
     /// Wochenschnitt der gewählten Person im Kopf (2).
@@ -126,11 +137,13 @@ struct MealRow: View {
     @Environment(AppStore.self) private var store
     let meal: MealDTO
     var actions = false
+    var onGuests: (() -> Void)?  // Wochenplan: „Gäste hinzufügen“ (15)
     @State private var rolling = false
     @State private var replacing = false  // S2 „ersetzen durch eigenes Rezept“ → S19
 
     var body: some View {
         let deals = meal.recipe.ingredients.filter { $0.offerId != nil }.count
+        VStack(alignment: .leading, spacing: 4) {
         HStack(spacing: 14) {
             NavigationLink { RecipeDetailView(meal: meal) } label: {
                 HStack(spacing: 14) {
@@ -173,6 +186,8 @@ struct MealRow: View {
                 }
             }
         }
+        MealBadges(meal: meal, onGuests: actions && meal.id != nil ? onGuests : nil)
+        }
         .padding(12)
         .card()
         .sheet(isPresented: $replacing) {
@@ -198,7 +213,9 @@ struct MealRow: View {
 struct RecipeDetailView: View {
     @Environment(AppStore.self) private var store
     @Environment(\.dismiss) private var dismiss
-    let meal: MealDTO
+    private let given: MealDTO
+    @State private var swapped: MealDTO?  // gespeichertes Rezept nach „Ersatz finden“ (7)
+    @State private var substituting: Int?  // Index der Zutat für „Ersatz finden“
     @State private var showRating = false
     @State private var openOffer: OfferDTO?
     @State private var searchIngredient: IngredientDTO?
@@ -218,6 +235,10 @@ struct RecipeDetailView: View {
     @State private var imagesSettled = false  // Erzeugung fertig oder aus → leere Plätze ausblenden
     @Environment(\.openURL) private var openURL
 
+    init(meal: MealDTO) { given = meal }
+
+    /// Plan-Gericht immer im aktuellen Stand des Plans (Ersatz, Gäste, Würfeln ändern es).
+    private var meal: MealDTO { swapped ?? given.id.flatMap { id in store.plan?.entries.first { e in e.id == id } } ?? given }
     private var recipe: RecipeDTO { meal.recipe }
     private var images: [String] { stepImages ?? info?.stepImages ?? recipe.stepImages ?? [] }
     /// Bildfläche für Schritt i: Bild da, oder es wird noch erzeugt (Schimmer).
@@ -321,8 +342,9 @@ struct RecipeDetailView: View {
                             .fixedSize()
                         }
                         .padding(.bottom, 6)
-                        ForEach(recipe.ingredients, id: \.self) { ing in
+                        ForEach(Array(recipe.ingredients.enumerated()), id: \.offset) { index, ing in
                             let offer = store.offers.first { $0.id == ing.offerId }
+                            let rest = meal.rests?.first { r in r.name.localizedCaseInsensitiveCompare(ing.name) == .orderedSame }
                             // Feature 1: Zutat antippen → Angebot (oder passende Angebote)
                             Button { if let offer { openOffer = offer } else { searchIngredient = ing } } label: {
                             HStack(spacing: 12) {
@@ -337,6 +359,9 @@ struct RecipeDetailView: View {
                                         }
                                         if ing.inPantry == true { DealBadge(text: "im Vorrat", style: .ok) }
                                         if ing.estimated == true { DealBadge(text: "Menge geschätzt", style: .soft) }
+                                        if let rest, Labels.days.indices.contains(rest.fromDay) {
+                                            DealBadge(text: "♻︎ Rest von \(Labels.days[rest.fromDay])", style: .ok)
+                                        }
                                     }
                                 }
                                 Spacer()
@@ -357,6 +382,10 @@ struct RecipeDetailView: View {
                             .contentShape(Rectangle())
                             }
                             .buttonStyle(PressableStyle())
+                            .contextMenu {  // lange drücken → Ersatz (7)
+                                Button("Ersatz finden", systemImage: "arrow.left.arrow.right") { substituting = index }
+                            }
+                            .accessibilityAction(named: "Ersatz finden") { substituting = index }
                         }
                     }
                     .padding(16).card()
@@ -418,10 +447,13 @@ struct RecipeDetailView: View {
         .fullScreenCover(isPresented: $cooking, onDismiss: {
             if rateAfterCooking { rateAfterCooking = false; showRating = true }  // Abschluss → Bewertung + Vorrat (S8)
         }) {
-            CookingView(meal: cookMeal, imagesLoading: store.stepImagesOn && !imagesSettled, factor: factor, person: who.flatMap { w in mine.map { m in (w.emoji, m * meal.scale / base) } }) {
-                rateAfterCooking = true
-                cooking = false
-            }
+            CookingView(meal: cookMeal, imagesLoading: store.stepImagesOn && !imagesSettled, factor: factor,
+                        person: who.flatMap { w in mine.map { m in (w.emoji, m * meal.scale / base) } },
+                        onFinish: {
+                            rateAfterCooking = true
+                            cooking = false
+                        },
+                        onSubstitute: { m in if let m { swapped = m } })
         }
         .sheet(isPresented: $shareCard) { ShareCardSheet(meal: meal).presentationDetents([.large]).presentationCornerRadius(Theme.R.sheet) }
         .sheet(isPresented: $showRating) { RatingSheet(meal: meal).presentationDetents([.medium, .large]).presentationCornerRadius(Theme.R.sheet) }
@@ -438,6 +470,12 @@ struct RecipeDetailView: View {
         }
         .navigationDestination(item: $openOffer) { OfferDetailView(offer: $0) }
         .sheet(item: $searchIngredient) { IngredientOffersSheet(ingredient: $0).presentationDetents([.medium, .large]).presentationCornerRadius(Theme.R.sheet) }
+        .sheet(isPresented: Binding(get: { substituting != nil }, set: { on in if !on { substituting = nil } })) {
+            if let i = substituting {
+                SubstituteSheet(meal: meal, index: i) { m in if let m { swapped = m } }
+                    .presentationDetents([.medium, .large]).presentationCornerRadius(Theme.R.sheet)
+            }
+        }
     }
 
     /// Plan-Gerichte holen Bewertungen/Favorit nach; fehlen Nährwerte (Berechnung läuft), einmal nach ~3 s neu laden.
@@ -603,9 +641,21 @@ struct RatingSheet: View {
     @State private var note = ""
     @State private var saving = false
     @State private var consumed: [PantryDTO]?  // nach „Speichern“: vom Vorrat abgezogene Einträge (editierbar)
+    @State private var rests: [RestRow]?  // danach: tatsächliche Reste bestätigen (19)
+    @State private var nextRests: [RestRow] = []
+    var demoRests = false  // Demo „leftovers“: direkt die Reste-Abfrage
 
     var body: some View {
-        if let consumed { consumedList(consumed) } else { ratingForm }
+        Group {
+            if let rests {
+                RestsConfirmView(rows: rests) { dismiss() }
+            } else if let consumed {
+                consumedList(consumed)
+            } else {
+                ratingForm
+            }
+        }
+        .onAppear { if demoRests && rests == nil { rests = Demo.entryLeftovers.map(RestRow.init) } }
     }
 
     /// Rückfrage-Liste: was abgezogen wurde, Mengen hier korrigierbar.
@@ -629,7 +679,10 @@ struct RatingSheet: View {
                     }
                 }
             }
-            Button("Fertig") { dismiss() }.buttonStyle(PrimaryButtonStyle())
+            Button(nextRests.isEmpty ? "Fertig" : "Weiter") {
+                if nextRests.isEmpty { dismiss() } else { withAnimation(Theme.spring) { rests = nextRests } }
+            }
+            .buttonStyle(PrimaryButtonStyle())
         }
         .padding(Theme.pagePadding)
         .frame(maxHeight: .infinity, alignment: .top)
@@ -658,7 +711,11 @@ struct RatingSheet: View {
                     guard await store.rate(meal.recipe.id, stars: rating, again: again, note: note) else { return }
                     store.flash(rating >= 4 ? "Gespeichert – kommt öfter 🎉" : "Danke für deine Bewertung")
                     let changed = await store.consume(meal)
-                    if changed.isEmpty { dismiss(); return }
+                    nextRests = await store.entryLeftovers(meal).map(RestRow.init)  // erwartete Reste angebrochener Packungen
+                    if changed.isEmpty {
+                        if nextRests.isEmpty { dismiss() } else { withAnimation(Theme.spring) { rests = nextRests } }
+                        return
+                    }
                     store.flash("Vorrat aktualisiert")
                     withAnimation(Theme.spring) { consumed = changed }
                 }
@@ -680,6 +737,11 @@ struct PlanGeneratorSheet: View {
     @State private var prefs = Prefs()
     @State private var wishes = ""
     @State private var saveAsDefault = false
+    @State private var info: GeneratorDTO?  // KW + „Diese Woche im Angebot“ (17)
+    @State private var specials: [SpecialDTO] = []  // Vorlagen (25)
+    @State private var special: String?
+    @State private var guests: [String: Int] = [:]  // „+ Gäste“ (15)
+    @State private var guestEuro: Double?
 
     private let steps = [("Angebote auswerten", "🏷️"), ("Lieblingsrezepte prüfen", "❤️"),
                          ("Gerichte planen", "👩‍🍳"), ("Preise rechnen", "🧮")]
@@ -724,7 +786,10 @@ struct PlanGeneratorSheet: View {
                 ScrollView {
                     VStack(alignment: .leading, spacing: 14) {
                         Text("Wochenplan erstellen").font(Theme.F.title)
-                        Text("Passe an, was du diese Woche essen möchtest – gilt nur für diesen Plan.").font(Theme.F.caption).foregroundStyle(Theme.C.text2)
+                        Text("\(info.map { i in "KW \(i.week) · " } ?? "")Passe an, was du diese Woche essen möchtest – gilt nur für diesen Plan.")
+                            .font(Theme.F.caption).foregroundStyle(Theme.C.text2)
+                        if let top = info?.topOffers, !top.isEmpty { TopOffersHint(offers: top).appear() }
+                        if !specials.isEmpty { SpecialPicker(specials: specials, selected: $special).appear(delay: 0.04) }
                         VStack(alignment: .leading, spacing: 8) {
                             Label { Text("Wünsche").font(Theme.F.headline) } icon: { Text("💭") }
                             TextField("z.B. mehr Fisch, ein Gericht mit Kürbis", text: $wishes, axis: .vertical)
@@ -732,6 +797,7 @@ struct PlanGeneratorSheet: View {
                                 .padding(12).background(Theme.C.surface, in: RoundedRectangle(cornerRadius: Theme.R.chip))
                         }
                         .padding(16).card()
+                        GuestPlanner(guests: $guests, extraEuro: $guestEuro, days: prefs.planDays.sorted(), meals: prefs.mealTypeList)
                         PreferencesForm(prefs: $prefs, showDiet: false)
                         Toggle("Als Standard speichern", isOn: $saveAsDefault).tint(Theme.C.accent).padding(16).card()
                     }
@@ -750,13 +816,25 @@ struct PlanGeneratorSheet: View {
         .presentationBackground(Theme.C.bg)
         .presentationCornerRadius(Theme.R.sheet)
         .onAppear { if let h = store.household { prefs = Prefs(h) } }
+        .task {
+            if let s = store.generatorSpecial { special = s; store.generatorSpecial = nil }  // Start-Banner (25)
+            info = await store.generatorInfo()
+            specials = await store.specials()?.specials ?? []
+            if store.demo && special == nil { special = info?.banner?.key }
+        }
     }
 
     private func start() {
         withAnimation(Theme.spring) { started = true; phase = 0 }
         guard !store.demo else { return }
         Task {
-            async let done: Void = store.generatePlan(prefs.options(wishes: wishes, saveAsDefault: saveAsDefault))
+            var options = prefs.options(wishes: wishes, saveAsDefault: saveAsDefault)
+            let slots = GuestPlanner.slots(guests, days: prefs.planDays.sorted(), meals: prefs.mealTypeList)
+            options.guests = slots.isEmpty ? nil : slots
+            options.guestBudgetCents = slots.isEmpty ? nil : guestEuro.map { e in Int(e) * 100 }
+            options.special = special
+            let body = options
+            async let done: Void = store.generatePlan(body)
             for i in 1..<steps.count {  // Fortschritt ist nur Anzeige, das Backend arbeitet in einem Aufruf
                 try? await Task.sleep(for: .seconds(8))
                 if store.generating { withAnimation(Theme.spring) { phase = i } }

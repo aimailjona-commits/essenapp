@@ -28,6 +28,7 @@ Einstellungen/Profil: über den Avatar oben rechts auf dem Start-Screen.
   - Karte „📸 Kühlschrank scannen“ (Feature 69) unter „Lieblingsrezepte günstig“: Emoji im getönten Quadrat, Titel, „Fotos machen – wir füllen den Vorrat und schlagen Gerichte vor“, Chevron → S23.
   - Karte unter dem Budget (Feature 3, `GET /recipes/deals`): bis zu 3 überlappende Tellerfotos, Text „N Lieblingsrezepte sind diese Woche günstig“, darunter die ersten Titel, Chevron. Tippen → Tab Rezepte › Meine Rezepte mit Filter „Im Angebot“. Keine Treffer → Karte fehlt.
 - Zustände: kein Plan → `EmptyState` „Noch kein Wochenplan“ + `PrimaryButton` „Plan erstellen“; Laden → Skeleton
+- Phase 11: direkt unter dem `SearchField` Start-Banner (Feature 25, `GET /specials`, nur wenn `banner`): Emoji im `accentSoft`-Quadrat, „Weihnachten in 12 Tagen – Menü planen?“, darunter „Festtagsmenü im Plan-Generator“ (`micro`), Chevron → S7 mit dieser Special-Vorlage. Unter der Heute-Karte `SecondaryButton` „😮‍💨 Keine Lust“ → S27 (Feature 16).
 
 ### S2 Wochenplan
 - Kopf: „KW 45“, Zeitraum, Gesamtkosten, Budget-Status
@@ -39,6 +40,12 @@ Einstellungen/Profil: über den Avatar oben rechts auf dem Start-Screen.
   - Kopf: Wochenschnitt der gewählten Person „🧑‍🍳 Ø 1980 / 2500 kcal · 104 / 140 g Protein pro Tag“.
   - Gericht-Zeile: Aktionen als 2×2 runde Knöpfe – Herz (Favorit), Ersetzen (→ S19 „Durch eigenes Rezept ersetzen“), Schloss, Würfel.
 - Zustände: wird erstellt → Skeleton + Text „Angebote werden ausgewertet …“
+- Phase 11:
+  - Kopf unter „essen mit“: Chip „✓ Abwechslung“ (`success` getönt) bzw. „⚠ 2× Pasta“ (`warning` getönt, erster Verstoß aus `variety.issues`; mehrere → „+1 ▾“, Antippen zeigt alle als Menü) (Feature 12).
+  - Unter den drei Kennzahl-Kacheln Karte „Reste“ (Feature 19, nur wenn `leftovers.planned > 0` oder etwas übrig): ♻︎ im `successSoft`-Quadrat, „Reste: 3 verplant, 1 übrig (Sahne 100 ml)“, darunter je Rest der Vorschlag („Sahne: Bis Do verbrauchen …“, `micro`).
+  - Gerichte eines Tages in der Reihenfolge Frühstück · Lunchbox · Mittag · Snack · Vorspeise · Abend · Dessert. Lunchbox-Gerichte (Feature 24): Überschrift „🥡 LUNCHBOX“, Badge „🥡 Lunchbox · Jona“ (Esser).
+  - Unter jeder Gericht-Zeile Badges: „♻︎ Rest von Mo“ (je Herkunftstag), Pill „👤+ Gäste“ bzw. „+4 Gäste“ (`accentSoft`) → S28 (Feature 15).
+  - Ist der gewählte Tag heute: unter den Gerichten `SecondaryButton` „😮‍💨 Keine Lust“ → S27.
 
 ### S3 Rezeptdetail
 - Großes freigestelltes Tellerbild oben (wie Referenz 02), Zurück-Button, Merken (Herz)
@@ -58,6 +65,7 @@ Einstellungen/Profil: über den Avatar oben rechts auf dem Start-Screen.
   - Karte „Zusammensetzung“ mit `ShareBloom`: Tellerfoto in der Mitte, je Zutat ein Blütenblatt mit Verlauf (Länge nach Anteil), außen Prozent + Name; Anteile < 3 % → „Sonstiges“ (grau); ganze Prozent, Summe 100. Blätter wachsen nacheinander auf (bei „Bewegung reduzieren“ ohne Versatz). Fehlt die Zusammensetzung noch → Schimmer.
   - Zutatenmengen im Plan = Rezeptmenge × `scale`; „Deine Portion“ = Menge × scale × Faktor / portions_total.
   - Unten Karte „Bewertungen“: Name, Sterne, Datum, „Wieder kochen: Bald/Irgendwann/Nie“ (Nie rot), Notiz.
+- Phase 10/11 (Features 7, 19): Zutat lange drücken → Menü „Ersatz finden“ → S26 (auch per VoiceOver-Aktion). Zutaten, die aus einem Rest stammen, tragen den Badge „♻︎ Rest von Mo“. Nach dem Ersetzen zeigt S3 das geänderte Rezept (Plan-Gerichte immer im aktuellen Plan-Stand).
 - Phase 9 (Features 5 + 9):
   - Importierte Rezepte (`source` instagram/web): unter dem Namen Quelle-Chip „Instagram · @autor“ bzw. „Web · Autor/Domain“; bei Instagram rechts schwarzer Pill-Knopf „▶︎ Original-Reel“ (öffnet `source_url` → Instagram-App, sonst Safari).
   - Zutaten mit `estimated` bekommen den Badge „Menge geschätzt“.
@@ -106,6 +114,12 @@ Mockups: `mockups/weitere-screens-v1.html`.
 - Fester `PrimaryButton` „Plan erstellen“ mit Sparkle-Icon.
 - **Lade-Zustand** (eigener Screen im Sheet): Teller-Platzhalter dreht sich langsam, darunter wechselnde Schritte mit Häkchen: „Angebote auswerten“ → „Lieblingsrezepte prüfen“ → „Gerichte planen“ → „Preise & Nährwerte rechnen“. Dauer < 60 s.
 - Fehler: `ErrorState` im Sheet mit „Erneut versuchen“; Budget nicht erreichbar → Hinweis mit günstigster gefundener Summe und Button „Trotzdem übernehmen“.
+- Phase 11 (`GET /plans/generator` + `GET /specials` beim Öffnen; ohne Antwort fehlen die Karten):
+  - Untertitel beginnt mit „KW 46 · “ (Planungswoche, ab Freitag die nächste).
+  - Karte „🏷️ Diese Woche im Angebot“ (Feature 17): Satz „Diese Woche im Angebot: Hähnchenbrustfilet, Lachsfilet, Feta“, darunter die Top-3 als kleine Angebotskarten mit `DealBadge`.
+  - Karte „✨ Special“ (Feature 25, nur wenn Vorlagen passen): Chips „Ohne“ + „🎄 Festtagsmenü“, „🍪 Plätzchen-Back-Plan“, „🔥 Grillparty“ (aktiver Chip `accent`), darunter Anlass + Inhalt („Weihnachten · Vorspeise, Hauptgang und Dessert am Tag des Anlasses“). Aus dem Start-Banner vorgewählt. → `PlanOptions.special`.
+  - Karte „👥 Gäste“ (Feature 15) nach „Wünsche“: Tagespillen Mo–So (nicht geplante Tage halb transparent, gewählter Tag `action`), Badge „+4“ (`accent`) oben rechts an Tagen mit Gästen; darunter je gewählter Mahlzeit Zeile „Abend · +4 Gäste“ mit Stepper 0–20. Ab 1 Gast: Schalter „Gäste-Budget extra“ → Betrag groß + Regler 5–100 € (5er), aus → „Ohne Extra-Budget zahlen die Gäste aus dem Wochenbudget.“ → `PlanOptions.guests` / `guest_budget_cents`.
+  - Mahlzeiten-Chips enthalten „Snack“ (Feature 23c; nicht im Onboarding).
 
 ### S8 Bewertung (Sheet, halbe Höhe)
 - Kleines Tellerfoto + Gericht-Name.
@@ -113,6 +127,7 @@ Mockups: `mockups/weitere-screens-v1.html`.
 - „Wieder kochen?“ Segment: Bald / Irgendwann / Nie. „Nie“ = Rezept wird nicht mehr vorgeschlagen.
 - Speichern → `POST /recipes/{id}/rate` (wer und wann setzt der Server); Fehler → Toast, Sheet bleibt offen.
 - Optionale Notiz (einzeilig, wächst).
+- Nach „Vom Vorrat abgezogen“ („Weiter“) bzw. direkt: S30 „Reste in den Vorrat?“, wenn `GET /plans/current/entries/{id}/leftovers` etwas liefert (Feature 19).
 - `PrimaryButton` „Speichern“. Nach dem Speichern: kurzer Haken-Toast „Gespeichert – kommt öfter“ (bei 4–5 Sternen).
 
 ### S14 Läden & Umkreis (Karte)
@@ -157,7 +172,9 @@ Mockups: `mockups/weitere-screens-v1.html`.
   - **Haushalt:** Personen, Ernährung, Allergien, Mag ich nicht
   - **Einkaufen:** Ort (PLZ), Läden & Filialen, Budget Lebensmittel, Budget Drogerie
   - **Planung:** Mahlzeiten, Tage, Küchen, Nährwertziel, Max. Kochzeit
-  - **Benachrichtigungen** (Push über Apple/APNs, kein ntfy; Test-Push: 422 → Toast „Erst Mitteilungen erlauben“, 502 → „Apple hat abgelehnt“; die Wochenplan-Erinnerung hat die Aktionen „Plan erstellen“ → S7 und „Später“): Status der iOS-Erlaubnis (abgelehnt → „In iOS-Einstellungen öffnen“), „Test-Push senden“, Push an/aus, Wochenplan-Erinnerung (an/aus, Wochentag, Uhrzeit), Ruhezeit (an/aus, Von/Bis), Angebotsalarme an/aus. Vor der iOS-Abfrage einmal ein Erklär-Sheet „Nichts verpassen“ (nach dem Onboarding bzw. beim ersten Öffnen der Einstellungen). Antippen einer Mitteilung öffnet `essenapp://start|generator|offer/<id>|list/<kette>`.
+  - Phase 11: in der Gruppe **Präferenzen** zusätzlich Zeile „Abwechslung“ („max. 1× Pasta · 2 Veggie-Tage“) und – nach einer Trennlinie – „Frühstück & Snacks“ („jede Woche auf die Liste“) → S29.
+  - **Benachrichtigungen** (Push über Apple/APNs, kein ntfy; Test-Push: 422 → Toast „Erst Mitteilungen erlauben“, 502 → „Apple hat abgelehnt“; die Wochenplan-Erinnerung hat die Aktionen „Plan erstellen“ → S7 und „Später“): Status der iOS-Erlaubnis (abgelehnt → „In iOS-Einstellungen öffnen“), „Test-Push senden“, Push an/aus, Wochenplan-Erinnerung (an/aus, Wochentag, Uhrzeit), Ruhezeit (an/aus, Von/Bis), Angebotsalarme an/aus. Vor der iOS-Abfrage einmal ein Erklär-Sheet „Nichts verpassen“ (nach dem Onboarding bzw. beim ersten Öffnen der Einstellungen). Antippen einer Mitteilung öffnet `essenapp://start|generator|offer/<id>|recipe/<id>|list/<kette>`.
+    - Phase 11 (Feature 24): unter der Ruhezeit Schalter „Lunchbox-Erinnerung am Vorabend“ (Standard 20:00) + Uhrzeit, Hinweis „🥡 „Lunchbox für morgen vorbereiten“ – nur am Abend vor deinen Lunchbox-Tagen (Mein Profil).“ (`PATCH /me/push/settings {lunchbox_push}`, aus = null). Die Mitteilung öffnet `essenapp://recipe/<id>` → Tab Rezepte, S3 (Plan-Gericht mit Mengen des Slots, sonst gespeichertes Rezept).
     - Karte **Standort-Erinnerung** (Feature 36) unter den Push-Einstellungen: Schalter „Erinnern, wenn ich in einem Laden bin“, darunter (`micro`, `text2`) „Bis zu 20 deiner Läden (nächste zuerst), 8–21 Uhr, höchstens einmal pro Laden und Tag – nur wenn dort etwas auf der Liste steht.“ Eingeschaltet: „N Läden überwacht“ mit 📍-Symbol (`success`); ohne Laden mit Standort „Noch kein Laden mit Standort – wähle deine Läden auf der Karte (Einstellungen › Läden & Filialen).“; Standort nicht „Immer“ → Hinweis in `danger` („Standort steht auf „Beim Verwenden“ – für Erinnerungen „Immer“ wählen.“ bzw. „Standort ist in iOS nicht erlaubt.“) + `SecondaryButton` „In iOS-Einstellungen öffnen“.
     - Einschalten ohne Erlaubnis „Immer“ → Erklär-Sheet (wie „Nichts verpassen“, halbe Höhe): 📍 „Erinnerung im Laden“, „Bist du bei einem deiner Läden, sagen wir dir, was dort auf der Liste steht. Dafür braucht die App den Standort „Immer“ – er bleibt auf deinem iPhone.“, `PrimaryButton` „Standort erlauben“ (iOS-Abfrage „Immer“, danach ggf. Mitteilungen; schon abgelehnt → iOS-Einstellungen), `SecondaryButton` „Später“. Demo: `storeask`.
     - Mitteilung (lokal, 120 m um den Laden): „🛒 Du bist bei Rewe: 4 Sachen auf der Liste“ (Coupon-Zusatz „· Coupon Kaffee“ kommt mit 38d) → öffnet die Laden-Liste S5b.
@@ -183,6 +200,7 @@ Mockups: `mockups/weitere-screens-v1.html`.
 - Wischen nach links oder lange drücken → Löschen.
 - „+“-Sheet: Name, Menge (optional), Einheit (g/ml/Stück/ohne), Haltbarkeit optional, Schalter „Basic“.
 - Leer: `EmptyState` „📸 Kühlschrank fotografieren“ mit `PrimaryButton` „📸 Kühlschrank fotografieren“ → S23 (Feature 69). Laden → Skeleton, Fehler → `ErrorState`.
+- Ort (E63, aus dem Kühlschrank-Foto): in der Zeile hinter Menge/Haltbarkeit „🧊 Kühlschrank“ / „🥫 Vorrat“ / „❄️ Gefrierfach“ (`micro`, `text2`); ohne Ort nichts. Keine eigene Gruppierung.
 - Abhaken in S5b: haltbare Artikel → Toast „„Reis“ abgehakt“ mit Aktion „In den Vorrat“. „Gekocht ★“ (S8): nach dem Speichern wird der Vorrat abgezogen, Liste „Vom Vorrat abgezogen“ mit korrigierbaren Mengen, Toast „Vorrat aktualisiert“.
 
 ### S17 Rezept-Formular (Sheet, Feature 3)
@@ -210,6 +228,8 @@ Mockups: `mockups/weitere-screens-v1.html`.
 - **Timer-Leiste** über den Knöpfen: je Timer eine Glas-Kapsel (iOS 26 Liquid Glass, sonst Material) mit Ring, Name, Restzeit, Pause/Weiter, „+1 min“, Stop. Ablauf: Ton + Haptik + oranges Banner „Reis ist fertig!“; im Hintergrund lokale Mitteilung. Erste Timer-Nutzung → Erklär-Sheet „Nichts verpassen“ vor der iOS-Abfrage.
 - **Sprachsteuerung**: Glas-Pille „🎙 hört zu …“ mit Pegel unter dem Kopf; erkannter Befehl blinkt kurz („weiter“). Befehle: weiter, zurück, wiederholen (liest vor), Timer starten, Timer N Minuten, wie viel {Zutat}, Zutaten. Fehlende Erlaubnis → Hinweis in der Pille.
 - Letzte Seite **„Fertig! 🎉“** mit Tellerbild und Konfetti (aus bei „Bewegung reduzieren“), Knopf „Bewerten ★“ → schließt und öffnet S8 (Bewertung + Vorrat abziehen).
+
+- Phase 10 (Feature 7): Zutat der Vorbereitung lange drücken → „Ersatz finden“ → S26 (Sheet im App-Erscheinungsbild); ersetzt die Zutat im Rezept, Kochmodus zeigt sie sofort.
 
 ## Phase 9 – Import & Kühlschrank-Foto (S20–S25)
 
@@ -243,10 +263,46 @@ Mockups: `mockups/weitere-screens-v1.html`.
 - Kopf „N erkannt / Unsichere sind abgewählt – prüfen, Mengen anpassen.“, rechts schwarze Pille „🧺 Vorrat N“ (Ziel der Animation).
 - Zeilen (weiße Kachel, unsichere gelb getönt): Häkchen-Kreis (`accent`; „niedrig“ vorab aus), Kategorie-Emoji, Name (editierbar), Sicherheit als Chip („sicher“ grün, „ziemlich sicher“ grau, „unsicher“ gelb); darunter umbrechend: Menge (Zahlentastatur), Einheit-Menü (g/ml/Stück/ohne), Ort-Menü (🧊 Kühlschrank/🥫 Vorrat/❄️ Gefrierfach), MHD als Datum mit ✕ bzw. „MHD +“.
 - „+ Fehlt etwas?“ fügt eine leere Zeile an. Nichts erkannt → `EmptyState` „Nichts erkannt“ + „Neue Fotos“.
-- Fester `PrimaryButton` „N in den Vorrat übernehmen“ → `POST /pantry/bulk` (`source: scan`); danach fliegen die gewählten Karten nacheinander in die Vorrats-Pille (Haptik), Toast „N Sachen im Vorrat“, weiter zu S25. Den Ort zeigt/ändert nur der Prüf-Bildschirm, das Backend speichert ihn nicht.
+- Fester `PrimaryButton` „N in den Vorrat übernehmen“ → `POST /pantry/bulk` (`source: scan`); danach fliegen die gewählten Karten nacheinander in die Vorrats-Pille (Haptik), Toast „N Sachen im Vorrat“, weiter zu S25. Der Ort wird mitgespeichert (`location`, E63) und in S16 angezeigt.
 
 ### S25 Was koche ich jetzt? (im Sheet S23)
 - Kopf „Was koche ich jetzt? / Aus deinem Vorrat · höchstens 30 min“, runder ✕.
 - Laden (`POST /pantry/cook-now`, bis ~15 s): drehender Teller + Schritte „Vorrat ansehen“, „Ideen sammeln“, „Fehlende Zutaten prüfen“.
 - Bis zu 3 Karten: Tellerfoto, Titel, „25 min · 2 Portionen“, „Alles da ✓“ oder Box „Fehlt: Sahne (100 ml)“ mit „Zur Liste“ (→ Haushaltsliste, wird „Auf der Liste“); `PrimaryButton` in `accent` „🔥 Heute kochen“ → ersetzt das heutige Gericht (gleiche Mahlzeit bevorzugt, nicht fixierte zuerst) über `…/replace`, Toast „Heute: <Titel>“; heute kein Gericht im Plan → S19. Karte antippen → S3.
 - Vorrat leer (422) → `EmptyState` „Vorrat ist leer“; keine Idee → „Keine passende Idee“; Fehler → `ErrorState`.
+
+## Phase 10/11 – Ersatz & Clever planen (S26–S30)
+
+### S26 Ersatz finden (Sheet aus S3/S18, Feature 7)
+- Kopf „Ersatz für Joghurt“, darunter „150 g im Rezept · aus unserer Ersatz-Tabelle“ bzw. „· Vorschläge der KI“, runder ✕.
+- 2–4 Karten (Kachel-Radius, gestaffelt): „Skyr statt Joghurt“ (`headline` rounded), Mengen „130 g Skyr + 20 ml Wasser“ (`callout`, `accentDeep`), Wirkung (`caption`, `text2`), Badges „im Vorrat“ (`DealBadge` ok; bei mehreren Zutaten „Wasser im Vorrat“) und „im Angebot 1,29 €“ + `StoreChip`; rechts ⇄ bzw. Spinner beim Ersetzen.
+- Antippen → `POST /recipes/{id}/ingredients/{i}/substitute` → Toast „Ersetzt: Joghurt → Skyr + Wasser“, Haptik, Sheet zu; Plan, Liste und Nährwerte werden neu geladen.
+- Darunter Hinweis „Antippen ersetzt die Zutat nur in diesem Rezept – Nährwerte und Kosten werden neu berechnet.“
+- Laden → 3 Skeleton-Karten + „Suche passenden Ersatz …“; keine Optionen → `EmptyState` 🤷 „Kein Ersatz gefunden“; Fehler → `ErrorState` (502 „Die Ersatz-Suche ist gerade nicht erreichbar.“). Demo: `substitute`.
+
+### S27 Keine Lust? (Sheet aus S1/S2, Feature 16)
+- Kopf „Keine Lust?“ / „Schnell & ohne Einkauf · höchstens 15 min“, runder ✕.
+- Laden (`POST /no-mood`): drehender Teller + Schritte „Vorrat ansehen“, „Ideen sammeln“, „Prüfen, ob alles da ist“.
+- Seite mit 3 Karten (wie S25): Tellerfoto, Titel, „12 min · 2 Portionen“, Badge „Alles da ✓“, `PrimaryButton` in `accent` „🔥 Das koche ich heute“; Karte antippen → S3. Horizontal wischen → nächste Seite mit 3 weiteren (`exclude` = gezeigte Titel), währenddessen 2 Skeleton-Karten + „Weitere Ideen …“; nichts mehr → `EmptyState` „Mehr fällt uns gerade nicht ein“. Unten Hinweis „Wischen für 3 weitere ›“.
+- Auswahl → ersetzt das heutige Gericht (Mittag, sonst Abend) über `…/replace`, Toast „Heute: <Titel>“. Gibt es später im Plan noch ein nicht fixiertes Gericht derselben Mahlzeit: Rückfrage „Auf morgen verschieben?“ (bzw. „Auf Donnerstag verschieben?“) mit „„Tikka Masala“ – die Zutaten sind schon da. Spätere Gerichte rücken einen Tag weiter.“ → `POST /plans/current/postpone`, Toast „„Tikka Masala“ → Mittwoch“; „Nein, danke“ schließt. Heute kein Gericht → S19.
+- Vorrat leer (422) → `EmptyState` „Vorrat ist leer“; keine Idee → „Keine passende Idee“; Fehler → `ErrorState`. Demo: `nomood`.
+
+### S28 Gäste hinzufügen (Sheet aus S2, Feature 15)
+- Kopf „Gäste hinzufügen“, „Dienstag · Abend: „Lachs-Bowl““, runder ✕.
+- Karte: 👥 im `accentSoft`-Quadrat, große Zahl „+2“ (40 pt rounded, Zahlen-Übergang) + „Gäste“, Stepper 0–20 (Haptik).
+- Hinweis „Mengen, Kosten und Einkaufsliste werden angepasst – ohne neue KI-Planung.“, `PrimaryButton` „Übernehmen“ (erst bei Änderung aktiv) → `POST /plans/current/entries/{id}/guests`, Toast „Für +2 Gäste angepasst“ bzw. „Gäste entfernt“; 422 → Toast „Bei dieser Mahlzeit isst dann niemand mit“. Demo: `guests`.
+
+### S29 Frühstück & Snacks (Push-Screen aus S13, Feature 23a)
+- Zurück, `DisplayHeader` „Frühstück / & Snacks“ + runder schwarzer „+“, Satz „Deine Basics kommen jeden Montag automatisch auf die Haushaltsliste – im Angebot, wenn es in deinen Läden günstiger ist; was im Vorrat ist, wird abgezogen.“
+- Zeilen (weiße Kacheln): Kategorie-Emoji auf Tönung, Name, „1.000 g pro Woche“ bzw. „ohne Menge · jede Woche“, Chevron → Sheet; lange drücken → „Löschen“.
+- Sheet „Neues Basic“ / „Basic ändern“: Name, Menge pro Woche (optional, Zahlentastatur), Einheit g/ml/Stück/ohne, `PrimaryButton` „Hinzufügen“/„Speichern“, beim Ändern „Löschen“ (rot).
+- Fest unten `PrimaryButton` „Jetzt auf die Liste“ (`POST /weekly-basics/to-list`, Toast „Basics stehen auf der Liste“).
+- Laden → Skeleton, Fehler → `ErrorState`, leer → `EmptyState` 🥣 „Noch keine Basics“ + „Basic hinzufügen“. Demo: `basics`.
+
+### S30 Reste in den Vorrat? (im Sheet S8, Feature 19)
+- Titel „Reste in den Vorrat?“, Satz „Von angebrochenen Packungen bleibt etwas übrig – Menge prüfen, dann übernehmen.“
+- Zeilen wie S24: Häkchen-Kreis (`accent`), Kategorie-Emoji, Name, Haltbarkeits-Chip, Menge (Zahlentastatur) + Einheit.
+- `PrimaryButton` „N in den Vorrat“ → `POST /pantry/bulk` (`source: rest`), Toast „N Reste im Vorrat“; `SecondaryButton` „Nichts übrig“ schließt. Demo: `leftovers`.
+
+### Einstellungen › Präferenzen › Abwechslung (Feature 12)
+- Unter dem Präferenzen-Formular Überschrift „🔄 Abwechslung“ + „Der Planer hält diese Regeln ein – Verstöße zeigt der Plan-Kopf.“, drei Karten mit Stepper-Zeilen (Wert groß rechts, Zahlen-Übergang, Haptik): „🍝 Beilagen pro Woche“ (Pasta höchstens 1×, Reis 2×, Kartoffeln 2×; 0–14), „🐟 Fisch, Fleisch, Gemüse“ (Fisch mindestens 0–3, Vegetarische Tage 0–7, Rotes Fleisch höchstens 0–14), „🔁 Wiederholungen“ (Gleiches Gericht frühestens nach 1–12 Wochen, Schalter „Gleiche Küche nicht zwei Tage hintereinander“). Speichern mit dem festen Button → `PATCH /household {variety}`. Demo: `variety`.

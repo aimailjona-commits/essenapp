@@ -234,8 +234,16 @@ struct SettingsView: View {
                                     "\(h.mealTypes.map(Labels.meal).joined(separator: ", ")) · \(h.cuisines.isEmpty ? "gemischt" : h.cuisines.joined(separator: ", "))")
                                 row("leaf.fill", Theme.C.carbs, "Ernährung", ([h.diet.capitalized] + h.allergies).joined(separator: " · "))
                                 row("target", Theme.C.protein, "Ziel", "\(h.nutritionGoal.capitalized) · max. \(h.maxCookMinutes) min")
+                                let v = h.variety ?? VarietyDTO()
+                                row("arrow.triangle.2.circlepath", Theme.C.accent, "Abwechslung",
+                                    "max. \(v.maxPasta)× Pasta · \(v.veggieDays) Veggie-Tage")
                                 Text("Ändern ›").font(Theme.F.callout).foregroundStyle(Theme.C.accentDeep)
                             }
+                        }
+                        .buttonStyle(PressableStyle())
+                        Divider()
+                        NavigationLink { WeeklyBasicsView() } label: {
+                            row("cup.and.saucer.fill", Theme.C.fat, "Frühstück & Snacks", "jede Woche auf die Liste")
                         }
                         .buttonStyle(PressableStyle())
                     }

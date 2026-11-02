@@ -230,7 +230,7 @@ struct OnboardingView: View {
                 }
             }
             label("MAHLZEITEN")
-            ChipFlow(items: Labels.mealTypes, selected: meals, color: Theme.C.kcal) { meals.formSymmetricDifference([$0]) }
+            ChipFlow(items: Labels.mealTypes.filter { m in m.0 != "snack" }, selected: meals, color: Theme.C.kcal) { meals.formSymmetricDifference([$0]) }
             label("KÜCHE (leer = gemischt)")
             ChipFlow(items: Labels.cuisines.map { ($0, $0) }, selected: cuisines, color: Theme.C.accent) { cuisines.formSymmetricDifference([$0]) }
         }

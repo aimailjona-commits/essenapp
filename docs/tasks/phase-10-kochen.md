@@ -8,7 +8,7 @@ Details, Abläufe und Abnahmekriterien: [`docs/features/spec-p10-kochen.md`](../
 - [x] 8 Mehrere Timer (Glas-Leiste, Benachrichtigung im Hintergrund)
 - [x] 8 Sprachsteuerung on-device (Befehle laut Spezifikation), Vorlesen, Info.plist-Texte
 - [x] 7 Ersatzzutaten Backend: Tabelle (108) + Haiku-Fallback, Allergien im Code, Ersetzen im Rezept (E63)
-- [ ] 7 iOS: „Ersatz finden“ (lange drücken/⋯), Sheet mit Vorrat/Angebot, Ersetzen
+- [x] 7 iOS: „Ersatz finden“ (lange drücken/⋯), Sheet mit Vorrat/Angebot, Ersetzen (S26; lange drücken in S3 + S18; Build ✓, Abnahme auf Gerät offen)
 - [x] 10 Bildkarte (ImageRenderer) teilen
 - [ ] `docs/ui/screens.md` + `Demo.swift` + `ios/tools/screenshots.sh` um neue Screens ergänzt, CI-Screenshots geprüft
 - [ ] Playbook-Entscheidungslog aktualisiert

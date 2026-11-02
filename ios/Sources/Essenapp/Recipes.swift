@@ -425,7 +425,7 @@ struct PlanSlotSheet: View {
         }
     }
 
-    private func order(_ mealType: String) -> Int { Labels.mealTypes.firstIndex { m in m.0 == mealType } ?? 9 }
+    private func order(_ mealType: String) -> Int { Labels.slotOrder.firstIndex(of: mealType) ?? 9 }
 
     private func row(_ image: String, _ seed: String, _ line1: String, _ line2: String, busy: Bool, locked: Bool) -> some View {
         HStack(spacing: 12) {
