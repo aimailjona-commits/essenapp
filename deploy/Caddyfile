@@ -1,0 +1,5 @@
+# HTTPS automatisch (Let's Encrypt), sobald der DNS-A-Record von DOMAIN auf den VPS zeigt.
+{$DOMAIN} {
+	encode zstd gzip
+	reverse_proxy api:8000
+}

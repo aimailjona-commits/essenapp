@@ -583,7 +583,7 @@ INVITE_DAYS = 7
 
 
 def base_url(request: Request) -> str:
-    return str(request.base_url).rstrip("/")
+    return (settings.public_base_url or str(request.base_url)).rstrip("/")
 
 
 def new_code() -> str:

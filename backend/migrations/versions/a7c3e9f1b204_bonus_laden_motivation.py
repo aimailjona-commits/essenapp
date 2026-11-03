@@ -114,7 +114,7 @@ def upgrade() -> None:
     from app.sources.kaufda import bonus_cents
     conn = op.get_bind()
     rows = conn.execute(sa.text("SELECT id, title, source_id, raw FROM offer WHERE chain = 'rewe' "
-                                "AND lower(raw) LIKE '%bonus%'")).all()
+                                "AND lower(CAST(raw AS TEXT)) LIKE '%bonus%'")).all()  # CAST: Postgres-json
     for oid, title, source_id, raw in rows:
         data = json.loads(raw) if isinstance(raw, str) else raw
         names = [(p.get("name") or "").strip() for p in data.get("products") or []]

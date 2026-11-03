@@ -6,7 +6,9 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
-    database_url: str = "sqlite:///./essenapp.db"
+    database_url: str = "sqlite:///./essenapp.db"  # VPS (72): postgresql+psycopg://…
+    # Basis für Einladungs-/Listen-/Rezept-Links, z.B. https://essenapp.example.de; leer = Adresse der Anfrage (lokal)
+    public_base_url: str = ""
     anthropic_api_key: str = ""
     # Nutzerentscheidung: Haiku 5.5 wegen der Kosten. Andere Modelle (claude-sonnet-5-5, claude-opus-5-5) per .env.
     model_planner: str = "claude-haiku-5-5"

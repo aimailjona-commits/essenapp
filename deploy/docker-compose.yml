@@ -1,0 +1,81 @@
+# Essenapp auf dem VPS (Spezifikation 72, E86). Start: cd deploy && docker compose up -d --build
+# Konfiguration: deploy/.env (Infrastruktur, Vorlage .env.example) + backend/.env (App-Keys wie lokal).
+name: essenapp
+
+x-logging: &logging  # Log-Rotation: höchstens 5 × 10 MB je Dienst
+  driver: json-file
+  options: {max-size: "10m", max-file: "5"}
+
+x-backend: &backend
+  build:
+    context: ../backend
+    dockerfile: ../deploy/Dockerfile
+    args: {UID: "${APP_UID:-10001}"}
+  image: essenapp-backend
+  restart: unless-stopped
+  env_file:
+    - path: ../backend/.env
+      required: false
+  environment:  # überschreibt backend/.env
+    DATABASE_URL: postgresql+psycopg://essenapp:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD fehlt}@db:5432/essenapp
+    PUBLIC_BASE_URL: https://${DOMAIN:?DOMAIN fehlt}
+    SCHEDULER: "0"  # Jobs laufen nur im Dienst scheduler
+    TZ: Europe/Berlin
+  volumes:
+    - media:/app/media
+    - ../backend/secrets:/app/secrets:ro  # APNs-Key (.p8), APNS_KEY_PATH=secrets/AuthKey_….p8
+  logging: *logging
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: essenapp
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD fehlt}
+      POSTGRES_DB: essenapp
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U essenapp -d essenapp"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+    logging: *logging
+
+  api:
+    <<: *backend
+    depends_on:
+      db: {condition: service_healthy}
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=3)"]
+      interval: 30s
+      timeout: 5s
+      start_period: 60s
+      retries: 3
+
+  scheduler:
+    <<: *backend
+    command: ["python", "-m", "app.jobs"]
+    depends_on:
+      api: {condition: service_healthy}  # api hat die Migrationen ausgeführt
+
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    ports: ["80:80", "443:443", "443:443/udp"]
+    environment:
+      DOMAIN: ${DOMAIN:?DOMAIN fehlt}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data  # Zertifikate
+      - caddy_config:/config
+    depends_on:
+      api: {condition: service_healthy}
+    logging: *logging
+
+volumes:
+  pgdata:
+  media:
+  caddy_data:
+  caddy_config:

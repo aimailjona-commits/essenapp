@@ -104,6 +104,7 @@ Nutzer: der Entwickler selbst (iOS-App) + Familie/Freunde (Web-Version).
 | E83 | **Spike Widget/Live-Aktivität (2026-11-03, Phase 16):** Erweiterung `EssenappWidget` (`com.apple.widgetkit-extension`, Library-Target, `extensions:` in xtool.yml) baut mit xtool 1.24; Binärdatei hat `__text` (zsign-Problem #379 entfällt). xtool linkt Erweiterungen mit `-e _NSExtensionMain`, das `@main`-WidgetBundle würde weggeworfen (leere .appex, #313) → `-u _main` im Target (wie xtool-PR #393, MicYou-iOS). **App Intents brauchen den Index `Metadata.appintents`, den nur Xcodes macOS-Werkzeug schreibt** → `ios/tools/appintents_index.py` liest die `.swiftconstvalues` des Builds und schreibt den Index für `.app` und `.appex` (Format Xcode 26.6/17F113, abgeglichen mit echten Xcode-Indizes; kann nur Text-Parameter, `LiveActivityIntent`, `WidgetConfigurationIntent`, bricht sonst ab), `xtool.yml` kopiert ihn per `resources:`, `build.sh` warnt, wenn er veraltet ist. Gemeinsames Modul bleibt `EssenappShareUI` (jetzt Oberfläche aller Erweiterungen): Widget-Daten/-Ansichten, `ShopAttributes`, `CheckItemIntent` – die App rendert dieselben Ansichten als Demo-Screens. **Offen bis zur Gerät-Abnahme:** Signatur/Installation mit dritter App-ID (kostenlos max. 10 App-IDs je 7 Tage), ob iOS den Index trotz `XTL-…`-Präfix der Bundle-ID annimmt (`mangledTypeNameByBundleIdentifier` steht ohne Präfix) | Spezifikation 65/37: erst Spike; kein Mac, kein geteilter Speicher (E48) |
 | E84 | **Widget „Heute“ (65):** Kopplung ohne App Group: `AppIntentConfiguration` mit „Server-Adresse“ + „Kopplungscode“ (Widget bearbeiten) → `POST /pair` (`label` „Widget“), Token im Schlüsselbund der Erweiterung je Server-Adresse zusammen mit dem eingelösten Code; ein fehlgeschlagener Code wird nicht erneut eingelöst (sonst 429), ein neuer Code koppelt neu, 401 → Kopplung weg. Daten: `/plans/current` + `/lists` + `/lists/{id}` (offen = nicht abgehakt und nicht „Nächste Woche“), Fotos der Gerichte der nächsten 24 h auf ≤ 400 px JPEG verkleinert. Gericht: Mittag bis 14 Uhr, Abend bis 21 Uhr, sonst nächstes (feste Zeiten, `shortcut`). Timeline: jetzt + 14/21/0 Uhr mit gleichem Stand, neu laden nach 30 min; Fehler → letzter Stand (Datei im Cache der Erweiterung) + „Stand HH:MM“. App: S13 › „Geräte & Widget“ › „Widget einrichten“ (S38 = S21-View), `WidgetCenter.reloadAllTimelines()` wenn sich die Gerichte des Plans ändern | Spezifikation 65; S38/S39 ohne Mockup entschieden |
 | E85 | **Live-Aktivität beim Einkaufen (37):** nur lokal (ActivityKit ohne Push, kostenlose Apple-ID). `ShopAttributes` = Laden, Kürzel + `Theme.storeColor` (Live-Aktivitäten laden keine Netzbilder, keine Markenfarben E18), Start; `ContentState` = erledigt, gesamt, nächste 3 offene Artikel (ID, Name, Menge). Start/Ende per Knopf in S5b, ein Einkauf zur Zeit. `householdList.didSet` aktualisiert sie (Haken in App, Live-Aktivität, 10-s-Abgleich), alles abgehakt → Ende mit Endstand, nach 2 h `staleDate` + Ende beim nächsten Abgleich bzw. Task. Abhaken: `CheckItemIntent: LiveActivityIntent` (Parameter Artikel-ID als Text, weil der Index-Generator nur Text kennt) läuft im App-Prozess → `AppStore.shared.checkFromActivity` = `toggle` inkl. Offline-Warteschlange (66); der Handler wird in `EssenappApp.init` gesetzt, `AppStore` ist dafür eine geteilte Instanz. Haken anderer Mitglieder erscheinen erst, wenn die App läuft | Spezifikation 37; S40 ohne Mockup entschieden |
+| E86 | **VPS-Umzug vorbereitet (72, Phase 17), Push über APNs statt ntfy:** `deploy/` mit Docker Compose: `api` (uvicorn, 2 Worker, `alembic upgrade head` beim Start, `--proxy-headers` → echte Client-IP für die `/pair`-Sperre), `db` Postgres 16 (alpine, Volume `pgdata`, nicht veröffentlicht), `scheduler` (`python -m app.jobs`; api `SCHEDULER=0`), `caddy:2` (automatisches HTTPS für `{$DOMAIN}`). Healthchecks db (`pg_isready`) + api (`/health`), Log-Rotation json-file 5 × 10 MB, Volumes `media` + Caddy-Zertifikate. Image `python:3.12-slim` + uv 0.13.6 + tzdata, `TZ=Europe/Berlin` (naive Zeitstempel wie lokal), läuft als Benutzer mit UID `APP_UID` (= VPS-Benutzer `essenapp`). Kein ntfy-Container, keine `push.`-Subdomain: APNs-Key aus `backend/secrets/` read-only in api + scheduler. Konfiguration `deploy/.env` (Domain, Postgres-Passwort, Backup) + `backend/.env` (App-Keys wie lokal); `PUBLIC_BASE_URL` = `https://<DOMAIN>`. **Postgres:** `DATABASE_URL` (SQLite bleibt lokal Standard), `psycopg[binary]`, `pool_pre_ping`. Nährwert-Volltextsuche je Dialekt: SQLite FTS5 `food_fts`, Postgres GIN-Index `food_fts` auf `to_tsvector('english', description)` + `ts_rank` (USDA-Texte sind englisch; die Rezeptsuche filtert in Python, keine DB-Volltextsuche). Migration `a7c3e9f1b204`: `lower(CAST(raw AS TEXT))` (Postgres-json kennt kein lower). Listen-Beziehungen `members`/`stores`/`hits` nach id, `entries` nach (day, id) sortiert (Postgres liefert ohne ORDER BY keine feste Reihenfolge). Alembic-batch-Mode läuft auf Postgres als normales ALTER; `alembic check` gegen Postgres ohne Abweichung. Tests gegen Postgres: `TEST_DATABASE_URL=postgresql+psycopg://…` (create_all einmal, nach jedem Test TRUNCATE). **Umzug** `deploy/migrate_sqlite_to_postgres.py`: nur in leere DB mit gleicher Alembic-Revision, Tabellen ohne Modell → Abbruch, Kopie über die Modelle in Fremdschlüssel-Reihenfolge (bool/JSON/Datum typgerecht), eine Transaktion, Sequenzen `setval(max(id)+1)`, FTS-Index, Zählvergleich. **`PUBLIC_BASE_URL`** (leer = Adresse der Anfrage) für Einladungs-, Listen- und Rezept-Links (`/join`, `/h`, `/l`, `/r`); Medien-URLs bleiben relativ (`/media/…`). **Backups** `backup.sh` täglich 03:30 (cron): `pg_dump -Fc` + `/media`-tar → ein Archiv, `openssl enc -aes-256-cbc -pbkdf2` mit `BACKUP_PASSPHRASE`, 14 Tage, optional `BACKUP_RSYNC_TARGET`; `restore.sh --test` = Wiederherstellungstest in `essenapp_restore_test` mit Zählvergleich, `restore.sh <archiv>` ersetzt DB + `/media`. **`setup-vps.sh`** (root, idempotent): unattended-upgrades, Docker aus dem offiziellen Repo, ufw 22/80/443 (+443/udp), Benutzer `essenapp` (docker-Gruppe, Schlüssel von root), SSH nur mit Schlüssel, `deploy/.env` mit Zufallspasswörtern, einmaliger Umzug aus `deploy/import/` (Marker `.imported`), Start mit `--wait`, Backup-cron. **Grenzen mit 2 Workern:** `/pair`-Fehlversuche und die Sperre der Zutaten-Zuordnung zählen je Prozess (höchstens 10 statt 5 Fehlversuche; eine doppelte Zuordnung scheitert am Unique-Index und wird geloggt) | Spezifikation 72 + Phase 17; APNs statt ntfy (E52); lokal getestet mit Postgres 16 + kompletter Compose-Umgebung in WSL-Docker und einer Kopie der echten DB (33 Tabellen, 25.567 Zeilen zeilengleich); VPS existiert noch nicht |
 
 ---
 
@@ -115,7 +116,7 @@ Nutzer: der Entwickler selbst (iOS-App) + Familie/Freunde (Web-Version).
  (APIs/PDFs) ───►│  (pro Händler      (Offer → Zutat,    (SQLite→    Kosten- & Nährwert-   │
                  │   ein Adapter)      Kategorie, €/kg)   Postgres)   rechnung, Validierung │
                  │                              ▲                                          │
-                 │        Watchlist-Matcher ────┘──► ntfy (Push)                           │
+                 │        Watchlist-Matcher ────┘──► APNs (Push)                           │
                  │                       REST-API (FastAPI) + Web-UI (Jinja + HTMX, PWA)   │
                  └───────────────────────────────┬──────────────────────┬──────────────────┘
                                                  │                      │
@@ -128,12 +129,25 @@ Nutzer: der Entwickler selbst (iOS-App) + Familie/Freunde (Web-Version).
 |---|---|---|
 | Backend-API | Python 3.12, FastAPI, SQLAlchemy + Alembic, Pydantic | REST-API, Auth, Geschäftslogik |
 | Datenbank | SQLite lokal → Postgres auf dem VPS | Über SQLAlchemy austauschbar |
-| Jobs | APScheduler im Backend-Prozess (später ggf. separater Worker) | Wöchentliches Sammeln, Watchlist-Abgleich |
+| Jobs | `app/jobs.py`: lokal Thread im API-Prozess (`SCHEDULER=1`), VPS eigener Container `scheduler` (E47, E86) | Angebotsimport, Preisverlauf, Merkliste, Erinnerungen |
 | KI | Anthropic API, Modelle per ENV konfigurierbar (`claude-sonnet-5-5` für Pläne, `claude-haiku-5-5` für Zuordnung/Kategorisierung) | Wochenplan, Zutaten-Mapping, PDF-Extraktion |
 | Web-UI | Jinja-Templates + HTMX, PWA-Manifest | Familie: Wochenplan, Einkaufsliste, Rezepte, Bewertungen |
 | iOS-App | SwiftUI, iOS 17+, xtool | Volle App für den Entwickler |
-| Push | ntfy (self-hosted auf VPS oder ntfy.sh) | Angebotsalarme, „Neuer Wochenplan fertig“ |
-| Deployment | Docker Compose + Caddy (HTTPS) | Phase 7 |
+| Push | Apple Push (APNs) direkt aus dem Backend (E52) | Angebotsalarme, „Neuer Wochenplan?“, Erinnerungen |
+| Deployment | Docker Compose + Caddy (HTTPS) auf IONOS-VPS, `deploy/` (E86) | Phase 17 |
+
+### Deployment (VPS, E86)
+
+```
+Internet ──443/80──► caddy (HTTPS, Let's Encrypt) ──► api (FastAPI, 2 Worker) ──┐
+                                                      scheduler (app.jobs) ───────┼──► db (Postgres 16, Volume pgdata)
+                                                      api + scheduler ──► APNs     └──► Volume media, backend/secrets (ro)
+```
+
+- Einrichtung und Umzug: `deploy/README.md` (Teil A Nutzer bei IONOS, Teil B Claude), `deploy/setup-vps.sh`.
+- Konfiguration: `deploy/.env` (Domain, Postgres-Passwort, Backup) + `backend/.env` (App-Keys wie lokal).
+- Backups: täglich verschlüsselt, 14 Tage (`deploy/backup.sh`), Probe mit `deploy/restore.sh --test`.
+- Lokal bleibt SQLite + `./dev.sh serve`; Tests zusätzlich gegen Postgres mit `TEST_DATABASE_URL`.
 
 ### Repo-Struktur
 
@@ -295,7 +309,7 @@ Lieblingsgerichte: Bewertung 4–5 Sterne → höheres Gewicht in Schritt 2; 1�
 
 ## 8. Benachrichtigungen
 
-- **ntfy:** Backend sendet an ein Topic pro Mitglied (zufälliger, nicht erratbarer Name). Nutzer installiert die ntfy-App und abonniert das Topic (QR-Code in den Einstellungen).
+- **APNs (E52):** Backend sendet direkt an Apple, Geräte-Token pro Mitglied (`push_device`); Ruhezeiten über `push_outbox`.
 - **Lokal (iOS):** Beim App-Start und per `BGAppRefreshTask` neue Treffer holen und lokal melden. Hintergrund-Zeitpunkt bestimmt iOS.
 - Auslöser: Watchlist-Treffer, Rezept-im-Angebot, „Neuer Wochenplan bereit“ (z.B. Sonntag 18 Uhr, konfigurierbar).
 

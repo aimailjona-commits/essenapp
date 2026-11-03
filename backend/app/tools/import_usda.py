@@ -67,7 +67,10 @@ def parse(path: Path) -> list[dict]:
 
 
 def rebuild_fts(db: Session) -> None:
-    # shortcut: SQLite FTS5; auf Postgres (VPS) durch tsvector/pg_trgm ersetzen
+    """Volltextindex für food_map.search: SQLite FTS5 (lokal), Postgres GIN-Index auf tsvector (VPS, 72)."""
+    if db.get_bind().dialect.name == "postgresql":  # USDA-Beschreibungen sind englisch
+        db.execute(text("CREATE INDEX IF NOT EXISTS food_fts ON food USING gin (to_tsvector('english', description))"))
+        return
     db.execute(text("CREATE VIRTUAL TABLE IF NOT EXISTS food_fts USING fts5(description, content='food', "
                     "content_rowid='id')"))
     db.execute(text("INSERT INTO food_fts(food_fts) VALUES('rebuild')"))

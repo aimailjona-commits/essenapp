@@ -1,0 +1,11 @@
+# Nie ins Image (deploy/Dockerfile): Secrets, lokale Daten, Caches
+.env
+secrets/
+*.db
+*.db-*
+media/
+image_cache.json
+.venv/
+__pycache__/
+.pytest_cache/
+tests/

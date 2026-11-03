@@ -88,12 +88,20 @@ def ask_claude(prompt: str | list[dict], schema: type[BaseModel], think: bool = 
 
 
 def search(db: Session, query: str, limit: int = CANDIDATES) -> list[Food]:
-    """Volltextsuche (SQLite FTS5, von tools.import_usda angelegt): alle Wörter, sonst irgendeins, beste zuerst."""
-    terms = [f'"{t}"' for t in re.findall(r"[a-z]+", query.lower())]
+    """Volltextsuche (Index von tools.import_usda: SQLite FTS5 bzw. Postgres tsvector): alle Wörter, sonst irgendeins,
+    beste zuerst."""
+    words_ = re.findall(r"[a-z]+", query.lower())  # nur a-z: sicher in MATCH und to_tsquery
+    if db.get_bind().dialect.name == "postgresql":
+        doc = "to_tsvector('english', description)"  # = Ausdruck des GIN-Index food_fts
+        sql, queries = (f"SELECT id FROM food, to_tsquery('english', :q) q WHERE {doc} @@ q "
+                        f"ORDER BY ts_rank({doc}, q) DESC, id LIMIT :n", (" & ".join(words_), " | ".join(words_)))
+    else:
+        terms = [f'"{t}"' for t in words_]
+        sql, queries = ("SELECT rowid FROM food_fts WHERE food_fts MATCH :q ORDER BY rank LIMIT :n",
+                        (" ".join(terms), " OR ".join(terms)))
     ids: list[int] = []
-    for q in (" ".join(terms), " OR ".join(terms)) if terms else ():
-        for i in db.execute(text("SELECT rowid FROM food_fts WHERE food_fts MATCH :q ORDER BY rank LIMIT :n"),
-                            {"q": q, "n": limit}).scalars():
+    for q in queries if words_ else ():
+        for i in db.execute(text(sql), {"q": q, "n": limit}).scalars():
             if i not in ids:
                 ids.append(i)
         if len(ids) >= limit:

@@ -4,16 +4,16 @@ Vorlage für jedes Feature: **Ziel · Ablauf · UI · Backend · Abnahme · Risi
 
 ---
 
-## 72 · Umzug auf IONOS-VPS (+ ntfy, Scheduler, HTTPS)
+## 72 · Umzug auf IONOS-VPS (+ Scheduler, HTTPS, APNs)
 
-**Ziel:** App, Web-Version und Einladungslinks funktionieren überall (nicht nur im Heim-WLAN); Grundlage für Push (ntfy) und zeitgesteuerte Jobs.
+**Ziel:** App, Web-Version und Einladungslinks funktionieren überall (nicht nur im Heim-WLAN); Grundlage für Push (APNs, E52) und zeitgesteuerte Jobs.
 
 **Ablauf**
-1. 👤 Nutzer bucht bei IONOS einen VPS (Ubuntu 24.04, ≥ 2 GB RAM) und eine Domain (Vorschlag: `essenapp.<deine-domain>.de`), gibt Claude SSH-Zugang (Schlüssel, kein Passwort im Chat).
-2. Claude richtet ein: Docker + Docker Compose, Dienste `api` (FastAPI, uvicorn, 2 Worker), `db` (Postgres 16), `caddy` (HTTPS via Let's Encrypt), `ntfy` (eigener Push-Server unter `push.<domain>`), `scheduler` (eigener Container, ruft `python -m app.jobs` auf).
-3. Daten-Umzug SQLite → Postgres (Skript, einmalig), Bilder (`/media`) als Docker-Volume.
-4. iOS: Server-Adresse in den Einstellungen auf `https://…` umstellen (Feld existiert); ATS-Ausnahme `NSAllowsArbitraryLoads` wird entfernt (E-Eintrag), nur noch HTTPS.
-5. Backups: täglicher `pg_dump` + `/media` → verschlüsseltes Archiv, 14 Tage aufbewahrt; Wiederherstellung einmal getestet.
+1. 👤 Nutzer bucht bei IONOS einen VPS (Ubuntu 24.04, ≥ 2 GB RAM) und eine Domain (Vorschlag: `essenapp.<deine-domain>.de`), gibt Claude SSH-Zugang (Schlüssel `~/.ssh/essenapp_vps.pub` aus WSL, kein Passwort im Chat). DNS: nur ein A-Record `essenapp.<domain>` → VPS-IP (kein `push.`-Eintrag).
+2. Claude richtet ein: Docker + Docker Compose, Dienste `api` (FastAPI, uvicorn, 2 Worker), `db` (Postgres 16), `caddy` (HTTPS via Let's Encrypt), `scheduler` (eigener Container, ruft `python -m app.jobs` auf; im `api`-Container `SCHEDULER=0`). Kein eigener Push-Server: der APNs-Key (`backend/secrets/AuthKey_….p8`) wird read-only in `api` und `scheduler` eingebunden. Alles in `deploy/` (Anleitung `deploy/README.md`, Einrichtung `deploy/setup-vps.sh`).
+3. Daten-Umzug SQLite → Postgres (`deploy/migrate_sqlite_to_postgres.py`, einmalig, Zählvergleich), Bilder (`/media`) als Docker-Volume. Links (Einladung, Liste, Rezept `/r/<code>`) bauen auf `PUBLIC_BASE_URL` = `https://<domain>`.
+4. iOS: Server-Adresse in den Einstellungen auf `https://…` umstellen (Feld existiert); ATS-Ausnahme `NSAllowsArbitraryLoads` wird entfernt (`Info.plist` und `EssenappWidget-Info.plist`, E-Eintrag), nur noch HTTPS; Widget und Teilen-Erweiterung bekommen die neue Server-Adresse + neuen Kopplungscode.
+5. Backups: täglicher `pg_dump` + `/media` → verschlüsseltes Archiv, 14 Tage aufbewahrt (`deploy/backup.sh`, optional rsync-Ziel); Wiederherstellung einmal getestet (`deploy/restore.sh --test`).
 
 **Scheduler-Jobs** (konfigurierbar per Umgebungsvariablen)
 | Job | Wann | Was |
@@ -27,7 +27,7 @@ Vorlage für jedes Feature: **Ziel · Ablauf · UI · Backend · Abnahme · Risi
 | `achievements` | täglich 03:00 | Erfolge prüfen (54) |
 | `reinstall_reminder` | alle 6 Tage | „App neu installieren“ (E2) |
 
-**ntfy:** pro Mitglied ein zufälliges Topic (32 Zeichen). Einstellungen › Benachrichtigungen zeigt QR-Code + Knopf „In ntfy öffnen“ (`ntfy://` Link) und einen „Test-Push“-Knopf. Push-Klick öffnet Deep-Links der App (`essenapp://generator`, `essenapp://offer/<id>`, …) → **URL-Schema `essenapp` in Info.plist** (CFBundleURLTypes) + Router in der App.
+**Push (APNs, E52):** Geräte-Tokens (`push_device`) ziehen mit der Datenbank um, die App muss sich nicht neu registrieren. Einstellungen › Benachrichtigungen hat den „Test-Push“-Knopf; Push-Klick öffnet Deep-Links der App (`essenapp://generator`, `essenapp://offer/<id>`, …) über das URL-Schema `essenapp` (CFBundleURLTypes) + Router in der App.
 
 **Abnahme**
 - `https://<domain>/health` → ok mit gültigem Zertifikat; Web-Version und Einladungslinks funktionieren im Mobilfunk.

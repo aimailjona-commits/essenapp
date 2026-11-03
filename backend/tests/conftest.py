@@ -1,19 +1,41 @@
+import os
+
 import pytest
 from fastapi.testclient import TestClient
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
 from app.core.db import Base, get_db
 from app.main import app
 
+# Suite gegen Postgres (72): TEST_DATABASE_URL=postgresql+psycopg://…/essenapp_test ./dev.sh test
+# Achtung: Tabellen dieser Datenbank werden geleert.
+PG_URL = os.environ.get("TEST_DATABASE_URL")
+
+
+@pytest.fixture(scope="session")
+def pg_engine():
+    engine = create_engine(PG_URL)
+    Base.metadata.drop_all(engine)
+    Base.metadata.create_all(engine)
+    yield engine
+    engine.dispose()
+
 
 @pytest.fixture
-def db():
-    engine = create_engine("sqlite://", connect_args={"check_same_thread": False}, poolclass=StaticPool)
-    Base.metadata.create_all(engine)
+def db(request):
+    if not PG_URL:
+        engine = create_engine("sqlite://", connect_args={"check_same_thread": False}, poolclass=StaticPool)
+        Base.metadata.create_all(engine)
+        with sessionmaker(engine)() as session:
+            yield session
+        return
+    engine = request.getfixturevalue("pg_engine")
     with sessionmaker(engine)() as session:
         yield session
+    with engine.begin() as conn:
+        conn.execute(text(f"TRUNCATE {', '.join(t.name for t in Base.metadata.sorted_tables)} RESTART IDENTITY CASCADE"))
 
 
 @pytest.fixture

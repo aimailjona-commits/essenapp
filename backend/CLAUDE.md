@@ -7,6 +7,7 @@ PonyTail `full` gilt (siehe Root-`CLAUDE.md`).
 - Läuft **in WSL (Ubuntu-24.04)**, Python 3.12, Paketverwaltung mit `uv`.
 - Immer über `./dev.sh` (venv im WSL-Dateisystem, E27): `./dev.sh test`, `./dev.sh serve`, `./dev.sh alembic upgrade head`.
 - Secrets nur in `backend/.env` (nicht ins Git). `.env.example` immer aktuell halten.
+- Postgres (VPS, E86): Suite zusätzlich mit `TEST_DATABASE_URL=postgresql+psycopg://…/essenapp_test ./dev.sh test` (leert die Tabellen dieser DB). Deployment: `deploy/README.md`.
 
 ## Struktur (aus dem Playbook)
 

@@ -39,8 +39,10 @@ class Household(Base):
     storage_space: Mapped[str] = mapped_column(String(10), default="mittel", server_default="mittel")  # Vorratsplatz (31): klein|mittel|gross
     created_at: Mapped[datetime] = mapped_column(server_default=func.now())
 
-    members: Mapped[list["Member"]] = relationship(back_populates="household")
-    stores: Mapped[list["HouseholdStore"]] = relationship(back_populates="household", cascade="all, delete-orphan")
+    # order_by: Postgres liefert ohne ORDER BY keine feste Reihenfolge (SQLite: Einfügereihenfolge)
+    members: Mapped[list["Member"]] = relationship(back_populates="household", order_by="Member.id")
+    stores: Mapped[list["HouseholdStore"]] = relationship(back_populates="household", cascade="all, delete-orphan",
+                                                          order_by="HouseholdStore.id")
 
 
 class Member(Base):
@@ -285,7 +287,8 @@ class MealPlan(Base):
     params: Mapped[dict] = mapped_column(JSON, default=dict)  # Snapshot der Einstellungen
     created_at: Mapped[datetime] = mapped_column(server_default=func.now())
 
-    entries: Mapped[list["MealPlanEntry"]] = relationship(cascade="all, delete-orphan", order_by="MealPlanEntry.day")
+    entries: Mapped[list["MealPlanEntry"]] = relationship(cascade="all, delete-orphan",
+                                                          order_by="[MealPlanEntry.day, MealPlanEntry.id]")
 
 
 class MealPlanEntry(Base):
@@ -450,7 +453,7 @@ class WatchItem(Base):
     created_by: Mapped[int | None] = mapped_column(ForeignKey("member.id"))
     created_at: Mapped[datetime] = mapped_column(server_default=func.now())
 
-    hits: Mapped[list["WatchHit"]] = relationship(cascade="all, delete-orphan")
+    hits: Mapped[list["WatchHit"]] = relationship(cascade="all, delete-orphan", order_by="WatchHit.id")
 
 
 class WatchHit(Base):

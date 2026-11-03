@@ -12,3 +12,4 @@ backend/tests/fixtures/
 backend/image_cache.json
 backend/media/
 backend/secrets/
+deploy/import/
