@@ -166,7 +166,7 @@ struct FamilySection: View {
                     }
                 }
                 if let invite {
-                    ShareLink(item: invite, subject: Text("Essenapp"),
+                    ShareLink(item: invite, subject: Text("Kochpilot"),
                               message: Text("Komm in unseren Haushalt – Wochenplan & Einkaufsliste gemeinsam:")) {
                         Label("Person einladen", systemImage: "person.badge.plus").frame(maxWidth: .infinity)
                     }

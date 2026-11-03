@@ -175,12 +175,15 @@ struct MainView: View {
             }
             .id("\(tab)-\(resetToken)")  // Tab-Wechsel schließt offene Detailseiten
             .animation(.easeInOut(duration: 0.2), value: tab)
+            .blur(radius: quickOpen ? 7 : 0)
 
             if quickOpen {
-                Theme.C.scrim.ignoresSafeArea()
+                LinearGradient(stops: [.init(color: Theme.C.ink.opacity(0.6), location: 0), .init(color: Theme.C.ink.opacity(0.94), location: 0.55)],
+                               startPoint: .top, endPoint: .bottom)
+                    .ignoresSafeArea()
                     .onTapGesture { withAnimation(Theme.spring) { quickOpen = false } }
                     .transition(.opacity)
-                QuickActions { action in
+                QuickActions(name: store.profile?.name ?? "") { action in
                     withAnimation(Theme.spring) { quickOpen = false }
                     switch action {
                     case .plan: showGenerator = true
@@ -190,15 +193,14 @@ struct MainView: View {
                     case .scan: store.scanning = true
                     }
                 }
-                .padding(.horizontal, 16)
-                .padding(.bottom, 100)
-                .transition(.scale(scale: 0.85, anchor: .bottom).combined(with: .opacity))
+                .transition(.opacity)
             }
 
             if !Self.modalDemo.contains(Demo.screen ?? "") {
                 TabBar(selected: $tab, quickOpen: $quickOpen, badges: [.angebote: store.watchHits]) { resetToken += 1 }
             }
 
+            PaperGrain()  // feines Papierkorn über allem (v3)
             if !store.newAchievements.isEmpty { UnlockOverlay().zIndex(2) }  // Vollbild-Moment (54)
         }
         .sheet(isPresented: Binding(get: { store.scanning }, set: { on in store.scanning = on })) {
@@ -294,52 +296,77 @@ struct MainView: View {
     }
 }
 
-/// Schnell-Aktionen hinter dem Mittel-Button (E14).
+/// Schnell-Aktionen hinter dem Mittel-Knopf (E14), v3: Fächer im Bogen über der Wölbung (redesign-v3.md 6.1).
 struct QuickActions: View {
     enum Action { case plan, barcode, list, recipe, scan }
+    var name = ""
     let select: (Action) -> Void
+    @State private var shown = false
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
-    var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("Was möchtest du tun?").font(Theme.F.caption).foregroundStyle(Theme.C.text2).padding(.horizontal, 8)
-            Grid(horizontalSpacing: 10, verticalSpacing: 10) {
-                GridRow {
-                    tile(.plan, "✨", "Wochenplan erstellen", "KI plant mit den Angeboten", color: Theme.C.accent, main: true)
-                    tile(.barcode, "🔎", "Barcode scannen", "Produkt auf die Merkliste", color: Theme.C.deal)
-                }
-                GridRow {
-                    tile(.list, "🛒", "Einkaufsliste", "Artikel abhaken & ergänzen", color: Theme.C.kcal)
-                    tile(.recipe, "📝", "Rezept anlegen", "Eigenes Rezept speichern", color: Theme.C.violet)
-                }
-                GridRow {
-                    tile(.scan, "📸", "Kühlschrank scannen", "Fotos → Vorrat & Kochideen", color: Theme.C.carbs).gridCellColumns(2)
-                }
-            }
-        }
-        .padding(14)
-        .background(Theme.C.card, in: RoundedRectangle(cornerRadius: Theme.R.sheet, style: .continuous))
-        .floatShadow()
+    private struct Item {
+        let action: Action
+        let symbol: String?
+        let emoji: String?
+        let title: String
+        let color: Color
+        let angle: Double
     }
 
-    private func tile(_ action: Action, _ emoji: String, _ title: String, _ subtitle: String, color: Color, main: Bool = false) -> some View {
-        Button { select(action) } label: {
-            VStack(alignment: .leading, spacing: 18) {
-                Text(emoji).font(.system(size: 22))
-                    .frame(width: 44, height: 44)
-                    .background(main ? Color.white.opacity(0.18) : color.opacity(0.15), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(title).font(Theme.F.callout)
-                    Text(subtitle).font(Theme.F.micro).foregroundStyle(main ? .white.opacity(0.75) : Theme.C.text2)
+    private let items = [
+        Item(action: .barcode, symbol: "barcode.viewfinder", emoji: nil, title: "Barcode\nscannen", color: Theme.C.sky, angle: 150),
+        Item(action: .list, symbol: "bag", emoji: nil, title: "Zur Liste", color: Theme.C.sun, angle: 120),
+        Item(action: .plan, symbol: "sparkle", emoji: nil, title: "Wochenplan\nerstellen", color: Theme.C.lime, angle: 90),
+        Item(action: .recipe, symbol: "book.closed", emoji: nil, title: "Rezept\nanlegen", color: Theme.C.lav, angle: 60),
+        Item(action: .scan, symbol: nil, emoji: "📸", title: "Kühlschrank\nscannen", color: Theme.C.tomato, angle: 30),
+    ]
+
+    var body: some View {
+        GeometryReader { geo in
+            // Bogen um einen Punkt 23 pt über der Tab-Leiste, Radius 180
+            let center = CGPoint(x: geo.size.width / 2, y: geo.size.height - Theme.S.tabBar - 23)
+            ZStack(alignment: .topLeading) {
+                DisplayHeader(line1: "Was jetzt,", line2: name.isEmpty ? "" : "\(name)?", size: 44, onDark: true)
+                    .padding(.horizontal, 24).padding(.top, 58)
+                    .opacity(shown ? 1 : 0)
+                Path { p in p.addArc(center: center, radius: 180, startAngle: .degrees(-150), endAngle: .degrees(-30), clockwise: false) }
+                    .stroke(.white.opacity(0.18), style: StrokeStyle(lineWidth: 1.5, dash: [3, 7]))
+                    .opacity(shown ? 1 : 0)
+                ForEach(Array(items.enumerated()), id: \.offset) { i, item in
+                    let a = item.angle * .pi / 180
+                    let pos = CGPoint(x: center.x + 180 * cos(a), y: center.y - 180 * sin(a))
+                    button(item)
+                        .position(shown ? pos : center)
+                        .scaleEffect(shown ? 1 : 0.3)
+                        .opacity(shown ? 1 : 0)
+                        .animation(reduceMotion ? nil : Theme.spring.delay(Double(i) * 0.04), value: shown)
                 }
             }
-            .multilineTextAlignment(.leading)
-            .foregroundStyle(main ? .white : Theme.C.text1)
-            .padding(16)
-            .frame(maxWidth: .infinity, minHeight: 124, alignment: .topLeading)
-            .background(main ? AnyShapeStyle(LinearGradient(colors: [Theme.C.accent, Theme.C.accentDeep], startPoint: .topLeading, endPoint: .bottomTrailing))
-                             : AnyShapeStyle(Theme.C.surface),
-                        in: RoundedRectangle(cornerRadius: 22, style: .continuous))
+        }
+        .onAppear { shown = true }
+    }
+
+    private func button(_ item: Item) -> some View {
+        let main = item.action == .plan
+        let size: CGFloat = main ? 88 : 64
+        return Button { select(item.action) } label: {
+            VStack(spacing: 8) {
+                Group {
+                    if let symbol = item.symbol { Image(systemName: symbol).font(.system(size: 24, weight: .semibold)) }
+                    else { Text(item.emoji ?? "").font(.system(size: 28)) }
+                }
+                .foregroundStyle(Theme.C.ink)
+                .frame(width: size, height: size)
+                .background(item.color, in: Circle())
+                .background(Circle().fill(Theme.C.lime.opacity(main ? 0.22 : 0)).padding(-6))
+                .shadow(color: .black.opacity(0.35), radius: 12, y: 10)
+                Text(item.title).font(.system(main ? .footnote : .caption, weight: .bold)).foregroundStyle(.white)
+                    .multilineTextAlignment(.center).lineLimit(2).fixedSize()
+            }
+            // Kreis-Mittelpunkt liegt auf dem Bogen, Beschriftung darunter
+            .offset(y: (size + 8 + 30) / 2 - size / 2)
         }
         .buttonStyle(PressableStyle())
+        .accessibilityLabel(item.title.replacingOccurrences(of: "\n", with: " "))
     }
 }

@@ -588,7 +588,7 @@ struct BarcodeScanView: View {
                 }
                 .padding(Theme.pagePadding)
             }
-            CornerFrame().stroke(Theme.C.accent, style: StrokeStyle(lineWidth: 5, lineCap: .round))
+            CornerFrame().stroke(Theme.C.lime, style: StrokeStyle(lineWidth: 5, lineCap: .round))
                 .frame(width: 270, height: 170)
                 .accessibilityHidden(true)
             VStack {

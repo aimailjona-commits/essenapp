@@ -1,16 +1,25 @@
 import SwiftUI
 
-// Bausteine aus docs/ui/design-system.md (Abschnitt Komponenten, v2).
+// Bausteine aus docs/ui/redesign-v3.md (Abschnitt 5, v3 „Küchen-Pinnwand“). Neue v3-Bausteine: V3Components.swift.
 
 struct DisplayHeader: View {
     let line1: String
-    let line2: String
+    var line2 = ""
+    var size: CGFloat = 46
+    var onDark = false
 
     var body: some View {
-        (Text(line1 + "\n").font(Theme.F.display).foregroundStyle(Theme.C.text1)
-            + Text(line2).font(Theme.F.displayLight).foregroundStyle(Theme.C.text2))
-            .tracking(-0.5)
-            .frame(maxWidth: .infinity, alignment: .leading)
+        VStack(alignment: .leading, spacing: -size * 0.26) {  // Zeilenhöhe 0.95
+            Text(line1).font(Theme.F.display(size)).foregroundStyle(onDark ? .white : Theme.C.text1)
+            if !line2.isEmpty {
+                Text(line2).font(Theme.F.displayItalic(size)).foregroundStyle(onDark ? Theme.C.tabInactive : Theme.C.text3)
+            }
+        }
+        .tracking(-size * 0.025)
+        .lineLimit(2).minimumScaleFactor(0.6)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .accessibilityElement(children: .combine)
+        .accessibilityAddTraits(.isHeader)
     }
 }
 
@@ -30,27 +39,30 @@ struct SearchField: View {
                 .accessibilityLabel("Suche leeren")
             }
         }
-        .padding(.horizontal, 16)
-        .frame(height: 46)
+        .padding(.horizontal, 18)
+        .frame(height: Theme.S.search)
         .background(Theme.C.card, in: Capsule())
-        .overlay(Capsule().strokeBorder(Theme.C.line, lineWidth: 0.5))
+        .overlay(Capsule().strokeBorder(Theme.C.line, lineWidth: 1))
     }
 }
 
 struct RoundIconButton: View {
     let systemName: String
     var dark = false
+    var fill: Color?  // v3: `surface` (Standard), `card` auf farbigen Köpfen, `lime`
+    var small = false
     var label: String
     let action: () -> Void
 
     var body: some View {
+        let size = small ? Theme.S.roundButtonSmall : Theme.S.roundButton
         Button(action: action) {
             Image(systemName: systemName)
-                .font(.system(size: 16, weight: .semibold))
-                .frame(width: 44, height: 44)
+                .font(.system(size: small ? 14 : 18, weight: .semibold))
+                .frame(width: size, height: size)
                 .foregroundStyle(dark ? Theme.C.onAction : Theme.C.text1)
-                .background(dark ? Theme.C.action : Theme.C.card, in: Circle())
-                .overlay(Circle().strokeBorder(Theme.C.line, lineWidth: dark ? 0 : 0.5))
+                .background(dark ? Theme.C.action : fill ?? Theme.C.surface, in: Circle())
+                .frame(minWidth: 44, minHeight: 44)
         }
         .buttonStyle(PressableStyle())
         .accessibilityLabel(label)
@@ -62,23 +74,31 @@ struct PrimaryButtonStyle: ButtonStyle {
 
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .font(.system(.body, design: .rounded, weight: .semibold))
-            .foregroundStyle(color == Theme.C.action ? Theme.C.onAction : .white)  // farbige Buttons (Orange) behalten weiße Schrift
-            .frame(maxWidth: .infinity, minHeight: 54)
+            .font(.system(.callout, weight: .bold))
+            .foregroundStyle(color == Theme.C.lime ? Theme.C.onLime : color == Theme.C.action ? Theme.C.onAction : .white)
+            .frame(maxWidth: .infinity, minHeight: Theme.S.button)
+            .padding(.horizontal, 26)
             .background(color, in: Capsule())
             .scaleEffect(configuration.isPressed ? 0.97 : 1)
             .animation(.spring(response: 0.25, dampingFraction: 0.7), value: configuration.isPressed)
     }
 }
 
+/// v3: Limetten-Knopf „jetzt loslegen“ – höchstens einmal pro Screen.
+struct AccentButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        PrimaryButtonStyle(color: Theme.C.lime).makeBody(configuration: configuration)
+    }
+}
+
 struct SecondaryButtonStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .font(.system(.body, design: .rounded, weight: .semibold))
+            .font(.system(.callout, weight: .bold))
             .foregroundStyle(Theme.C.text1)
-            .frame(maxWidth: .infinity, minHeight: 54)
-            .background(Theme.C.card, in: Capsule())
-            .overlay(Capsule().strokeBorder(Theme.C.line, lineWidth: 1))
+            .frame(maxWidth: .infinity, minHeight: Theme.S.button)
+            .padding(.horizontal, 26)
+            .background(Theme.C.surface, in: Capsule())
             .scaleEffect(configuration.isPressed ? 0.97 : 1)
             .animation(.spring(response: 0.25, dampingFraction: 0.7), value: configuration.isPressed)
     }
@@ -95,6 +115,24 @@ enum Nutrient: CaseIterable {
         case .protein: Theme.C.protein
         case .carbs: Theme.C.carbs
         case .fat: Theme.C.fat
+        }
+    }
+
+    var tint: Color {
+        switch self {
+        case .kcal: Theme.C.kcalTint
+        case .protein: Theme.C.proteinTint
+        case .carbs: Theme.C.carbsTint
+        case .fat: Theme.C.fatTint
+        }
+    }
+
+    var emoji: String {
+        switch self {
+        case .kcal: "🔥"
+        case .protein: "💪"
+        case .carbs: "🌾"
+        case .fat: "🧈"
         }
     }
 
@@ -121,11 +159,10 @@ struct NutrientIcon: View {
     let nutrient: Nutrient
 
     var body: some View {
-        Image(systemName: nutrient.symbol)
-            .font(.system(size: 13, weight: .semibold))
-            .foregroundStyle(nutrient.color)
-            .frame(width: 30, height: 30)
-            .background(nutrient.color.opacity(0.14), in: RoundedRectangle(cornerRadius: 9, style: .continuous))
+        Text(nutrient.emoji)
+            .font(.system(size: 17))
+            .frame(width: 34, height: 34)
+            .background(nutrient.tint, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
             .accessibilityHidden(true)
     }
 }
@@ -137,20 +174,30 @@ struct NutrientStat: View {
     var body: some View {
         VStack(spacing: 4) {
             NutrientIcon(nutrient: nutrient)
-            Text(value).font(.system(.subheadline, design: .rounded, weight: .bold)).monospacedDigit()
-            Text(nutrient.label).font(Theme.F.micro).foregroundStyle(Theme.C.text2)
+            Text(value).font(.system(.callout, weight: .heavy)).monospacedDigit()
+            Text(nutrient.label).font(.caption).foregroundStyle(Theme.C.text2)
         }
         .frame(maxWidth: .infinity)
         .accessibilityElement(children: .combine)
     }
 }
 
+/// Getönte Kachel: große Zahl, Bezeichnung (Rezept, Angebot).
 struct NutrientTile: View {
     let nutrient: Nutrient
     let value: String
 
     var body: some View {
-        NutrientStat(nutrient: nutrient, value: value).padding(.vertical, 12).card(radius: Theme.R.tile)
+        VStack(alignment: .leading, spacing: 2) {
+            Text(value).font(.system(.title2, weight: .black)).tracking(-0.6).monospacedDigit()
+                .lineLimit(1).minimumScaleFactor(0.6)
+            Text(nutrient.label).font(.system(.caption, weight: .bold)).opacity(0.7)
+        }
+        .foregroundStyle(Theme.C.text1)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.vertical, 14).padding(.horizontal, 12)
+        .background(nutrient.tint, in: RoundedRectangle(cornerRadius: Theme.R.tile, style: .continuous))
+        .accessibilityElement(children: .combine)
     }
 }
 
@@ -183,34 +230,24 @@ struct RemoteImage<Placeholder: View>: View {
     }
 }
 
-/// Freigestelltes Tellerfoto (KI-generiert, E13). Ohne Bild: Teller mit Speisen-Farbverlauf.
+/// Tellerfoto (v3): Kreis, weißer Innenring 4 pt, Teller-Schatten. Ohne Bild: Speisen-Emoji auf `card`.
 struct Plate: View {
     let url: URL?
     var size: CGFloat = 120
     var seed = ""
+    var emoji: String?
 
-    private static let foods: [(UInt32, UInt32, String)] = [
-        (0xF6B26B, 0xB8471A, "🍛"), (0xFFD27A, 0xC07A1A, "🍲"), (0xF08A5D, 0xB8361F, "🍝"),
-        (0x9CCB6B, 0x4E7F2A, "🥗"), (0xFBE29B, 0xD9542F, "🍳"), (0xFFB49A, 0x3E9BFF, "🍣"),
-    ]
+    private static let foods = ["🍛", "🍲", "🍝", "🥗", "🍳", "🍣"]
 
     var body: some View {
-        let food = Self.foods[abs(seed.unicodeScalars.reduce(0) { $0 &* 31 &+ Int($1.value) }) % Self.foods.count]
+        let food = emoji ?? Self.foods[abs(seed.unicodeScalars.reduce(0) { $0 &* 31 &+ Int($1.value) }) % Self.foods.count]
         RemoteImage(url: url, contentMode: .fill) {
-            ZStack {
-                Circle().fill(Theme.C.plate)
-                Circle().strokeBorder(Theme.C.bg, lineWidth: size * 0.025).padding(size * 0.1)
-                Circle()
-                    .fill(RadialGradient(colors: [Color(hex: food.0), Color(hex: food.1)], center: .init(x: 0.35, y: 0.3),
-                                         startRadius: 0, endRadius: size * 0.42))
-                    .padding(size * 0.16)
-                Text(food.2).font(.system(size: size * 0.3))
-            }
-            .overlay(Theme.C.photoDim)
+            Text(food).font(.system(size: size * 0.54)).frame(width: size, height: size).background(Theme.C.card)
         }
         .frame(width: size, height: size)
         .clipShape(Circle())
-        .floatShadow()
+        .overlay(Circle().strokeBorder(Color.white.opacity(0.95), lineWidth: url == nil ? 0 : 4))
+        .plateShadow()
         .accessibilityHidden(true)
     }
 }
@@ -224,52 +261,65 @@ struct DealBadge: View {
 
     var body: some View {
         Text(text)
-            .font(Theme.F.micro)
-            .padding(.horizontal, 8)
-            .frame(height: 22)
+            .font(.system(.caption, weight: .heavy))
+            .lineLimit(1)
+            .padding(.horizontal, 10)
+            .frame(height: 26)
             .foregroundStyle(style == .strong ? .white : style == .soft ? Theme.C.deal : Theme.C.accentDeep)
             .background(style == .strong ? Theme.C.deal : style == .soft ? Theme.C.deal.opacity(0.1) : Theme.C.accentSoft, in: Capsule())
     }
 }
 
+/// Laden-Pille: Farbpunkt in der Ordnerfarbe + Name. `onDark` für den Start-Kopf.
 struct StoreChip: View {
     let chain: String
+    var onDark = false
 
     var body: some View {
-        HStack(spacing: 5) {
-            StoreLogo(chain: chain, size: 16)
-            Text(Labels.chain(chain))
+        HStack(spacing: 6) {
+            Circle().fill(Theme.storeColor(chain)).frame(width: 8, height: 8)
+            Text(chain.isEmpty ? "Überall" : Labels.chain(chain)).lineLimit(1)
         }
-        .font(Theme.F.micro)
-        .foregroundStyle(Theme.C.text2)
-        .padding(.leading, 3).padding(.trailing, 9)
-        .frame(height: 22)
-        .background(Theme.C.surface, in: Capsule())
+        .font(.system(.caption, weight: .bold))
+        .foregroundStyle(onDark ? Color(hex: 0xDDDDDD) : Theme.C.text1)
+        .padding(.horizontal, 10)
+        .frame(height: 26)
+        .background(onDark ? Theme.C.inkChip : Theme.C.card, in: Capsule())
+        .overlay(Capsule().strokeBorder(onDark ? Theme.C.inkChipLine : Theme.C.line, lineWidth: 1))
     }
 }
 
+/// v3: umrandete Pille mit Zahl-Kapsel. `filled` = Schalter-Filter (an: schwarz mit Limetten-Zahl).
 struct FilterChip: View {
     let label: String
     var count: Int?
     var color: Color = Theme.C.action
+    var filled = false
+    var countHighlight = false  // Merkliste: Zahl in `deal`
     let selected: Bool
     let action: () -> Void
-    private var fg: Color { color == Theme.C.action ? Theme.C.onAction : .white }
 
     var body: some View {
+        let solid = filled && selected
         Button(action: action) {
-            HStack(spacing: 6) {
-                Text(label)
+            HStack(spacing: 8) {
+                Text(label).lineLimit(1)
                 if let count {
-                    Text("\(count)").foregroundStyle(selected ? fg.opacity(0.7) : Theme.C.text3).contentTransition(.numericText())
+                    Text("\(count)")
+                        .font(.system(.caption, weight: .bold)).monospacedDigit()
+                        .padding(.horizontal, 7).frame(minWidth: 24, minHeight: 24)
+                        .foregroundStyle(solid ? Theme.C.onLime : countHighlight ? .white : selected ? Theme.C.onAction : Color(hex: 0x666666))
+                        .background(solid ? Theme.C.lime : countHighlight ? Theme.C.deal : selected ? Theme.C.action : Theme.C.surface, in: Capsule())
+                        .contentTransition(.numericText())
                 }
             }
-            .font(.system(.caption, weight: .semibold))
-            .padding(.horizontal, 13)
-            .frame(height: 34)
-            .foregroundStyle(selected ? fg : Theme.C.text1)
-            .background(selected ? color : Theme.C.card, in: Capsule())
-            .overlay(Capsule().strokeBorder(Theme.C.line, lineWidth: selected ? 0 : 0.5))
+            .font(.system(.subheadline, weight: .semibold))
+            .padding(.horizontal, 16)
+            .frame(height: Theme.S.chip)
+            .foregroundStyle(solid ? Theme.C.onAction : selected ? Theme.C.text1 : Theme.C.chipText)
+            .background(solid ? Theme.C.action : .clear, in: Capsule())
+            .overlay(Capsule().strokeBorder(selected ? Theme.C.action : Theme.C.chipBorder, lineWidth: solid ? 0 : selected ? 2 : 1.5))
+            .contentShape(Capsule())
             .animation(Theme.spring, value: selected)
         }
         .buttonStyle(PressableStyle())
@@ -287,7 +337,7 @@ struct RatingStars: View {
                 Button { withAnimation(Theme.spring) { rating = star } } label: {
                     Image(systemName: star <= rating ? "star.fill" : "star")
                         .font(.system(size: 34))
-                        .foregroundStyle(star <= rating ? Theme.C.warning : Theme.C.text3)
+                        .foregroundStyle(star <= rating ? Theme.C.star : Theme.C.starEmpty)
                         .symbolEffect(.bounce, value: rating == star)
                         .scaleEffect(star <= rating ? 1.05 : 1)
                 }
@@ -306,34 +356,42 @@ struct EmptyState: View {
     let text: String
     var buttonTitle: String?
     var action: (() -> Void)?
-    @State private var float = false
 
     var body: some View {
-        VStack(spacing: 12) {
-            Text(emoji).font(.system(size: 52))
-                .frame(width: 104, height: 104)
-                .background(Theme.C.accentSoft, in: Circle())
-                .offset(y: float ? -4 : 4)
-                .onAppear { withAnimation(.easeInOut(duration: 1.8).repeatForever()) { float = true } }
+        VStack(spacing: 4) {
+            Text(emoji).font(.system(size: 56))
             Text(title).font(Theme.F.headline).padding(.top, 6).multilineTextAlignment(.center).fixedSize(horizontal: false, vertical: true)
             Text(text).font(Theme.F.caption).foregroundStyle(Theme.C.text2).multilineTextAlignment(.center)
                 .fixedSize(horizontal: false, vertical: true)  // mehrzeilig, nie abgeschnitten (Erklär-Sheets)
             if let buttonTitle, let action {
-                Button(buttonTitle, action: action).buttonStyle(PrimaryButtonStyle()).padding(.top, 8).frame(maxWidth: 260)
+                Button(buttonTitle, action: action).buttonStyle(PrimaryButtonStyle()).fixedSize().padding(.top, 14)
             }
         }
-        .padding(28)
+        .padding(22)
         .frame(maxWidth: .infinity)
+        .card()
         .appear()
     }
 }
 
+/// v3: Pille mit Satz + „Erneut“.
 struct ErrorState: View {
     let message: String
     let retry: () -> Void
 
     var body: some View {
-        EmptyState(emoji: "📡", title: "Das hat nicht geklappt", text: message, buttonTitle: "Erneut versuchen", action: retry)
+        HStack(spacing: 10) {
+            Text("⚠️ \(message)").font(Theme.F.caption).foregroundStyle(Theme.C.text1).fixedSize(horizontal: false, vertical: true)
+            Spacer(minLength: 0)
+            Button("Erneut", action: retry)
+                .font(.system(.subheadline, weight: .bold)).foregroundStyle(Theme.C.text1)
+                .padding(.horizontal, 16).frame(minHeight: 44)
+                .background(Theme.C.surface, in: Capsule())
+                .buttonStyle(PressableStyle())
+        }
+        .padding(.leading, 18).padding(.trailing, 6).padding(.vertical, 6)
+        .background(Theme.C.card, in: Capsule())
+        .overlay(Capsule().strokeBorder(Theme.C.line, lineWidth: 1))
     }
 }
 
@@ -356,31 +414,35 @@ struct SkeletonCard: View {
     }
 }
 
-/// Kurze Bestätigung oben (z.B. „Zur Liste hinzugefügt“), optional mit Aktions-Knopf („In den Vorrat“).
+/// Kurze Bestätigung (v3): schwarze Kapsel, Limetten-Kreis mit Symbol, optional Aktions-Knopf („In den Vorrat“).
 struct Toast: View {
     let text: String
-    var symbol = "checkmark.circle.fill"
+    var symbol = "checkmark"
     var actionTitle: String?
     var action: () -> Void = {}
 
     var body: some View {
         HStack(spacing: 10) {
-            Label(text, systemImage: symbol).lineLimit(2)
+            Image(systemName: symbol.replacingOccurrences(of: ".circle.fill", with: ""))
+                .font(.system(size: 15, weight: .bold)).foregroundStyle(Theme.C.onLime)
+                .frame(width: 36, height: 36).background(Theme.C.lime, in: Circle())
+            Text(text).lineLimit(2)
             if let actionTitle {
                 Button(actionTitle, action: action)
                     .font(.system(.subheadline, weight: .bold))
                     .foregroundStyle(Theme.C.action)
-                    .padding(.horizontal, 14).frame(minHeight: 44)
+                    .padding(.horizontal, 14).frame(minHeight: 40)
                     .background(Theme.C.onAction, in: Capsule())
                     .buttonStyle(PressableStyle())
             }
         }
-            .font(.system(.subheadline, weight: .semibold))
-            .foregroundStyle(Theme.C.onAction)
-            .padding(.leading, 16).padding(.trailing, actionTitle == nil ? 16 : 6).padding(.vertical, actionTitle == nil ? 12 : 6)
-            .background(Theme.C.action, in: Capsule())
-            .floatShadow()
-            .transition(.move(edge: .top).combined(with: .opacity))
+        .font(.system(.subheadline, weight: .bold))
+        .foregroundStyle(Theme.C.onAction)
+        .padding(.leading, 8).padding(.trailing, actionTitle == nil ? 20 : 6)
+        .frame(minHeight: 52)
+        .background(Theme.C.action, in: Capsule())
+        .floatShadow()
+        .transition(.move(edge: .top).combined(with: .opacity))
     }
 }
 
@@ -400,15 +462,16 @@ enum AppTab: CaseIterable {
 
     var symbol: String {
         switch self {
-        case .start: "house.fill"
-        case .angebote: "tag.fill"
-        case .einkauf: "bag.fill"
-        case .rezepte: "book.closed.fill"
+        case .start: "house"
+        case .angebote: "tag"
+        case .einkauf: "bag"
+        case .rezepte: "book.closed"
         }
     }
 }
 
-/// Tab-Leiste: Liquid Glass ab iOS 26 (Kapsel mit Tabs + eigener Glas-Kreis für „+“), sonst dunkle Kapsel.
+/// Tab-Leiste v3 (E87): schwarze Kapsel, aktiver Tab als weiße Pille mit Namen, Limetten-Knopf in der Mitte.
+/// Bei offenen Schnell-Aktionen wird sie weiß und der Knopf hebt sich als ✕ in einer Wölbung heraus.
 struct TabBar: View {
     @Binding var selected: AppTab
     @Binding var quickOpen: Bool
@@ -417,83 +480,73 @@ struct TabBar: View {
     @Namespace private var pill
 
     var body: some View {
-        Group {
-            if #available(iOS 26.0, *) {
-                GlassEffectContainer(spacing: 10) {
-                    HStack(spacing: 10) {
-                        tabs(glass: true)
-                            .padding(5)
-                            .glassEffect(.regular.interactive(), in: Capsule())
-                        plusButton(glass: true)
-                            .glassEffect(.regular.tint(quickOpen ? Theme.C.accent : Theme.C.accent.opacity(0.85)).interactive(), in: Circle())
-                    }
-                }
-            } else {
-                HStack(spacing: 4) {
-                    tabs(glass: false)
-                    plusButton(glass: false).background(quickOpen ? Theme.C.accent : Theme.C.plate, in: Circle())
-                }
-                .padding(7)
-                .background(Theme.C.heroDark, in: Capsule())
-                .shadow(color: .black.opacity(0.25), radius: 16, y: 8)
-            }
+        HStack(spacing: 0) {
+            item(.start); Spacer(minLength: 0)
+            item(.angebote); Spacer(minLength: 0)
+            plusButton; Spacer(minLength: 0)
+            item(.einkauf); Spacer(minLength: 0)
+            item(.rezepte)
         }
-        .padding(.horizontal, 16)
+        .padding(.horizontal, 9)
+        .frame(height: Theme.S.tabBar)
+        .background(quickOpen ? Theme.C.plate : Theme.C.ink, in: Capsule())
+        .shadow(color: .black.opacity(quickOpen ? 0.4 : 0.22), radius: 20, y: 18)
+        .padding(.horizontal, Theme.S.barSide)
         .sensoryFeedback(.selection, trigger: selected)
         .sensoryFeedback(.impact(weight: .medium), trigger: quickOpen)
     }
 
-    private func tabs(glass: Bool) -> some View {
-        HStack(spacing: 0) {
-            ForEach(AppTab.allCases, id: \.self) { tab in item(tab, glass: glass) }
-        }
-    }
-
-    private func plusButton(glass: Bool) -> some View {
+    private var plusButton: some View {
         Button { withAnimation(Theme.spring) { quickOpen.toggle() } } label: {
-            Image(systemName: "plus")
-                .font(.system(size: 22, weight: .bold))
-                .rotationEffect(.degrees(quickOpen ? 45 : 0))
-                .foregroundStyle(glass || quickOpen ? .white : Theme.C.heroDark)
-                .frame(width: 58, height: 58)
-                .contentShape(Circle())
+            ZStack {
+                if quickOpen {
+                    Circle().fill(Theme.C.plate).frame(width: 92, height: 92)  // Wölbung
+                    Image(systemName: "xmark").font(.system(size: 20, weight: .bold)).foregroundStyle(.white)
+                        .frame(width: 64, height: 64).background(Theme.C.ink, in: Circle())
+                } else {
+                    Image(systemName: "plus").font(.system(size: 22, weight: .bold)).foregroundStyle(Theme.C.onLime)
+                        .frame(width: Theme.S.plus, height: Theme.S.plus).background(Theme.C.lime, in: Circle())
+                }
+            }
+            .offset(y: quickOpen ? -14 : 0)
+            .frame(width: Theme.S.plus, height: Theme.S.plus)
+            .contentShape(Circle())
         }
         .buttonStyle(PressableStyle())
-        .accessibilityLabel("Schnell-Aktionen")
+        .accessibilityLabel(quickOpen ? "Schnell-Aktionen schließen" : "Schnell-Aktionen")
     }
 
-    private func item(_ tab: AppTab, glass: Bool) -> some View {
-        let on = selected == tab
+    private func item(_ tab: AppTab) -> some View {
+        let on = selected == tab && !quickOpen
         return Button {
             if selected == tab { reselect() }
             withAnimation(Theme.spring) { selected = tab; quickOpen = false }
         } label: {
-            VStack(spacing: 2) {
+            HStack(spacing: 8) {
                 Image(systemName: tab.symbol).font(.system(size: 18, weight: .semibold)).symbolEffect(.bounce, value: on)
-                    .overlay(alignment: .topTrailing) {
-                        if let n = badges[tab], n > 0 {
-                            Text("\(n)").font(.system(size: 10, weight: .bold, design: .rounded)).foregroundStyle(.white)
-                                .padding(.horizontal, 4).frame(minWidth: 16, minHeight: 16)
-                                .background(Theme.C.deal, in: Capsule())
-                                .offset(x: 10, y: -6)
-                                .transition(.scale.combined(with: .opacity))
-                        }
-                    }
-                Text(tab.title).font(.system(size: 10, weight: .semibold))
+                if on { Text(tab.title).font(.system(.subheadline, weight: .heavy)).lineLimit(1).fixedSize() }
             }
-            .foregroundStyle(on ? Theme.C.accent : (glass ? Theme.C.text1 : Color.white.opacity(0.6)))
-            .frame(maxWidth: .infinity, minHeight: 48)
+            .foregroundStyle(on ? Theme.C.ink : quickOpen ? Theme.C.onInk3 : Theme.C.tabInactive)
+            .padding(.leading, on ? 14 : 0).padding(.trailing, on ? 18 : 0)
+            .frame(minWidth: Theme.S.tab, minHeight: Theme.S.tab)
             .background {
-                if on {
-                    Capsule().fill(glass ? Theme.C.accent.opacity(0.14) : Color.white.opacity(0.12))
-                        .matchedGeometryEffect(id: "pill", in: pill)
+                if on { Capsule().fill(Theme.C.plate).matchedGeometryEffect(id: "pill", in: pill) }
+            }
+            .overlay(alignment: .topTrailing) {
+                if let n = badges[tab], n > 0, !on {
+                    Text("\(n)").font(.system(size: 10, weight: .heavy)).foregroundStyle(.white)
+                        .padding(.horizontal, 4).frame(minWidth: 18, minHeight: 18)
+                        .background(Theme.C.deal, in: Capsule())
+                        .overlay(Capsule().strokeBorder(Theme.C.ink, lineWidth: 2))
+                        .offset(x: -2, y: 4)
+                        .transition(.scale.combined(with: .opacity))
                 }
             }
             .contentShape(Capsule())
         }
         .buttonStyle(PressableStyle())
         .accessibilityLabel(badges[tab].map { n in n > 0 ? "\(tab.title), \(n) Treffer" : tab.title } ?? tab.title)
-        .accessibilityAddTraits(on ? .isSelected : [])
+        .accessibilityAddTraits(selected == tab ? .isSelected : [])
     }
 }
 
@@ -514,23 +567,21 @@ struct HeroImage: View {
     }
 }
 
-/// Offizielles Händler-Logo (zur Laufzeit von Wikimedia Commons geladen, nicht im Repo, E39). Fallback: Buchstabe.
+/// Offizielles Händler-Logo auf weißem Plättchen, immer ganz sichtbar (Wikimedia, nur verlinkt, E44). Fallback: Kürzel bzw. 🧺.
 struct StoreLogo: View {
     let chain: String
     var size: CGFloat = 36
 
     var body: some View {
         RemoteImage(url: Labels.logoURL(chain), dim: false) {
-            Text(String(Labels.chain(chain).prefix(1)))
-                .font(.system(size: size * 0.45, weight: .bold)).foregroundStyle(.white)
-                .frame(width: size, height: size)
-                .background(Theme.storeColor(chain))
+            Text(chain.isEmpty ? "🧺" : String(Labels.chain(chain).prefix(1)))
+                .font(.system(size: size * 0.42, weight: .heavy)).foregroundStyle(Theme.C.ink)
         }
         .padding(size * 0.12)
         .frame(width: size, height: size)
         .background(Theme.C.plate)  // Logos auf weißem Plättchen, auch im Dunkeln (68)
         .clipShape(RoundedRectangle(cornerRadius: size * 0.28, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: size * 0.28, style: .continuous).strokeBorder(Theme.C.line, lineWidth: 0.5))
+        .shadow(color: .black.opacity(0.06), radius: 3, y: 2)
     }
 }
 
@@ -573,31 +624,32 @@ struct CategoryCircles: View {
     }
 }
 
-/// Pillen-Umschalter wie in den Vorlagen („All | Popular“): aktive Pille schwarz, gleitet mit.
+/// Segment v3: Kapsel `surface`, Innenabstand 4, aktive Pille schwarz (gleitet mit).
 struct PillSegment<T: Hashable>: View {
     let options: [(T, String)]
     @Binding var selection: T
     @Namespace private var ns
 
     var body: some View {
-        HStack(spacing: 6) {
+        HStack(spacing: 0) {
             ForEach(options, id: \.0) { value, label in
                 let on = selection == value
                 Button { withAnimation(Theme.spring) { selection = value } } label: {
                     Text(label)
-                        .font(.system(.subheadline, weight: .semibold))
-                        .foregroundStyle(on ? Theme.C.onAction : Theme.C.text1)
+                        .font(.system(.subheadline, weight: .bold))
+                        .foregroundStyle(on ? Theme.C.onAction : Theme.C.text2)
                         .lineLimit(1).minimumScaleFactor(0.75)  // „Kühlschrank“ nicht umbrechen
-                        .padding(.horizontal, 12).frame(height: 40)
+                        .padding(.horizontal, 12).frame(height: 42)
                         .frame(maxWidth: .infinity)
-                        .background {
-                            if on { Capsule().fill(Theme.C.action).matchedGeometryEffect(id: "seg", in: ns) }
-                            else { Capsule().fill(Theme.C.card) }
-                        }
+                        .background { if on { Capsule().fill(Theme.C.action).matchedGeometryEffect(id: "seg", in: ns) } }
+                        .contentShape(Capsule())
                 }
                 .buttonStyle(PressableStyle())
+                .accessibilityAddTraits(on ? .isSelected : [])
             }
         }
+        .padding(4)
+        .background(Theme.C.surface, in: Capsule())
         .sensoryFeedback(.selection, trigger: selection)
     }
 }
@@ -637,17 +689,17 @@ extension View {
 /// Herz für Favoriten (Rezeptdetail, Karten): hüpft beim Umschalten, mit Haptik.
 struct HeartButton: View {
     let on: Bool
+    var fill: Color = Theme.C.surface
     let action: () -> Void
 
     var body: some View {
         Button(action: action) {
             Image(systemName: on ? "heart.fill" : "heart")
-                .font(.system(size: 16, weight: .semibold))
-                .foregroundStyle(on ? Theme.C.accent : Theme.C.text1)
+                .font(.system(size: 18, weight: .semibold))
+                .foregroundStyle(Theme.C.text1)
                 .symbolEffect(.bounce, value: on)
-                .frame(width: 44, height: 44)
-                .background(Theme.C.card, in: Circle())
-                .overlay(Circle().strokeBorder(Theme.C.line, lineWidth: 0.5))
+                .frame(width: Theme.S.roundButton, height: Theme.S.roundButton)
+                .background(fill, in: Circle())
                 .contentTransition(.symbolEffect(.replace))
         }
         .buttonStyle(PressableStyle())
@@ -669,7 +721,7 @@ struct StarsView: View {
             }
         }
         .font(.system(size: size, weight: .semibold))
-        .foregroundStyle(Theme.C.warning)
+        .foregroundStyle(Theme.C.star)
         .accessibilityElement()
         .accessibilityLabel("\(num(value)) von 5 Sternen")
     }
@@ -771,10 +823,10 @@ struct ShareBloom: View {
                 ForEach(Array(parts.enumerated()), id: \.offset) { i, part in
                     let angle = Double(i) / Double(parts.count) * 2 * .pi
                     let length = inner + (outer - inner) * (0.3 + 0.7 * Double(part.percent) / top)
-                    let color = part.name == "Sonstiges" ? Theme.C.text3 : Theme.C.bloom[i % Theme.C.bloom.count]
+                    let color = part.name == "Sonstiges" ? Theme.C.bloomOther : Theme.C.bloom[i % Theme.C.bloom.count]
                     let delay = reduceMotion ? 0 : Double(i) * 0.09
                     Petal()
-                        .fill(LinearGradient(colors: [color.opacity(0.3), color], startPoint: .bottom, endPoint: .top))
+                        .fill(LinearGradient(colors: [color.opacity(0.45), color], startPoint: .bottom, endPoint: .top))
                         .frame(width: width, height: length)
                         .scaleEffect(grown ? 1 : 0.01, anchor: .bottom)
                         .offset(y: -length / 2)

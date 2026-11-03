@@ -16,8 +16,8 @@ struct EssenappWidgets: WidgetBundle {
 
 /// „Widget bearbeiten“: beide Werte stehen in der App unter Einstellungen › Widget einrichten.
 struct TodayIntent: WidgetConfigurationIntent {
-    static let title: LocalizedStringResource = "Essenapp koppeln"
-    static let description = IntentDescription("Server-Adresse und Kopplungscode aus Essenapp › Einstellungen › Widget einrichten.")
+    static let title: LocalizedStringResource = "Kochpilot koppeln"
+    static let description = IntentDescription("Server-Adresse und Kopplungscode aus Kochpilot › Einstellungen › Widget einrichten.")
 
     @Parameter(title: "Server-Adresse", description: "z. B. http://192.168.0.10:8000")
     var server: String?

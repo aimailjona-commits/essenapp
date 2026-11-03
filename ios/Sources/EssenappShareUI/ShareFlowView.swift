@@ -175,7 +175,7 @@ public struct ShareFlowView: View {
         VStack(alignment: .leading, spacing: 0) {
             HStack(spacing: 10) {
                 Text("🍲").font(.system(size: 18)).frame(width: 34, height: 34).background(ST.accentSoft, in: Circle())
-                Text("Essenapp").font(ST.headline)
+                Text("Kochpilot").font(ST.headline)
                 Spacer()
                 Button(action: onClose) {
                     Image(systemName: "xmark").font(.system(size: 15, weight: .semibold)).foregroundStyle(ST.text1)
@@ -244,7 +244,7 @@ public struct ShareFlowView: View {
 
     private var pairPage: some View {
         VStack(alignment: .leading, spacing: 14) {
-            Text("Mit Essenapp koppeln").font(ST.title)
+            Text("Mit Kochpilot koppeln").font(ST.title)
             Text("Einmalig: Öffne in der App Einstellungen › Teilen aus Instagram, tippe „Code erzeugen“ und gib hier Server-Adresse und Code ein.")
                 .font(ST.caption).foregroundStyle(ST.text2)
             VStack(alignment: .leading, spacing: 6) {
@@ -371,7 +371,7 @@ public struct ShareFlowView: View {
                     .background(ST.warning.opacity(0.14), in: RoundedRectangle(cornerRadius: ST.tile, style: .continuous))
                 }
                 if onOpen == nil {
-                    Text("Du findest es in Essenapp › Rezepte › Meine Rezepte (Filter „Importiert“).")
+                    Text("Du findest es in Kochpilot › Rezepte › Meine Rezepte (Filter „Importiert“).")
                         .font(ST.caption).foregroundStyle(ST.text2).multilineTextAlignment(.center)
                 }
             }

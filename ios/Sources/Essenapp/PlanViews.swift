@@ -280,7 +280,7 @@ struct RecipeDetailView: View {
                         .accessibilityLabel("Rezept teilen")
                     }
                     ZStack {
-                        CornerFrame().stroke(Theme.C.accent, style: StrokeStyle(lineWidth: 4, lineCap: .round)).frame(width: 276, height: 276)
+                        CornerFrame().stroke(Theme.C.lime, style: StrokeStyle(lineWidth: 4, lineCap: .round)).frame(width: 276, height: 276)
                             .scaleEffect(spin ? 1 : 1.12).opacity(spin ? 1 : 0)
                         Plate(url: mediaURL(recipe.imageUrl), size: 236, seed: recipe.title)
                             .rotationEffect(.degrees(spin ? 0 : -40))
@@ -431,7 +431,7 @@ struct RecipeDetailView: View {
             VStack(spacing: 10) {
                 // Kochmodus S18 (Feature 4)
                 Button { cooking = true } label: { Label("Kochen starten", systemImage: "play.fill") }
-                    .buttonStyle(PrimaryButtonStyle(color: Theme.C.accent))
+                    .buttonStyle(AccentButtonStyle())
                 HStack(spacing: 10) {
                     Button {
                         let offers = recipe.ingredients.compactMap { ing in store.offers.first { $0.id == ing.offerId } }

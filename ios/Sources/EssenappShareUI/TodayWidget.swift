@@ -270,11 +270,11 @@ public struct TodayWidgetView: View {
         let pick: (hero: TodayDish?, next: TodayDish?) = entry.data?.pick(at: entry.date) ?? (nil, nil)
         switch (family, entry.state) {
         case (.accessoryInline, _):
-            Text(pick.hero.map { d in "\(dishEmoji(d.title)) \(d.title) · \(d.minutes) min" } ?? (entry.state == .ok ? "Kein Gericht geplant" : "Essenapp koppeln"))
+            Text(pick.hero.map { d in "\(dishEmoji(d.title)) \(d.title) · \(d.minutes) min" } ?? (entry.state == .ok ? "Kein Gericht geplant" : "Kochpilot koppeln"))
         case (.accessoryRectangular, _):
             rectangular(pick.hero)
         case (_, .unpaired(let error)):
-            message("🔗", "Widget bearbeiten → Code eingeben", error ?? "Code: Essenapp › Einstellungen › Widget einrichten")
+            message("🔗", "Widget bearbeiten → Code eingeben", error ?? "Code: Kochpilot › Einstellungen › Widget einrichten")
         case (_, .failed(let error)):
             message("📡", "Gerade kein Stand", error)
         default:
@@ -350,7 +350,7 @@ public struct TodayWidgetView: View {
                 Text("\(dishEmoji(hero.title)) \(hero.title)").font(.headline).lineLimit(1)
                 Text("\(hero.minutes) min" + ((entry.data?.openCount ?? 0) > 0 ? " · 🛒 \(entry.data!.openCount) offen" : "")).font(ST.caption)
             } else {
-                Text("Essenapp").font(.headline).widgetAccentable()
+                Text("Kochpilot").font(.headline).widgetAccentable()
                 Text(entry.state == .ok ? "Kein Gericht geplant" : "Widget bearbeiten → Code eingeben").font(ST.caption).lineLimit(2)
             }
         }

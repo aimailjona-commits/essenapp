@@ -135,7 +135,7 @@ def check(db: Session, household_id: int, offers: list[Offer], now: datetime, no
         if not hits or any(h.notified_at and h.week == week for h in item.hits):
             continue
         best = hits[0]
-        if any([notify(m, now, "Essenapp", message(item, best), click_url=f"essenapp://offer/{best.id}",
+        if any([notify(m, now, "Kochpilot", message(item, best), click_url=f"essenapp://offer/{best.id}",
                        thread_id="watch") for m in members]):
             known[best.id].notified_at, known[best.id].week = now.replace(tzinfo=None), week
             sent += 1
@@ -174,7 +174,7 @@ def rhythm(db: Session, household_id: int, offers: list[Offer], lst, now: dateti
             pct = discount(o)
             text = (f"{EMOJI.get(item.category or o.category, '🛒')} {item.label} bald leer – gerade "
                     + (f"−{pct} % " if pct else f"{euro(o.price_cents)} ") + f"bei {CHAIN_NAMES.get(o.chain, o.chain)}")
-            if any([notify(m, now, "Essenapp", text, click_url=f"essenapp://offer/{o.id}", thread_id="watch")
+            if any([notify(m, now, "Kochpilot", text, click_url=f"essenapp://offer/{o.id}", thread_id="watch")
                     for m in members]):
                 item.rhythm_push_at = today
                 done.append(f"push {item.label}")

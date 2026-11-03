@@ -19,7 +19,7 @@ async def lifespan(app: FastAPI):
     yield
 
 
-app = FastAPI(title="Essenapp", lifespan=lifespan)
+app = FastAPI(title="Kochpilot", lifespan=lifespan)
 app.include_router(router)
 app.include_router(web.router)
 app.mount("/static", StaticFiles(directory=web.DIR / "static"), name="static")

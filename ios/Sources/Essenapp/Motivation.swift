@@ -347,7 +347,7 @@ private struct UnlockCard: View {
                     .opacity(landed ? 1 : 0)
                 Text(a.group == "sparen" ? "Sparen" : "Gesundheit").font(Theme.F.caption).foregroundStyle(.white.opacity(0.7))
                 Button(step < of ? "Weiter (\(step)/\(of))" : "Super!", action: done)
-                    .buttonStyle(PrimaryButtonStyle(color: Theme.C.accent))
+                    .buttonStyle(AccentButtonStyle())
                     .padding(.top, 24)
             }
             .padding(Theme.pagePadding)
@@ -723,7 +723,7 @@ struct ReviewShareCard: View {
             Spacer(minLength: 0)
             HStack(spacing: 8) {
                 AppIconMark()
-                Text("Mit Essenapp geplant").font(Theme.F.caption).foregroundStyle(Theme.C.text2)
+                Text("Mit Kochpilot geplant").font(Theme.F.caption).foregroundStyle(Theme.C.text2)
             }
         }
         .padding(22)
@@ -873,7 +873,7 @@ struct RecipeLinkSheet: View {
                 Spacer()
                 RoundIconButton(systemName: "xmark", label: "Schließen") { dismiss() }
             }
-            Text("Wer den Link öffnet, sieht Foto, Zutaten und Schritte – mit Essenapp lässt sich „\(title)“ in die eigenen Rezepte übernehmen.")
+            Text("Wer den Link öffnet, sieht Foto, Zutaten und Schritte – mit Kochpilot lässt sich „\(title)“ in die eigenen Rezepte übernehmen.")
                 .font(Theme.F.caption).foregroundStyle(Theme.C.text2).fixedSize(horizontal: false, vertical: true)
             if let link, let url = URL(string: link.url) {
                 Label { Text(link.url).font(.system(.footnote, design: .monospaced)).lineLimit(2).textSelection(.enabled) } icon: {
@@ -881,7 +881,7 @@ struct RecipeLinkSheet: View {
                 }
                 .padding(14).frame(maxWidth: .infinity, alignment: .leading).card(radius: Theme.R.tile)
                 .transition(.opacity)
-                ShareLink(item: url, subject: Text(title), message: Text("Rezept „\(title)“ aus unserer Essenapp:")) {
+                ShareLink(item: url, subject: Text(title), message: Text("Rezept „\(title)“ aus unserem Kochpilot:")) {
                     Label("Teilen", systemImage: "square.and.arrow.up")
                 }
                 .buttonStyle(PrimaryButtonStyle())

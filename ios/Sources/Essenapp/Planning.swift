@@ -831,7 +831,7 @@ struct NoMoodSheet: View {
             Button { Task { await choose(r) } } label: {
                 if busy == r.id { ProgressView().tint(.white) } else { Label("Das koche ich heute", systemImage: "flame.fill") }
             }
-            .buttonStyle(PrimaryButtonStyle(color: Theme.C.accent))
+            .buttonStyle(AccentButtonStyle())
             .disabled(busy != nil)
         }
         .padding(14)

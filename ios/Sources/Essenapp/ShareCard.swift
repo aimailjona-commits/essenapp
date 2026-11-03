@@ -40,7 +40,7 @@ struct RecipeShareCard: View {
             Spacer(minLength: 0)
             HStack(spacing: 8) {
                 AppIconMark()
-                Text("Mit Essenapp geplant").font(Theme.F.caption).foregroundStyle(Theme.C.text2)
+                Text("Mit Kochpilot geplant").font(Theme.F.caption).foregroundStyle(Theme.C.text2)
             }
         }
         .padding(22)

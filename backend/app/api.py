@@ -1702,7 +1702,7 @@ def delete_device(token: str, member: Member = Depends(current_member), db: Sess
 def test_push(member: Member = Depends(current_member)):
     if not member.devices:
         raise HTTPException(422, "Kein Gerät registriert")
-    if not push.send(member, "Essenapp", "Test-Push – tippen öffnet die App.", click_url="essenapp://start",
+    if not push.send(member, "Kochpilot", "Test-Push – tippen öffnet die App.", click_url="essenapp://start",
                      thread_id="test"):
         raise HTTPException(502, "Push konnte nicht gesendet werden")
     return Response(status_code=204)
@@ -2328,7 +2328,7 @@ def shared_recipe(db: Session, code: str) -> Recipe:
 
 def recipe_origin(db: Session, recipe: Recipe) -> str:
     h = db.get(Household, recipe.household_id) if recipe.household_id else None
-    return h.name if h else "Essenapp"
+    return h.name if h else "Kochpilot"
 
 
 def import_shared(db: Session, recipe: Recipe, household_id: int, url: str) -> tuple[Recipe, bool]:

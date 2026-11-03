@@ -322,7 +322,7 @@ def test_share_recipe_link_web_view_and_import_copy(client, auth, db):
     pre = client.get(f"/shared-recipes/{share['code']}").json()  # ohne Login
     assert pre["title"] == "Omas Gulasch" and pre["from_household"] == "Familie Müller"
     page = client.get(f"/r/{share['code']}")
-    assert page.status_code == 200 and "Omas Gulasch" in page.text and "Mit Essenapp geplant" in page.text
+    assert page.status_code == 200 and "Omas Gulasch" in page.text and "Mit Kochpilot geplant" in page.text
     assert f"essenapp://import-recipe/{share['code']}" in page.text and "Schmoren" in page.text
     assert client.get("/r/unbekannt").status_code == 404
 

@@ -1,0 +1,909 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Essenapp Redesign v3</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Fraunces:ital,opsz,wght,SOFT,WONK@0,9..144,300..900,0..100,0..1;1,9..144,300..900,0..100,0..1&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<style>
+/* Redesign v3 „Sanft & mutig“ – Entwurf, noch nicht freigegeben */
+:root{
+  --bg:#F4F1EA; --card:#FFFFFF; --surface:#E9E5DC; --line:rgba(0,0,0,.07);
+  --ink:#111111; --t2:#7A766E; --t3:#B3AEA4; --onink:#FFFFFF;
+  --lime:#DCEDA0; --tomato:#F2B9A8; --sun:#F3DC9E; --orange:#F2CBA6; --sky:#BCD0F2;
+  --lav:#D5CDF0; --mint:#C3E3CF; --pink:#F0CADA; --deal:#E8694A; --star:#E8B33A;
+  --tint-green:#E4F5D9; --tint-red:#FFE3DB; --tint-blue:#DFE9FF; --tint-yellow:#FFF1C9; --tint-lav:#ECE6FF; --tint-pink:#FFE4EF;
+  --r-chip:16px; --r-tile:22px; --r-card:30px; --r-sheet:40px;
+  --sh-soft:0 10px 28px rgba(17,17,17,.08); --sh-float:0 18px 40px rgba(17,17,17,.22);
+  --page:#DCD7CC;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,"SF Pro Text","Inter",system-ui,sans-serif;background:var(--page);color:var(--ink);-webkit-font-smoothing:antialiased}
+svg.i{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex:none}
+svg.s{width:16px;height:16px}
+svg.l{width:28px;height:28px}
+.row{display:flex;align-items:center;gap:8px}.between{justify-content:space-between}.col{display:flex;flex-direction:column}
+.t2{color:var(--t2)}.t3{color:var(--t3)}
+.num{font-variant-numeric:tabular-nums}
+
+/* Seite */
+.head{max-width:1360px;margin:0 auto;padding:48px 24px 8px}
+.head h1{font-size:44px;font-weight:900;letter-spacing:-.04em;line-height:1}
+.head p{color:#5d5a53;margin-top:12px;max-width:820px;line-height:1.55;font-size:15px}
+.nav{display:flex;gap:8px;margin-top:18px;flex-wrap:wrap}
+.nav a{background:#111;color:#fff;text-decoration:none;font-weight:700;font-size:14px;padding:10px 18px;border-radius:999px}
+.nav a.o{background:#fff;color:#111}
+.sec{max-width:1360px;margin:0 auto;padding:40px 24px 10px}
+.sec h2{font-size:34px;font-weight:900;letter-spacing:-.035em}
+.sec>p{color:#5d5a53;margin-top:6px;font-size:15px;max-width:820px;line-height:1.5}
+.open{margin-top:16px;background:#fff;border-radius:20px;padding:16px 20px;max-width:820px;font-size:14px;line-height:1.6}
+.open b{display:block;margin-bottom:4px}
+
+/* Bausteine-Board */
+.board{max-width:1360px;margin:0 auto;padding:20px 24px 40px;display:grid;grid-template-columns:repeat(auto-fill,minmax(400px,1fr));gap:20px}
+.spec{background:var(--bg);border-radius:28px;padding:22px;display:flex;flex-direction:column;gap:14px;box-shadow:0 1px 0 rgba(0,0,0,.04)}
+.spec.wide{grid-column:span 2}
+.spec .nm{font:700 12px/1 ui-monospace,Menlo,monospace;color:#8a857b;letter-spacing:.02em}
+.spec h4{font-size:20px;font-weight:800;letter-spacing:-.02em;margin-top:-6px}
+.spec .d{font-size:13px;color:#6a665e;line-height:1.5}
+.demo{display:flex;flex-wrap:wrap;gap:12px;align-items:center}
+@media (max-width:900px){.spec.wide{grid-column:auto}.board{grid-template-columns:1fr}}
+
+/* Farben & Schrift */
+.swatch{width:84px}
+.swatch i{display:block;height:64px;border-radius:18px;border:1px solid var(--line)}
+.swatch b{display:block;font-size:12px;margin-top:6px}.swatch span{font:11px ui-monospace,monospace;color:#8a857b}
+.type-d{font-size:44px;font-weight:900;letter-spacing:-.045em;line-height:.95}
+.type-t{font-size:26px;font-weight:800;letter-spacing:-.03em}
+.type-h{font-size:18px;font-weight:700}
+.type-b{font-size:16px}
+.type-c{font-size:13px;font-weight:500;color:var(--t2)}
+.type-m{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase}
+
+/* Bilder */
+.ph{background-size:cover;background-position:center}
+.ph-pasta{background-image:url(../../../ios/Sources/Essenapp/Resources/hero/pasta.jpg)}
+.ph-bowl{background-image:url(../../../ios/Sources/Essenapp/Resources/hero/bowl.jpg)}
+.ph-grill{background-image:url(../../../ios/Sources/Essenapp/Resources/hero/grill.jpg)}
+.ph-chef{background-image:url(../../../ios/Sources/Essenapp/Resources/hero/chef.jpg)}
+.ph-market{background-image:url(../../../ios/Sources/Essenapp/Resources/hero/market.jpg)}
+.ph-table{background-image:url(../../../ios/Sources/Essenapp/Resources/hero/table.jpg)}
+.plate{border-radius:50%;flex:none;box-shadow:0 12px 24px rgba(0,0,0,.18),inset 0 0 0 4px rgba(255,255,255,.95)}
+.eplate{border-radius:50%;flex:none;display:grid;place-items:center;background:#fff;box-shadow:0 12px 24px rgba(0,0,0,.12)}
+.stk{display:inline-block;width:46px;height:46px;border-radius:50%;vertical-align:middle;margin:-8px 2px 0;border:3px solid #fff;box-shadow:0 6px 14px rgba(0,0,0,.25)}
+.stk.r1{transform:rotate(-8deg)}.stk.r2{transform:rotate(7deg)}
+.estk{display:inline-grid;place-items:center;width:46px;height:46px;font-size:34px;vertical-align:middle;margin:-8px 0 0;filter:drop-shadow(0 6px 8px rgba(0,0,0,.3));transform:rotate(-10deg)}
+
+/* Telefon */
+.screens{display:flex;flex-wrap:wrap;gap:48px 36px;justify-content:center;padding:28px 16px 80px;max-width:1500px;margin:0 auto}
+.screen{width:390px;max-width:100%}
+.caption{margin-top:18px;font-size:13px;color:#4d4a44;line-height:1.5}
+.caption b{display:block;color:#111;font-size:16px;margin-bottom:2px}
+.phone{position:relative;width:390px;max-width:100%;height:844px;background:var(--bg);border-radius:54px;overflow:hidden;box-shadow:0 0 0 10px #111,0 30px 60px rgba(0,0,0,.22)}
+.sb{position:absolute;top:0;left:0;right:0;height:52px;display:flex;align-items:center;justify-content:space-between;padding:8px 34px 0;font-weight:600;font-size:16px;z-index:20}
+.sb.w{color:#fff}
+.sb .island{position:absolute;left:50%;top:11px;transform:translateX(-50%);width:122px;height:35px;background:#000;border-radius:20px}
+.sb svg{width:68px;height:14px}
+.scr{position:absolute;inset:0;padding:62px 20px 120px;overflow:hidden}
+
+/* Kopf */
+.disp{font-size:46px;font-weight:900;letter-spacing:-.05em;line-height:.95}
+.disp2{color:var(--t3)}
+.hmeta{font-size:15px;font-weight:600;color:var(--ink)}
+.rbtn{width:46px;height:46px;border-radius:50%;background:var(--surface);display:grid;place-items:center;flex:none}
+.rbtn.k{background:var(--ink);color:#fff}.rbtn.w{background:#fff}.rbtn.g{background:rgba(255,255,255,.22);color:#fff;backdrop-filter:blur(10px)}
+.rbtn.d{background:rgba(0,0,0,.28);color:#fff;backdrop-filter:blur(10px)}
+.rbtn.sm{width:38px;height:38px}
+.rbtn.lime{background:var(--lime);color:#111}
+
+/* Chips */
+.chips{display:flex;gap:8px;overflow:hidden;white-space:nowrap}
+.chip{display:inline-flex;align-items:center;gap:8px;height:42px;padding:0 16px;border-radius:999px;border:1.5px solid #CFC9BD;font-weight:600;font-size:15px;color:#8a857b;flex:none}
+.chip .n{min-width:24px;height:24px;padding:0 7px;border-radius:999px;background:var(--surface);color:#666;font-size:12px;display:grid;place-items:center;font-weight:700}
+.chip.on{border-color:var(--ink);color:var(--ink);border-width:2px}
+.chip.on .n{background:var(--ink);color:#fff}
+.chip.f{border:0;background:var(--ink);color:#fff}
+.chip.f .n{background:var(--lime);color:#111}
+
+/* Buttons */
+.btn{height:56px;border-radius:999px;display:inline-flex;align-items:center;justify-content:center;gap:10px;font-weight:700;font-size:16px;padding:0 26px}
+.btn.k{background:var(--ink);color:#fff}.btn.lime{background:var(--lime);color:#111}.btn.s{background:var(--surface);color:var(--ink)}.btn.w{background:#fff;color:#111}
+.btn.full{width:100%}
+.cluster{display:inline-flex;align-items:center;background:var(--surface);border-radius:999px;padding:4px;gap:2px}
+.cluster .c{width:48px;height:48px;border-radius:50%;display:grid;place-items:center;color:#333}
+.cluster .c.k{background:var(--ink);color:#fff;width:56px;height:56px}
+.cluster.dk{background:#2A2A2A}.cluster.dk .c{color:#ddd}
+
+/* Badges */
+.deal{display:inline-flex;align-items:center;height:26px;padding:0 10px;border-radius:999px;background:var(--deal);color:#fff;font-weight:800;font-size:12px}
+.store{display:inline-flex;align-items:center;gap:6px;height:26px;padding:0 10px;border-radius:999px;background:#fff;border:1px solid var(--line);font-weight:700;font-size:12px}
+.store i{width:8px;height:8px;border-radius:50%;display:block}
+.verdict{display:inline-flex;align-items:center;gap:4px;height:26px;padding:0 10px;border-radius:999px;font-weight:700;font-size:12px;background:#111;color:#fff}
+.verdict.good{background:var(--lime);color:#111}.verdict.norm{background:var(--surface);color:#555}.verdict.warn{background:var(--tint-yellow);color:#8a5a00}
+.nutri{width:26px;height:26px;border-radius:8px;display:grid;place-items:center;color:#fff;font-weight:900;font-size:13px}
+.lbl{display:inline-flex;align-items:center;height:26px;padding:0 10px;border-radius:999px;background:var(--tint-green);color:#2c7a3c;font-weight:700;font-size:12px}
+.count{min-width:22px;height:22px;border-radius:999px;background:var(--deal);color:#fff;font-size:12px;font-weight:800;display:grid;place-items:center;padding:0 6px}
+
+/* Suchfeld */
+.search{height:54px;border-radius:999px;background:#fff;display:flex;align-items:center;gap:10px;padding:0 6px 0 18px;color:var(--t3);font-size:16px;border:1px solid var(--line)}
+.search .rbtn{margin-left:auto;width:42px;height:42px}
+
+/* Tab-Bar */
+.tabbar{position:absolute;left:18px;right:18px;bottom:26px;height:70px;background:#111;border-radius:999px;display:flex;align-items:center;justify-content:space-between;padding:0 9px;box-shadow:var(--sh-float);z-index:15}
+.tab{position:relative;width:52px;height:52px;border-radius:50%;display:grid;place-items:center;color:#8C8A85}
+.tab.on{width:auto;padding:0 18px 0 14px;border-radius:999px;background:#fff;color:#111;display:flex;gap:8px;font-weight:800;font-size:14px}
+.tab.plus{background:var(--lime);color:#111;width:56px;height:56px}
+.tab .count{position:absolute;top:4px;right:2px;min-width:18px;height:18px;font-size:10px;border:2px solid #111}
+.homebar{position:absolute;bottom:8px;left:50%;transform:translateX(-50%);width:134px;height:5px;border-radius:3px;background:#111;z-index:16}
+.homebar.w{background:#fff}
+
+/* Summen-Leiste */
+.total{position:absolute;left:18px;right:18px;bottom:28px;height:72px;background:#111;border-radius:999px;display:flex;align-items:center;padding:0 8px 0 24px;color:#fff;box-shadow:var(--sh-float);z-index:15}
+.total .lab{font-size:11px;color:#9a978f;font-weight:600}
+.total .val{font-size:19px;font-weight:800;letter-spacing:-.02em}
+.total .arr{margin-left:auto;margin-right:12px;color:var(--lime);font-weight:800;letter-spacing:-2px;font-size:18px}
+.total .btn{height:56px;padding:0 22px}
+.inline-total{position:relative;left:auto;right:auto;bottom:auto;width:100%}
+
+/* Karten */
+.card{background:var(--card);border-radius:var(--r-card);border:1px solid var(--line)}
+.sec-h{display:flex;align-items:baseline;justify-content:space-between;margin:22px 0 12px}
+.sec-h h3{font-size:22px;font-weight:800;letter-spacing:-.03em}
+.sec-h span{font-size:14px;font-weight:600;color:var(--t2)}
+
+/* Satz-Hero */
+.sent{font-size:27px;font-weight:700;letter-spacing:-.035em;line-height:1.32;color:#77736B}
+.sent b{color:#fff;font-weight:700}
+
+/* Wochen-Zeile */
+.wrow{display:flex;align-items:center;gap:14px;padding:12px 0}
+.wrow+.wrow{border-top:1px solid var(--line)}
+.wrow .m{font-size:12px;font-weight:700;color:var(--t2);text-transform:uppercase;letter-spacing:.05em}
+.wrow .n{font-size:17px;font-weight:700;letter-spacing:-.02em;margin:2px 0}
+.wrow .p{font-size:13px;color:var(--t2)}
+
+/* DayCard */
+.day{position:relative;border-radius:34px;padding:20px 20px 20px 116px;min-height:136px;color:#111}
+.day+.day{margin-top:-18px}
+.day .plate{position:absolute;left:16px;top:22px;width:84px;height:84px}
+.day .eplate{position:absolute;left:16px;top:22px;width:84px;height:84px;font-size:46px}
+.day .m{font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;opacity:.65}
+.day .n{font-size:21px;font-weight:800;letter-spacing:-.03em;line-height:1.1;margin:4px 0 8px}
+.day .p{font-size:13px;font-weight:600;opacity:.75}
+.day .acts{display:flex;gap:6px;margin-top:10px}
+.day .acts span{width:34px;height:34px;border-radius:50%;background:rgba(0,0,0,.08);display:grid;place-items:center}
+.day .acts svg{width:17px;height:17px}
+.day .badge{position:absolute;right:16px;top:18px;width:30px;height:30px;border-radius:50%;background:#111;color:#fff;font-size:13px;font-weight:800;display:grid;place-items:center}
+.daysel{display:flex;justify-content:space-between;margin:18px 0 20px}
+.daysel span{width:44px;height:58px;border-radius:999px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;font-weight:800;font-size:13px;background:#fff;border:1px solid var(--line)}
+.daysel span i{width:8px;height:8px;border-radius:50%;display:block}
+.daysel span.on{background:#111;color:#fff;border-color:#111}
+
+/* Budget */
+.budget{border-radius:var(--r-card);background:#111;color:#fff;padding:20px}
+.bar{height:12px;border-radius:999px;background:#333;overflow:hidden;margin:14px 0 10px}
+.bar i{display:block;height:100%;background:var(--lime);border-radius:999px}
+.bar.light{background:var(--surface)}
+
+/* OfferCard */
+.offer{border-radius:26px;padding:12px;position:relative;display:flex;flex-direction:column}
+.offer .img{height:118px;display:grid;place-items:center;font-size:66px;filter:drop-shadow(0 10px 10px rgba(0,0,0,.15))}
+.offer .tl{position:absolute;left:10px;top:10px}.offer .tr{position:absolute;right:10px;top:10px}
+.offer .nm{font-size:15px;font-weight:700;letter-spacing:-.01em;line-height:1.2}
+.offer .gp{font-size:12px;color:#6a665e;margin-top:2px}
+.offer .bot{display:flex;align-items:center;justify-content:space-between;margin-top:10px}
+.price{display:inline-flex;align-items:baseline;gap:6px;height:36px;padding:0 14px;border-radius:999px;background:#111;color:#fff;font-weight:800;font-size:16px;align-items:center}
+.price s{font-size:11px;color:#9a978f;font-weight:600}
+.add{width:38px;height:38px;border-radius:50%;background:#fff;display:grid;place-items:center;box-shadow:0 4px 10px rgba(0,0,0,.08)}
+.add.on{background:var(--lime)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+
+/* Nährwerte */
+.nstat{display:flex;flex-direction:column;align-items:center;gap:4px;font-size:12px;color:var(--t2)}
+.nstat b{font-size:16px;color:var(--ink);font-weight:800}
+.ndot{width:34px;height:34px;border-radius:12px;display:grid;place-items:center;font-size:17px}
+.ntile{flex:1;border-radius:22px;padding:14px 12px;display:flex;flex-direction:column;gap:2px}
+.ntile b{font-size:22px;font-weight:900;letter-spacing:-.03em}.ntile span{font-size:12px;font-weight:700;opacity:.7}
+
+/* Checklist */
+.crow{display:flex;align-items:center;gap:12px;height:58px;padding:0 16px 0 10px;border-radius:999px;background:#fff;border:1px solid var(--line)}
+.crow+.crow{margin-top:8px}
+.crow .ck{width:36px;height:36px;border-radius:50%;border:2px solid #D3CEC3;display:grid;place-items:center;flex:none}
+.crow .ck.on{background:var(--lime);border-color:var(--lime)}
+.crow .nm{font-weight:700;font-size:16px}
+.crow .q{font-size:13px;color:var(--t2);margin-left:2px}
+.crow .pr{margin-left:auto;font-weight:800;font-size:15px}
+.crow.done{opacity:.5}.crow.done .nm{text-decoration:line-through}
+.cat{font-size:12px;font-weight:800;letter-spacing:.07em;text-transform:uppercase;color:var(--t2);margin:18px 4px 10px}
+
+/* Ordner (ListCard) */
+.folder{position:relative;height:172px;margin-top:6px;filter:drop-shadow(0 8px 14px rgba(0,0,0,.07))}
+.folder .tabk{position:absolute;top:0;left:0;width:56%;height:34px;border-radius:18px 18px 0 0}
+.folder .body{position:absolute;inset:22px 0 0 0;border-radius:0 24px 24px 24px;padding:14px 16px;display:flex;flex-direction:column;justify-content:flex-end}
+.folder .logo{position:absolute;left:14px;top:14px;width:64px;height:64px;border-radius:18px;background:#fff;display:grid;place-items:center;font-style:normal;font-weight:900;font-size:15px;letter-spacing:-.02em;color:#111;box-shadow:0 2px 6px rgba(0,0,0,.06)}
+.folder .body b{font-size:19px;font-weight:800;letter-spacing:-.02em}
+.folder .body span{font-size:13px;font-weight:600;opacity:.65}
+.folder .av{position:absolute;right:14px;bottom:14px;width:30px;height:30px;border-radius:50%;background:#fff;display:grid;place-items:center;font-size:16px}
+
+/* Rezepte-Kacheln */
+.masonry{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.rtile{border-radius:28px;padding:16px;position:relative;overflow:hidden}
+.rtile .ttl{font-size:17px;font-weight:800;letter-spacing:-.02em;line-height:1.15}
+.rtile .hrt{position:absolute;right:12px;top:12px;width:36px;height:36px;border-radius:50%;background:rgba(0,0,0,.08);display:grid;place-items:center}
+.rtile .hrt svg{width:18px;height:18px}
+.mini{display:flex;align-items:center;gap:8px;height:36px;border-radius:999px;background:rgba(0,0,0,.08);padding:0 10px;font-size:13px;font-weight:600;margin-top:6px;white-space:nowrap;overflow:hidden}
+.mini i{width:18px;height:18px;border-radius:50%;border:1.6px solid rgba(0,0,0,.45);display:block;flex:none}
+.mini.done{opacity:.55;text-decoration:line-through}.mini.done i{background:#111;border-color:#111}
+
+/* Stepper */
+.qty{display:inline-flex;align-items:center;gap:4px;height:48px;border-radius:999px;background:#111;color:#fff;padding:0 6px}
+.qty span{width:36px;height:36px;border-radius:50%;display:grid;place-items:center}
+.qty b{min-width:28px;height:28px;border-radius:50%;background:#fff;color:#111;display:grid;place-items:center;font-size:14px}
+.pricepill{display:inline-flex;align-items:center;height:48px;border-radius:999px;background:var(--surface);padding:0 70px 0 18px;margin-right:-62px;font-weight:800;font-size:16px}
+
+/* Schritt-Punkte */
+.dots{display:flex;gap:10px;justify-content:center}
+.dots span{width:32px;height:32px;border-radius:50%;border:1.5px solid #555;display:grid;place-items:center;font-size:13px;font-weight:700;color:#888}
+.dots span.on{background:#fff;border-color:#fff;color:#111}
+.dots span.ok{background:var(--lime);border-color:var(--lime);color:#111}
+.dots.l span{border-color:#CFC9BD;color:#8a857b}.dots.l span.on{background:#111;border-color:#111;color:#fff}
+
+/* Sheet / Toast / Zustände */
+.sheet{background:#fff;border-radius:var(--r-sheet);padding:12px 20px 22px;box-shadow:0 -10px 30px rgba(0,0,0,.08)}
+.grip{width:40px;height:5px;border-radius:3px;background:#D8D3C8;margin:0 auto 14px}
+.toast{display:inline-flex;align-items:center;gap:10px;height:52px;padding:0 20px 0 8px;border-radius:999px;background:#111;color:#fff;font-weight:700;font-size:15px;box-shadow:var(--sh-float)}
+.toast i{width:36px;height:36px;border-radius:50%;background:var(--lime);color:#111;display:grid;place-items:center;font-style:normal}
+.skel{background:linear-gradient(100deg,var(--surface) 30%,#F6F3EE 50%,var(--surface) 70%);background-size:300% 100%;border-radius:16px}
+.stars{display:flex;gap:6px;font-size:34px;color:var(--star)}.stars .o{color:#DDD7CB}
+
+/* Bloom */
+.bloom{position:relative;width:220px;height:220px;margin:0 auto}
+.bloom .pt{position:absolute;left:50%;top:50%;width:46px;border-radius:999px;transform-origin:50% 100%;opacity:.95}
+.bloom .ctr{position:absolute;left:50%;top:50%;width:96px;height:96px;margin:-48px 0 0 -48px}
+.bloom .lb{position:absolute;font-size:12px;font-weight:800;text-align:center;line-height:1.15}
+.bloom .lb span{display:block;font-weight:600;color:var(--t2)}
+
+/* ===== Eigenheiten „Küchen-Pinnwand trifft Prospekt“ ===== */
+:root{--serif:"Fraunces",Georgia,serif;--mono:"JetBrains Mono",ui-monospace,monospace}
+.disp,.type-d,.head h1,.sec h2,.sec-h h3,.day .n,.rtile .ttl,.spec h4{font-family:var(--serif);font-variation-settings:"SOFT" 100,"WONK" 1;letter-spacing:-.025em}
+.disp,.type-d{font-weight:800;font-variation-settings:"SOFT" 100,"WONK" 1,"opsz" 144}
+.disp2{font-style:italic;font-weight:400}
+.sent{font-family:var(--serif);font-weight:400;font-style:italic;letter-spacing:-.01em;font-variation-settings:"SOFT" 100,"opsz" 72}
+.sent b{font-style:normal;font-weight:700}
+/* Papierkorn */
+.phone::after{content:"";position:absolute;inset:0;pointer-events:none;z-index:40;mix-blend-mode:multiply;opacity:.55;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 .09 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
+/* Preis-Sticker (PriceBurst) */
+.burst{display:grid;place-items:center;width:58px;height:58px;background:var(--deal);color:#fff;font-family:var(--serif);font-weight:900;font-size:15px;line-height:.95;text-align:center;transform:rotate(-8deg);clip-path:polygon(50.0% 0.0%,59.1% 10.0%,71.7% 5.0%,75.6% 17.9%,89.1% 18.8%,86.9% 32.2%,98.7% 38.9%,91.0% 50.0%,98.7% 61.1%,86.9% 67.8%,89.1% 81.2%,75.6% 82.1%,71.7% 95.0%,59.1% 90.0%,50.0% 100.0%,40.9% 90.0%,28.3% 95.0%,24.4% 82.1%,10.9% 81.2%,13.1% 67.8%,1.3% 61.1%,9.0% 50.0%,1.3% 38.9%,13.1% 32.2%,10.9% 18.8%,24.4% 17.9%,28.3% 5.0%,40.9% 10.0%)}
+.burst .bt{white-space:nowrap;letter-spacing:-.03em}.burst small{font-size:.62em;margin-left:1px}
+.burst.lime{background:var(--lime);color:#111}.burst.k{background:#111;color:var(--lime)}
+.burst.xl{width:100px;height:100px;font-size:25px}
+.offer .burst.tl{left:-6px;top:-8px}
+/* Handkreis (Scribble) */
+.circ{position:relative;white-space:nowrap;display:inline-block;padding:0 3px}
+.circ svg{position:absolute;left:-12px;top:-9px;width:calc(100% + 24px);height:calc(100% + 18px);fill:none;stroke:var(--lime);stroke-width:2.6;stroke-linecap:round;overflow:visible}
+.circ.k svg{stroke:#111}.circ.r svg{stroke:var(--deal)}
+.uline{background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 8' preserveAspectRatio='none'%3E%3Cpath d='M1 5 Q 25 1 50 5 T 99 4' fill='none' stroke='%23111' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E") bottom/100% 7px no-repeat;padding-bottom:5px}
+/* Kassenbon (Receipt) */
+.rcpt-wrap{filter:drop-shadow(0 10px 14px rgba(0,0,0,.09))}
+.receipt{--z:9px;background:#FFFDF7;padding:22px 18px;font-family:var(--mono);font-size:13px;color:#222;
+  -webkit-mask:conic-gradient(from -45deg at bottom,#0000,#000 1deg 89deg,#0000 90deg) bottom/calc(var(--z)*2) 51% repeat-x,conic-gradient(from 135deg at top,#0000,#000 1deg 89deg,#0000 90deg) top/calc(var(--z)*2) 51% repeat-x;
+  mask:conic-gradient(from -45deg at bottom,#0000,#000 1deg 89deg,#0000 90deg) bottom/calc(var(--z)*2) 51% repeat-x,conic-gradient(from 135deg at top,#0000,#000 1deg 89deg,#0000 90deg) top/calc(var(--z)*2) 51% repeat-x}
+.receipt .hd{text-align:center;font-weight:700;letter-spacing:.08em;font-size:12px;color:#555;text-transform:uppercase}
+.receipt hr{border:0;border-top:1.5px dashed #CFC9BD;margin:10px 0}
+.rl{display:flex;align-items:center;gap:10px;padding:6px 0}
+.rl .bx{width:20px;height:20px;border:1.8px solid #222;border-radius:6px;flex:none;display:grid;place-items:center}
+.rl .bx svg{width:14px;height:14px;stroke-width:3}
+.rl.done{color:#A9A398}.rl.done .t{text-decoration:line-through}.rl.done .bx{background:var(--lime);border-color:#222}
+.rl .q{color:#8a857b}.rl .p{margin-left:auto;font-weight:700}
+.rl .dl{font-size:11px;font-weight:700;color:var(--deal)}
+.rsum{display:flex;justify-content:space-between;font-weight:700;font-size:16px}
+/* Coupon-Kerben */
+.coupon{-webkit-mask:radial-gradient(circle 13px at 0 64%,#0000 97%,#000) left/51% 100% no-repeat,radial-gradient(circle 13px at 100% 64%,#0000 97%,#000) right/51% 100% no-repeat;mask:radial-gradient(circle 13px at 0 64%,#0000 97%,#000) left/51% 100% no-repeat,radial-gradient(circle 13px at 100% 64%,#0000 97%,#000) right/51% 100% no-repeat}
+.coupon .perf{position:absolute;left:18px;right:18px;top:64%;border-top:2px dashed rgba(0,0,0,.18)}
+
+/* Schnell-Aktionen: Fächer + Wölbung */
+.fan-arc{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:14}
+.fan-arc path{fill:none;stroke:rgba(255,255,255,.18);stroke-width:1.5;stroke-dasharray:3 7}
+.fan{position:absolute;z-index:16;display:flex;flex-direction:column;align-items:center;gap:8px;transform:translate(-50%,-32px);width:96px;text-align:center}
+.fan .fb{width:64px;height:64px;border-radius:50%;display:grid;place-items:center;color:#111;box-shadow:0 10px 24px rgba(0,0,0,.35)}
+.fan .fb svg{width:26px;height:26px}
+.fan b{color:#fff;font-size:12px;font-weight:700;line-height:1.2}
+.fan.main{transform:translate(-50%,-44px)}.fan.main .fb{width:88px;height:88px;box-shadow:0 0 0 6px rgba(220,237,160,.22),0 10px 24px rgba(0,0,0,.35)}
+.fan.main b{font-size:13px}
+.tabbar.notch{background:#fff;box-shadow:0 18px 40px rgba(0,0,0,.4)}.tabbar.notch .tab{color:#9a978f}
+.tabbar .bump{position:absolute;left:50%;top:-26px;width:92px;height:92px;margin-left:-46px;border-radius:50%;background:#fff;display:grid;place-items:center}
+.tabbar .bump .x{width:64px;height:64px;border-radius:50%;background:#111;color:#fff;display:grid;place-items:center}
+.logo img{max-width:50px;max-height:38px;object-fit:contain;display:block}
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute">
+  <symbol id="home" viewBox="0 0 24 24"><path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></symbol>
+  <symbol id="tag" viewBox="0 0 24 24"><path d="M20.6 13.4 13.4 20.6a2 2 0 0 1-2.8 0L3 13V3h10l7.6 7.6a2 2 0 0 1 0 2.8z"/><circle cx="7.5" cy="7.5" r="1.5"/></symbol>
+  <symbol id="bag" viewBox="0 0 24 24"><path d="M5 8h14l-1 13H6z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></symbol>
+  <symbol id="book" viewBox="0 0 24 24"><path d="M4 19V5a2 2 0 0 1 2-2h14v14H6a2 2 0 0 0-2 2 2 2 0 0 0 2 2h14"/></symbol>
+  <symbol id="plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="minus" viewBox="0 0 24 24"><path d="M5 12h14"/></symbol>
+  <symbol id="x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></symbol>
+  <symbol id="search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></symbol>
+  <symbol id="heart" viewBox="0 0 24 24"><path d="M12 20s-7.5-4.6-7.5-10.2A4.2 4.2 0 0 1 12 7.3a4.2 4.2 0 0 1 7.5 2.5C19.5 15.4 12 20 12 20z"/></symbol>
+  <symbol id="share" viewBox="0 0 24 24"><path d="M12 3v12M8 7l4-4 4 4M5 13v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6"/></symbol>
+  <symbol id="back" viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></symbol>
+  <symbol id="more" viewBox="0 0 24 24"><path d="M5 12h.01M12 12h.01M19 12h.01" stroke-width="3.5"/></symbol>
+  <symbol id="filter" viewBox="0 0 24 24"><path d="M4 7h16M7 12h10M10 17h4"/></symbol>
+  <symbol id="check" viewBox="0 0 24 24"><path d="M5 12.5 9.5 17 19 7"/></symbol>
+  <symbol id="mic" viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></symbol>
+  <symbol id="chev" viewBox="0 0 24 24"><path d="m9 6 6 6-6 6"/></symbol>
+  <symbol id="down" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></symbol>
+  <symbol id="dice" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="4"/><path d="M9 9h.01M15 15h.01M15 9h.01M9 15h.01" stroke-width="3"/></symbol>
+  <symbol id="lock" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2.5"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></symbol>
+  <symbol id="swap" viewBox="0 0 24 24"><path d="M4 8h13l-3-3M20 16H7l3 3"/></symbol>
+  <symbol id="bell" viewBox="0 0 24 24"><path d="M6 16v-5a6 6 0 0 1 12 0v5l2 2H4z"/><path d="M10 21h4"/></symbol>
+  <symbol id="clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
+  <symbol id="play" viewBox="0 0 24 24"><path d="M8 5v14l11-7z" fill="currentColor"/></symbol>
+  <symbol id="arrow" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></symbol>
+  <symbol id="scan" viewBox="0 0 24 24"><path d="M4 8V5a1 1 0 0 1 1-1h3M16 4h3a1 1 0 0 1 1 1v3M20 16v3a1 1 0 0 1-1 1h-3M8 20H5a1 1 0 0 1-1-1v-3M7 12h10"/></symbol>
+  <symbol id="spark" viewBox="0 0 24 24"><path d="m12 3 1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/></symbol>
+  <symbol id="pin" viewBox="0 0 24 24"><path d="M12 21s-7-6-7-11a7 7 0 0 1 14 0c0 5-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></symbol>
+  <symbol id="user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></symbol>
+  <symbol id="bookmark" viewBox="0 0 24 24"><path d="M6 3h12v18l-6-4-6 4z"/></symbol>
+  <symbol id="status" viewBox="0 0 68 14"><g fill="currentColor"><rect x="0" y="9" width="3" height="5" rx="1"/><rect x="5" y="6" width="3" height="8" rx="1"/><rect x="10" y="3" width="3" height="11" rx="1"/><rect x="15" y="0" width="3" height="14" rx="1"/><path d="M30 4.5a10 10 0 0 1 12 0l-1.6 1.8a7.5 7.5 0 0 0-8.8 0zM32.6 7.6a6 6 0 0 1 6.8 0L36 12z"/><rect x="45" y="1" width="20" height="12" rx="3.5" fill="none" stroke="currentColor" stroke-width="1.4"/><rect x="47" y="3" width="16" height="8" rx="2"/><rect x="66" y="5" width="2" height="4" rx="1"/></g></symbol>
+</svg>
+
+<header class="head">
+  <h1>Essenapp – Redesign v3 „Küchen-Pinnwand“</h1>
+  <p><b>Was sie einzigartig macht:</b> Die App sieht aus wie die Kühlschranktür einer Familie, die nach Prospekt einkauft – <b>Schrift mit Charakter</b> (Fraunces, weich und leicht schief, zweite Zeile kursiv), <b>Preis-Sticker als Stern</b> wie im Prospekt, <b>handgemalte Kreise</b> um die Ersparnis, die <b>Einkaufsliste als Kassenbon</b> mit Zackenrand, <b>Coupon-Kerben</b> an Angebots-Highlights und ein feines <b>Papierkorn</b> über allem.</p>
+  <p>Basis aus deinen Inspirationen aus deinen 10 Inspirationen: <b>riesige, fette Überschriften</b> mit Zähler daneben („Saved · 9 folders“), <b>sanfte Pastell-Farbkarten</b> statt grauer Kästen (GoodNotes, Chats), <b>freigestellte Teller</b> und <b>Fotos randlos</b> mit Farbverlauf (Apple-News-Rezept), eine <b>schwarze schwebende Leiste</b> unten (Salat-App), <b>Limette als Aktionsfarbe</b> (Snack Shop) und eine <b>Tages-Zusammenfassung als Satz mit Sticker-Bildern</b> („Today“-Screen). Hintergrund warmes Creme statt Grau.</p>
+  <div class="nav"><a href="#bausteine">1 · Bausteine</a><a class="o" href="#screens">2 · Gesamt-Mockup</a></div>
+  <div class="open"><b>Noch offen (bitte entscheiden)</b>
+    1. Passt die Richtung? Welche Eigenheiten behalten (Schrift, Sticker, Kreise, Kassenbon, Coupon, Papierkorn)?<br>
+    1b. Schrift Fraunces (frei, OFL-Lizenz) wird in die App eingebaut – ok?<br>
+    2. Aktionsfarbe Limette <code>#DCEDA0</code> statt Orange – ok?<br>
+    3. Wochentage bekommen feste Farben (Mo Tomate, Di Sonne, Mi Lavendel, Do Himmel, Fr Minze, Sa Orange, So Rosa) – gut oder zu bunt?<br>
+    4. Dunkelmodus und alle weiteren Screens (Generator, Vorrat, Coupons …) baue ich nach deiner Freigabe im selben Stil nach.
+  </div>
+</header>
+
+<!-- ================= 1 BAUSTEINE ================= -->
+<section class="sec" id="bausteine">
+  <h2>1 · Bausteine</h2>
+  <p>Jeder Baustein einmal, mit Namen wie in <code>design-system.md</code>. Neue Bausteine sind mit „neu“ markiert.</p>
+</section>
+
+<div class="board">
+
+  <div class="spec wide">
+    <span class="nm">Farben</span><h4>Creme, Tinte, Limette – und sanfte Kartenfarben</h4>
+    <div class="demo">
+      <div class="swatch"><i style="background:var(--bg)"></i><b>bg</b><span>#F4F1EA</span></div>
+      <div class="swatch"><i style="background:#fff"></i><b>card</b><span>#FFFFFF</span></div>
+      <div class="swatch"><i style="background:var(--surface)"></i><b>surface</b><span>#E9E5DC</span></div>
+      <div class="swatch"><i style="background:var(--ink)"></i><b>ink / action</b><span>#111111</span></div>
+      <div class="swatch"><i style="background:var(--lime)"></i><b>lime (Aktion)</b><span>#DCEDA0</span></div>
+      <div class="swatch"><i style="background:var(--deal)"></i><b>deal</b><span>#E8694A</span></div>
+    </div>
+    <div class="demo">
+      <div class="swatch"><i style="background:var(--tomato)"></i><b>Mo · tomato</b><span>#F2B9A8</span></div>
+      <div class="swatch"><i style="background:var(--sun)"></i><b>Di · sun</b><span>#F3DC9E</span></div>
+      <div class="swatch"><i style="background:var(--lav)"></i><b>Mi · lav</b><span>#D5CDF0</span></div>
+      <div class="swatch"><i style="background:var(--sky)"></i><b>Do · sky</b><span>#BCD0F2</span></div>
+      <div class="swatch"><i style="background:var(--mint)"></i><b>Fr · mint</b><span>#C3E3CF</span></div>
+      <div class="swatch"><i style="background:var(--orange)"></i><b>Sa · orange</b><span>#F2CBA6</span></div>
+      <div class="swatch"><i style="background:var(--pink)"></i><b>So · pink</b><span>#F0CADA</span></div>
+    </div>
+    <div class="d">Kategorie-Tönungen (Produktflächen): Obst <span style="background:var(--tint-green);padding:2px 8px;border-radius:8px">#E4F5D9</span> · Fleisch <span style="background:var(--tint-red);padding:2px 8px;border-radius:8px">#FFE3DB</span> · Kühlung <span style="background:var(--tint-blue);padding:2px 8px;border-radius:8px">#DFE9FF</span> · Vorrat <span style="background:var(--tint-yellow);padding:2px 8px;border-radius:8px">#FFF1C9</span> · Drogerie <span style="background:var(--tint-lav);padding:2px 8px;border-radius:8px">#ECE6FF</span> · Haushalt <span style="background:var(--tint-pink);padding:2px 8px;border-radius:8px">#FFE4EF</span></div>
+  </div>
+
+  <div class="spec">
+    <span class="nm">Schrift</span><h4>Fraunces + SF Pro</h4>
+    <div class="type-d">Diese Woche<br><span class="disp2" style="color:var(--t3)">KW 45</span></div>
+    <div class="type-t">Spaghetti al Pomodoro</div>
+    <div style="font-family:var(--mono);font-size:14px">Kassenbon · 24,80 €</div>
+    <div class="type-h">Abschnittstitel · 18 Bold</div>
+    <div class="type-b">Fließtext 16 Regular – Zutaten, Schritte.</div>
+    <div class="type-c">Untertitel 13 Medium · 500 g · 0,72 €/100 g</div>
+    <div class="type-m">Micro · Badges · Mahlzeit</div>
+    <div class="d">Überschriften, Gericht-Namen und der Tages-Satz in <b>Fraunces</b> (weich, leicht schief; 2. Zeile kursiv). Alles andere SF Pro. Preise auf dem Kassenbon in <b>JetBrains Mono</b>. Radien: Chip 16 · Kachel 22 · Karte 30 · Sheet 40 · Buttons voll rund.</div>
+  </div>
+
+  <div class="spec wide">
+    <span class="nm">Eigenheiten · neu</span><h4>Was die App unverwechselbar macht</h4>
+    <div class="demo" style="gap:28px;align-items:flex-start">
+      <div class="col" style="gap:8px;align-items:center"><div class="row" style="gap:10px"><span class="burst"><span class="bt">−35<small>%</small></span></span><span class="burst lime"><span class="bt" style="white-space:normal;font-size:13px">2 für 1</span></span><span class="burst k"><span class="bt">−20<small>%</small></span></span></div><span class="type-c">PriceBurst</span></div>
+      <div class="col" style="gap:8px;align-items:center"><div style="font-size:26px;font-weight:800;margin-top:18px"><span class="circ k">12,40 €<svg viewBox="0 0 120 50" preserveAspectRatio="none"><path d="M22 6 C 62 0, 112 4, 117 24 C 121 44, 72 50, 42 48 C 10 46, 0 34, 3 22 C 6 10, 30 4, 60 3"/></svg></span></div><span class="type-c" style="margin-top:12px">Scribble · <span class="uline" style="color:var(--ink)">Unterstrich</span></span></div>
+      <div class="col" style="gap:8px;align-items:center"><div class="coupon" style="position:relative;width:170px;height:96px;background:var(--lime);border-radius:20px;padding:12px 16px"><b style="font-family:var(--serif);font-size:19px">Coupon</b><span class="perf"></span></div><span class="type-c">CouponCard</span></div>
+      <div class="col" style="gap:8px;align-items:center"><div class="rcpt-wrap" style="width:190px"><div class="receipt" style="padding:16px 14px"><div class="rl"><span class="bx"></span><span class="t">Tomaten</span><span class="p">1,99</span></div><div class="rl done"><span class="bx"><svg class="i"><use href="#check"/></svg></span><span class="t">Basilikum</span><span class="p">1,49</span></div><hr><div class="rsum"><span>SUMME</span><span>3,48</span></div></div></div><span class="type-c">Receipt</span></div>
+    </div>
+    <div class="d"><b>PriceBurst</b>: Rabatt als schräger Stern wie im Prospekt (ersetzt die DealBadge auf Bildern; in Textzeilen bleibt die kleine Pille). <b>Scribble</b>: Ersparnis wird handgemalt eingekreist – zeichnet sich beim Erscheinen selbst (Animation). <b>CouponCard</b>: Highlights mit seitlichen Kerben und Perforation. <b>Receipt</b>: Einkaufsliste als Kassenbon. Dazu feines Papierkorn auf dem Hintergrund.</div>
+  </div>
+
+  <div class="spec">
+    <span class="nm">DisplayHeader</span><h4>Riesen-Titel + Zähler + runder Knopf</h4>
+    <div class="row between"><div class="disp">Rezepte</div><div class="row"><span class="hmeta">42 Rezepte</span><span class="rbtn"><svg class="i"><use href="#plus"/></svg></span></div></div>
+    <div class="row between"><div class="disp">Woche<br><span class="disp2">KW 45</span></div><div class="row"><span class="rbtn"><svg class="i"><use href="#share"/></svg></span><span class="rbtn k"><svg class="i"><use href="#dice"/></svg></span></div></div>
+    <div class="d">Wie „Saved · 9 folders (+)“. Optional zweite Zeile in <code>t3</code>. Rechts max. 2 runde Knöpfe (46 pt), Hauptknopf schwarz.</div>
+  </div>
+
+  <div class="spec">
+    <span class="nm">TabBar</span><h4>Schwarze schwebende Pille</h4>
+    <div style="position:relative;height:80px"><div class="tabbar" style="left:0;right:0;bottom:4px">
+      <span class="tab on"><svg class="i"><use href="#home"/></svg>Start</span>
+      <span class="tab"><svg class="i"><use href="#tag"/></svg><span class="count">3</span></span>
+      <span class="tab plus"><svg class="i"><use href="#plus"/></svg></span>
+      <span class="tab"><svg class="i"><use href="#bag"/></svg></span>
+      <span class="tab"><svg class="i"><use href="#book"/></svg></span>
+    </div></div>
+    <div class="d">Aktiver Tab: weiße Pille mit Name. Mitte: Limetten-Knopf öffnet Schnell-Aktionen. Zähler (Merkliste-Treffer) in <code>deal</code>. Im Dunkeln bleibt die Leiste schwarz, aktive Pille Limette.</div>
+  </div>
+
+  <div class="spec">
+    <span class="nm">FilterChips</span><h4>Umrandete Pillen mit Zahl</h4>
+    <div class="chips" style="flex-wrap:wrap">
+      <span class="chip on">Alle <span class="n">128</span></span>
+      <span class="chip">Obst &amp; Gemüse <span class="n">24</span></span>
+      <span class="chip">Fleisch <span class="n">18</span></span>
+      <span class="chip f">✓ Nur echte <span class="n">96</span></span>
+    </div>
+    <div class="d">Wie GoodNotes „All 23“. Aktiv = dicker schwarzer Rand + schwarze Zahl. Schalter-Filter (an/aus) = gefüllt schwarz mit Limetten-Zahl.</div>
+  </div>
+
+  <div class="spec">
+    <span class="nm">PrimaryButton · AccentButton (neu) · SecondaryButton</span><h4>Knöpfe</h4>
+    <div class="demo">
+      <span class="btn k">Plan erstellen</span>
+      <span class="btn lime"><svg class="i"><use href="#play"/></svg>Kochen starten</span>
+      <span class="btn s">Keine Lust</span>
+    </div>
+    <div class="d">Schwarz = Hauptaktion. Limette = „jetzt loslegen“ (Kochen, Auf die Liste, Nächster Schritt) – höchstens einmal pro Screen.</div>
+  </div>
+
+  <div class="spec">
+    <span class="nm">ActionCluster · neu</span><h4>Runde Knöpfe in einer Gruppe</h4>
+    <div class="demo">
+      <span class="cluster"><span class="c k"><svg class="i"><use href="#plus"/></svg></span><span class="c"><svg class="i"><use href="#scan"/></svg></span><span class="c"><svg class="i"><use href="#mic"/></svg></span><span class="c"><svg class="i"><use href="#filter"/></svg></span></span>
+      <span class="cluster"><span class="c"><svg class="i"><use href="#heart"/></svg></span><span class="c"><svg class="i"><use href="#swap"/></svg></span><span class="c"><svg class="i"><use href="#lock"/></svg></span><span class="c"><svg class="i"><use href="#dice"/></svg></span></span>
+    </div>
+    <div class="d">Wie die GoodNotes-Werkzeugleiste. Ersetzt die 2×2-Knöpfe am Gericht (Herz, Ersetzen, Fixieren, Würfeln).</div>
+  </div>
+
+  <div class="spec">
+    <span class="nm">SearchField</span><h4>Suche</h4>
+    <div class="search"><svg class="i"><use href="#search"/></svg>Gericht oder Angebot …<span class="rbtn k"><svg class="i s"><use href="#filter"/></svg></span></div>
+    <div class="d">Weiß mit Haarlinie, voll rund, Filter-Knopf schwarz im Feld.</div>
+  </div>
+
+  <div class="spec wide" style="background:#111;color:#fff">
+    <span class="nm" style="color:#8a857b">SentenceHero · neu</span><h4>Die Woche als Satz</h4>
+    <p class="sent">Hallo Jona! Heute gibt's <b>Spaghetti Pomodoro</b> <i class="stk r1 ph ph-pasta"></i>, morgen <b>Lachs mit Salat</b> <i class="stk r2 ph ph-grill"></i> – und mit den Angeboten <b>sparst du <span class="circ">12,40 €<svg viewBox="0 0 120 50" preserveAspectRatio="none"><path d="M22 6 C 62 0, 112 4, 117 24 C 121 44, 72 50, 42 48 C 10 46, 0 34, 3 22 C 6 10, 30 4, 60 3"/></svg></span></b> <span class="estk">🏷️</span></p>
+    <div class="d" style="color:#9a978f">Wie der „Today“-Screen. Grauer Satz, wichtige Teile weiß, Tellerfotos als schräge Sticker im Text. Text kommt vom Server (Plan + Ersparnis). Tippen auf ein Gericht → Rezept.</div>
+  </div>
+
+  <div class="spec">
+    <span class="nm">MealCard</span><h4>Freigestellter Teller ragt heraus</h4>
+    <div style="background:#fff;border-radius:30px;padding:70px 18px 18px;margin-top:56px;position:relative;text-align:center;border:1px solid var(--line)">
+      <div class="plate ph ph-bowl" style="position:absolute;left:50%;top:-56px;margin-left:-64px;width:128px;height:128px"></div>
+      <div class="type-m t2">Abend · 20 min</div>
+      <div style="font-size:21px;font-weight:800;letter-spacing:-.03em;margin:4px 0 14px">Buddha Bowl</div>
+      <div class="row between" style="padding:0 6px">
+        <div class="nstat"><span class="ndot" style="background:#FFE7D6">🔥</span><b>540</b>kcal</div>
+        <div class="nstat"><span class="ndot" style="background:#FFE0E1">💪</span><b>28 g</b>Protein</div>
+        <div class="nstat"><span class="ndot" style="background:#E4F5D9">🌾</span><b>62 g</b>KH</div>
+        <div class="price" style="height:40px">2,40 €</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="spec">
+    <span class="nm">DayCard · neu</span><h4>Farbige Tageskarte (Wochenplan)</h4>
+    <div>
+      <div class="day" style="background:var(--tomato)"><div class="plate ph ph-pasta"></div><span class="badge">2</span>
+        <div class="m">Mo · Abend · 25 min</div><div class="n">Spaghetti al Pomodoro</div><div class="p">2,10 € / Portion · 640 kcal</div>
+        <div class="acts"><span><svg class="i"><use href="#heart"/></svg></span><span><svg class="i"><use href="#swap"/></svg></span><span><svg class="i"><use href="#lock"/></svg></span><span><svg class="i"><use href="#dice"/></svg></span></div></div>
+      <div class="day" style="background:var(--sun)"><div class="plate ph ph-bowl"></div>
+        <div class="m">Di · Abend · 20 min</div><div class="n">Buddha Bowl</div><div class="p">2,40 € / Portion · 540 kcal</div></div>
+    </div>
+    <div class="d">Karten überlappen leicht wie Sprechblasen (Chats). Farbe = Wochentag. Schwarzer Kreis = Zutaten im Angebot.</div>
+  </div>
+
+  <div class="spec">
+    <span class="nm">OfferCard · DealBadge · VerdictBadge · StoreChip</span><h4>Angebotskarte</h4>
+    <div class="grid2">
+      <div class="offer" style="background:var(--tint-red)"><span class="burst tl"><span class="bt">−35<small>%</small></span></span><span class="tr" style="font-size:18px">🔥</span>
+        <div class="img">🍗</div><div class="nm">Hähnchen&shy;brustfilet</div><div class="gp">600 g · 0,60 €/100 g</div>
+        <div class="row" style="margin-top:6px"><span class="store"><i style="background:var(--sun)"></i>Lidl</span></div>
+        <div class="bot"><span class="price">3,59 € <s>5,49</s></span><span class="add on"><svg class="i s"><use href="#check"/></svg></span></div></div>
+      <div class="offer" style="background:var(--tint-green)"><span class="burst tl"><span class="bt">−20<small>%</small></span></span>
+        <div class="img">🥑</div><div class="nm">Avocado, reif</div><div class="gp">Stück · 0,99 €</div>
+        <div class="row" style="margin-top:6px"><span class="store"><i style="background:var(--tomato)"></i>Rewe</span></div>
+        <div class="bot"><span class="price">0,99 €</span><span class="add"><svg class="i s"><use href="#plus"/></svg></span></div></div>
+    </div>
+    <div class="demo"><span class="verdict">🔥 Bestpreis</span><span class="verdict good">👍 Gutes Angebot</span><span class="verdict norm">😐 Normal</span><span class="verdict warn">⚠️ Kein echtes</span></div>
+    <div class="demo"><span class="nutri" style="background:#038141">A</span><span class="nutri" style="background:#85BB2F">B</span><span class="nutri" style="background:#FECB02;color:#111">C</span><span class="lbl">Bio</span><span class="lbl" style="background:#fff;border:1px solid var(--line)">🌱</span><span class="deal">neu</span></div>
+  </div>
+
+  <div class="spec">
+    <span class="nm">NutrientTile</span><h4>Nährwert-Kacheln</h4>
+    <div class="row" style="gap:8px">
+      <div class="ntile" style="background:#FFE7D6"><b>640</b><span>kcal</span></div>
+      <div class="ntile" style="background:#FFE0E1"><b>24 g</b><span>Protein</span></div>
+      <div class="ntile" style="background:#E4F5D9"><b>98 g</b><span>KH</span></div>
+      <div class="ntile" style="background:#FFF1C9"><b>14 g</b><span>Fett</span></div>
+    </div>
+    <div class="d">Getönte Fläche statt Icon-Quadrat, große Zahl. NutrientStat (klein, auf Karten) siehe MealCard.</div>
+  </div>
+
+  <div class="spec">
+    <span class="nm">ShareBloom</span><h4>Zusammensetzung</h4>
+    <div class="bloom">
+      <div class="pt" style="height:96px;margin:-96px 0 0 -23px;background:linear-gradient(var(--tomato),#FFC2B5);transform:rotate(0deg)"></div>
+      <div class="pt" style="height:80px;margin:-80px 0 0 -23px;background:linear-gradient(var(--sun),#FFE7A8);transform:rotate(72deg)"></div>
+      <div class="pt" style="height:70px;margin:-70px 0 0 -23px;background:linear-gradient(var(--mint),#D2F2E1);transform:rotate(144deg)"></div>
+      <div class="pt" style="height:62px;margin:-62px 0 0 -23px;background:linear-gradient(var(--lav),#E6DEFF);transform:rotate(216deg)"></div>
+      <div class="pt" style="height:56px;margin:-56px 0 0 -23px;background:linear-gradient(#C9C3B6,#EEEAE2);transform:rotate(288deg)"></div>
+      <div class="plate ph ph-pasta ctr"></div>
+    </div>
+    <div class="d">Gleich wie heute, nur in den Kartenfarben: Tomate 38 % · Nudeln 26 % · Basilikum 14 % · Käse 12 % · Sonstiges 10 %.</div>
+  </div>
+
+  <div class="spec">
+    <span class="nm">ChecklistRow</span><h4>Einkaufszeile als Pille</h4>
+    <div>
+      <div class="crow"><span class="ck"></span><span class="nm">Tomaten</span><span class="q">1 kg</span><span class="deal" style="margin-left:6px">−30 %</span><span class="pr">1,99 €</span></div>
+      <div class="crow"><span class="ck"></span><span class="nm">Spaghetti</span><span class="q">500 g</span><span class="pr">0,89 €</span></div>
+      <div class="crow done"><span class="ck on"><svg class="i s"><use href="#check"/></svg></span><span class="nm">Basilikum</span><span class="q">1 Topf</span><span class="pr">1,49 €</span></div>
+    </div>
+    <div class="d">Wie GoodNotes-Checkliste. Abgehakt: Limetten-Kreis, durchgestrichen, wandert nach unten.</div>
+  </div>
+
+  <div class="spec">
+    <span class="nm">ListCard</span><h4>Liste als Ordner</h4>
+    <div class="grid2" style="gap:14px">
+      <div class="folder"><div class="tabk" style="background:var(--sun)"></div><div class="body" style="background:var(--sun)"><i class="logo"><img src="https://upload.wikimedia.org/wikipedia/commons/thumb/9/91/Lidl-Logo.svg/250px-Lidl-Logo.svg.png" alt="LIDL"></i><b>Lidl</b><span>12 Artikel</span><span class="av">🧑‍🍳</span></div></div>
+      <div class="folder"><div class="tabk" style="background:var(--lav)"></div><div class="body" style="background:var(--lav)"><i class="logo"><img src="https://upload.wikimedia.org/wikipedia/commons/thumb/2/2c/Dm-drogerie-Logo.svg/250px-Dm-drogerie-Logo.svg.png" alt="dm"></i><b>dm</b><span>5 Artikel</span><span class="av">🦊</span></div></div>
+    </div>
+    <div class="d">Ordner pro Laden mit dem Händler-Logo auf weißem Plättchen, immer ganz sichtbar (offizielle Logos von Wikimedia, nur verlinkt – E44). Ordnerfarbe aus der festen Palette.</div>
+  </div>
+
+  <div class="spec">
+    <span class="nm">QtyStepper · neu</span><h4>Portionen / Menge</h4>
+    <div class="row"><span class="pricepill">4,20 €</span><span class="qty"><span><svg class="i s"><use href="#minus"/></svg></span><b>2</b><span><svg class="i s"><use href="#plus"/></svg></span></span></div>
+    <div class="row" style="gap:18px;justify-content:center"><svg class="i l"><use href="#minus"/></svg><span style="font-size:64px;font-weight:900;letter-spacing:-.05em">2</span><svg class="i l"><use href="#plus"/></svg></div>
+    <div class="d">Klein (Rezept, wie Salat-App) und groß (Angebotsdetail, wie Snack Shop).</div>
+  </div>
+
+  <div class="spec">
+    <span class="nm">TotalBar · neu</span><h4>Summen-Leiste unten</h4>
+    <div class="total inline-total"><div class="col"><span class="lab">Gesamt</span><span class="val">2 × Hähnchen</span></div><span class="arr">››››</span><span class="btn lime"><svg class="i s"><use href="#bag"/></svg>Auf die Liste</span></div>
+    <div class="d">Ersetzt den festen Aktionsbereich auf Detail-Screens (Angebot, Liste, Rezept). Sitzt an der Stelle der Tab-Bar.</div>
+  </div>
+
+  <div class="spec">
+    <span class="nm">StepDots · neu</span><h4>Kochschritte</h4>
+    <div style="background:#161616;border-radius:22px;padding:18px"><div class="dots"><span class="ok">✓</span><span class="on">2</span><span>3</span><span>4</span><span>5</span><span>🏁</span></div></div>
+    <div class="dots l"><span class="ok">✓</span><span class="on">2</span><span>3</span><span>4</span></div>
+  </div>
+
+  <div class="spec">
+    <span class="nm">Budget-Karte</span><h4>Geplant vs. Budget</h4>
+    <div class="budget"><div class="row between"><span class="type-m" style="color:#9a978f">Budget KW 45</span><span class="verdict good">−12,40 € gespart</span></div>
+      <div style="font-size:34px;font-weight:900;letter-spacing:-.04em;margin-top:8px">38,20 € <span style="color:#77736B;font-size:20px">von 60 €</span></div>
+      <div class="bar"><i style="width:64%"></i></div><div class="type-c" style="color:#9a978f">Noch 21,80 € für 3 Tage</div></div>
+  </div>
+
+  <div class="spec">
+    <span class="nm">RatingStars · Toast</span><h4>Bewerten &amp; Rückmeldung</h4>
+    <div class="stars">★★★★<span class="o">★</span></div>
+    <span class="toast"><i>✓</i>Gespeichert – kommt öfter</span>
+  </div>
+
+  <div class="spec">
+    <span class="nm">EmptyState · LoadingState · ErrorState</span><h4>Zustände</h4>
+    <div class="card" style="padding:22px;text-align:center"><div style="font-size:56px">🍽️</div><div class="type-h" style="margin-top:6px">Noch kein Wochenplan</div><div class="type-c" style="margin:4px 0 14px">In 30 Sekunden aus den Angeboten der Woche.</div><span class="btn k">Plan erstellen</span></div>
+    <div class="row"><div class="skel" style="width:72px;height:72px;border-radius:50%"></div><div class="col" style="gap:8px;flex:1"><div class="skel" style="height:14px;width:60%"></div><div class="skel" style="height:20px;width:90%"></div></div></div>
+    <div class="row between card" style="padding:12px 12px 12px 18px;border-radius:999px"><span class="type-c" style="color:var(--ink)">⚠️ Prospekte gerade nicht erreichbar</span><span class="btn s" style="height:40px;padding:0 16px;font-size:14px">Erneut</span></div>
+  </div>
+
+  <div class="spec">
+    <span class="nm">Sheet</span><h4>Von unten</h4>
+    <div class="sheet" style="border:1px solid var(--line)"><div class="grip"></div>
+      <div class="row" style="gap:14px"><div class="plate ph ph-pasta" style="width:58px;height:58px"></div><div><div class="type-m t2">Wie war's?</div><div class="type-h">Spaghetti al Pomodoro</div></div></div>
+      <div class="stars" style="margin:14px 0">★★★★★</div>
+      <span class="btn k full">Speichern</span></div>
+  </div>
+
+</div>
+
+<!-- ================= 2 SCREENS ================= -->
+<section class="sec" id="screens">
+  <h2>2 · Gesamt-Mockup</h2>
+  <p>Die Kern-Screens zusammengesetzt aus den Bausteinen oben. Inhalte wie in <code>screens.md</code>; nur das Aussehen ist neu.</p>
+</section>
+
+<div class="screens">
+
+  <!-- S1 Start -->
+  <div class="screen">
+    <div class="phone" style="background:#111">
+      <div class="sb w"><b>9:41</b><span class="island"></span><svg><use href="#status"/></svg></div>
+      <div class="scr" style="padding-top:66px">
+        <div class="row between" style="align-items:flex-start">
+          <div class="disp" style="color:#fff;font-size:52px">Heute</div>
+          <div class="row" style="gap:10px;margin-top:4px">
+            <div style="text-align:right;font-size:15px;font-weight:600;line-height:1.3"><span style="color:var(--tomato)">●</span> <span style="color:#fff">KW 45</span><br><span style="color:#77736B">Dienstag</span></div>
+            <span class="rbtn sm" style="background:#2A2A2A;color:#fff"><svg class="i s"><use href="#user"/></svg></span>
+          </div>
+        </div>
+        <p class="sent" style="margin-top:30px">Hallo Jona! Heute gibt's <b>Spaghetti Pomodoro</b> <i class="stk r1 ph ph-pasta"></i>, morgen <b>Lachs mit Salat</b> <i class="stk r2 ph ph-grill"></i> – und mit den Angeboten <b>sparst du <span class="circ">12,40 €<svg viewBox="0 0 120 50" preserveAspectRatio="none"><path d="M22 6 C 62 0, 112 4, 117 24 C 121 44, 72 50, 42 48 C 10 46, 0 34, 3 22 C 6 10, 30 4, 60 3"/></svg></span></b> <span class="estk">🏷️</span></p>
+        <div class="row" style="margin-top:22px;color:#77736B;font-size:14px;font-weight:600">Aus 3 Prospekten
+          <span class="store" style="background:#222;border-color:#333;color:#ddd"><i style="background:var(--sun)"></i>Lidl</span>
+          <span class="store" style="background:#222;border-color:#333;color:#ddd"><i style="background:var(--tomato)"></i>Rewe</span>
+          <span class="store" style="background:#222;border-color:#333;color:#ddd"><i style="background:var(--lav)"></i>dm</span></div>
+      </div>
+      <div style="position:absolute;left:0;right:0;top:470px;bottom:0;background:var(--bg);border-radius:40px 40px 0 0;padding:22px 22px 0">
+        <div class="row between"><span style="font-size:22px;font-weight:800;letter-spacing:-.03em">Diese Woche</span><span class="row t2" style="font-weight:600;font-size:14px">7 Gerichte <svg class="i s"><use href="#filter"/></svg></span></div>
+        <div class="wrow"><div class="plate ph ph-pasta" style="width:56px;height:56px"></div><div style="flex:1"><div class="m" style="color:var(--deal)">Heute · Abend</div><div class="n">Spaghetti al Pomodoro</div><div class="p">2,10 € · 25 min</div></div><span class="deal">2 im Angebot</span></div>
+        <div class="wrow"><div class="plate ph ph-grill" style="width:56px;height:56px"></div><div style="flex:1"><div class="m">Mi · Abend</div><div class="n">Lachs mit Salat</div><div class="p">3,40 € · 30 min</div></div><svg class="i s t3"><use href="#chev"/></svg></div>
+        <div class="wrow"><div class="eplate" style="width:56px;height:56px;font-size:30px">🍛</div><div style="flex:1"><div class="m">Do · Abend</div><div class="n">Chicken Tikka Masala</div><div class="p">2,40 € · 35 min</div></div><svg class="i s t3"><use href="#chev"/></svg></div>
+      </div>
+      <div class="tabbar"><span class="tab on"><svg class="i"><use href="#home"/></svg>Start</span><span class="tab"><svg class="i"><use href="#tag"/></svg><span class="count">3</span></span><span class="tab plus"><svg class="i"><use href="#plus"/></svg></span><span class="tab"><svg class="i"><use href="#bag"/></svg></span><span class="tab"><svg class="i"><use href="#book"/></svg></span></div>
+      <div class="homebar"></div>
+    </div>
+    <div class="caption"><b>S1 Start</b>Oben schwarz mit der Woche als Satz (SentenceHero), unten Creme-Sheet mit den nächsten Gerichten. Darunter beim Scrollen: Budget-Karte, Lieblingsrezepte günstig, Kühlschrank scannen, Banner.</div>
+  </div>
+
+  <!-- S2 Wochenplan -->
+  <div class="screen">
+    <div class="phone">
+      <div class="sb"><b>9:41</b><span class="island"></span><svg><use href="#status"/></svg></div>
+      <div class="scr">
+        <div class="row between" style="align-items:flex-start"><div class="disp">Woche<br><span class="disp2">KW 45</span></div><div class="row" style="margin-top:4px"><span class="rbtn"><svg class="i"><use href="#share"/></svg></span><span class="rbtn k"><svg class="i"><use href="#dice"/></svg></span></div></div>
+        <div style="margin-top:14px"><div class="row between"><span style="font-weight:800;font-size:17px">38,20 € <span class="t2" style="font-weight:600">von 60 €</span></span><span class="verdict good">12,40 € gespart</span></div><div class="bar light" style="margin:10px 0 0"><i style="width:64%;background:#111"></i></div></div>
+        <div class="daysel">
+          <span><b>Mo</b><i style="background:var(--tomato)"></i></span><span class="on"><b>Di</b><i style="background:var(--sun)"></i></span><span><b>Mi</b><i style="background:var(--lav)"></i></span><span><b>Do</b><i style="background:var(--sky)"></i></span><span><b>Fr</b><i style="background:var(--mint)"></i></span><span><b>Sa</b><i style="background:var(--orange)"></i></span><span><b>So</b><i style="background:var(--pink)"></i></span>
+        </div>
+        <div class="day" style="background:var(--sun)"><div class="plate ph ph-bowl"></div><span class="badge">2</span><div class="m">🥡 Lunchbox · Jona</div><div class="n">Buddha Bowl to go</div><div class="p">1,80 € · 15 min · 540 kcal</div>
+          <div class="acts"><span><svg class="i"><use href="#heart"/></svg></span><span><svg class="i"><use href="#swap"/></svg></span><span><svg class="i"><use href="#lock"/></svg></span><span><svg class="i"><use href="#dice"/></svg></span></div></div>
+        <div class="day" style="background:var(--lav)"><div class="plate ph ph-pasta"></div><div class="m">Abend · 25 min</div><div class="n">Spaghetti al Pomodoro</div><div class="p">2,10 € · 640 kcal · ♻︎ Rest von Mo</div>
+          <div class="acts"><span><svg class="i"><use href="#heart"/></svg></span><span><svg class="i"><use href="#swap"/></svg></span><span><svg class="i"><use href="#lock"/></svg></span><span><svg class="i"><use href="#dice"/></svg></span></div></div>
+        <div class="day" style="background:#fff;border:1px solid var(--line)"><div class="eplate" style="background:var(--tint-pink)">🍰</div><div class="m">Dessert · 10 min</div><div class="n">Quarkcreme mit Beeren</div><div class="p">0,90 € · 280 kcal</div></div>
+      </div>
+      <div class="tabbar"><span class="tab"><svg class="i"><use href="#home"/></svg></span><span class="tab"><svg class="i"><use href="#tag"/></svg><span class="count">3</span></span><span class="tab plus"><svg class="i"><use href="#plus"/></svg></span><span class="tab"><svg class="i"><use href="#bag"/></svg></span><span class="tab on"><svg class="i"><use href="#book"/></svg>Rezepte</span></div>
+      <div class="homebar"></div>
+    </div>
+    <div class="caption"><b>S2 Wochenplan</b>Tag wählen, Gerichte als überlappende Farbkarten in der Tagesfarbe. Darunter (Scroll): Tageswerte-Ringe, Reste, Abwechslung, „Keine Lust“.</div>
+  </div>
+
+  <!-- S3 Rezeptdetail -->
+  <div class="screen">
+    <div class="phone" style="background:#5C4038">
+      <div class="sb w"><b>9:41</b><span class="island"></span><svg><use href="#status"/></svg></div>
+      <div class="ph ph-pasta" style="position:absolute;left:0;right:0;top:0;height:420px"></div>
+      <div style="position:absolute;left:0;right:0;top:220px;height:200px;background:linear-gradient(rgba(92,64,56,0),#5C4038)"></div>
+      <div style="position:absolute;top:62px;left:20px;right:20px" class="row between"><span class="rbtn d"><svg class="i"><use href="#back"/></svg></span><div class="row"><span class="rbtn d"><svg class="i"><use href="#heart"/></svg></span><span class="rbtn d"><svg class="i"><use href="#more"/></svg></span></div></div>
+      <div style="position:absolute;left:22px;right:22px;top:330px;color:#fff">
+        <div style="color:#E3CFC5;font-weight:700;font-size:15px">Aus deinem Plan · Dienstag</div>
+        <div style="font-size:34px;font-weight:900;letter-spacing:-.04em;line-height:1.02;margin-top:4px">Spaghetti al Pomodoro</div>
+        <div style="color:#E3CFC5;font-weight:600;font-size:15px;margin-top:6px">★ 4,5 · 2 Bewertungen</div>
+        <div class="row" style="margin-top:18px;gap:18px">
+          <div><div class="type-m" style="color:#E3CFC5">Zeit</div><div style="font-size:19px;font-weight:700">25 min</div></div>
+          <div style="width:1px;height:36px;background:rgba(255,255,255,.25)"></div>
+          <div><div class="type-m" style="color:#E3CFC5">Portion</div><div style="font-size:19px;font-weight:700">2,10 €</div></div>
+          <div style="width:1px;height:36px;background:rgba(255,255,255,.25)"></div>
+          <div><div class="type-m" style="color:#E3CFC5">kcal</div><div style="font-size:19px;font-weight:700">640</div></div>
+        </div>
+        <div class="row" style="margin-top:18px;gap:8px">
+          <span class="btn" style="flex:1;height:48px;background:rgba(255,255,255,.14);font-size:15px;padding:0"><svg class="i s"><use href="#bookmark"/></svg>Einplanen</span>
+          <span class="btn" style="flex:1;height:48px;background:rgba(255,255,255,.14);font-size:15px;padding:0"><svg class="i s"><use href="#swap"/></svg>Ersatz</span>
+          <span class="btn" style="flex:1;height:48px;background:rgba(255,255,255,.14);font-size:15px;padding:0"><svg class="i s"><use href="#share"/></svg>Teilen</span>
+        </div>
+        <div style="margin-top:16px;background:rgba(255,255,255,.12);border-radius:22px;padding:6px 14px">
+          <div class="row between" style="height:44px"><span style="font-weight:600">🍅 Tomaten <span style="color:#E3CFC5">400 g</span></span><span class="deal">−30 % Lidl</span></div>
+          <div class="row between" style="height:44px;border-top:1px solid rgba(255,255,255,.12)"><span style="font-weight:600">🍝 Spaghetti <span style="color:#E3CFC5">250 g</span></span><span style="color:#E3CFC5;font-size:13px;font-weight:600">im Vorrat</span></div>
+        </div>
+      </div>
+      <div class="total"><div class="col"><span class="lab">Portionen</span><span class="val row" style="gap:10px"><svg class="i s"><use href="#minus"/></svg>2<svg class="i s"><use href="#plus"/></svg></span></div><span class="arr">››››</span><span class="btn lime"><svg class="i s"><use href="#play"/></svg>Kochen</span></div>
+      <div class="homebar w"></div>
+    </div>
+    <div class="caption"><b>S3 Rezeptdetail</b>Foto randlos oben, läuft in eine Farbe aus dem Foto über (wie Apple News). Darunter beim Scrollen: Nährwert-Kacheln, Zusammensetzung (Bloom), Schritte, Bewertungen.</div>
+  </div>
+
+  <!-- S18 Kochmodus -->
+  <div class="screen">
+    <div class="phone" style="background:#111">
+      <div class="sb w"><b>9:41</b><span class="island"></span><svg><use href="#status"/></svg></div>
+      <div class="ph ph-chef" style="position:absolute;left:0;right:0;top:0;height:330px"></div>
+      <div style="position:absolute;top:62px;left:20px;right:20px" class="row between"><span class="rbtn d"><svg class="i"><use href="#x"/></svg></span><span class="toast" style="height:44px;padding:0 16px;background:rgba(0,0,0,.45);backdrop-filter:blur(10px)"><svg class="i s"><use href="#clock"/></svg>08:24</span></div>
+      <div style="position:absolute;left:24px;right:24px;top:282px;height:4px;border-radius:2px;background:rgba(255,255,255,.3)"><i style="display:block;width:33%;height:100%;background:var(--lime);border-radius:2px"></i></div>
+      <div style="position:absolute;left:0;right:0;top:306px;bottom:0;background:#161616;border-radius:36px 36px 0 0;padding:26px 24px;color:#fff">
+        <div style="text-align:center;font-size:30px;font-weight:900;letter-spacing:-.04em">Schritt 2</div>
+        <div class="dots" style="margin:16px 0 18px"><span class="ok">✓</span><span class="on">2</span><span>3</span><span>4</span><span>5</span><span>🏁</span></div>
+        <div class="row between" style="height:46px;border-bottom:1px solid #2A2A2A"><span style="font-weight:600">🍅 Tomaten</span><span style="color:#9a978f">400 g</span></div>
+        <div class="row between" style="height:46px;border-bottom:1px solid #2A2A2A"><span style="font-weight:600">🧄 Knoblauch</span><span style="color:#9a978f">2 Zehen</span></div>
+        <p style="font-size:19px;line-height:1.45;color:#C9C5BD;margin-top:16px">Knoblauch fein hacken und in Olivenöl glasig dünsten. Tomaten dazugeben und <b style="color:#fff">8 Minuten</b> köcheln lassen.</p>
+        <div class="row" style="position:absolute;left:24px;right:24px;bottom:34px;gap:10px"><span class="rbtn" style="width:60px;height:60px;background:#2A2A2A;color:#fff"><svg class="i"><use href="#mic"/></svg></span><span class="btn lime" style="flex:1;height:60px">Nächster Schritt<svg class="i"><use href="#arrow"/></svg></span></div>
+      </div>
+      <div class="homebar w"></div>
+    </div>
+    <div class="caption"><b>S18 Kochmodus</b>Immer dunkel. Bild oben mit Timer und Fortschritt, Schritt-Punkte, Zutaten des Schritts, großer Text, Sprachsteuerung links.</div>
+  </div>
+
+  <!-- S4 Angebote -->
+  <div class="screen">
+    <div class="phone">
+      <div class="sb"><b>9:41</b><span class="island"></span><svg><use href="#status"/></svg></div>
+      <div class="scr">
+        <div class="row between"><div class="disp">Angebote</div><span class="rbtn k"><svg class="i"><use href="#search"/></svg></span></div>
+        <div class="row t2" style="margin-top:8px;font-weight:600;font-size:15px"><svg class="i s"><use href="#pin"/></svg>10115 Berlin · 6 Läden<svg class="i s"><use href="#down"/></svg><span style="margin-left:auto;color:var(--ink)">128 diese Woche</span></div>
+        <div class="chips" style="margin:16px -20px 0 0"><span class="chip on">Alle <span class="n">128</span></span><span class="chip">Merkliste <span class="n" style="background:var(--deal);color:#fff">3</span></span><span class="chip">Obst <span class="n">24</span></span><span class="chip">Fleisch <span class="n">18</span></span></div>
+        <div class="coupon" style="margin-top:14px;border-radius:24px;padding:16px 18px 14px;height:150px;background:var(--lime);position:relative;overflow:hidden">
+          <div class="type-m" style="opacity:.6">Knaller der Woche</div>
+          <div style="font-family:var(--serif);font-size:25px;font-weight:800;letter-spacing:-.02em;line-height:1.02;margin-top:4px">Hähnchen<br><i style="font-weight:400">bei Lidl</i></div>
+          <span class="perf"></span>
+          <div class="row" style="position:absolute;left:18px;bottom:12px"><span class="verdict">🔥 Bestpreis seit 12 Wochen</span></div>
+          <div style="position:absolute;right:58px;top:2px;font-size:76px;transform:rotate(-12deg);filter:drop-shadow(0 10px 10px rgba(0,0,0,.2))">🍗</div>
+          <span class="burst k" style="position:absolute;right:10px;top:12px;width:66px;height:66px;font-size:17px"><span class="bt">−35<small>%</small></span></span>
+        </div>
+        <div class="grid2" style="margin-top:10px">
+          <div class="offer" style="background:var(--tint-green)"><span class="burst tl"><span class="bt">−20<small>%</small></span></span><span class="tr" style="font-size:18px">👍</span><div class="img">🥑</div><div class="nm">Avocado</div><div class="gp">Rewe · Stück</div><div class="bot"><span class="price">0,99 €</span><span class="add"><svg class="i s"><use href="#plus"/></svg></span></div></div>
+          <div class="offer" style="background:var(--tint-blue)"><span class="burst tl"><span class="bt">−30<small>%</small></span></span><div class="img">🧀</div><div class="nm">Feta</div><div class="gp">Lidl · 200 g</div><div class="bot"><span class="price">1,29 €</span><span class="add on"><svg class="i s"><use href="#check"/></svg></span></div></div>
+        </div>
+      </div>
+      <div class="tabbar"><span class="tab"><svg class="i"><use href="#home"/></svg></span><span class="tab on"><svg class="i"><use href="#tag"/></svg>Angebote</span><span class="tab plus"><svg class="i"><use href="#plus"/></svg></span><span class="tab"><svg class="i"><use href="#bag"/></svg></span><span class="tab"><svg class="i"><use href="#book"/></svg></span></div>
+      <div class="homebar"></div>
+    </div>
+    <div class="caption"><b>S4 Angebote</b>Ort darunter klein, Merkliste wird ein Chip statt eigenem Segment. Oben die größte Ersparnis als Limetten-Karte, darunter Raster in Kategorie-Tönung.</div>
+  </div>
+
+  <!-- S9 Angebotsdetail -->
+  <div class="screen">
+    <div class="phone" style="background:#fff">
+      <div class="sb"><b>9:41</b><span class="island"></span><svg><use href="#status"/></svg></div>
+      <div class="scr" style="padding-top:62px">
+        <div class="row between"><span class="rbtn"><svg class="i"><use href="#back"/></svg></span><span style="font-weight:800;font-size:17px">Angebot</span><span class="rbtn"><svg class="i"><use href="#heart"/></svg></span></div>
+        <div style="position:relative;height:250px;margin-top:10px">
+          <div style="position:absolute;left:50%;top:10px;width:230px;height:230px;margin-left:-115px;border-radius:50%;background:var(--tint-red)"></div>
+          <div style="position:absolute;left:0;right:0;top:20px;text-align:center;font-size:150px;filter:drop-shadow(0 18px 18px rgba(0,0,0,.2))">🍗</div>
+          <span class="burst xl" style="position:absolute;left:30px;top:6px"><span class="bt">−35<small>%</small></span></span>
+        </div>
+        <div class="row" style="justify-content:space-between;padding:0 18px;margin-top:-4px"><span class="rbtn" style="width:56px;height:56px"><svg class="i"><use href="#minus"/></svg></span><span style="font-size:68px;font-weight:900;letter-spacing:-.05em;line-height:1">2</span><span class="rbtn" style="width:56px;height:56px"><svg class="i"><use href="#plus"/></svg></span></div>
+        <div style="text-align:center;margin-top:8px"><span class="price" style="height:42px;font-size:19px">7,18 € <s>10,98</s></span></div>
+      </div>
+      <div style="position:absolute;left:0;right:0;top:518px;bottom:0;background:var(--bg);border-radius:36px 36px 0 0;padding:22px 22px">
+        <div class="row between"><div><div style="font-size:24px;font-weight:900;letter-spacing:-.035em">Hähnchenbrustfilet</div><div class="type-c" style="margin-top:2px">600 g · 0,60 €/100 g · bis Sa 7.11.</div></div><span class="rbtn w"><svg class="i"><use href="#bookmark"/></svg></span></div>
+        <div class="row" style="margin-top:10px;flex-wrap:wrap"><span class="store"><i style="background:var(--sun)"></i>Lidl</span><span class="verdict">🔥 Bestpreis</span><span class="nutri" style="background:#85BB2F">B</span></div>
+        <div class="row" style="align-items:flex-end;gap:5px;height:44px;margin-top:14px">
+          <i style="flex:1;height:70%;background:var(--surface);border-radius:5px"></i><i style="flex:1;height:72%;background:var(--surface);border-radius:5px"></i><i style="flex:1;height:50%;background:#CFC9BD;border-radius:5px"></i><i style="flex:1;height:70%;background:var(--surface);border-radius:5px"></i><i style="flex:1;height:71%;background:var(--surface);border-radius:5px"></i><i style="flex:1;height:70%;background:var(--surface);border-radius:5px"></i><i style="flex:1;height:55%;background:#CFC9BD;border-radius:5px"></i><i style="flex:1;height:70%;background:var(--surface);border-radius:5px"></i><i style="flex:1;height:72%;background:var(--surface);border-radius:5px"></i><i style="flex:1;height:70%;background:var(--surface);border-radius:5px"></i><i style="flex:1;height:69%;background:var(--surface);border-radius:5px"></i><i style="flex:1;height:42%;background:var(--lime);border-radius:5px;outline:2px solid #111"></i>
+        </div>
+      </div>
+      <div class="total"><div class="col"><span class="lab">Gesamt</span><span class="val">2 × 7,18 €</span></div><span class="arr">››››</span><span class="btn lime"><svg class="i s"><use href="#bag"/></svg>Auf die Liste</span></div>
+      <div class="homebar"></div>
+    </div>
+    <div class="caption"><b>S9 Angebotsdetail</b>Produkt groß, Menge mit − / +, Preis als schwarze Pille (Snack Shop). Preisverlauf als Mini-Balken, Tippen öffnet das große Diagramm. Unten die Summen-Leiste.</div>
+  </div>
+
+  <!-- S5 Einkauf Übersicht -->
+  <div class="screen">
+    <div class="phone">
+      <div class="sb"><b>9:41</b><span class="island"></span><svg><use href="#status"/></svg></div>
+      <div class="scr">
+        <div class="row between"><div class="disp">Einkauf</div><div class="row"><span class="hmeta">4 Listen</span><span class="rbtn"><svg class="i"><use href="#plus"/></svg></span></div></div>
+        <div class="row" style="margin-top:16px;background:var(--surface);border-radius:999px;padding:4px"><span class="btn k" style="flex:1;height:42px;font-size:15px">Liste</span><span class="btn" style="flex:1;height:42px;font-size:15px;color:var(--t2)">Vorrat</span><span class="btn" style="flex:1;height:42px;font-size:15px;color:var(--t2)">Coupons</span></div>
+        <div class="grid2" style="gap:14px;margin-top:8px">
+          <div class="folder"><div class="tabk" style="background:var(--sun)"></div><div class="body" style="background:var(--sun)"><i class="logo"><img src="https://upload.wikimedia.org/wikipedia/commons/thumb/9/91/Lidl-Logo.svg/250px-Lidl-Logo.svg.png" alt="LIDL"></i><b>Lidl</b><span>12 Artikel</span><span class="av">🧑‍🍳</span></div></div>
+          <div class="folder"><div class="tabk" style="background:var(--tomato)"></div><div class="body" style="background:var(--tomato)"><i class="logo"><img src="https://upload.wikimedia.org/wikipedia/commons/thumb/4/4c/Logo_REWE.svg/250px-Logo_REWE.svg.png" alt="REWE"></i><b>Rewe</b><span>8 Artikel</span><span class="av">🦊</span></div></div>
+          <div class="folder"><div class="tabk" style="background:var(--lav)"></div><div class="body" style="background:var(--lav)"><i class="logo"><img src="https://upload.wikimedia.org/wikipedia/commons/thumb/2/2c/Dm-drogerie-Logo.svg/250px-Dm-drogerie-Logo.svg.png" alt="dm"></i><b>dm</b><span>5 Artikel</span><span class="av">🦊</span></div></div>
+          <div class="folder"><div class="tabk" style="background:var(--mint)"></div><div class="body" style="background:var(--mint)"><i class="logo">🧺</i><b>Wochenmarkt</b><span>3 Artikel</span><span class="av">🧑‍🍳</span></div></div>
+        </div>
+        <div class="row between" style="margin-top:16px;background:#111;color:#fff;border-radius:999px;height:60px;padding:0 8px 0 22px"><span style="font-weight:600">Diese Woche gespart</span><span class="row"><b style="color:var(--lime);font-size:20px">12,40 €</b><span class="rbtn sm" style="background:#2A2A2A;color:#fff"><svg class="i s"><use href="#chev"/></svg></span></span></div>
+      </div>
+      <div class="tabbar"><span class="tab"><svg class="i"><use href="#home"/></svg></span><span class="tab"><svg class="i"><use href="#tag"/></svg><span class="count">3</span></span><span class="tab plus"><svg class="i"><use href="#plus"/></svg></span><span class="tab on"><svg class="i"><use href="#bag"/></svg>Einkauf</span><span class="tab"><svg class="i"><use href="#book"/></svg></span></div>
+      <div class="homebar"></div>
+    </div>
+    <div class="caption"><b>S5 Einkauf</b>Listen als farbige Ordner pro Laden mit Händler-Logo auf weißem Plättchen. Pille Liste | Vorrat | Coupons bleibt.</div>
+  </div>
+
+  <!-- S5 Liste Detail -->
+  <div class="screen">
+    <div class="phone">
+      <div class="sb"><b>9:41</b><span class="island"></span><svg><use href="#status"/></svg></div>
+      <div style="position:absolute;left:0;right:0;top:0;height:300px;background:var(--sun);border-radius:0 0 40px 40px"></div>
+      <div class="scr">
+        <div class="row between"><span class="rbtn w"><svg class="i"><use href="#back"/></svg></span><div class="row"><span style="font-weight:700;font-size:14px">Geteilt mit</span><span style="display:flex"><span class="av" style="width:36px;height:36px;border-radius:50%;background:#fff;display:grid;place-items:center">🧑‍🍳</span><span style="width:36px;height:36px;border-radius:50%;background:#fff;display:grid;place-items:center;margin-left:-10px;border:2px solid var(--sun)">🦊</span></span><span class="rbtn w sm"><svg class="i s"><use href="#share"/></svg></span></div></div>
+        <div class="row" style="gap:14px;margin-top:22px"><span class="logo" style="width:60px;height:60px;border-radius:18px;background:#fff;display:grid;place-items:center"><img src="https://upload.wikimedia.org/wikipedia/commons/thumb/9/91/Lidl-Logo.svg/250px-Lidl-Logo.svg.png" alt="Lidl"></span><div class="disp" style="font-size:56px">Lidl</div></div>
+        <div class="row between" style="margin-top:8px"><span style="font-weight:700;font-size:16px">12 offen · 24,80 €</span><span class="verdict" style="height:30px;font-size:13px"><span style="color:var(--lime)">−6,10 €</span>&nbsp;gespart</span></div>
+        <div class="rcpt-wrap" style="margin-top:34px"><div class="receipt">
+          <div class="hd">Lidl · Berlin-Mitte<br>KW 45 · 12 Artikel</div>
+          <hr>
+          <div class="rl"><span class="bx"></span><span class="t">Tomaten</span><span class="q">1 kg</span><span class="dl">−30%</span><span class="p">1,99</span></div>
+          <div class="rl"><span class="bx"></span><span class="t">Avocado</span><span class="q">2 St</span><span class="p">1,98</span></div>
+          <div class="rl"><span class="bx"></span><span class="t">Hähnchen</span><span class="q">600 g</span><span class="dl">−35%</span><span class="p">3,59</span></div>
+          <div class="rl"><span class="bx"></span><span class="t">Spaghetti</span><span class="q">500 g</span><span class="p">0,89</span></div>
+          <div class="rl done"><span class="bx"><svg class="i"><use href="#check"/></svg></span><span class="t">Lachsfilet</span><span class="q">250 g</span><span class="p">3,99</span></div>
+          <hr>
+          <div class="rsum"><span>SUMME</span><span>24,80 €</span></div>
+          <div class="rl" style="padding-bottom:0"><span>davon gespart</span><span class="p" style="color:var(--deal)"><span class="circ r">6,10 €<svg viewBox="0 0 120 50" preserveAspectRatio="none"><path d="M22 6 C 62 0, 112 4, 117 24 C 121 44, 72 50, 42 48 C 10 46, 0 34, 3 22 C 6 10, 30 4, 60 3"/></svg></span></span></div>
+        </div></div>
+        <div class="search" style="margin-top:14px;height:52px">Artikel hinzufügen …<span class="rbtn" style="background:var(--surface)"><svg class="i s"><use href="#mic"/></svg></span></div>
+      </div>
+      <div class="total"><div class="col"><span class="lab">Noch offen</span><span class="val">24,80 €</span></div><span class="arr">››››</span><span class="btn lime"><svg class="i s"><use href="#bag"/></svg>Einkauf starten</span></div>
+      <div class="homebar"></div>
+    </div>
+    <div class="caption"><b>S5 Liste</b>Kopf in der Ladenfarbe mit Riesen-Namen, die Liste selbst ist ein Kassenbon mit Zackenrand, Kästchen zum Abhaken und eingekreister Ersparnis. „Einkauf starten“ öffnet die Live-Aktivität.</div>
+  </div>
+
+  <!-- S12 Rezepte -->
+  <div class="screen">
+    <div class="phone">
+      <div class="sb"><b>9:41</b><span class="island"></span><svg><use href="#status"/></svg></div>
+      <div class="scr">
+        <div class="row between"><div class="disp">Rezepte</div><div class="row"><span class="hmeta">42</span><span class="rbtn"><svg class="i"><use href="#plus"/></svg></span></div></div>
+        <div class="chips" style="margin:16px -20px 0 0"><span class="chip on">Alle <span class="n">42</span></span><span class="chip">Favoriten <span class="n">12</span></span><span class="chip">Im Angebot <span class="n">5</span></span><span class="chip">Eigene</span></div>
+        <div class="masonry" style="margin-top:16px">
+          <div class="col" style="gap:10px">
+            <div class="rtile" style="background:var(--tomato);height:236px;overflow:visible"><div class="ttl">Plan<br>dieser Woche</div><span class="hrt"><svg class="i"><use href="#heart"/></svg></span>
+              <div style="margin-top:14px"><div class="mini done"><i></i>Pasta Pomodoro</div><div class="mini"><i></i>Lachs mit Salat</div><div class="mini"><i></i>Tikka Masala</div><div class="mini"><i></i>+ 4 weitere</div></div></div>
+            <div class="rtile" style="background:var(--lav);height:150px;overflow:visible"><div class="ttl">Aus Instagram</div><div class="type-c" style="color:#3d3566;margin-top:4px">5 Rezepte</div><div style="position:absolute;right:10px;bottom:6px;font-size:58px;transform:rotate(10deg)">📲</div></div>
+          </div>
+          <div class="col" style="gap:10px">
+            <div class="rtile ph ph-bowl" style="height:186px;color:#fff"><div style="position:absolute;inset:0;background:linear-gradient(transparent 40%,rgba(0,0,0,.55))"></div><span class="hrt" style="background:rgba(255,255,255,.3);color:#fff"><svg class="i"><use href="#heart"/></svg></span><div style="position:absolute;left:16px;bottom:14px"><div class="ttl">Buddha Bowl</div><div style="font-size:12px;opacity:.85">20 min · 2,40 €</div></div></div>
+            <div class="rtile" style="background:var(--lime);height:200px"><div class="ttl">5 Lieblings&shy;rezepte günstig</div><div class="row" style="margin-top:14px"><div class="plate ph ph-pasta" style="width:48px;height:48px"></div><div class="plate ph ph-grill" style="width:48px;height:48px;margin-left:-16px"></div><div class="eplate" style="width:48px;height:48px;margin-left:-16px;font-size:24px">🍛</div></div><div style="position:absolute;left:16px;bottom:14px" class="deal">bis −35 %</div></div>
+          </div>
+        </div>
+      </div>
+      <div class="tabbar"><span class="tab"><svg class="i"><use href="#home"/></svg></span><span class="tab"><svg class="i"><use href="#tag"/></svg><span class="count">3</span></span><span class="tab plus"><svg class="i"><use href="#plus"/></svg></span><span class="tab"><svg class="i"><use href="#bag"/></svg></span><span class="tab on"><svg class="i"><use href="#book"/></svg>Rezepte</span></div>
+      <div class="homebar"></div>
+    </div>
+    <div class="caption"><b>S12 Rezepte</b>Kachel-Wand wie GoodNotes „My Notes“: Plan als Checkliste, Fotos, Sammlungen (Instagram, Im Angebot). Wochenplan erreicht man über die rote Kachel.</div>
+  </div>
+
+  <!-- Schnell-Aktionen -->
+  <div class="screen">
+    <div class="phone" style="background:#111">
+      <div class="sb w"><b>9:41</b><span class="island"></span><svg><use href="#status"/></svg></div>
+      <div style="position:absolute;inset:0;filter:blur(7px)">
+        <div style="padding:66px 20px 0"><div class="disp" style="color:#fff;font-size:52px">Heute</div>
+          <p class="sent" style="margin-top:30px">Hallo Jona! Heute gibt's <b>Spaghetti Pomodoro</b> <i class="stk r1 ph ph-pasta"></i>, morgen <b>Lachs mit Salat</b> <i class="stk r2 ph ph-grill"></i></p></div>
+        <div style="position:absolute;left:0;right:0;top:470px;bottom:0;background:var(--bg);border-radius:40px 40px 0 0"></div>
+      </div>
+      <div style="position:absolute;inset:0;background:linear-gradient(rgba(17,17,17,.6),rgba(17,17,17,.94) 55%)"></div>
+      <div style="position:absolute;left:24px;top:120px;color:#fff">
+        <div class="disp" style="font-size:44px">Was jetzt,<br><span class="disp2" style="color:#8C8A85">Jona?</span></div>
+      </div>
+      <svg class="fan-arc" viewBox="0 0 390 844"><path d="M39 635 A180 180 0 0 1 351 635"/></svg>
+      <div class="fan" style="left:39px;top:635px"><span class="fb" style="background:var(--sky)"><svg class="i"><use href="#scan"/></svg></span><b>Barcode<br>scannen</b></div>
+      <div class="fan" style="left:105px;top:569px"><span class="fb" style="background:var(--sun)"><svg class="i"><use href="#bag"/></svg></span><b>Zur Liste</b></div>
+      <div class="fan main" style="left:195px;top:545px"><span class="fb" style="background:var(--lime)"><svg class="i"><use href="#spark"/></svg></span><b>Wochenplan<br>erstellen</b></div>
+      <div class="fan" style="left:285px;top:569px"><span class="fb" style="background:var(--lav)"><svg class="i"><use href="#book"/></svg></span><b>Rezept<br>anlegen</b></div>
+      <div class="fan" style="left:351px;top:635px"><span class="fb" style="background:var(--tomato)"><span style="font-size:28px">📸</span></span><b>Kühlschrank<br>scannen</b></div>
+      <div class="tabbar notch"><span class="tab"><svg class="i"><use href="#home"/></svg></span><span class="tab"><svg class="i"><use href="#tag"/></svg></span><span class="bump"><span class="x"><svg class="i"><use href="#x"/></svg></span></span><span style="width:56px"></span><span class="tab"><svg class="i"><use href="#bag"/></svg></span><span class="tab"><svg class="i"><use href="#book"/></svg></span></div>
+      <div class="homebar w"></div>
+    </div>
+    <div class="caption"><b>Schnell-Aktionen</b>Die Leiste wird weiß, der Mittel-Knopf hebt sich in einer Wölbung heraus und wird zum ✕. Fünf Aktionen fächern sich im Bogen auf (nacheinander, mit Feder), die wichtigste – Wochenplan – groß in der Mitte. Hintergrund abgedunkelt und unscharf.</div>
+  </div>
+
+  <!-- S6 Onboarding -->
+  <div class="screen">
+    <div class="phone">
+      <div class="sb"><b>9:41</b><span class="island"></span><svg><use href="#status"/></svg></div>
+      <div style="position:absolute;left:28px;top:96px;width:150px;height:150px;background:var(--lav);border-radius:46% 54% 40% 60%/55% 45% 55% 45%"></div>
+      <div class="plate ph ph-pasta" style="position:absolute;left:52px;top:118px;width:112px;height:112px"></div>
+      <div style="position:absolute;right:24px;top:110px;width:150px;height:150px;background:var(--sun);border-radius:6px;padding:18px;box-shadow:0 10px 20px rgba(0,0,0,.1);font-family:'Bradley Hand','Segoe Print',cursive;font-size:21px;line-height:1.15">Spart 12 € pro Woche!</div>
+      <div style="position:absolute;left:150px;top:278px;width:160px;height:160px;background:var(--sky);clip-path:polygon(50% 0,61% 35%,98% 35%,68% 57%,79% 91%,50% 70%,21% 91%,32% 57%,2% 35%,39% 35%)"></div>
+      <div style="position:absolute;left:26px;top:300px;font-size:72px;transform:rotate(-14deg);filter:drop-shadow(0 10px 10px rgba(0,0,0,.2))">🥑</div>
+      <div style="position:absolute;right:30px;top:420px;background:var(--tomato);border-radius:999px;padding:10px 18px;font-weight:800">Mo – So geplant ✓</div>
+      <div style="position:absolute;left:40px;top:430px;width:76px;height:76px;border-radius:50%;background:var(--mint);display:grid;place-items:center;font-size:40px">🛒</div>
+      <div style="position:absolute;left:24px;right:24px;bottom:40px">
+        <div class="row" style="gap:6px;margin-bottom:22px"><i style="height:5px;width:44px;border-radius:3px;background:#111;display:block"></i><i style="height:5px;width:20px;border-radius:3px;background:#D8D3C8;display:block"></i><i style="height:5px;width:20px;border-radius:3px;background:#D8D3C8;display:block"></i><i style="height:5px;width:20px;border-radius:3px;background:#D8D3C8;display:block"></i></div>
+        <div class="disp" style="font-size:50px">Kochen nach<br><span class="disp2">Angebot.</span></div>
+        <p class="t2" style="font-size:16px;line-height:1.45;margin:12px 0 22px">Wir lesen die Prospekte deiner Läden und planen daraus deine Woche.</p>
+        <span class="btn k full">Los geht's</span>
+        <div style="text-align:center;margin-top:14px;font-weight:600;font-size:15px">Ich habe einen Einladungslink</div>
+      </div>
+    </div>
+    <div class="caption"><b>S6 Onboarding</b>Statt Vollbild-Foto eine verspielte Sticker-Collage (Lern-App-Referenz), dann die gewohnten Schritte im neuen Stil.</div>
+  </div>
+
+</div>
+</body>
+</html>

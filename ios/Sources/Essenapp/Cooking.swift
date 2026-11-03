@@ -495,7 +495,7 @@ struct CookingView: View {
                 GeometryReader { g in
                     Capsule().fill(Theme.C.cookSurface)
                         .overlay(alignment: .leading) {
-                            Capsule().fill(Theme.C.accent).frame(width: g.size.width * Double(page) / Double(last))
+                            Capsule().fill(Theme.C.lime).frame(width: g.size.width * Double(page) / Double(last))
                         }
                 }
                 .frame(height: 6)
@@ -515,7 +515,7 @@ struct CookingView: View {
                 Label("\(name) ist fertig!", systemImage: "timer")
                     .font(Theme.F.headline)
                     .padding(.horizontal, 18).frame(minHeight: 48)
-                    .background(Theme.C.accent, in: Capsule())
+                    .background(Theme.C.lime, in: Capsule())
                     .floatShadow()
                     .transition(.move(edge: .top).combined(with: .opacity))
             }
@@ -538,7 +538,7 @@ struct CookingView: View {
                         HStack(spacing: 14) {
                             Image(systemName: on ? "checkmark.circle.fill" : "circle")
                                 .font(Theme.F.cookBody)
-                                .foregroundStyle(on ? Theme.C.accent : Theme.C.cookText2)
+                                .foregroundStyle(on ? Theme.C.lime : Theme.C.cookText2)
                                 .contentTransition(.symbolEffect(.replace))
                             Text(ing.name).font(Theme.F.cookBody).strikethrough(on)
                                 .foregroundStyle(on ? Theme.C.cookText2 : .white)
@@ -579,7 +579,7 @@ struct CookingView: View {
                     if let images = meal.recipe.stepImages, i < images.count, !images[i].isEmpty || imagesLoading {
                         StepImage(path: images[i], dark: true)
                     }
-                    Text("Schritt \(i + 1)").font(Theme.F.callout).foregroundStyle(Theme.C.accent)
+                    Text("Schritt \(i + 1)").font(Theme.F.callout).foregroundStyle(Theme.C.lime)
                     Text(step).font(Theme.F.cookStep).fixedSize(horizontal: false, vertical: true)
                     ForEach(Array(CookParse.durations(in: step).enumerated()), id: \.offset) { _, seconds in
                         let running = timers.timers.contains { t in t.name == name && t.total == seconds && !t.rang }
@@ -587,7 +587,7 @@ struct CookingView: View {
                             Label(running ? "\(name) läuft" : "\(name) · \(CookTimer.clock(seconds))", systemImage: "timer")
                                 .font(Theme.F.headline)
                                 .padding(.horizontal, 20).frame(minHeight: 52)
-                                .background(running ? Theme.C.cookSurface : Theme.C.accent, in: Capsule())
+                                .background(running ? Theme.C.cookSurface : Theme.C.lime, in: Capsule())
                         }
                         .buttonStyle(PressableStyle())
                         .disabled(running)
@@ -641,7 +641,7 @@ struct CookingView: View {
                     if page < last { Image(systemName: "chevron.right") }
                 }
             }
-            .buttonStyle(PrimaryButtonStyle(color: Theme.C.accent))
+            .buttonStyle(AccentButtonStyle())
         }
         .padding(.horizontal, Theme.pagePadding).padding(.top, 10).padding(.bottom, 8)
     }
@@ -650,7 +650,7 @@ struct CookingView: View {
         Button(action: action) {
             Image(systemName: symbol).font(Theme.F.headline)
                 .frame(width: 44, height: 44)
-                .background(on ? Theme.C.accent : Theme.C.cookSurface, in: Circle())
+                .background(on ? Theme.C.lime : Theme.C.cookSurface, in: Circle())
                 .contentTransition(.symbolEffect(.replace))
         }
         .buttonStyle(PressableStyle())
@@ -728,7 +728,7 @@ struct TimerBar: View {
             ZStack {
                 Circle().stroke(Theme.C.cookSurface, lineWidth: 4)
                 Circle().trim(from: 0, to: t.total > 0 ? 1 - Double(left) / Double(t.total) : 1)
-                    .stroke(t.rang ? Color.white : Theme.C.accent, style: StrokeStyle(lineWidth: 4, lineCap: .round))
+                    .stroke(t.rang ? Color.white : Theme.C.lime, style: StrokeStyle(lineWidth: 4, lineCap: .round))
                     .rotationEffect(.degrees(-90))
             }
             .frame(width: 30, height: 30)
@@ -751,7 +751,7 @@ struct TimerBar: View {
         }
         .padding(.leading, 12).padding(.trailing, 4)
         .frame(minHeight: 56)
-        .glass(Capsule(), tint: t.rang ? Theme.C.accent.opacity(0.7) : nil)
+        .glass(Capsule(), tint: t.rang ? Theme.C.lime.opacity(0.7) : nil)
         .accessibilityElement(children: .contain)
         .accessibilityLabel("Timer \(t.name), \(t.rang ? "fertig" : CookTimer.clock(left))")
     }
@@ -774,7 +774,7 @@ struct VoicePill: View {
         HStack(spacing: 8) {
             Text("🎙")
             if let heard = voice.heard {
-                Text("„\(heard)“").foregroundStyle(Theme.C.accent)
+                Text("„\(heard)“").foregroundStyle(Theme.C.lime)
                     .phaseAnimator([1.0, 0.3, 1.0]) { view, phase in view.opacity(phase) }
             } else if let note = voice.note, !voice.listening {
                 Text(note).lineLimit(2)
@@ -782,7 +782,7 @@ struct VoicePill: View {
                 Text("hört zu …")
                 HStack(spacing: 3) {
                     ForEach(bars.indices, id: \.self) { i in
-                        Capsule().fill(Theme.C.accent).frame(width: 3, height: CGFloat(4 + 18 * voice.level * bars[i]))
+                        Capsule().fill(Theme.C.lime).frame(width: 3, height: CGFloat(4 + 18 * voice.level * bars[i]))
                     }
                 }
                 .frame(height: 22)
@@ -807,7 +807,7 @@ struct Confetti: View {
     @State private var pieces: [Piece] = (0..<90).map { _ in
         Piece(x: .random(in: 0...1), delay: .random(in: 0...0.8), speed: .random(in: 0.35...0.6), sway: .random(in: 1...3),
               phase: .random(in: 0...6), spin: .random(in: 2...8), size: .random(in: 6...11),
-              color: [Theme.C.accent, Theme.C.highlight, Theme.C.carbs, Theme.C.fat, Theme.C.protein, .white].randomElement()!)
+              color: [Theme.C.lime, Theme.C.highlight, Theme.C.carbs, Theme.C.fat, Theme.C.protein, .white].randomElement()!)
     }
 
     var body: some View {

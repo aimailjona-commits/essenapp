@@ -138,7 +138,7 @@
             "descriptionMetadata": {
                 "descriptionText": {
                     "alternatives": [],
-                    "key": "Server-Adresse und Kopplungscode aus Essenapp › Einstellungen › Widget einrichten."
+                    "key": "Server-Adresse und Kopplungscode aus Kochpilot › Einstellungen › Widget einrichten."
                 },
                 "searchKeywords": []
             },
@@ -301,7 +301,7 @@
             ],
             "title": {
                 "alternatives": [],
-                "key": "Essenapp koppeln"
+                "key": "Kochpilot koppeln"
             },
             "typeSpecificMetadata": [],
             "visibilityMetadata": {

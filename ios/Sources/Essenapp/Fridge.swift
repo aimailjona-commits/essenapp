@@ -175,7 +175,7 @@ struct FridgeScanSheet: View {
                         }
                         .padding(24)
                     }
-                    CornerFrame().stroke(Theme.C.accent, style: StrokeStyle(lineWidth: 4, lineCap: .round)).padding(18)
+                    CornerFrame().stroke(Theme.C.lime, style: StrokeStyle(lineWidth: 4, lineCap: .round)).padding(18)
                 }
                 .frame(height: 340)
                 .accessibilityElement(children: .ignore)
@@ -585,7 +585,7 @@ struct CookNowView: View {
             Button { Task { await cookToday(r) } } label: {
                 if busy == r.id { ProgressView().tint(.white) } else { Label("Heute kochen", systemImage: "flame.fill") }
             }
-            .buttonStyle(PrimaryButtonStyle(color: Theme.C.accent))
+            .buttonStyle(AccentButtonStyle())
             .disabled(busy != nil)
         }
         .padding(14)

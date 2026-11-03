@@ -87,6 +87,8 @@ Textstile statt fester Größen, damit Dynamic Type funktioniert (umgesetzt in `
 
 SF Symbols, Strichstärke `regular`, in Buttons `semibold`. Kleine Icons stehen in getönten Quadraten (Radius 10, Farbe mit 14 % Deckkraft).
 
+App-Icon „Kochpilot“ (E88): Papierflieger in Limette `#C6F36B`/`#9FD24A`/`#7FB33A` zieht an weißer Leine ein Preisschild `deal` mit weißem %, Grund `#14161A`. Quelle: `ios/tools/make_icon.py` (schreibt iOS- und PWA-Icon).
+
 ## Komponenten
 
 | Name | Beschreibung |

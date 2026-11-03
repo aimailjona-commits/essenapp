@@ -1,6 +1,6 @@
 {
-  "name": "Essenapp",
-  "short_name": "Essen",
+  "name": "Kochpilot",
+  "short_name": "Kochpilot",
   "lang": "de",
   "start_url": "/app",
   "display": "standalone",

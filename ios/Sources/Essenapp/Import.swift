@@ -110,7 +110,7 @@ struct InstagramShareView: View {
 
     private static let steps = [
         "Unten „Code erzeugen“ tippen.",
-        "In Instagram beim Reel oder Beitrag auf Teilen (Papierflieger) › „Teilen über …“ › „Essenapp“. Fehlt Essenapp, unter „Mehr“ einschalten.",
+        "In Instagram beim Reel oder Beitrag auf Teilen (Papierflieger) › „Teilen über …“ › „Essenapp“. Fehlt Kochpilot, unter „Mehr“ einschalten.",
         "Beim ersten Mal Server-Adresse und Code eingeben – danach geht es mit einem Tipp.",
         "Das Rezept landet in Meine Rezepte (Filter „Importiert“).",
     ]

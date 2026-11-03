@@ -187,7 +187,7 @@ def coupon_expiry(db: Session, now: datetime) -> str:
                                                    Coupon.valid_until <= today + timedelta(days=2))))
     for c in coupons:
         for m in db.scalars(select(Member).where(Member.household_id == c.household_id)):
-            sent += notify(m, now, "Essenapp", bonus.expiry_text(c, today), click_url=f"essenapp://coupon/{c.id}",
+            sent += notify(m, now, "Kochpilot", bonus.expiry_text(c, today), click_url=f"essenapp://coupon/{c.id}",
                            thread_id="coupon")
         c.expiry_notified_at = today
     db.commit()
@@ -202,7 +202,7 @@ def week_review(db: Session, now: datetime) -> str:
     for h in households:
         build(db, h, week, rebuild=True)
         for m in h.members:
-            sent += notify(m, now, "Essenapp", f"📖 Dein Wochenrückblick KW {prices.week_monday(week).isocalendar().week} "
+            sent += notify(m, now, "Kochpilot", f"📖 Dein Wochenrückblick KW {prices.week_monday(week).isocalendar().week} "
                            "ist da", click_url=f"essenapp://review/{week}", thread_id="review")
     db.commit()
     return f"{len(households)} Rückblicke, {sent} Pushes"
@@ -218,7 +218,7 @@ def achievements(db: Session, now: datetime) -> str:
             _, _, emoji, title, *_ = motivation.BY_KEY[a.key]
             for m in h.members:
                 if a.member_id in (0, m.id):
-                    notify(m, now, "Essenapp", f"{emoji} Neuer Erfolg: {title}", click_url="essenapp://achievements",
+                    notify(m, now, "Kochpilot", f"{emoji} Neuer Erfolg: {title}", click_url="essenapp://achievements",
                            thread_id="achievements")
         new += rows
     db.commit()
@@ -233,7 +233,7 @@ def plan_week(now: datetime) -> int:
 def send_plan_prompt(member: Member, now: datetime) -> bool:
     # Kategorie PLAN_PROMPT: Aktionen „Plan erstellen“ (öffnet url) und „Später“ (schließt nur; Erinnerung nach
     # 2 h kommt automatisch) registriert die App
-    return notify(member, now, "Essenapp", f"🍽️ Neue Woche – sollen wir deinen Plan für KW {plan_week(now)} erstellen?",
+    return notify(member, now, "Kochpilot", f"🍽️ Neue Woche – sollen wir deinen Plan für KW {plan_week(now)} erstellen?",
                   click_url="essenapp://generator", thread_id="plan", category="PLAN_PROMPT")
 
 
@@ -284,7 +284,7 @@ def lunchbox_job(member: Member):
                       and any(p["member_id"] == member.id for p in e.portions)), None)
         if entry is None:
             return "keine Lunchbox morgen"
-        if not notify(member, now, "Essenapp", f"🥡 Lunchbox für morgen vorbereiten: {entry.recipe.title}",
+        if not notify(member, now, "Kochpilot", f"🥡 Lunchbox für morgen vorbereiten: {entry.recipe.title}",
                       click_url=f"essenapp://recipe/{entry.recipe_id}", thread_id="lunchbox"):
             raise RuntimeError("Push nicht gesendet")
         return entry.recipe.title
@@ -313,7 +313,7 @@ def reinstall_slot(now: datetime) -> datetime | None:
 
 def reinstall_reminder(db: Session, now: datetime) -> str:
     owners = list(db.scalars(select(Member).where(Member.role == "owner", Member.push_enabled)))
-    sent = sum(notify(m, now, "Essenapp", "App neu installieren (7-Tage-Signatur)", thread_id="reinstall")
+    sent = sum(notify(m, now, "Kochpilot", "App neu installieren (7-Tage-Signatur)", thread_id="reinstall")
                for m in owners)
     return f"{sent}/{len(owners)} gesendet"
 

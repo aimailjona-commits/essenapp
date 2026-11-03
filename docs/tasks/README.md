@@ -22,6 +22,7 @@
 | 15 | [Komfort](phase-15-komfort.md) | gebaut – Abnahme iPhone offen |
 | 16 | [Erweiterungen (Widget, Live-Aktivität)](phase-16-erweiterungen.md) | gebaut – Abnahme iPhone offen |
 | 17 | [Umzug auf IONOS-VPS](phase-17-vps.md) | Vorbereitung läuft – wartet auf 👤 IONOS-VPS + Domain |
+| 18 | [Redesign v3 „Küchen-Pinnwand“](phase-18-redesign-v3.md) | **aktiv** – Richtung freigegeben, Bau nach [`docs/ui/redesign-v3.md`](../ui/redesign-v3.md) |
 
 ## Wartet auf dich 👤
 
@@ -34,6 +35,7 @@
 | Entscheidung Payback-Umrechnung (Spec „10fach = 10 %“ vs. 1 °P/2 € = 5 %; umgesetzt 5 %) | Coupons | 13 |
 | Selbst getroffene Entscheidungen prüfen (Playbook E78–E85) | optional | 11–16 |
 | IONOS-VPS (Ubuntu 24.04, ≥ 2 GB) + Domain anlegen | Umzug | 17 |
+| Download Fraunces + JetBrains Mono (OFL) freigeben; Mockup-Gruppen freigeben | Redesign v3 | 18 |
 
 ## Regeln
 

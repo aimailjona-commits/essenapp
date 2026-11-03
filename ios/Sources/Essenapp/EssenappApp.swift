@@ -6,6 +6,7 @@ struct EssenappApp: App {
     @UIApplicationDelegateAdaptor(AppDelegate.self) private var delegate  // Push (APNs), liegt als EnvironmentObject bereit
 
     init() {
+        Theme.registerFonts()
         CheckItemIntent.handler = { id in await AppStore.shared.checkFromActivity(id) }  // Knopf in der Live-Aktivität (37)
     }
 
