@@ -13,13 +13,13 @@ Details: [`docs/features/spec-p08-fundament.md`](../features/spec-p08-fundament.
 
 ## Umzug
 
-- [ ] 👤 IONOS-VPS (Ubuntu 24.04, ≥ 2 GB) + Domain, SSH-Schlüssel `~/.ssh/essenapp_vps.pub` (WSL) hinterlegen, DNS-A-Record `essenapp.<domain>` (deploy/README.md, Schritte 1–3)
-- [ ] Lokalen Server stoppen, Daten-Snapshot + Repo auf den VPS, `setup-vps.sh` (deploy/README.md, Teil B)
-- [ ] `https://<domain>/health` ok, Daten-Zählvergleich ok, Einladungslink im Mobilfunk
-- [ ] Erstes Backup + `restore.sh --test` auf dem VPS
+- [x] 👤 IONOS-VPS + Domain, SSH-Schlüssel hinterlegt; geteilter VPS → Eingang über Cloudflare-Tunnel statt A-Record/Caddy (E88)
+- [x] Lokalen Server stoppen, Daten-Snapshot + Repo auf den VPS, `setup-vps.sh` (2026-11-03; 33 Tabellen, Zählvergleich gleich)
+- [~] `https://<domain>/health` ok, Daten-Zählvergleich ok – offen: Einladungslink im Mobilfunk
+- [x] Erstes Backup + `restore.sh --test` auf dem VPS (Probe OK)
 - [ ] iOS: ATS-Ausnahme entfernen (`ios/Info.plist`, `ios/EssenappWidget-Info.plist`), Server-Adresse `https://…` in App, Widget, Teilen-Erweiterung; Test-Push
 - [ ] Nach einer Woche: Angebotsimport vom Rechenzentrum aus läuft (kaufDA)
-- [ ] Playbook aktualisiert
+- [x] Playbook aktualisiert (E88)
 
 ## DoD
 
