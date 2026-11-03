@@ -1,3 +1,4 @@
+import CoreImage
 import SwiftUI
 
 // Neue Bausteine aus docs/ui/redesign-v3.md Abschnitt 5 (v3 „Küchen-Pinnwand“, E87).
@@ -497,5 +498,50 @@ struct SentenceHero: View {
         }
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(spoken)
+    }
+}
+
+// MARK: Tab-Leiste ausblenden, Foto-Farbe
+
+/// Detail-Screens mit `TotalBar` blenden die Tab-Leiste aus (Zähler: Push auf Push bleibt ausgeblendet).
+struct HidesTabBar: ViewModifier {
+    @Environment(AppStore.self) private var store
+
+    func body(content: Content) -> some View {
+        content
+            .onAppear { withAnimation(Theme.spring) { store.tabBarHiders += 1 } }
+            .onDisappear { withAnimation(Theme.spring) { store.tabBarHiders = max(0, store.tabBarHiders - 1) } }
+    }
+}
+
+extension View {
+    func hidesTabBar() -> some View { modifier(HidesTabBar()) }
+
+    /// Runder Glas-Knopf auf Fotos (Schwarz 28 % + Blur).
+    func glassDark() -> some View {
+        background(.ultraThinMaterial.opacity(0.6), in: Circle()).background(Color.black.opacity(0.28), in: Circle())
+            .environment(\.colorScheme, .dark)
+    }
+}
+
+/// Dunkle Hauptfarbe eines Fotos für den Rezept-Kopf: Durchschnittsfarbe, Helligkeit auf 27 %. Cache je URL.
+enum PhotoColor {
+    @MainActor private static var cache: [URL: Color] = [:]
+
+    @MainActor static func of(_ url: URL?) async -> Color? {
+        guard let url else { return nil }
+        if let hit = cache[url] { return hit }
+        guard let data = try? await URLSession.shared.data(from: url).0, let image = CIImage(data: data) else { return nil }
+        let filter = CIFilter(name: "CIAreaAverage", parameters: [kCIInputImageKey: image, kCIInputExtentKey: CIVector(cgRect: image.extent)])
+        var px = [UInt8](repeating: 0, count: 4)
+        guard let out = filter?.outputImage else { return nil }
+        CIContext(options: [.workingColorSpace: NSNull()])
+            .render(out, toBitmap: &px, rowBytes: 4, bounds: CGRect(x: 0, y: 0, width: 1, height: 1), format: .RGBA8, colorSpace: nil)
+        var hue: CGFloat = 0, sat: CGFloat = 0, bri: CGFloat = 0, alpha: CGFloat = 0
+        UIColor(red: CGFloat(px[0]) / 255, green: CGFloat(px[1]) / 255, blue: CGFloat(px[2]) / 255, alpha: 1)
+            .getHue(&hue, saturation: &sat, brightness: &bri, alpha: &alpha)
+        let color = Color(hue: hue, saturation: min(sat * 1.1, 0.7), brightness: 0.27)
+        cache[url] = color
+        return color
     }
 }

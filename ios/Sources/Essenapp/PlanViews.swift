@@ -281,6 +281,8 @@ struct RecipeDetailView: View {
     @State private var confirmDelete = false
     @State private var stepImages: [String]?  // nachgeladene Schritt-Bilder (9)
     @State private var imagesSettled = false  // Erzeugung fertig oder aus → leere Plätze ausblenden
+    @State private var photoColor: Color?  // Verlaufsfarbe des Rezept-Kopfs (v3)
+    @State private var replacingDish = false  // „Ersatz“: Gericht im Plan ersetzen (S19)
     @Environment(\.openURL) private var openURL
 
     init(meal: MealDTO) { given = meal }
@@ -304,65 +306,62 @@ struct RecipeDetailView: View {
         let who = store.profiles.first { $0.memberId == (person ?? store.profile?.memberId) } ?? store.profile
         // Anteil der gewählten Person; ohne Esser-Liste (gespeichertes Rezept, alter Plan) der Portionsfaktor aus dem Profil
         let mine: Double? = meal.portions.isEmpty ? (who?.portionFactor ?? 1) : meal.portions.first { $0.memberId == who?.memberId }?.factor
-        ZStack(alignment: .bottom) {
-            Theme.C.bg.ignoresSafeArea()
-            ScrollView {
-                VStack(alignment: .leading, spacing: 16) {
-                    HStack(spacing: 10) {
-                        RoundIconButton(systemName: "chevron.left", label: "Zurück") { dismiss() }
-                        Spacer()
-                        HeartButton(on: isFavorite) { toggleFavorite() }
-                        if recipe.source != "ai" {  // eigene und importierte Rezepte
-                            Menu {
-                                Button("Bearbeiten", systemImage: "pencil") { editing = true }
-                                Button("Löschen", systemImage: "trash", role: .destructive) { confirmDelete = true }
-                            } label: { roundLabel("ellipsis") }
-                            .accessibilityLabel("Rezept bearbeiten oder löschen")
+        let heroColor = photoColor ?? Theme.C.recipeFallback
+        let deals = recipe.ingredients.filter { $0.offerId != nil }.count
+        ScrollView {
+            VStack(alignment: .leading, spacing: 0) {
+                // RecipeHero: Foto randlos, Verlauf in die Foto-Farbe (redesign-v3.md 6.1 S3)
+                Color.clear.frame(height: 420)
+                    .overlay {
+                        RemoteImage(url: mediaURL(recipe.imageUrl), contentMode: .fill) { Plate(url: nil, size: 160, seed: recipe.title) }
+                    }
+                    .clipped()
+                    .overlay(alignment: .bottom) {
+                        LinearGradient(colors: [heroColor.opacity(0), heroColor], startPoint: .top, endPoint: .bottom).frame(height: 200)
+                    }
+                    .padding(.bottom, -90)
+                VStack(alignment: .leading, spacing: 0) {
+                    Text(meal.id != nil ? "Aus deinem Plan · \(Labels.dayNames[meal.day])" : sourceLabel)
+                        .font(.system(.subheadline, weight: .bold)).foregroundStyle(Theme.C.onPhoto2)
+                    Text(recipe.title).font(Theme.F.titleLarge).tracking(-1.36).foregroundStyle(.white)
+                        .lineLimit(3).minimumScaleFactor(0.7).padding(.top, 4)
+                    if let avg = details.avgStars {
+                        Text("★ \(num(avg, 1...1)) · \(details.ratings?.count ?? 0) Bewertungen")
+                            .font(.system(.subheadline, weight: .semibold)).foregroundStyle(Theme.C.onPhoto2).padding(.top, 6)
+                    }
+                    if ["instagram", "web", "shared"].contains(recipe.source) { sourceRow.padding(.top, 10) }
+                    HStack(spacing: 18) {
+                        stat("Zeit", "\(recipe.prepMinutes) min")
+                        Rectangle().fill(.white.opacity(0.25)).frame(width: 1, height: 36)
+                        stat("Portion", euro(Int(Double(meal.costCents) * (who == nil ? 1 : mine ?? 1) / base)))
+                        if let kcal = nutrition?.kcal {
+                            Rectangle().fill(.white.opacity(0.25)).frame(width: 1, height: 36)
+                            stat("kcal", "\(Int((kcal * (mine ?? 1)).rounded()))")
                         }
+                    }
+                    .padding(.top, 18)
+                    HStack(spacing: 8) {
+                        glassButton("bookmark", "Einplanen") { planIt = true }
+                        if meal.id != nil { glassButton("arrow.left.arrow.right", "Ersatz") { replacingDish = true } }
                         Menu {
                             Button("Als Bild teilen", systemImage: "photo") { shareCard = true }
                             Button("Als Link teilen", systemImage: "link") { shareLink = true }  // Feature 56
-                        } label: { roundLabel("square.and.arrow.up") }
+                        } label: { glassLabel("square.and.arrow.up", "Teilen") }
                         .accessibilityLabel("Rezept teilen")
                     }
-                    ZStack {
-                        CornerFrame().stroke(Theme.C.lime, style: StrokeStyle(lineWidth: 4, lineCap: .round)).frame(width: 276, height: 276)
-                            .scaleEffect(spin ? 1 : 1.12).opacity(spin ? 1 : 0)
-                        Plate(url: mediaURL(recipe.imageUrl), size: 236, seed: recipe.title)
-                            .rotationEffect(.degrees(spin ? 0 : -40))
+                    .padding(.top, 18)
+                    ingredientsCard(factor: factor, who: who, mine: mine, base: base).padding(.top, 16)
+                    if deals > 0 {
+                        Text(deals == 1 ? "1 Zutat im Angebot" : "\(deals) Zutaten im Angebot")
+                            .font(.footnote.weight(.semibold)).foregroundStyle(Theme.C.onPhoto2).padding(.top, 8)
                     }
-                    .frame(maxWidth: .infinity)
-                    .onAppear { withAnimation(.spring(response: 0.7, dampingFraction: 0.7)) { spin = true } }
-                    VStack(alignment: .leading, spacing: 4) {
-                        let words = recipe.title.split(separator: " ")
-                        (Text(words.prefix(1).joined()).font(.system(.title, weight: .bold))
-                            + Text(" " + words.dropFirst().joined(separator: " ")).font(.system(.title, weight: .regular)).foregroundStyle(Theme.C.text2))
-                        if !recipe.cuisine.isEmpty { Text(recipe.cuisine).font(Theme.F.caption).foregroundStyle(Theme.C.text2) }
-                        if let avg = details.avgStars {
-                            HStack(spacing: 6) {
-                                StarsView(value: avg)
-                                Text("\(num(avg, 1...1)) · \(details.ratings?.count ?? 0) Bewertungen")
-                                    .font(Theme.F.caption).foregroundStyle(Theme.C.text2)
-                            }
-                        }
-                    }
-                    if ["instagram", "web", "shared"].contains(recipe.source) { sourceRow }
-                    // Infozeile mit Trennstrichen (Vorlage „Grilled Chicken Breast“)
-                    HStack(spacing: 0) {
-                        infoCell("clock", "\(recipe.prepMinutes) min")
-                        Divider().frame(height: 22)
-                        infoCell("eurosign.circle", "\(euro(Int(Double(meal.costCents) * (who == nil ? 1 : mine ?? 1) / base))) \(who == nil || mine == nil ? "p. P." : "Portion")")
-                        Divider().frame(height: 22)
-                        infoCell("tag", "\(recipe.ingredients.filter { $0.offerId != nil }.count) im Angebot")
-                    }
-                    .padding(.vertical, 12)
-                    .card(radius: Theme.R.tile)
+                }
+                .padding(.horizontal, 22)
+
+                // Ab hier noch nicht gemockt (redesign-v3.md 7, Gruppe B) – bisherige Karten
+                VStack(alignment: .leading, spacing: 16) {
                     if !recipe.description.isEmpty {
-                        Text(recipe.description).font(Theme.F.body).foregroundStyle(Theme.C.text2)
-                    }
-                    if meal.id == nil {  // gespeichertes Rezept → Slot im Wochenplan ersetzen (3)
-                        Button { planIt = true } label: { Label("Diese Woche einplanen", systemImage: "calendar.badge.plus") }
-                            .buttonStyle(SecondaryButtonStyle())
+                        Text(recipe.description).font(Theme.F.body).foregroundStyle(Theme.C.onPhoto2)
                     }
                     if let who { portionCard(who, mine: mine, base: base) }
                     nutritionTiles(mine ?? 1)  // pro Portion der gewählten Person (2)
@@ -378,118 +377,63 @@ struct RecipeDetailView: View {
                         }
                         .padding(16).card()
                     }
-
-                    VStack(alignment: .leading, spacing: 0) {
-                        HStack {
-                            Text("Zutaten").font(Theme.F.headline)
-                            Spacer()
-                            Stepper(value: Binding(get: { servings ?? max(Int(base.rounded()), 1) }, set: { servings = $0 }), in: 1...12) {
-                                Text("\(num(servings.map { Double($0) } ?? base, 0...2)) Portionen")
-                                    .font(Theme.F.callout).contentTransition(.numericText())
-                            }
-                            .fixedSize()
-                        }
-                        .padding(.bottom, 6)
-                        ForEach(Array(recipe.ingredients.enumerated()), id: \.offset) { index, ing in
-                            let offer = store.offers.first { $0.id == ing.offerId }
-                            let rest = meal.rests?.first { r in r.name.localizedCaseInsensitiveCompare(ing.name) == .orderedSame }
-                            // Feature 1: Zutat antippen → Angebot (oder passende Angebote)
-                            Button { if let offer { openOffer = offer } else { searchIngredient = ing } } label: {
-                            HStack(spacing: 12) {
-                                Text(offer.map { Theme.hue(category: $0.category).emoji } ?? (ing.inPantry == true ? "🧂" : "🥄")).font(.system(size: 22))
-                                    .frame(width: 40, height: 40).background(Theme.C.surface, in: RoundedRectangle(cornerRadius: 12))
-                                VStack(alignment: .leading, spacing: 4) {
-                                    Text(ing.name).font(.system(.body, weight: .semibold))
-                                    HStack(spacing: 6) {
-                                        if let offer {
-                                            DealBadge(text: offer.discount.map { "−\($0) %" } ?? "Angebot")
-                                            StoreChip(chain: offer.chain)
-                                        }
-                                        if ing.inPantry == true { DealBadge(text: "im Vorrat", style: .ok) }
-                                        if ing.estimated == true { DealBadge(text: "Menge geschätzt", style: .soft) }
-                                        if let rest, Labels.days.indices.contains(rest.fromDay) {
-                                            DealBadge(text: "♻︎ Rest von \(Labels.days[rest.fromDay])", style: .ok)
-                                        }
-                                    }
-                                }
-                                Spacer()
-                                VStack(alignment: .trailing, spacing: 2) {
-                                    Text(qty(ing.amount * factor, ing.unit))
-                                        .monospacedDigit().foregroundStyle(Theme.C.text2).contentTransition(.numericText())
-                                    if let who, let mine {
-                                        let own = qty(ing.amount * mine * meal.scale / base, ing.unit)
-                                        Text("\(who.emoji) \(own)")
-                                            .font(Theme.F.micro).monospacedDigit().foregroundStyle(Theme.C.accentDeep)
-                                            .contentTransition(.numericText())
-                                            .accessibilityLabel("Portion \(who.name): \(own)")
-                                    }
-                                }
-                                Image(systemName: "chevron.right").font(.system(size: 11, weight: .bold)).foregroundStyle(Theme.C.text3)
-                            }
-                            .padding(.vertical, 8)
-                            .contentShape(Rectangle())
-                            }
-                            .buttonStyle(PressableStyle())
-                            .contextMenu {  // lange drücken → Ersatz (7)
-                                Button("Ersatz finden", systemImage: "arrow.left.arrow.right") { substituting = index }
-                                Button("Preisalarm", systemImage: "bell.badge") { alarmFor = ing.name }
-                            }
-                            .accessibilityAction(named: "Ersatz finden") { substituting = index }
-                            .accessibilityAction(named: "Preisalarm") { alarmFor = ing.name }
-                        }
-                    }
-                    .padding(16).card()
-                    .animation(Theme.spring, value: servings)
-                    .animation(Theme.spring, value: person)
-
-                    VStack(alignment: .leading, spacing: 12) {
-                        Text("Zubereitung").font(Theme.F.headline)
-                        ForEach(Array(recipe.steps.enumerated()), id: \.offset) { i, step in
-                            let isDone = done.contains(i)
-                            if showsImage(i) { StepImage(path: images[i]).opacity(isDone ? 0.5 : 1).transition(.opacity) }
-                            Button {
-                                withAnimation(Theme.spring) { if done.remove(i) == nil { done.insert(i) } }
-                            } label: {
-                                HStack(alignment: .top, spacing: 12) {
-                                    ZStack {
-                                        Circle().fill(isDone ? Theme.C.accent : Theme.C.action)
-                                        if isDone { Image(systemName: "checkmark").font(.system(size: 12, weight: .bold)) }
-                                        else { Text("\(i + 1)").font(.system(.footnote, design: .rounded, weight: .bold)) }
-                                    }
-                                    .foregroundStyle(isDone ? .white : Theme.C.onAction).frame(width: 28, height: 28)
-                                    Text(step).font(Theme.F.body).strikethrough(isDone).foregroundStyle(isDone ? Theme.C.text3 : Theme.C.text1)
-                                        .multilineTextAlignment(.leading)
-                                    Spacer(minLength: 0)
-                                }
-                            }
-                            .buttonStyle(.plain)
-                            .sensoryFeedback(.success, trigger: isDone)
-                        }
-                    }
-                    .padding(16).card()
-                    .animation(Theme.spring, value: images)
+                    stepsCard
                     if let ratings = details.ratings, !ratings.isEmpty { ratingsCard(ratings) }
                 }
                 .padding(.horizontal, Theme.pagePadding)
-                .padding(.bottom, 16)
+                .padding(.top, 24)
+                .padding(.bottom, 120)
             }
-            .ctaBar {
-            VStack(spacing: 10) {
-                // Kochmodus S18 (Feature 4)
-                Button { cooking = true } label: { Label("Kochen starten", systemImage: "play.fill") }
-                    .buttonStyle(AccentButtonStyle())
-                HStack(spacing: 10) {
-                    Button {
-                        let offers = recipe.ingredients.compactMap { ing in store.offers.first { $0.id == ing.offerId } }
-                        withAnimation(Theme.spring) { offers.forEach(store.addToList) }
-                        if offers.isEmpty { store.flash("Keine Angebotszutaten") }
-                    } label: { Text("Zur Liste") }
-                    .buttonStyle(SecondaryButtonStyle())
-                    Button { showRating = true } label: { Text("Gekocht ★") }
-                        .buttonStyle(PrimaryButtonStyle())
+        }
+        .ignoresSafeArea(edges: .top)
+        .background(heroColor.ignoresSafeArea())
+        .overlay(alignment: .top) {
+            HStack(spacing: 10) {
+                RoundIconButton(systemName: "chevron.left", fill: .clear, label: "Zurück") { dismiss() }.glassDark()
+                Spacer()
+                Button { toggleFavorite() } label: {
+                    Image(systemName: isFavorite ? "heart.fill" : "heart").font(.system(size: 18, weight: .semibold))
+                        .symbolEffect(.bounce, value: isFavorite).contentTransition(.symbolEffect(.replace))
+                        .frame(width: Theme.S.roundButton, height: Theme.S.roundButton)
                 }
+                .buttonStyle(PressableStyle()).glassDark()
+                .sensoryFeedback(.impact(weight: .medium), trigger: isFavorite)
+                .accessibilityLabel(isFavorite ? "Aus Favoriten entfernen" : "Als Favorit merken")
+                Menu {
+                    Button("Gekocht – bewerten", systemImage: "star") { showRating = true }
+                    Button("Angebotszutaten zur Liste", systemImage: "bag") {
+                        let offers = recipe.ingredients.compactMap { ing in store.offers.first { $0.id == ing.offerId } }
+                        withAnimation(Theme.spring) { offers.forEach { o in store.addToList(o) } }
+                        if offers.isEmpty { store.flash("Keine Angebotszutaten") }
+                    }
+                    if recipe.source != "ai" {  // eigene und importierte Rezepte
+                        Button("Bearbeiten", systemImage: "pencil") { editing = true }
+                        Button("Löschen", systemImage: "trash", role: .destructive) { confirmDelete = true }
+                    }
+                } label: {
+                    Image(systemName: "ellipsis").font(.system(size: 18, weight: .semibold))
+                        .frame(width: Theme.S.roundButton, height: Theme.S.roundButton)
+                }
+                .glassDark()
+                .accessibilityLabel("Weitere Aktionen")
             }
-            }
+            .foregroundStyle(.white)
+            .padding(.horizontal, Theme.pagePadding).padding(.top, 8)
+        }
+        .overlay(alignment: .bottom) {
+            TotalBar(label: "Portionen", value: {
+                HStack(spacing: 10) {
+                    portionStep("minus", -1, base: base)
+                    Text(num(servings.map { Double($0) } ?? base, 0...2)).contentTransition(.numericText())
+                    portionStep("plus", 1, base: base)
+                }
+            }, buttonTitle: "Kochen", symbol: "play.fill") { cooking = true }
+            .padding(.bottom, 2)
+        }
+        .hidesTabBar()
+        .task(id: recipe.imageUrl) { photoColor = await PhotoColor.of(mediaURL(recipe.imageUrl)) }
+        .sheet(isPresented: $replacingDish) {
+            PlanSlotSheet(entry: meal).presentationDetents([.medium, .large]).presentationCornerRadius(Theme.R.sheet)
         }
         .toolbar(.hidden, for: .navigationBar)
         .task(id: store.recipesVersion) { await loadInfo() }
@@ -596,17 +540,116 @@ extension RecipeDetailView {
         }
     }
 
-    fileprivate func infoCell(_ symbol: String, _ text: String) -> some View {
-        Label(text, systemImage: symbol).font(.system(.footnote, weight: .semibold)).foregroundStyle(Theme.C.text1)
-            .frame(maxWidth: .infinity)
+    private var sourceLabel: String {
+        switch recipe.source {
+        case "instagram": "Aus Instagram"
+        case "web": "Aus dem Web"
+        case "shared": "Geteiltes Rezept"
+        case "user": "Eigenes Rezept"
+        default: recipe.cuisine.isEmpty ? "Gespeichertes Rezept" : recipe.cuisine
+        }
     }
 
-    fileprivate func roundLabel(_ symbol: String) -> some View {
-        Image(systemName: symbol).font(.system(size: 16, weight: .semibold))
-            .frame(width: 44, height: 44)
-            .foregroundStyle(Theme.C.text1)
-            .background(Theme.C.card, in: Circle())
-            .overlay(Circle().strokeBorder(Theme.C.line, lineWidth: 0.5))
+    fileprivate func stat(_ label: String, _ value: String) -> some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(label.uppercased()).font(.system(.caption2, weight: .heavy)).tracking(0.7).foregroundStyle(Theme.C.onPhoto2)
+            Text(value).font(.system(.title3, weight: .bold)).monospacedDigit().foregroundStyle(.white)
+        }
+        .accessibilityElement(children: .combine)
+    }
+
+    fileprivate func glassLabel(_ symbol: String, _ title: String) -> some View {
+        Label(title, systemImage: symbol)
+            .font(.system(.subheadline, weight: .bold)).foregroundStyle(.white)
+            .frame(maxWidth: .infinity, minHeight: 48)
+            .background(.white.opacity(0.14), in: Capsule())
+    }
+
+    fileprivate func glassButton(_ symbol: String, _ title: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) { glassLabel(symbol, title) }.buttonStyle(PressableStyle())
+    }
+
+    fileprivate func portionStep(_ symbol: String, _ step: Int, base: Double) -> some View {
+        let current = servings ?? max(Int(base.rounded()), 1)
+        return Button { withAnimation(Theme.spring) { servings = min(12, max(1, current + step)) } } label: {
+            Image(systemName: symbol).font(.system(size: 13, weight: .bold)).frame(width: 28, height: 44).contentShape(Rectangle())
+        }
+        .buttonStyle(PressableStyle())
+        .disabled(!(1...12).contains(current + step))
+        .accessibilityLabel(step > 0 ? "Mehr Portionen" : "Weniger Portionen")
+        .sensoryFeedback(.selection, trigger: servings)
+    }
+
+    /// Zutaten-Karte im Rezept-Kopf (weiß 12 %): Emoji, Name, Menge, rechts Rabatt + Laden bzw. „im Vorrat“.
+    fileprivate func ingredientsCard(factor: Double, who: ProfileDTO?, mine: Double?, base: Double) -> some View {
+        VStack(spacing: 0) {
+            ForEach(Array(recipe.ingredients.enumerated()), id: \.offset) { index, ing in
+                let offer = store.offers.first { $0.id == ing.offerId }
+                let rest = meal.rests?.first { r in r.name.localizedCaseInsensitiveCompare(ing.name) == .orderedSame }
+                if index > 0 { Rectangle().fill(.white.opacity(0.12)).frame(height: 1) }
+                // Feature 1: Zutat antippen → Angebot (oder passende Angebote)
+                Button { if let offer { openOffer = offer } else { searchIngredient = ing } } label: {
+                    HStack(spacing: 8) {
+                        Text(offer.map { Theme.hue(category: $0.category).emoji } ?? (ing.inPantry == true ? "🧂" : "🥄"))
+                        (Text(ing.name).foregroundStyle(.white)
+                            + Text(" " + qty(ing.amount * factor, ing.unit)).foregroundStyle(Theme.C.onPhoto2))
+                            .font(.system(.callout, weight: .semibold)).lineLimit(2).contentTransition(.numericText())
+                        Spacer(minLength: 6)
+                        if let offer {
+                            DealBadge(text: (offer.discount.map { "−\($0) % " } ?? "Angebot ") + Labels.chain(offer.chain))
+                        } else if ing.inPantry == true {
+                            Text("im Vorrat").font(.system(.footnote, weight: .semibold)).foregroundStyle(Theme.C.onPhoto2)
+                        } else if let rest, Labels.days.indices.contains(rest.fromDay) {
+                            Text("♻︎ Rest von \(Labels.days[rest.fromDay])").font(.system(.footnote, weight: .semibold)).foregroundStyle(Theme.C.onPhoto2)
+                        } else if ing.estimated == true {
+                            Text("geschätzt").font(.footnote).foregroundStyle(Theme.C.onPhoto2)
+                        }
+                    }
+                    .frame(minHeight: 44)
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(PressableStyle())
+                .contextMenu {  // lange drücken → Ersatz (7)
+                    Button("Ersatz finden", systemImage: "arrow.left.arrow.right") { substituting = index }
+                    Button("Preisalarm", systemImage: "bell.badge") { alarmFor = ing.name }
+                }
+                .accessibilityAction(named: "Ersatz finden") { substituting = index }
+                .accessibilityAction(named: "Preisalarm") { alarmFor = ing.name }
+                .accessibilityHint(who.flatMap { w in mine.map { m in "Portion \(w.name): \(qty(ing.amount * m * meal.scale / base, ing.unit))" } } ?? "")
+            }
+        }
+        .padding(.horizontal, 14).padding(.vertical, 6)
+        .background(.white.opacity(0.12), in: RoundedRectangle(cornerRadius: Theme.R.tile, style: .continuous))
+        .animation(Theme.spring, value: servings)
+    }
+
+    private var stepsCard: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Zubereitung").font(Theme.F.headline)
+            ForEach(Array(recipe.steps.enumerated()), id: \.offset) { i, step in
+                let isDone = done.contains(i)
+                if showsImage(i) { StepImage(path: images[i]).opacity(isDone ? 0.5 : 1).transition(.opacity) }
+                Button {
+                    withAnimation(Theme.spring) { if done.remove(i) == nil { done.insert(i) } }
+                } label: {
+                    HStack(alignment: .top, spacing: 12) {
+                        ZStack {
+                            Circle().fill(isDone ? Theme.C.lime : Theme.C.action)
+                            if isDone { Image(systemName: "checkmark").font(.system(size: 12, weight: .bold)) }
+                            else { Text("\(i + 1)").font(.system(.footnote, weight: .bold)) }
+                        }
+                        .foregroundStyle(isDone ? Theme.C.onLime : Theme.C.onAction).frame(width: 28, height: 28)
+                        Text(step).font(Theme.F.body).strikethrough(isDone).foregroundStyle(isDone ? Theme.C.text3 : Theme.C.text1)
+                            .multilineTextAlignment(.leading)
+                        Spacer(minLength: 0)
+                    }
+                }
+                .buttonStyle(.plain)
+                .sensoryFeedback(.success, trigger: isDone)
+            }
+        }
+        .padding(16).card()
+        .animation(Theme.spring, value: images)
     }
 
     /// 4 Kacheln kcal, Protein, KH, Fett; Schimmer, solange die Berechnung läuft.

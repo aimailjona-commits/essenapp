@@ -429,18 +429,42 @@ struct CookingView: View {
         }
     }
 
+    /// Foto oben: Schritt-Bild, sonst Rezeptfoto (v3, redesign-v3.md 6.1 S18).
+    private var photoURL: URL? {
+        if let i = stepIndex, let images = meal.recipe.stepImages, i < images.count, !images[i].isEmpty { return mediaURL(images[i]) }
+        return mediaURL(meal.recipe.imageUrl)
+    }
+
     var body: some View {
         VStack(spacing: 0) {
-            header
-            TabView(selection: $page) {
+            Color.clear.frame(height: 306)
+                .overlay { RemoteImage(url: photoURL, contentMode: .fill) { Theme.C.inkRaised }.id(photoURL) .transition(.opacity) }
+                .clipped()
+                .overlay(alignment: .bottom) {
+                    GeometryReader { g in
+                        Capsule().fill(.white.opacity(0.3))
+                        Capsule().fill(Theme.C.lime).frame(width: g.size.width * Double(page) / Double(last))
+                    }
+                    .frame(height: 4).padding(.horizontal, 24).padding(.bottom, 24)
+                    .animation(Theme.spring, value: page)
+                    .accessibilityHidden(true)
+                }
+                .overlay(alignment: .top) { header.padding(.top, 52) }
+            VStack(spacing: 0) {
+                TabView(selection: $page) {
                 prepPage.tag(0)
                 ForEach(Array(steps.enumerated()), id: \.offset) { i, step in stepPage(i, step).tag(i + 1) }
                 finishPage.tag(last)
             }
-            .tabViewStyle(.page(indexDisplayMode: .never))
-            TimerBar(timers: timers).padding(.horizontal, Theme.pagePadding)
-            nav
+                .tabViewStyle(.page(indexDisplayMode: .never))
+                TimerBar(timers: timers).padding(.horizontal, Theme.pagePadding)
+                nav
+            }
+            .padding(.top, 26)
+            .background(Theme.C.inkSheet, in: UnevenRoundedRectangle(topLeadingRadius: 36, topTrailingRadius: 36, style: .continuous))
+            .padding(.top, -24)
         }
+        .ignoresSafeArea(edges: .top)
         .background(Theme.C.cookBg.ignoresSafeArea())
         .overlay {
             if page == last && !reduceMotion { Confetti().allowsHitTesting(false).ignoresSafeArea() }
@@ -485,27 +509,27 @@ struct CookingView: View {
 
     // MARK: Teile
 
+    /// Oben auf dem Foto: ✕ links, laufender Timer rechts (Glas).
     private var header: some View {
-        HStack(spacing: 12) {
-            circleButton("xmark", "Kochmodus schließen") { dismiss() }
-            VStack(alignment: .leading, spacing: 8) {
-                Text(page == 0 ? "Vorbereitung" : page == last ? "Fertig" : "Schritt \(page) von \(steps.count)")
-                    .font(Theme.F.caption).foregroundStyle(Theme.C.cookText2)
-                    .contentTransition(.numericText())
-                GeometryReader { g in
-                    Capsule().fill(Theme.C.cookSurface)
-                        .overlay(alignment: .leading) {
-                            Capsule().fill(Theme.C.lime).frame(width: g.size.width * Double(page) / Double(last))
-                        }
-                }
-                .frame(height: 6)
-                .animation(Theme.spring, value: page)
-                .accessibilityHidden(true)
+        HStack {
+            Button { dismiss() } label: {
+                Image(systemName: "xmark").font(.system(size: 18, weight: .semibold))
+                    .frame(width: Theme.S.roundButton, height: Theme.S.roundButton)
             }
-            circleButton(voice.listening ? "mic.fill" : "mic", voice.listening ? "Sprachsteuerung aus" : "Sprachsteuerung an",
-                         on: voice.listening) { Task { await voice.toggle() } }
+            .buttonStyle(PressableStyle()).glassDark()
+            .accessibilityLabel("Kochmodus schließen")
+            Spacer()
+            TimelineView(.periodic(from: .now, by: 1)) { context in
+                if let t = timers.timers.first(where: { !$0.rang }) {
+                    Label(CookTimer.clock(t.remaining(context.date)), systemImage: "clock")
+                        .font(.system(.subheadline, weight: .bold)).monospacedDigit()
+                        .padding(.horizontal, 16).frame(height: 44)
+                        .background(.black.opacity(0.45), in: Capsule())
+                        .accessibilityLabel("Timer \(t.name)")
+                }
+            }
         }
-        .padding(.horizontal, Theme.pagePadding).padding(.top, 8).padding(.bottom, 12)
+        .padding(.horizontal, Theme.pagePadding)
     }
 
     @ViewBuilder private var banners: some View {
@@ -525,11 +549,12 @@ struct CookingView: View {
     private var prepPage: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 12) {
-                Text("Vorbereitung").font(Theme.F.cookTitle)
+                Text("Vorbereitung").font(Theme.F.cookTitle).tracking(-1.2).frame(maxWidth: .infinity)
+                StepDots(count: steps.count, current: -1).frame(maxWidth: .infinity).padding(.top, 4)
                 Text("Alles bereitstellen und abhaken · \(checked.count) von \(ingredients.count)")
                     .font(Theme.F.callout).foregroundStyle(Theme.C.cookText2)
                     .contentTransition(.numericText())
-                    .padding(.bottom, 6)
+                    .padding(.vertical, 6)
                 ForEach(Array(ingredients.enumerated()), id: \.offset) { i, ing in
                     let on = checked.contains(i)
                     Button {
@@ -573,50 +598,38 @@ struct CookingView: View {
     private func stepPage(_ i: Int, _ step: String) -> some View {
         let used = ingredients.filter { ing in CookParse.mentions(ing.name, in: step) }
         let name = CookParse.timerName(step, ingredients)
-        return VStack(alignment: .leading, spacing: 12) {
-            ScrollView {
-                VStack(alignment: .leading, spacing: 18) {
-                    if let images = meal.recipe.stepImages, i < images.count, !images[i].isEmpty || imagesLoading {
-                        StepImage(path: images[i], dark: true)
+        return ScrollView {
+            VStack(alignment: .leading, spacing: 0) {
+                Text("Schritt \(i + 1)").font(Theme.F.cookTitle).tracking(-1.2).frame(maxWidth: .infinity)
+                StepDots(count: steps.count, current: i).frame(maxWidth: .infinity).padding(.top, 16).padding(.bottom, 18)
+                ForEach(used, id: \.self) { ing in
+                    HStack {
+                        Text("\(ing.name)").font(.system(.body, weight: .semibold))
+                        Spacer()
+                        Text(qty(ing.amount, ing.unit)).foregroundStyle(Theme.C.onInk3).monospacedDigit()
                     }
-                    Text("Schritt \(i + 1)").font(Theme.F.callout).foregroundStyle(Theme.C.lime)
-                    Text(step).font(Theme.F.cookStep).fixedSize(horizontal: false, vertical: true)
-                    ForEach(Array(CookParse.durations(in: step).enumerated()), id: \.offset) { _, seconds in
-                        let running = timers.timers.contains { t in t.name == name && t.total == seconds && !t.rang }
-                        Button { startTimer(name, seconds) } label: {
-                            Label(running ? "\(name) läuft" : "\(name) · \(CookTimer.clock(seconds))", systemImage: "timer")
-                                .font(Theme.F.headline)
-                                .padding(.horizontal, 20).frame(minHeight: 52)
-                                .background(running ? Theme.C.cookSurface : Theme.C.lime, in: Capsule())
-                        }
-                        .buttonStyle(PressableStyle())
-                        .disabled(running)
-                        .accessibilityLabel(running ? "Timer \(name) läuft" : "Timer \(name) \(CookTimer.clock(seconds)) starten")
-                    }
+                    .frame(minHeight: 46)
+                    .overlay(alignment: .bottom) { Theme.C.inkRaised.frame(height: 1) }
                 }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.horizontal, Theme.pagePadding)
-            }
-            if !used.isEmpty {
-                Text("ZUTATEN IN DIESEM SCHRITT").font(Theme.F.micro).foregroundStyle(Theme.C.cookText2)
-                    .padding(.horizontal, Theme.pagePadding)
-                ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: 8) {
-                        ForEach(used, id: \.self) { ing in
-                            HStack(spacing: 6) {
-                                Text(ing.name)
-                                Text(qty(ing.amount, ing.unit)).foregroundStyle(Theme.C.cookText2).monospacedDigit()
-                            }
-                            .font(Theme.F.callout)
-                            .padding(.horizontal, 14).frame(minHeight: 44)
-                            .background(Theme.C.cookSurface, in: Capsule())
-                        }
+                Text(step).font(Theme.F.cookStep).lineSpacing(8).foregroundStyle(Theme.C.cookText2)
+                    .fixedSize(horizontal: false, vertical: true).padding(.top, 16)
+                ForEach(Array(CookParse.durations(in: step).enumerated()), id: \.offset) { _, seconds in
+                    let running = timers.timers.contains { t in t.name == name && t.total == seconds && !t.rang }
+                    Button { startTimer(name, seconds) } label: {
+                        Label(running ? "\(name) läuft" : "\(name) · \(CookTimer.clock(seconds))", systemImage: "timer")
+                            .font(Theme.F.headline).foregroundStyle(running ? .white : Theme.C.onLime)
+                            .padding(.horizontal, 20).frame(minHeight: 52)
+                            .background(running ? Theme.C.cookSurface : Theme.C.lime, in: Capsule())
                     }
-                    .padding(.horizontal, Theme.pagePadding)
+                    .buttonStyle(PressableStyle())
+                    .disabled(running)
+                    .padding(.top, 14)
+                    .accessibilityLabel(running ? "Timer \(name) läuft" : "Timer \(name) \(CookTimer.clock(seconds)) starten")
                 }
             }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal, 24).padding(.bottom, 12)
         }
-        .padding(.bottom, 12)
     }
 
     private var finishPage: some View {
@@ -631,30 +644,29 @@ struct CookingView: View {
         .padding(.horizontal, Theme.pagePadding)
     }
 
+    /// Unten: Mikrofon 60 + „Nächster Schritt →“ (Limette). Zurück per Wischen oder Sprachbefehl.
     private var nav: some View {
-        HStack(spacing: 12) {
-            circleButton("chevron.left", "Zurück") { go(page - 1) }
-                .disabled(page == 0).opacity(page == 0 ? 0.3 : 1)
+        HStack(spacing: 10) {
+            Button { Task { await voice.toggle() } } label: {
+                Image(systemName: voice.listening ? "mic.fill" : "mic").font(.system(size: 20, weight: .semibold))
+                    .foregroundStyle(voice.listening ? Theme.C.onLime : .white)
+                    .frame(width: 60, height: 60)
+                    .background(voice.listening ? Theme.C.lime : Theme.C.inkRaised, in: Circle())
+                    .contentTransition(.symbolEffect(.replace))
+            }
+            .buttonStyle(PressableStyle())
+            .accessibilityLabel(voice.listening ? "Sprachsteuerung aus" : "Sprachsteuerung an")
             Button { page == last ? onFinish() : go(page + 1) } label: {
                 HStack(spacing: 8) {
-                    Text(page == last ? "Bewerten ★" : page == 0 ? "Los geht's" : page == steps.count ? "Fertig" : "Weiter")
-                    if page < last { Image(systemName: "chevron.right") }
+                    Text(page == last ? "Bewerten ★" : page == 0 ? "Los geht's" : page == steps.count ? "Fertig" : "Nächster Schritt")
+                    if page < last { Image(systemName: "arrow.right") }
                 }
+                .frame(minHeight: 60)
             }
             .buttonStyle(AccentButtonStyle())
         }
-        .padding(.horizontal, Theme.pagePadding).padding(.top, 10).padding(.bottom, 8)
-    }
-
-    private func circleButton(_ symbol: String, _ label: String, on: Bool = false, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            Image(systemName: symbol).font(Theme.F.headline)
-                .frame(width: 44, height: 44)
-                .background(on ? Theme.C.lime : Theme.C.cookSurface, in: Circle())
-                .contentTransition(.symbolEffect(.replace))
-        }
-        .buttonStyle(PressableStyle())
-        .accessibilityLabel(label)
+        .padding(.horizontal, 24).padding(.top, 10).padding(.bottom, 8)
+        .accessibilityAction(named: "Zurück") { go(page - 1) }
     }
 
     // MARK: Aktionen

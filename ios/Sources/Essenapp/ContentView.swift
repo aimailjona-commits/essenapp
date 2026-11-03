@@ -196,7 +196,7 @@ struct MainView: View {
                 .transition(.opacity)
             }
 
-            if !Self.modalDemo.contains(Demo.screen ?? "") {
+            if !Self.modalDemo.contains(Demo.screen ?? ""), store.tabBarHiders == 0 || quickOpen {
                 TabBar(selected: $tab, quickOpen: $quickOpen, badges: [.angebote: store.watchHits]) { resetToken += 1 }
             }
 

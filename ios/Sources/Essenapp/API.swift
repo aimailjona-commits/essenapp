@@ -626,6 +626,7 @@ struct HouseholdPatch: Encodable {
 /// App-Zustand: lädt und hält Haushalt, Angebote und Plan.
 @MainActor @Observable
 final class AppStore {
+    var tabBarHiders = 0  // > 0: Detail-Screen mit Summen-Leiste ist offen (v3)
     let api: API
     var household: HouseholdDTO? {
         didSet { if !demo { StoreReminder.shared.update(household) } }  // Standort-Erinnerung (36) folgt den gewählten Läden
@@ -680,15 +681,17 @@ final class AppStore {
         householdList?.items.contains { $0.offerId == offer.id } ?? false
     }
 
-    func addToList(_ offer: OfferDTO) {
+    func addToList(_ offer: OfferDTO, count: Int = 1) {
         guard !isOnList(offer), let list = householdList else { return }
         let later = offer.startsLater  // Vorschau-Angebot (30) → Gruppe „Nächste Woche“
+        let amount: Double? = count > 1 ? Double(count) : nil  // Menge aus dem Angebotsdetail (v3)
         // sofort anzeigen, Server bestätigt im Hintergrund
-        householdList?.items.append(ListItemDTO(id: -offer.id, name: offer.title, amount: nil, unit: "", chain: offer.chain,
+        householdList?.items.append(ListItemDTO(id: -offer.id, name: offer.title, amount: amount, unit: amount == nil ? "" : "stk", chain: offer.chain,
                                                 offerId: offer.id, checked: false, addedBy: "", checkedBy: "", source: "manual",
                                                 nextWeek: later))
         flash(later ? "Für nächste Woche auf der Liste" : "Zur Einkaufsliste hinzugefügt")
-        Task { await addItem(name: offer.title, chain: offer.chain, offerId: offer.id, nextWeek: later, to: list.id) }
+        Task { await addItem(name: offer.title, amount: amount, unit: amount == nil ? "" : "stk", chain: offer.chain, offerId: offer.id,
+                             nextWeek: later, to: list.id) }
     }
 
     let demo = Demo.screen != nil

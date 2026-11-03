@@ -37,7 +37,7 @@ struct OnboardingView: View {
     private var progress: some View {
         HStack(spacing: 6) {
             ForEach(1...4, id: \.self) { i in
-                Capsule().fill(i <= step ? Theme.C.accent : Theme.C.surface).frame(height: 5)
+                Capsule().fill(i <= step ? Theme.C.ink : Color(hex: 0xD8D3C8)).frame(height: 5)
             }
         }
         .animation(Theme.spring, value: step)
@@ -124,37 +124,54 @@ struct OnboardingView: View {
 
     // MARK: Schritte
 
+    /// Schritt 1 v3: Sticker-Collage (alles gerade), unten Fortschritt, Titel, Satz, Server, „Los geht's“.
     private var welcome: some View {
         @Bindable var api = store.api
+        let pasta = Bundle.module.url(forResource: "pasta", withExtension: "jpg")
         return ZStack(alignment: .bottom) {
-            HeroImage(name: "bowl").ignoresSafeArea()
-            LinearGradient(colors: [.clear, Theme.C.bg.opacity(0.85), Theme.C.bg], startPoint: .init(x: 0.5, y: 0.35), endPoint: .init(x: 0.5, y: 0.7))
-                .ignoresSafeArea()
-            VStack(spacing: 14) {
-                Text("Kochen nach\nAngebot.").font(.system(size: 36, weight: .bold)).multilineTextAlignment(.center)
+            Theme.C.bg.ignoresSafeArea()
+            ZStack(alignment: .topLeading) {  // Positionen wie im Mockup (390 pt breit)
+                Ellipse().fill(Theme.C.lav).frame(width: 150, height: 150).offset(x: 28, y: 44)
+                Plate(url: pasta, size: 112).offset(x: 52, y: 66)
+                Text("Spart 12 € pro Woche!").font(.custom("Bradley Hand", size: 21, relativeTo: .title3)).foregroundStyle(Theme.C.ink)
+                    .padding(18).frame(width: 150, height: 150, alignment: .topLeading)
+                    .background(Theme.C.sun, in: RoundedRectangle(cornerRadius: 6))
+                    .shadow(color: .black.opacity(0.1), radius: 10, y: 10)
+                    .offset(x: 216, y: 58)
+                BurstShape(points: 10, inner: 0.4).fill(Theme.C.sky).frame(width: 160, height: 160).offset(x: 150, y: 226)
+                Text("🥑").font(.system(size: 72)).rotationEffect(.degrees(-14)).shadow(color: .black.opacity(0.2), radius: 5, y: 10)
+                    .offset(x: 26, y: 248)
+                Text("Mo – So geplant ✓").font(.system(.callout, weight: .heavy)).foregroundStyle(Theme.C.ink)
+                    .padding(.horizontal, 18).padding(.vertical, 10).background(Theme.C.tomato, in: Capsule())
+                    .offset(x: 196, y: 368)
+                Text("🛒").font(.system(size: 40)).frame(width: 76, height: 76).background(Theme.C.mint, in: Circle())
+                    .offset(x: 40, y: 378)
+            }
+            .frame(width: 390, height: 470, alignment: .topLeading)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+            .accessibilityHidden(true)
+            VStack(alignment: .leading, spacing: 0) {
+                HStack(spacing: 6) {
+                    Capsule().fill(Theme.C.ink).frame(width: 44, height: 5)
+                    ForEach(0..<3, id: \.self) { _ in Capsule().fill(Color(hex: 0xD8D3C8)).frame(width: 20, height: 5) }
+                }
+                .padding(.bottom, 22)
+                DisplayHeader(line1: "Kochen nach", line2: "Angebot.", size: 50)
                 Text("Wir lesen die Prospekte deiner Läden und planen daraus deine Woche.")
-                    .font(Theme.F.caption).foregroundStyle(Theme.C.text2).multilineTextAlignment(.center)
+                    .font(.system(.callout)).foregroundStyle(Theme.C.text2).lineSpacing(4).padding(.top, 12).padding(.bottom, 16)
                 TextField("Server, z.B. http://192.168.178.20:8000", text: $api.baseURL)
                     .keyboardType(.URL).textInputAutocapitalization(.never).autocorrectionDisabled()
                     .font(Theme.F.caption)
-                    .padding(12)
-                    .background(Theme.C.surface, in: Capsule())
+                    .padding(.horizontal, 18).frame(height: 44)
+                    .background(Theme.C.card, in: Capsule()).overlay(Capsule().strokeBorder(Theme.C.line, lineWidth: 1))
+                    .padding(.bottom, 10)
                 Button("Los geht's") { step = 1 }
                     .buttonStyle(PrimaryButtonStyle())
                     .disabled(api.baseURL.isEmpty)
                     .opacity(api.baseURL.isEmpty ? 0.5 : 1)
             }
-            .padding(24)
+            .padding(.horizontal, 24).padding(.bottom, 24)
             .appear(delay: 0.2)
-        }
-        .overlay(alignment: .top) {
-            HStack(spacing: 6) {
-                Capsule().fill(.white).frame(height: 4)
-                Capsule().fill(.white.opacity(0.4)).frame(height: 4)
-                Capsule().fill(.white.opacity(0.4)).frame(height: 4)
-                Capsule().fill(.white.opacity(0.4)).frame(height: 4)
-            }
-            .padding(.horizontal, 24).padding(.top, 8)
         }
     }
 

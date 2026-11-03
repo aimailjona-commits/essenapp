@@ -47,15 +47,28 @@ enum Verdict {
 }
 
 /// Kleiner Urteil-Badge auf Angebotskarten (28).
+/// Urteil v3: Kapsel 26 (Bestpreis Tinte, Gut Limette, Normal `surface`, Kein echtes Gelb). `emojiOnly` auf Karten.
 struct VerdictBadge: View {
     let verdict: String?
+    var emojiOnly = false
+    var long = false  // „🔥 Bestpreis seit 12 Wochen“ (Knaller)
 
     var body: some View {
         if let b = Verdict.badge(verdict) {
-            Text(b.text).font(Theme.F.micro).foregroundStyle(b.color).lineLimit(1).minimumScaleFactor(0.8)
-                .padding(.horizontal, 7).frame(height: 20)
-                .background(Theme.C.card, in: Capsule())
-                .background(b.color.opacity(0.14), in: Capsule())
+            if emojiOnly {
+                Text(String(b.text.prefix(while: { !$0.isWhitespace }))).font(.system(size: 18)).accessibilityLabel(b.text)
+            } else {
+                let style: (Color, Color) = switch verdict {
+                case "bestpreis": (Theme.C.ink, .white)
+                case "gut": (Theme.C.lime, Theme.C.ink)
+                case "kein_echtes": (Color(hex: 0xFFF1C9), Color(hex: 0x8A5A00))
+                default: (Theme.C.surface, Color(hex: 0x555555))
+                }
+                Text(long && verdict == "bestpreis" ? "🔥 Bestpreis seit 12 Wochen" : b.text)
+                    .font(.system(.caption, weight: .bold)).foregroundStyle(style.1).lineLimit(1).minimumScaleFactor(0.8)
+                    .padding(.horizontal, 10).frame(height: 26)
+                    .background(style.0, in: Capsule())
+            }
         }
     }
 }
