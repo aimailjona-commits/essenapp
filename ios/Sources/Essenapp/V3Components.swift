@@ -394,3 +394,108 @@ struct PaperGrain: View {
         }
     }
 }
+
+// MARK: Tages-Satz (S1)
+
+/// Zeilenumbruch für beliebige Views (Chips, Wörter + Sticker im Tages-Satz), Zeilen vertikal zentriert.
+struct FlowLayout: Layout {
+    var spacing: CGFloat = 8
+    var lineSpacing: CGFloat?  // Standard: wie `spacing`
+
+    private func rows(_ width: CGFloat, _ subviews: Subviews) -> [(range: Range<Int>, height: CGFloat, width: CGFloat)] {
+        var rows: [(Range<Int>, CGFloat, CGFloat)] = []
+        var start = 0, x: CGFloat = 0, h: CGFloat = 0
+        for (i, v) in subviews.enumerated() {
+            let s = v.sizeThatFits(.unspecified)
+            if x > 0 && x + spacing + s.width > width {
+                rows.append((start..<i, h, x)); start = i; x = 0; h = 0
+            }
+            x += (x > 0 ? spacing : 0) + s.width
+            h = max(h, s.height)
+        }
+        if start < subviews.count { rows.append((start..<subviews.count, h, x)) }
+        return rows
+    }
+
+    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
+        let width = proposal.width ?? .infinity
+        let r = rows(width, subviews)
+        let height = r.map(\.height).reduce(0, +) + (lineSpacing ?? spacing) * CGFloat(max(r.count - 1, 0))
+        return CGSize(width: proposal.width ?? (r.map(\.width).max() ?? 0), height: height)
+    }
+
+    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
+        var y = bounds.minY
+        for row in rows(bounds.width, subviews) {
+            var x = bounds.minX
+            for i in row.range {
+                let s = subviews[i].sizeThatFits(.unspecified)
+                subviews[i].place(at: CGPoint(x: x, y: y + (row.height - s.height) / 2), proposal: ProposedViewSize(s))
+                x += s.width + spacing
+            }
+            y += row.height + (lineSpacing ?? spacing)
+        }
+    }
+}
+
+/// `SentenceHero`: grauer kursiver Satz, Hervorhebungen weiß, Tellerfotos als Sticker, Betrag mit Handkreis.
+struct SentenceHero: View {
+    enum Part {
+        case text(String)
+        case bold(String)
+        case sticker(URL?, String, Double)
+        case amount(String)
+        case emoji(String)
+        case glue(String)  // Satzzeichen direkt hinter dem vorigen Teil
+    }
+
+    let parts: [Part]
+
+    private enum Token { case word(String, Bool), sticker(URL?, String, Double), amount(String), emoji(String) }
+
+    private var tokens: [Token] {
+        var out: [Token] = []
+        for part in parts {
+            switch part {
+            case .text(let s): out += s.split(separator: " ").map { .word(String($0), false) }
+            case .bold(let s): out += s.split(separator: " ").map { .word(String($0), true) }
+            case .sticker(let url, let emoji, let angle): out.append(.sticker(url, emoji, angle))
+            case .amount(let s): out.append(.amount(s))
+            case .emoji(let e): out.append(.emoji(e))
+            case .glue(let s):
+                if case .word(let w, let b) = out.last { out[out.count - 1] = .word(w + s, b) } else { out.append(.word(s, false)) }
+            }
+        }
+        return out
+    }
+
+    private var spoken: String {
+        parts.compactMap { p -> String? in
+            switch p {
+            case .text(let s), .bold(let s), .amount(let s), .glue(let s): s
+            default: nil
+            }
+        }.joined(separator: " ")
+    }
+
+    var body: some View {
+        FlowLayout(spacing: 7, lineSpacing: 0) {
+            ForEach(Array(tokens.enumerated()), id: \.offset) { _, token in
+                switch token {
+                case .word(let w, let bold):
+                    Text(w).font(bold ? Theme.F.sentenceBold : Theme.F.sentence).tracking(-0.27)
+                        .foregroundStyle(bold ? .white : Theme.C.onInk2)
+                        .frame(minHeight: 36)  // Zeilenhöhe 1.32
+                case .sticker(let url, let emoji, let angle):
+                    PhotoSticker(url: url, emoji: emoji, angle: angle).padding(.top, -8)
+                case .amount(let a):
+                    Scribble(color: Theme.C.lime) { Text(a).font(Theme.F.sentenceBold).foregroundStyle(.white) }
+                case .emoji(let e):
+                    Text(e).font(.system(size: 34)).rotationEffect(.degrees(-10)).shadow(color: .black.opacity(0.3), radius: 4, y: 6)
+                }
+            }
+        }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(spoken)
+    }
+}
