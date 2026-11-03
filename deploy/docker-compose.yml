@@ -60,8 +60,10 @@ services:
     depends_on:
       api: {condition: service_healthy}  # api hat die Migrationen ausgeführt
 
+  # Eingang: COMPOSE_PROFILES=caddy (eigener VPS, Ports 80/443) oder =tunnel (geteilter VPS, Cloudflare-Tunnel, E87)
   caddy:
     image: caddy:2
+    profiles: [caddy]
     restart: unless-stopped
     ports: ["80:80", "443:443", "443:443/udp"]
     environment:
@@ -70,6 +72,17 @@ services:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
       - caddy_data:/data  # Zertifikate
       - caddy_config:/config
+    depends_on:
+      api: {condition: service_healthy}
+    logging: *logging
+
+  tunnel:  # Cloudflare-Tunnel: HTTPS macht Cloudflare, öffentlicher Hostname DOMAIN → http://api:8000
+    image: cloudflare/cloudflared:2026.3.0
+    profiles: [tunnel]
+    restart: unless-stopped
+    command: ["tunnel", "--no-autoupdate", "run"]
+    environment:
+      TUNNEL_TOKEN: ${TUNNEL_TOKEN:-}
     depends_on:
       api: {condition: service_healthy}
     logging: *logging

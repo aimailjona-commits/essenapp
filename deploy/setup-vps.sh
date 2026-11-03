@@ -11,12 +11,22 @@ DEPLOY=$(cd "$(dirname "$0")" && pwd)
 ROOT=$(dirname "$DEPLOY")
 APP_USER=${APP_USER:-essenapp}
 export DEBIAN_FRONTEND=noninteractive
+# Geteilter Server (andere Docker-Projekte laufen schon): Firewall, SSH und Update-Einstellungen nicht anfassen (E87)
+SHARED=${SHARED:-auto}
+if [ "$SHARED" = auto ]; then
+  SHARED=0
+  command -v docker >/dev/null && docker ps --format '{{.Label "com.docker.compose.project"}}' | grep -qvx essenapp && SHARED=1
+fi
+[ "$SHARED" = 1 ] && echo ">>> Geteilter Server erkannt: Firewall, SSH und Update-Einstellungen bleiben unverändert"
 
-echo "== Pakete und automatische Sicherheitsupdates"
+echo "== Pakete"
 apt-get update -q
-apt-get install -y -q ca-certificates curl git openssl rsync sudo ufw unattended-upgrades
-printf 'APT::Periodic::Update-Package-Lists "1";\nAPT::Periodic::Unattended-Upgrade "1";\n' \
-  > /etc/apt/apt.conf.d/20auto-upgrades
+apt-get install -y -q ca-certificates curl git openssl rsync sudo
+if [ "$SHARED" = 0 ]; then
+  apt-get install -y -q ufw unattended-upgrades
+  printf 'APT::Periodic::Update-Package-Lists "1";\nAPT::Periodic::Unattended-Upgrade "1";\n' \
+    > /etc/apt/apt.conf.d/20auto-upgrades
+fi
 
 echo "== Docker (offizielles Repository, docs.docker.com/engine/install/ubuntu)"
 if ! command -v docker >/dev/null; then
@@ -31,12 +41,14 @@ if ! command -v docker >/dev/null; then
 fi
 systemctl enable --now docker
 
-echo "== Firewall: nur SSH, HTTP, HTTPS (Postgres ist nicht veröffentlicht)"
-ufw allow OpenSSH >/dev/null
-ufw allow 80/tcp >/dev/null
-ufw allow 443/tcp >/dev/null
-ufw allow 443/udp >/dev/null  # HTTP/3
-ufw --force enable
+if [ "$SHARED" = 0 ]; then
+  echo "== Firewall: nur SSH, HTTP, HTTPS (Postgres ist nicht veröffentlicht)"
+  ufw allow OpenSSH >/dev/null
+  ufw allow 80/tcp >/dev/null
+  ufw allow 443/tcp >/dev/null
+  ufw allow 443/udp >/dev/null  # HTTP/3
+  ufw --force enable
+fi
 
 echo "== Benutzer $APP_USER (Docker, gleicher SSH-Schlüssel wie root)"
 id "$APP_USER" >/dev/null 2>&1 || useradd --create-home --shell /bin/bash "$APP_USER"
@@ -45,9 +57,11 @@ home=$(getent passwd "$APP_USER" | cut -d: -f6)
 if [ -s /root/.ssh/authorized_keys ]; then
   install -d -m 700 -o "$APP_USER" -g "$APP_USER" "$home/.ssh"
   [ -f "$home/.ssh/authorized_keys" ] || install -m 600 -o "$APP_USER" -g "$APP_USER" /root/.ssh/authorized_keys "$home/.ssh/"
-  # Login nur noch mit Schlüssel (nur wenn einer hinterlegt ist, sonst sperrt man sich aus)
-  printf 'PasswordAuthentication no\nKbdInteractiveAuthentication no\n' > /etc/ssh/sshd_config.d/01-essenapp.conf  # vor 50-cloud-init.conf: erster Wert gilt
-  systemctl try-reload-or-restart ssh
+  if [ "$SHARED" = 0 ]; then
+    # Login nur noch mit Schlüssel (nur wenn einer hinterlegt ist, sonst sperrt man sich aus)
+    printf 'PasswordAuthentication no\nKbdInteractiveAuthentication no\n' > /etc/ssh/sshd_config.d/01-essenapp.conf  # vor 50-cloud-init.conf: erster Wert gilt
+    systemctl try-reload-or-restart ssh
+  fi
 fi
 
 echo "== Konfiguration deploy/.env"
@@ -58,6 +72,7 @@ if [ ! -f "$ENV" ]; then
       -e "s|^POSTGRES_PASSWORD=.*|POSTGRES_PASSWORD=$(openssl rand -hex 24)|" \
       -e "s|^BACKUP_PASSPHRASE=.*|BACKUP_PASSPHRASE=$(openssl rand -hex 32)|" \
       -e "s|^APP_UID=.*|APP_UID=$(id -u "$APP_USER")|" \
+      -e "s|^COMPOSE_PROFILES=.*|COMPOSE_PROFILES=$([ "$SHARED" = 1 ] && echo tunnel || echo caddy)|" \
       "$DEPLOY/.env.example" > "$ENV"
   echo ">>> Neue Passwörter in $ENV – BACKUP_PASSPHRASE zusätzlich im Passwortmanager sichern!"
 fi
