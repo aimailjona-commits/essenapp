@@ -9,8 +9,8 @@ Tab-Bar (Komponente `TabBar`):
 | Position | Tab | Inhalt |
 |---|---|---|
 | 1 | **Start** | Überblick der Woche |
-| 2 | **Angebote** | Angebote + Merkliste (Lieblingsprodukte) |
-| Mitte | **Schwarzer Button** | Öffnet **Schnell-Aktionen** (E14): Wochenplan erstellen, Barcode scannen, Zur Einkaufsliste, Rezept anlegen (→ S17, auch `essenapp://recipe/new`), dazu volle Breite „📸 Kühlschrank scannen“ (→ S23, Feature 69). Solange es keinen Barcode-Scanner gibt, steht an seiner Stelle „Angebote stöbern“ |
+| 2 | **Angebote** | Angebote + Merkliste (Lieblingsprodukte); Zahl-Badge (`deal`) = Merklisten-Einträge mit Treffer diese Woche (27) |
+| Mitte | **Schwarzer Button** | Öffnet **Schnell-Aktionen** (E14): Wochenplan erstellen, Barcode scannen, Zur Einkaufsliste, Rezept anlegen (→ S17, auch `essenapp://recipe/new`), dazu volle Breite „📸 Kühlschrank scannen“ (→ S23, Feature 69). „🔎 Barcode scannen“ öffnet den Scanner aus S10 (Phase 12) |
 | 3 | **Einkauf** | Einkaufslisten |
 | 4 | **Rezepte** | Wochenplan-Gerichte, gespeicherte und eigene Rezepte |
 
@@ -78,6 +78,11 @@ Einstellungen/Profil: über den Avatar oben rechts auf dem Start-Screen.
 - `SearchField`
 - Raster 2-spaltig mit `OfferCard`
 - Zustände: keine Angebote für Filter → `EmptyState`; Händler nicht erreichbar → Hinweis-Banner, Rest anzeigen
+- Phase 12:
+  - Unter dem Segment Pillen „Diese Woche“ · „Nächste Woche“ (`FilterChip`, mit Anzahl; zweite mit `DealBadge` „neu“, sobald `GET /offers?week=next` etwas liefert, Feature 30). Nächste Woche: Kopf „N ab nächster Woche“, leer → `EmptyState` 👀 „Noch keine Prospekte für nächste Woche“ + „Die meisten Läden zeigen sie ab Donnerstag oder Freitag …“. Im Angebotsdetail statt „noch N Tage“ der Chip „ab 9.11.“; „Zur Einkaufsliste“ legt Vorschau-Angebote in die Gruppe „Nächste Woche“.
+  - Zweite Chip-Reihe unter den Läden: „✓ Nur echte Angebote“ (blendet `kein_echtes` aus, 28), „Bio“, „🌱 Vegan“, „Nutri A/B“ (49), kombinierbar, lokal gefiltert. Hat noch kein Angebot ein Urteil: Hinweis „Noch zu wenig Preisdaten (ab 3 Wochen) – bis dahin zeigt der Filter alle Angebote.“
+  - `OfferCard`: oben rechts auf dem Bild `VerdictBadge` (klein, gleiche Texte/Farben wie S9, bei `zu_wenig_daten` keiner), unten links `LabelBadges` (Nutri-Score in Originalfarbe, 🌱 vegan, „Bio“). Lieber kein Badge als ein falsches.
+  - Kategorie Drogerie: oben Karte „📅 Monatsaktionen“ (dm/Rossmann, `monthly`, horizontale `MiniOffer`s), leer → „Gerade keine Monatsaktion bei dm oder Rossmann.“; das Raster zeigt die übrigen (59). Demo: `nextweek`.
 
 ### S5 Einkauf
 - Übersicht: `ListCard` pro Laden (Pastellton aus `listTints`, E18) mit Anzahl offener Artikel und Avataren
@@ -142,15 +147,43 @@ Mockups: `mockups/weitere-screens-v1.html`.
 - „Passt zu“: horizontale kleine `MealCard`s mit Rezepten aus Plan oder Favoriten, die die Zutat nutzen.
 - Fester `PrimaryButton` „Zur Einkaufsliste“ (wird zu „Auf der Liste ✓“ mit `SecondaryButton`-Stil, wenn schon drauf).
 - Phase 12 (Feature 28): Karte **„Preisverlauf“** direkt unter dem Preis (`GET /offers/{id}/history`): Kopf „Preisverlauf“, rechts Urteil-Badge (getönte Pille): „🔥 Bestpreis“ (`deal`), „👍 Gutes Angebot“ (`success`), „😐 Normal“ (`text2`), „⚠️ Kein echtes Angebot“ (`warning`). Swift-Charts-Diagramm (220 pt) der letzten 12 Wochen: Stufenlinie je Laden (Farbe `Theme.storeColor`, Legende unten), Angebotswochen als Punkte, aktuelle Woche als `accentSoft`-Band und großer Punkt, Normalpreis (Streichpreis, sonst Median der Wochen ohne Angebot) als gestrichelte Linie mit „Normalpreis 5,99 €“. Antippen/Ziehen zeigt eine Linie mit Kästchen „KW 41 · Lidl 3,79 € · Angebot“. Darunter zwei `surface`-Kacheln „Median 12 Wochen“ / „Tiefstpreis“, „Zuletzt so günstig: KW 38 bei Lidl (3,79 €)“, „Im Schnitt alle 4 Wochen im Angebot“. Zustände: Laden → Skeleton (200 pt); `zu_wenig_daten` → „Noch zu wenig Daten (ab 3 Wochen)“ ohne Diagramm und Badge; Fehler → „Preisverlauf gerade nicht verfügbar.“ + „Erneut versuchen“. Demo: `offer`.
+- Phase 12 (Feature 31): direkt unter dem Preis Karte „💡 Vorratstipp“ (`GET /offers/{id}/stockup`, nur wenn ein Tipp kommt, sonst nichts): „3 Packungen reichen ~6 Wochen, sparst 4,20 €“ (ohne Verbrauchsdaten „3 Packungen (vorsichtig geschätzt, noch ohne Verbrauchsdaten) …“), `PrimaryButton` „3× auf die Liste“ → `POST /lists/{id}/items {amount, offer_id, chain, source: stockup}` (offline: Warteschlange), danach „Auf der Liste ✓“. Demo: `offerstock`.
+- Phase 12 (Feature 49): im dunklen Kopf unter der Marke `LabelBadges`; unter den Fakten Karte „Bio, vegan, Nutri-Score“ mit je Zeile Badge + Erklärung („Nutri-Score A – Nährwert-Ampel von A (günstig) bis E …“, „Vegan – ohne tierische Zutaten“, „Bio – laut Bio-Siegel bzw. „Bio“ im Prospekt“), „Quelle: Prospekttext · Open Food Facts (ODbL). Wir zeigen nur sichere Treffer …“ und bei `off_code` Link „Bei Open Food Facts ansehen“.
+- Phase 12: Herz = Merkliste über `POST /watch {offer_id}` bzw. `DELETE /watch/{id}` (gefüllt, wenn ein Eintrag das Angebot beobachtet).
+- Preisverlauf: Beschriftung „Normalpreis 5,99 €“ rechts über der gestrichelten Linie in einer `card`-Kapsel mit Haarlinie (liegt nicht in den Linien).
 - Phase 9 (Feature 2): Karte „Nährwerte“ unter den Fakten (`GET /offers/{id}/nutrition`): `PillSegment` „pro 100 g | pro Packung (400 g)“ (nur wenn `per_pack`), 4 `NutrientTile` (kcal, Protein, KH, Fett), darunter „Quelle: USDA FoodData Central · „<food>““. `pending` → Schimmer-Kacheln + „Nährwerte werden zugeordnet …“, nach 3/6/12/24 s neu fragen. `none` → Karte fehlt.
 
-### S10 Merkliste (Tab „Angebote“, Segment „Merkliste“)
-- Kopf wie S4, Segment auf „Merkliste“.
-- Zuerst Abschnitt **„Diese Woche im Angebot“**: Zeilen mit Produktbild, Name, bester Preis + Laden, `DealBadge`, Pfeil → S9.
-- Dann **„Beobachtet“**: Zeilen mit Name, „zuletzt im Angebot: KW 41 bei dm“ oder „noch nie gesehen“, optional Wunschpreis („Alarm unter 2,00 €“).
+### S10 Merkliste (Tab „Angebote“, Segment „Merkliste“, Phase 12: Server `/watch`, Features 27/40/58)
+- Kopf wie S4 („Merkliste / N beobachtet“), Segment auf „Merkliste · N“.
+- Zuerst Abschnitt **„🔥 Diese Woche günstig“** (Einträge mit `hits`): Zeilen (Kachel) mit Produktbild auf Kategorie-Tönung, Name, „1,79 € bei dm“ + `DealBadge` „−25 %“, Chevron → S9 des günstigsten Treffers.
+- Dann **„👀 Beobachtet“** (Produkte ohne Treffer): Name · Marke, darunter „Alarm unter 2,00 € · hält ca. 6 Wochen · leer ca. 1.12.“ bzw. „gerade nicht im Angebot“ (eine „zuletzt im Angebot“-Angabe liefert das Backend nicht). Antippen → Bearbeiten-Sheet.
+- Dann **„🔔 Preisalarme“** (Zutaten, 40) mit Knopf „+ Zutat“ rechts: „Butter unter 1,49 €“ / „Lachsfilet unter 15,00 €/kg“, darunter „greift: 3,49 € bei Lidl – Lachsfilet“ (`success`) bzw. „wartet auf ein passendes Angebot“. Leer: Hinweis „Z. B. „Butter unter 1,49 €“ oder „Hähnchenbrust unter 7 €/kg“ – auch per langem Druck auf eine Rezept-Zutat.“
+- Jede Zeile lange drücken → „Bearbeiten“, „Entfernen“.
 - Unten zwei Buttons nebeneinander: `SecondaryButton` „Suchen“ und `PrimaryButton` „Barcode scannen“.
-- Barcode-Scan: Vollbild-Kamera mit Limetten-Ecken-Rahmen (wie Referenz 02), Treffer → Sheet „Auf Merkliste?“ mit Produktname.
-- Leer: `EmptyState` „Merk dir Lieblingsprodukte – wir sagen Bescheid, wenn sie im Angebot sind.“
+- **Bearbeiten-Sheet** (groß, runder ✕): Titel = Name, Untertitel Marke bzw. „Für eine Zutat – jede passende Marke und Packung“. Karte „🔔 Wunschpreis“: „unter [__] €“ (Zahlentastatur), Segment „Packung · pro kg · pro l · pro Stück“ (Grundpreis-Alarm gilt für jede Packungsgröße). Karte „🏪 Läden“: Chips „Alle“ + gewählte Ketten (`accent`). Nur Produkte: Karte „🔁 Verbrauchsrhythmus“ (Schalter; „Hält ca. 6 Wochen“ + Stepper 1–52, „Vorschlag: 6 Wochen“, Schalter „Zuletzt gekauft“ + Datum, Hinweis „Wird automatisch gesetzt, wenn du es auf der Liste abhakst …“, 58). `PrimaryButton` „Speichern“ → `PATCH /watch/{id}`, „Entfernen“ rot. Ohne Eintrag („+ Zutat“, Rezept-Zutat lange drücken → „Preisalarm“): Titel „Preisalarm“, Namensfeld, Button „Preisalarm anlegen“ (erst mit Name + Preis aktiv) → `POST /watch {kind: zutat}`.
+- **Suchen-Sheet:** „Produkt merken“, `SearchField`; ab 2 Buchstaben `PrimaryButton` „„Shampoo“ beobachten“ (`POST /watch {label}`) und „Diese Woche im Angebot“: `OfferRow`s mit Herz rechts.
+- **Barcode-Scan** (Vollbild, VisionKit `DataScannerViewController`, EAN-8/13, UPC-E): schwarzer Grund, Kamera, Orange-Ecken-Rahmen (`CornerFrame`, `accent`, 270 × 170), oben „Barcode scannen“ + runder ✕, unten Glas-Pille „Strichcode in den Rahmen halten“. Ohne Kamera-Erlaubnis „Kamera ist nicht erlaubt.“ + „In iOS-Einstellungen öffnen“; Gerät ohne Unterstützung „Dieses iPhone kann keine Barcodes scannen.“ Treffer (Haptik) → Sheet „Auf Merkliste?“ (`GET /products/ean/{ean}`): Laden → Schimmer „Suche in Open Food Facts …“; gefunden → Bild, Name, Marke, Nutri-Score, „EAN …“, „Daten: Open Food Facts (ODbL)“; unbekannt bzw. 502 → Satz + Namensfeld. `PrimaryButton` „Auf die Merkliste“ (`POST /watch {label, brand, ean, image_url}`, schließt den Scanner), `SecondaryButton` „Weiter scannen“. Auch aus der Schnell-Aktion „Barcode scannen“.
+- Laden → 3 Skeleton-Zeilen; Fehler → `ErrorState`; leer → `EmptyState` 🤍 „Noch nichts gemerkt“ + „Merk dir Lieblingsprodukte – wir sagen Bescheid, wenn sie im Angebot sind.“
+- Push „🧴 Dein Shampoo ist bei dm im Angebot …“ öffnet `essenapp://offer/<id>` → S9. Demo: `watch`, `scanner`.
+
+### Phase 12 – Spar-Karten (Start S1, Einkauf S5, Generator S7, Einstellungen S13, Rezept S3)
+- **S1 Start** unter der Budget-Karte, in dieser Reihenfolge (jede fehlt, wenn es nichts zu zeigen gibt):
+  - **Budget-Rest (43)** (`GET /plans/current/budget`): `rest` → Karte „💶 Noch 6,80 € übrig – wie wär's mit …“, darunter 3 Ideen (`POST /plans/current/budget/ideas`, einmal je Plan-Stand; Laden → 3 Skeleton-Zeilen + „Ideen werden gesucht …“, Fehler → Satz + „Erneut versuchen“, leer → „Gerade keine Idee, die ins Restbudget passt.“): Zeile mit Emoji im `accentSoft`-Quadrat (🍰 Dessert, 🥨 Snack, 🥫 Vorrat), Titel, Art, rechts Kosten + „einplanen“ bzw. „auf die Liste“. Dessert/Snack → Rückfrage „Wann einplanen?“ (Tage des Haushalts) → `POST /plans/current/entries`, Toast „Eingeplant: Mi · Dessert“; Vorrat → wie „n× auf die Liste“. Erledigte Zeile „✓ erledigt“. `over` → Karte auf `warning`-Tönung „⚠️ 3,20 € über Budget – günstigere Alternative für Do?“, „„Lachs-Bowl“ kostet 6,20 € – neu würfeln mit höchstens 3,00 €.“, `PrimaryButton` „Günstiger würfeln“ (`…/reroll {max_cost_cents}`, Spinner). `ok` → keine Karte. Demo: `savings`, `budgetover`.
+  - **„👀 Nächste Woche günstiger“ (30)** (`GET /offers/next-week-cheaper`, max. 3): Zeile mit Laden-Logo und Satz „**Hähnchenbrust** nächste Woche **−30 %** bei Lidl (3,49 € statt 4,99 € bei Rewe) – Kauf verschieben?“, darunter `accentSoft`-Pille „Auf nächste Woche schieben“ → `POST /items/{id}/next-week {offer_id}` (offline: Warteschlange) bzw. Merklisten-Treffer `POST /lists/{id}/items {next_week: true}`; Toast „„Hähnchenbrust“ → Nächste Woche“, Zeile verschwindet.
+  - **„💡 Vorrat anlegen lohnt sich“ (31)** (`GET /stockup?limit=3`): Zeilen mit Produktbild, Titel, Tipp-Text, rechts schwarze Pille „6×“ (→ „✓“, `success`); Zeile antippen → S9.
+- **S5 Einkauf:**
+  - Unter „Diese Woche gespart“ Karte **„🏆 Am günstigsten“ (42)** (`GET /lists/{id}/stores`, neu bei jeder Änderung offener Artikel): bis zu zwei auswählbare Zeilen (Kreis-Haken `accent`, Logos, „alles bei Lidl“ · „1,2 km Weg“, bzw. „Rewe + Lidl“ · „2,30 € gespart · +1 Laden · +1,2 km“ in `success`, rechts Summe); vorgewählt die günstigste. „1 Artikel ohne bekannten Preis zählt nicht mit.“ `PrimaryButton` „So aufteilen“ → `POST /lists/{id}/assign {chains}`, Toast „Liste neu aufgeteilt“. Laden → Skeleton; Fehler → Zeile „Laden-Empfehlung gerade nicht verfügbar.“ + „Erneut versuchen“; weniger als 2 Möglichkeiten oder nichts offen → keine Karte.
+  - Nach den Laden-Karten Abschnitt **„📅 Nächste Woche“** (30, Artikel mit `next_week`): `ItemRow`s, lange drücken → „Doch diese Woche“ (`PATCH /items/{id} {next_week: false}`, offline Warteschlange), „Entfernen“. Diese Artikel zählen nicht bei den Laden-Karten, der Laden-Liste und der Standort-Erinnerung.
+  - `ItemRow`: Badge „Vorratskauf“ (`ok`, source `stockup`, 31) bzw. „bald leer“ (`soft`, source `rhythm`, 58).
+- **S7 Plan-Generator:** direkt unter dem Untertitel Karte **„🛒 Woche & Läden“**: Schalter „Plan für nächste Woche“ (30; ohne Vorschau-Angebote inaktiv mit „Noch keine Prospekte für nächste Woche – meist ab Donnerstag oder Freitag.“, sonst „Nutzt die Vorschau-Angebote (N) …“; der Untertitel zeigt dann die KW des nächsten Montags), Trennlinie, Schalter „Nur ein Laden“ (41) → Reihe der Logos der gewählten Läden (44 pt, gewählt mit `accent`-Rand und größer, Rest halb transparent) + „Einkauf komplett bei Lidl – Zutaten ohne Angebot zum Normalpreis von Lidl.“ → `PlanOptions.next_week` / `single_store`. Demo: `singlestore`.
+- **S13 Einstellungen › Einkaufen:** Zeile „Vorratsplatz“ („begrenzt Vorratskauf-Tipps“) mit Menü „Klein (3 Packungen) · Mittel (6) · Groß (12)“ → `PATCH /household {storage_space}` (31).
+- **S3 Rezeptdetail:** Zutat lange drücken → zusätzlich „Preisalarm“ (auch VoiceOver-Aktion) → Bearbeiten-Sheet aus S10 mit dem Zutatnamen (40).
+
+### Erklär-Sheets („Nichts verpassen“, Standort, Koch-Timer)
+- Gleiche Komponente `PushPermissionSheet`: Höhe passt sich dem Inhalt an (etwa halbe Höhe), Titel und Text mehrzeilig, nie abgeschnitten; bei großer Schrift scrollbar.
+
+### Offline-Banner (66)
+- Das Glas-Banner schiebt den Inhalt nach unten (Safe-Area-Einschub oben) und überdeckt keine Bedienelemente (z. B. „Liste | Vorrat“).
 
 ### S11 Ersparnis (Push-Screen aus S1/S5)
 - `DisplayHeader` „Gespart / seit Oktober“.

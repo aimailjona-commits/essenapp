@@ -17,6 +17,7 @@ struct StartView: View {
     }
 
     var body: some View {
+        ScrollViewReader { proxy in
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
                 // Großes Foto mit Begrüßung (Vorlage „HEY, ALEX.“)
@@ -86,7 +87,10 @@ struct StartView: View {
                         .padding(.horizontal, Theme.pagePadding).padding(.top, 40).padding(.bottom, 16)
                     }
                     .padding(.horizontal, -Theme.pagePadding)
-                    BudgetCard(plan: plan, budgetCents: store.household?.budgetFoodWeekCents ?? 0).appear(delay: 0.1)
+                    BudgetCard(plan: plan, budgetCents: store.household?.budgetFoodWeekCents ?? 0).appear(delay: 0.1).id("savings")
+                    BudgetHintCard()  // Budget-Rest / über Budget (43)
+                    NextWeekCard()  // nächste Woche günstiger (30)
+                    StockupCard()  // Vorrat anlegen lohnt sich (31)
                     FavoriteDealsCard().appear(delay: 0.12)
                     FridgeCard().appear(delay: 0.14)
                     DealsTeaser().appear(delay: 0.15)
@@ -100,6 +104,10 @@ struct StartView: View {
             .padding(.bottom, 120)
         }
         .ignoresSafeArea(edges: .top)
+        .onAppear {  // Demo: Spar-Karten (43/30/31) im Bild
+            if ["savings", "budgetover"].contains(Demo.screen ?? "") { proxy.scrollTo("savings", anchor: .top) }
+        }
+        }
         .scrollDismissesKeyboard(.immediately)
         .refreshable {
             await store.loadAll()

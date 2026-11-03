@@ -11,6 +11,7 @@ struct ContentView: View {
         #if DEBUG
         PendingRequest.selfTest()
         StoreReminder.selfTest()
+        SavingSelfTest.run()
         #endif
     }
 
@@ -23,12 +24,14 @@ struct ContentView: View {
                     OnboardingView().transition(.opacity)
                 }
             }
+            // Banner schiebt den Inhalt nach unten (Safe-Area-Einschub statt Überlagerung), z. B. „Liste | Vorrat“
+            .safeAreaInset(edge: .top, spacing: 0) {
+                if !store.api.online && store.isOnboarded {
+                    OfflineBanner().padding(.top, 4).padding(.bottom, 8).transition(.move(edge: .top).combined(with: .opacity))
+                }
+            }
             .animation(.easeInOut(duration: 0.35), value: store.isOnboarded)
             .animation(Theme.spring, value: store.api.online)
-
-            if !store.api.online && store.isOnboarded {
-                OfflineBanner().padding(.top, 4).transition(.move(edge: .top).combined(with: .opacity))
-            }
 
             if let toast = store.toast {
                 Toast(text: toast, actionTitle: store.toastAction?.title) {
@@ -84,12 +87,12 @@ struct MainView: View {
     @State private var tab = MainView.demoTab
     @State private var resetToken = 0  // erneutes Tippen auf den aktiven Tab → zurück zum Anfang
     @State private var quickOpen = Demo.screen == "quick"
-    @State private var showGenerator = ["generator", "generating"].contains(Demo.screen ?? "")
+    @State private var showGenerator = ["generator", "generating", "singlestore"].contains(Demo.screen ?? "")
     @State private var showRecipeForm = false  // Schnell-Aktion „Rezept anlegen“ (S17)
 
     private static var demoTab: AppTab {
         switch Demo.screen {
-        case "offers", "offer", "stores": .angebote
+        case "offers", "offer", "stores", "watch", "scanner", "nextweek", "offerstock": .angebote
         case "plan", "recipe", "cooking", "sharecard", "recipes", "myrecipe", "recipeform", "imported", "importlink", "guests": .rezepte
         case "shopping", "list", "pantry", "fridgecam", "fridgereview", "cooknow", "offline", "voiceadd": .einkauf
         default: .start
@@ -129,6 +132,7 @@ struct MainView: View {
                     case ("shareresult", _): ShareFlowView(input: nil, session: nil, demo: .result) {}
                     case ("importlink", _): ShareFlowView(input: nil, session: nil, demo: .link, onOpen: { _ in }) {}
                     case ("offer", _): OfferDetailView(offer: Demo.offers[0])
+                    case ("offerstock", _): OfferDetailView(offer: Demo.offers[6])  // Vorratstipp + Bio/Nutri (31/49)
                     case ("stores", _): StoreMapView()
                     case ("list", _): ShoppingListView(chain: "rewe")
                     case ("settings", _): SettingsView()
@@ -167,7 +171,7 @@ struct MainView: View {
                     switch action {
                     case .plan: showGenerator = true
                     case .list: tab = .einkauf
-                    case .offers: tab = .angebote
+                    case .barcode: store.barcode = true
                     case .recipe: showRecipeForm = true
                     case .scan: store.scanning = true
                     }
@@ -178,12 +182,13 @@ struct MainView: View {
             }
 
             if !Self.modalDemo.contains(Demo.screen ?? "") {
-                TabBar(selected: $tab, quickOpen: $quickOpen) { resetToken += 1 }
+                TabBar(selected: $tab, quickOpen: $quickOpen, badges: [.angebote: store.watchHits]) { resetToken += 1 }
             }
         }
         .sheet(isPresented: Binding(get: { store.scanning }, set: { on in store.scanning = on })) {
             FridgeScanSheet().presentationDetents([.large]).presentationCornerRadius(Theme.R.sheet)
         }
+        .fullScreenCover(isPresented: Binding(get: { store.barcode }, set: { on in store.barcode = on })) { BarcodeScanView() }
         .sheet(isPresented: $showGenerator) { PlanGeneratorSheet().presentationDetents([.large]) }
         .sheet(isPresented: $showRecipeForm) { RecipeFormSheet().presentationDetents([.large]).presentationCornerRadius(Theme.R.sheet) }
         .task { await store.loadAll() }
@@ -240,7 +245,7 @@ struct MainView: View {
 
 /// Schnell-Aktionen hinter dem Mittel-Button (E14).
 struct QuickActions: View {
-    enum Action { case plan, offers, list, recipe, scan }
+    enum Action { case plan, barcode, list, recipe, scan }
     let select: (Action) -> Void
 
     var body: some View {
@@ -249,7 +254,7 @@ struct QuickActions: View {
             Grid(horizontalSpacing: 10, verticalSpacing: 10) {
                 GridRow {
                     tile(.plan, "✨", "Wochenplan erstellen", "KI plant mit den Angeboten", color: Theme.C.accent, main: true)
-                    tile(.offers, "🏷️", "Angebote stöbern", "Was ist diese Woche günstig?", color: Theme.C.deal)
+                    tile(.barcode, "🔎", "Barcode scannen", "Produkt auf die Merkliste", color: Theme.C.deal)
                 }
                 GridRow {
                     tile(.list, "🛒", "Einkaufsliste", "Artikel abhaken & ergänzen", color: Theme.C.kcal)

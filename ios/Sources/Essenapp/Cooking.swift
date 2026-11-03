@@ -471,7 +471,7 @@ struct CookingView: View {
         }
         .sheet(isPresented: $askPush, onDismiss: { timers.rescheduleAll() }) {
             PushPermissionSheet(text: "Damit dein Timer klingelt, auch wenn das iPhone gesperrt ist oder du eine andere App offen hast.")
-                .presentationDetents([.medium]).presentationCornerRadius(Theme.R.sheet)
+                .presentationCornerRadius(Theme.R.sheet)
                 .foregroundStyle(Theme.C.text1).environment(\.colorScheme, appScheme)  // Sheet folgt dem App-Erscheinungsbild
         }
         .sheet(isPresented: Binding(get: { substituting != nil }, set: { on in if !on { substituting = nil } })) {

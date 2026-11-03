@@ -1,22 +1,34 @@
 import MapKit
 import SwiftUI
 
-/// S4 Angebote + S10 Merkliste (lokal).
+/// S4 Angebote (diese/nächste Woche, Filter Urteil/Bio/Vegan/Nutri, Monatsaktionen) + S10 Merkliste.
 struct OffersView: View {
     @Environment(AppStore.self) private var store
     @State private var chain: String?
     @State private var category: String?
     @State private var search = ""
-    @State private var watchlist = false
+    @State private var watchMode = ["watch", "scanner"].contains(Demo.screen ?? "")
+    @State private var nextWeek = Demo.screen == "nextweek"  // Vorschau (30)
+    @State private var realOnly = false  // „Nur echte Angebote“ (28)
+    @State private var bio = false  // 49
+    @State private var vegan = false
+    @State private var nutri = false
 
     var body: some View {
-        let all = watchlist ? store.offers.filter { store.watchlist.contains($0.id) } : store.offers
+        let all = nextWeek ? store.nextOffers : store.offers
         let byChain = Dictionary(grouping: all, by: \.chain)
         let chains = Labels.chains.map(\.key).filter { byChain[$0] != nil }
         let filtered = all.filter {
             (chain == nil || $0.chain == chain) && (category == nil || $0.category == category)
                 && (search.isEmpty || $0.title.localizedCaseInsensitiveContains(search))
+                && (!realOnly || $0.verdict != "kein_echtes") && (!bio || $0.bio == true) && (!vegan || $0.vegan == true)
+                && (!nutri || ["A", "B"].contains($0.nutriScore ?? ""))
         }
+        // Monatsaktionen (59): eigener Abschnitt unter Drogerie
+        let drugstore = category == "drogerie" && !nextWeek
+        let monthly = drugstore ? filtered.filter { o in o.monthly == true } : []
+        let grid = drugstore ? filtered.filter { o in o.monthly != true } : filtered
+        let judged = all.contains { o in Verdict.badge(o.verdict) != nil }
         ScrollView {
             LazyVStack(alignment: .leading, spacing: 14, pinnedViews: []) {
                 NavigationLink { StoreMapView() } label: {
@@ -32,37 +44,71 @@ struct OffersView: View {
                 }
                 .buttonStyle(PressableStyle())
 
-                DisplayHeader(line1: watchlist ? "Merkliste" : "Angebote", line2: watchlist ? "\(all.count) gemerkt" : "\(all.count) diese Woche")
-                PillSegment(options: [(false, "Angebote"), (true, "Merkliste · \(store.watchlist.count)")], selection: $watchlist)
-                SearchField(text: $search, placeholder: "Produkt suchen")
+                DisplayHeader(line1: watchMode ? "Merkliste" : "Angebote",
+                              line2: watchMode ? "\(store.watches.count) beobachtet" : "\(all.count) \(nextWeek ? "ab nächster Woche" : "diese Woche")")
+                PillSegment(options: [(false, "Angebote"), (true, "Merkliste · \(store.watches.count)")], selection: $watchMode)
 
-                ScrollView(.horizontal, showsIndicators: false) {
+                if watchMode {
+                    WatchListView()
+                } else {
                     HStack(spacing: 8) {
-                        FilterChip(label: "Alle", count: all.count, selected: chain == nil) { withAnimation(Theme.spring) { chain = nil } }
-                        ForEach(chains, id: \.self) { c in
-                            FilterChip(label: Labels.chain(c), count: byChain[c]?.count, selected: chain == c) {
-                                withAnimation(Theme.spring) { chain = chain == c ? nil : c }
-                            }
+                        FilterChip(label: "Diese Woche", selected: !nextWeek) { withAnimation(Theme.spring) { nextWeek = false } }
+                        FilterChip(label: "Nächste Woche", count: store.nextOffers.isEmpty ? nil : store.nextOffers.count, selected: nextWeek) {
+                            withAnimation(Theme.spring) { nextWeek = true }
+                        }
+                        .overlay(alignment: .topTrailing) {
+                            if !store.nextOffers.isEmpty { DealBadge(text: "neu").offset(x: 8, y: -10).allowsHitTesting(false) }
                         }
                     }
-                    .padding(.horizontal, Theme.pagePadding)
-                }
-                .padding(.horizontal, -Theme.pagePadding)
-                CategoryCircles(items: Labels.categories.map { c in
-                    (key: c.0, label: String(c.1.split(separator: " ").dropFirst().joined(separator: " ")), emoji: Theme.hue(category: c.0).emoji)
-                }, selected: $category)
+                    SearchField(text: $search, placeholder: "Produkt suchen")
 
-                if store.offers.isEmpty {
-                    EmptyState(emoji: "🏷️", title: "Noch keine Angebote", text: "Die Angebote deiner Läden werden wöchentlich geladen.",
-                               buttonTitle: "Jetzt laden") { Task { await store.refreshOffers() } }
-                } else if filtered.isEmpty {
-                    EmptyState(emoji: watchlist ? "🤍" : "🔍", title: watchlist ? "Noch nichts gemerkt" : "Nichts gefunden",
-                               text: watchlist ? "Tippe bei einem Angebot aufs Herz." : "Andere Filter probieren.")
-                } else {
-                    LazyVGrid(columns: [GridItem(.flexible(), spacing: 12), GridItem(.flexible())], spacing: 12) {
-                        ForEach(filtered) { offer in
-                            NavigationLink { OfferDetailView(offer: offer) } label: { OfferCard(offer: offer) }
-                                .buttonStyle(PressableStyle())
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(spacing: 8) {
+                            FilterChip(label: "Alle", count: all.count, selected: chain == nil) { withAnimation(Theme.spring) { chain = nil } }
+                            ForEach(chains, id: \.self) { c in
+                                FilterChip(label: Labels.chain(c), count: byChain[c]?.count, selected: chain == c) {
+                                    withAnimation(Theme.spring) { chain = chain == c ? nil : c }
+                                }
+                            }
+                        }
+                        .padding(.horizontal, Theme.pagePadding)
+                    }
+                    .padding(.horizontal, -Theme.pagePadding)
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(spacing: 8) {
+                            FilterChip(label: "✓ Nur echte Angebote", selected: realOnly) { withAnimation(Theme.spring) { realOnly.toggle() } }
+                            FilterChip(label: "Bio", selected: bio) { withAnimation(Theme.spring) { bio.toggle() } }
+                            FilterChip(label: "🌱 Vegan", selected: vegan) { withAnimation(Theme.spring) { vegan.toggle() } }
+                            FilterChip(label: "Nutri A/B", selected: nutri) { withAnimation(Theme.spring) { nutri.toggle() } }
+                        }
+                        .padding(.horizontal, Theme.pagePadding)
+                    }
+                    .padding(.horizontal, -Theme.pagePadding)
+                    if realOnly && !judged {
+                        Label("Noch zu wenig Preisdaten (ab 3 Wochen) – bis dahin zeigt der Filter alle Angebote.",
+                              systemImage: "chart.line.uptrend.xyaxis")
+                            .font(Theme.F.caption).foregroundStyle(Theme.C.text2).fixedSize(horizontal: false, vertical: true)
+                    }
+                    CategoryCircles(items: Labels.categories.map { c in
+                        (key: c.0, label: String(c.1.split(separator: " ").dropFirst().joined(separator: " ")), emoji: Theme.hue(category: c.0).emoji)
+                    }, selected: $category)
+
+                    if drugstore { monthlySection(monthly) }
+
+                    if nextWeek && store.nextOffers.isEmpty {
+                        EmptyState(emoji: "👀", title: "Noch keine Prospekte für nächste Woche",
+                                   text: "Die meisten Läden zeigen sie ab Donnerstag oder Freitag – wir laden sie automatisch.")
+                    } else if all.isEmpty {
+                        EmptyState(emoji: "🏷️", title: "Noch keine Angebote", text: "Die Angebote deiner Läden werden wöchentlich geladen.",
+                                   buttonTitle: "Jetzt laden") { Task { await store.refreshOffers() } }
+                    } else if grid.isEmpty && monthly.isEmpty {
+                        EmptyState(emoji: "🔍", title: "Nichts gefunden", text: "Andere Filter probieren.")
+                    } else {
+                        LazyVGrid(columns: [GridItem(.flexible(), spacing: 12), GridItem(.flexible())], spacing: 12) {
+                            ForEach(grid) { offer in
+                                NavigationLink { OfferDetailView(offer: offer) } label: { OfferCard(offer: offer) }
+                                    .buttonStyle(PressableStyle())
+                            }
                         }
                     }
                 }
@@ -71,7 +117,32 @@ struct OffersView: View {
             .padding(.bottom, 120)
         }
         .scrollDismissesKeyboard(.immediately)
-        .refreshable { await store.refreshOffers() }
+        .refreshable {
+            await store.refreshOffers()
+            await store.loadWatch()
+        }
+    }
+
+    /// „Monatsaktionen“ von dm/Rossmann (gültig bis Monatsende).
+    private func monthlySection(_ offers: [OfferDTO]) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Label { Text("Monatsaktionen").font(Theme.F.headline) } icon: { Text("📅") }
+            if offers.isEmpty {
+                Text("Gerade keine Monatsaktion bei dm oder Rossmann.").font(Theme.F.caption).foregroundStyle(Theme.C.text2)
+            } else {
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 10) {
+                        ForEach(offers) { o in
+                            NavigationLink { OfferDetailView(offer: o) } label: { MiniOffer(offer: o) }.buttonStyle(PressableStyle())
+                        }
+                    }
+                    .padding(.horizontal, 2).padding(.vertical, 4)
+                }
+            }
+        }
+        .padding(16)
+        .card()
+        .appear()
     }
 }
 
@@ -109,6 +180,8 @@ struct OfferCard: View {
                 .frame(height: 118)
                 .background(Theme.C.imageBg, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
                 .overlay(alignment: .topLeading) { StoreLogo(chain: offer.chain, size: 26).padding(8) }
+                .overlay(alignment: .topTrailing) { VerdictBadge(verdict: offer.verdict).padding(6) }  // 28
+                .overlay(alignment: .bottomLeading) { LabelBadges(offer: offer).padding(6) }  // 49
             Text(offer.discount.map { "−\($0) %" } ?? "Angebot")
                 .font(.system(size: 11, weight: .bold)).foregroundStyle(Theme.C.onAction)
                 .padding(.horizontal, 9).frame(height: 20).background(Theme.C.action, in: Capsule())
@@ -163,7 +236,7 @@ struct OfferDetailView: View {
             .sorted { ($0.basePriceCents ?? .max) < ($1.basePriceCents ?? .max) }
             .prefix(8)
         let onList = store.isOnList(offer)
-        let watched = store.watchlist.contains(offer.id)
+        let watched = store.watch(for: offer) != nil
 
         ZStack(alignment: .bottom) {
             Theme.C.bg.ignoresSafeArea()
@@ -184,7 +257,7 @@ struct OfferDetailView: View {
                                 RoundIconButton(systemName: "chevron.left", label: "Zurück") { dismiss() }
                                 Spacer()
                                 RoundIconButton(systemName: watched ? "heart.fill" : "heart", label: "Merken") {
-                                    withAnimation(Theme.spring) { store.toggleWatch(offer) }
+                                    Task { await store.toggleWatch(offer) }
                                 }
                                 .foregroundStyle(watched ? Theme.C.accent : Theme.C.text1)
                                 .symbolEffect(.bounce, value: watched)
@@ -193,9 +266,11 @@ struct OfferDetailView: View {
                             Text(offer.title).font(.system(.title, weight: .bold)).foregroundStyle(.white)
                                 .frame(maxWidth: 190, alignment: .leading).lineLimit(3)
                             if !offer.brand.isEmpty { Text(offer.brand).font(Theme.F.caption).foregroundStyle(.white.opacity(0.6)) }
+                            LabelBadges(offer: offer)  // 49
                             VStack(alignment: .leading, spacing: 6) {
                                 if let d = offer.discount { darkChip("tag.fill", "−\(d) %") }
-                                darkChip("calendar", offer.daysLeft.map { $0 <= 0 ? "nur heute" : "noch \($0) Tage" } ?? "diese Woche")
+                                darkChip("calendar", offer.startsLater ? "ab \(shortDate(offer.validFrom))"
+                                                     : offer.daysLeft.map { $0 <= 0 ? "nur heute" : "noch \($0) Tage" } ?? "diese Woche")
                             }
                         }
                         .padding(16)
@@ -221,6 +296,7 @@ struct OfferDetailView: View {
                     }
                     .appear()
 
+                    StockupTipCard(offer: offer)  // Vorratstipp (31)
                     PriceHistoryCard(offer: offer).appear(delay: 0.03)  // Preisverlauf (28)
 
                     LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 10) {
@@ -231,6 +307,7 @@ struct OfferDetailView: View {
                     }
                     .appear(delay: 0.05)
 
+                    if offer.hasLabels { LabelsInfoCard(offer: offer).appear(delay: 0.06) }  // Erklärung + Quelle (49)
                     OfferNutritionCard(offer: offer)  // nur bei sicherer Zuordnung (2)
 
                     section("Erhältlich bei") {

@@ -189,6 +189,7 @@ struct SettingsView: View {
     @Environment(\.dismiss) private var dismiss
     @AppStorage("appearance") private var appearance = "system"
     static let appearances = [("system", "System"), ("light", "Hell"), ("dark", "Dunkel")]
+    static let storage = [("klein", "Klein (3 Packungen)"), ("mittel", "Mittel (6)"), ("gross", "Groß (12)")]
 
     var body: some View {
         @Bindable var api = store.api
@@ -226,6 +227,23 @@ struct SettingsView: View {
                         NavigationLink { PreferencesView() } label: {
                             row("eurosign.circle.fill", Theme.C.warning, "Budget", "\(euro(h.budgetFoodWeekCents)) / Woche")
                         }
+                        HStack(spacing: 12) {  // Vorratsplatz für Vorratskauf-Tipps (31)
+                            icon("shippingbox.fill", Theme.C.fat)
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text("Vorratsplatz").font(.system(.body, weight: .semibold)).foregroundStyle(Theme.C.text1)
+                                Text("begrenzt Vorratskauf-Tipps").font(Theme.F.caption).foregroundStyle(Theme.C.text2)
+                            }
+                            Spacer()
+                            Picker("Vorratsplatz", selection: Binding(get: { h.storageSpace ?? "mittel" }, set: { v in
+                                if store.demo { store.household?.storageSpace = v } else { Task {
+                                    do { try await store.save(HouseholdPatch(storageSpace: v)) } catch { store.flash("Nicht gespeichert: \(error.localizedDescription)") }
+                                } }
+                            })) {
+                                ForEach(Self.storage, id: \.0) { key, label in Text(label).tag(key) }
+                            }
+                            .pickerStyle(.menu).tint(Theme.C.text2)
+                        }
+                        .sensoryFeedback(.selection, trigger: h.storageSpace)
                     }
                     group("PRÄFERENZEN") {
                         NavigationLink { PreferencesView() } label: {

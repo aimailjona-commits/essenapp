@@ -48,7 +48,8 @@ struct ShoppingView: View {
     }
 
     @ViewBuilder private var listPage: some View {
-        let items = store.listItems
+        let items = store.listItems.filter { i in i.nextWeek != true }
+        let later = store.listItems.filter { i in i.nextWeek == true }  // Gruppe „Nächste Woche“ (30)
         let groups = Dictionary(grouping: items, by: \.chain).sorted { ($0.key.isEmpty ? "~" : $0.key) < ($1.key.isEmpty ? "~" : $1.key) }
         let oneoffs = store.lists.filter { $0.kind == "oneoff" }
         ScrollView {
@@ -70,6 +71,7 @@ struct ShoppingView: View {
                     }
                     .padding(16).card().appear()
                 }
+                if let id = store.householdList?.id { StoreAdviceCard(listId: id) }  // Laden-Empfehlung (42)
                 if groups.isEmpty {
                     EmptyState(emoji: "🛒", title: "Liste ist leer", text: "Sobald ein Wochenplan da ist, steht hier alles, was du kaufen musst.")
                 }
@@ -77,6 +79,19 @@ struct ShoppingView: View {
                     NavigationLink { ShoppingListView(chain: group.key) } label: { ListCard(chain: group.key, items: group.value) }
                         .buttonStyle(PressableStyle())
                         .appear(delay: Double(i) * 0.05)
+                }
+
+                if !later.isEmpty {
+                    Label { Text("Nächste Woche").font(Theme.F.headline) } icon: { Text("📅") }.padding(.top, 8)
+                    ForEach(later) { item in
+                        Button { Task { await store.toggle(item) } } label: { ItemRow(item: item, offer: store.offer(for: item)) }
+                            .buttonStyle(PressableStyle())
+                            .contextMenu {
+                                Button("Doch diese Woche", systemImage: "arrow.uturn.backward") { Task { await store.undoNextWeek(item) } }
+                                Button("Entfernen", systemImage: "trash", role: .destructive) { Task { await store.deleteItem(item) } }
+                            }
+                            .accessibilityAction(named: "Doch diese Woche") { Task { await store.undoNextWeek(item) } }
+                    }
                 }
 
                 HStack {
@@ -185,7 +200,7 @@ struct ShoppingListView: View {
     let chain: String
 
     var body: some View {
-        let items = store.listItems.filter { $0.chain == chain }
+        let items = store.listItems.filter { $0.chain == chain && $0.nextWeek != true }
             .sorted { $0.checked == $1.checked ? $0.name < $1.name : !$0.checked }
         let total = items.filter { !$0.checked }.compactMap { store.offer(for: $0)?.priceCents }.reduce(0, +)
         ScrollView {

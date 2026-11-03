@@ -125,7 +125,7 @@ struct PushAsk: ViewModifier {
                 UserDefaults.standard.set(true, forKey: "pushAsked")
                 show = true
             }
-            .sheet(isPresented: $show) { PushPermissionSheet().presentationDetents([.medium]).presentationCornerRadius(Theme.R.sheet) }
+            .sheet(isPresented: $show) { PushPermissionSheet().presentationCornerRadius(Theme.R.sheet) }
     }
 }
 
@@ -137,15 +137,22 @@ struct PushPermissionSheet: View {
     var text = "Wir erinnern dich ans Planen der Woche und melden, wenn deine Lieblingsprodukte im Angebot sind. Ruhezeiten stellst du selbst ein."
     var allowTitle = "Mitteilungen erlauben"
     var allow: @MainActor () async -> Void = { _ = await PushPermission.request() }
+    @State private var height: CGFloat = 460
 
+    /// Höhe passt sich dem Text an (etwa halbe Höhe, mit großer Schrift mehr) – nichts wird abgeschnitten.
     var body: some View {
-        VStack(spacing: 14) {
-            EmptyState(emoji: emoji, title: title, text: text)
-            Button(allowTitle) { Task { await allow(); dismiss() } }
-                .buttonStyle(PrimaryButtonStyle())
-            Button("Später") { dismiss() }.buttonStyle(SecondaryButtonStyle())
+        ScrollView {
+            VStack(spacing: 14) {
+                EmptyState(emoji: emoji, title: title, text: text)
+                Button(allowTitle) { Task { await allow(); dismiss() } }
+                    .buttonStyle(PrimaryButtonStyle())
+                Button("Später") { dismiss() }.buttonStyle(SecondaryButtonStyle())
+            }
+            .padding(Theme.pagePadding)
+            .onGeometryChange(for: CGFloat.self) { g in g.size.height } action: { h in height = h }
         }
-        .padding(Theme.pagePadding)
+        .scrollBounceBehavior(.basedOnSize)
+        .presentationDetents([.height(height)])
         .presentationBackground(Theme.C.bg)
     }
 }

@@ -12,7 +12,9 @@ struct ListItemDTO: Codable, Identifiable, Hashable {
     var checked: Bool
     var addedBy: String
     var checkedBy: String
-    var source: String
+    var source: String  // plan | manual | basics | stockup („Vorratskauf“, 31) | rhythm („bald leer“, 58)
+    var deferWeek: String? = nil  // ISO-Woche der Gruppe „Nächste Woche“ (30)
+    var nextWeek: Bool? = nil  // in der Gruppe „Nächste Woche“ (Backend rechnet)
 }
 
 struct ListDTO: Codable {
@@ -59,17 +61,21 @@ extension AppStore {
 
     func list(_ id: Int) async throws -> ListDTO { try await api.request("GET", "/lists/\(id)") }
 
-    func addItem(name: String, amount: Double? = nil, unit: String = "", chain: String = "", offerId: Int? = nil, to listID: Int) async {
-        struct Body: Encodable { var name: String; var amount: Double?; var unit: String; var chain: String; var offerId: Int? }
+    /// `source`: manual | stockup („n× auf die Liste“, 31); `nextWeek`: gleich in die Gruppe „Nächste Woche“ (30).
+    func addItem(name: String, amount: Double? = nil, unit: String = "", chain: String = "", offerId: Int? = nil,
+                 source: String = "manual", nextWeek: Bool = false, to listID: Int) async {
+        struct Body: Encodable {
+            var name: String; var amount: Double?; var unit: String; var chain: String; var offerId: Int?; var source: String; var nextWeek: Bool
+        }
         guard !demo else { return }
         let temp = api.newTempId()
         do {
-            let _: ListItemDTO = try await api.request("POST", "/lists/\(listID)/items",
-                                                       body: Body(name: name, amount: amount, unit: unit, chain: chain, offerId: offerId), tempId: temp)
+            let _: ListItemDTO = try await api.request("POST", "/lists/\(listID)/items", body: Body(
+                name: name, amount: amount, unit: unit, chain: chain, offerId: offerId, source: source, nextWeek: nextWeek), tempId: temp)
         } catch APIError.queued {
             // offline: sofort in Liste und Cache, der Server bekommt es beim nächsten Netz (66)
             let item = ListItemDTO(id: temp, name: name, amount: amount, unit: unit, chain: chain, offerId: offerId, checked: false,
-                                   addedBy: profile?.name ?? "", checkedBy: "", source: "manual")
+                                   addedBy: profile?.name ?? "", checkedBy: "", source: source, nextWeek: nextWeek)
             editList(listID) { l in
                 l.items.removeAll { i in i.id < 0 && !API.isTemp(i.id) && i.name == name }  // optimistischer Platzhalter
                 l.items.append(item)
@@ -268,6 +274,8 @@ struct ItemRow: View {
                 if !(amount + who).isEmpty {
                     Text([amount, who].filter { !$0.isEmpty }.joined(separator: " · ")).font(Theme.F.micro).foregroundStyle(Theme.C.text2)
                 }
+                if item.source == "stockup" { DealBadge(text: "Vorratskauf", style: .ok) }  // 31
+                if item.source == "rhythm" { DealBadge(text: "bald leer", style: .soft) }  // 58
             }
             Spacer()
             if let price = offer?.priceCents {

@@ -27,18 +27,37 @@ struct OfferHistoryDTO: Codable, Hashable {
     var avgIntervalWeeks: Double?
 
     /// Urteil-Badge (Text, Farbe); nil = zu wenig Daten.
-    var badge: (text: String, color: Color)? {
+    var badge: (text: String, color: Color)? { Verdict.badge(verdict) }
+
+    /// "2026-W45" → "KW 45"
+    static func kw(_ week: String) -> String { "KW \(Int(week.split(separator: "W").last ?? "") ?? 0)" }
+}
+
+/// Urteil aus dem Preisverlauf (28) – gleiche Texte im Detail und auf den Karten.
+enum Verdict {
+    static func badge(_ verdict: String?) -> (text: String, color: Color)? {
         switch verdict {
         case "bestpreis": ("🔥 Bestpreis", Theme.C.deal)
         case "gut": ("👍 Gutes Angebot", Theme.C.success)
         case "normal": ("😐 Normal", Theme.C.text2)
         case "kein_echtes": ("⚠️ Kein echtes Angebot", Theme.C.warning)
-        default: nil
+        default: nil  // zu_wenig_daten: lieber kein Urteil als ein falsches
         }
     }
+}
 
-    /// "2026-W45" → "KW 45"
-    static func kw(_ week: String) -> String { "KW \(Int(week.split(separator: "W").last ?? "") ?? 0)" }
+/// Kleiner Urteil-Badge auf Angebotskarten (28).
+struct VerdictBadge: View {
+    let verdict: String?
+
+    var body: some View {
+        if let b = Verdict.badge(verdict) {
+            Text(b.text).font(Theme.F.micro).foregroundStyle(b.color).lineLimit(1).minimumScaleFactor(0.8)
+                .padding(.horizontal, 7).frame(height: 20)
+                .background(Theme.C.card, in: Capsule())
+                .background(b.color.opacity(0.14), in: Capsule())
+        }
+    }
 }
 
 extension AppStore {
@@ -113,8 +132,12 @@ struct PriceHistoryCard: View {
             if let normal {
                 RuleMark(y: .value("Normalpreis", Double(normal) / 100))
                     .lineStyle(StrokeStyle(lineWidth: 1, dash: [4, 4])).foregroundStyle(Theme.C.text3)
-                    .annotation(position: .top, alignment: .leading) {
+                    // Beschriftung am rechten Rand mit Hintergrund, damit sie nicht in den Linien steht
+                    .annotation(position: .top, alignment: .trailing, spacing: 2) {
                         Text("Normalpreis \(euro(normal))").font(Theme.F.micro).foregroundStyle(Theme.C.text2)
+                            .padding(.horizontal, 6).frame(height: 18)
+                            .background(Theme.C.card, in: Capsule())
+                            .overlay(Capsule().strokeBorder(Theme.C.line, lineWidth: 0.5))
                     }
             }
             ForEach(points, id: \.self) { p in

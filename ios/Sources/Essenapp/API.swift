@@ -51,6 +51,7 @@ struct HouseholdDTO: Codable {
     var stepImages: Bool? = nil  // Schalter „Schritt-Bilder erzeugen“ (9)
     var stepImagesAvailable: Bool? = nil  // FAL_KEY im Backend gesetzt → Schalter zeigen
     var variety: VarietyDTO? = nil  // Abwechslungsregeln (12)
+    var storageSpace: String? = nil  // Vorratsplatz klein | mittel | gross (31)
 }
 
 struct HouseholdCreated: Codable {
@@ -73,6 +74,14 @@ struct OfferDTO: Codable, Identifiable, Hashable {
     var validTo: String
     var imageUrl: String
     var storeRef: String?
+    var verdict: String? = nil  // Preisverlauf-Urteil (28): bestpreis | gut | normal | kein_echtes | zu_wenig_daten
+    var bio: Bool? = nil  // Bio, Vegan, Nutri-Score (49): lieber kein Badge als ein falsches
+    var vegan: Bool? = nil
+    var vegetarian: Bool? = nil
+    var nutriScore: String? = nil  // A–E
+    var labelSources: [String]? = nil  // „Prospekttext“, „Open Food Facts (ODbL)“
+    var offCode: String? = nil  // Open-Food-Facts-Barcode des sicheren Treffers
+    var monthly: Bool? = nil  // dm/Rossmann-Monatsaktion (59)
 }
 
 enum APIError: LocalizedError {
@@ -150,7 +159,7 @@ final class API {
         let parts = path.split(separator: "/").map(String.init)
         switch (method, parts.count) {
         case ("POST", 1): return parts[0] == "pantry"
-        case ("POST", 3): return parts[0] == "lists" && parts[2] == "items"
+        case ("POST", 3): return (parts[0] == "lists" && parts[2] == "items") || (parts[0] == "items" && parts[2] == "next-week")
         case ("PATCH", 2), ("DELETE", 2): return ["items", "pantry"].contains(parts[0]) && Int(parts[1]) != nil
         default: return false
         }
@@ -340,6 +349,7 @@ struct PendingRequest: Codable, Identifiable {
         assert(m?["checked"] as? Bool == false && m?["amount"] as? Int == 2, "Warteschlange: letzter Stand pro Feld")
         assert(API.queueable("PATCH", "/items/5") && API.queueable("POST", "/lists/3/items") && API.queueable("POST", "/pantry"))
         assert(!API.queueable("POST", "/pantry/basics/3/empty") && !API.queueable("POST", "/items/5/to-pantry"))
+        assert(API.queueable("POST", "/items/5/next-week") && !API.queueable("POST", "/lists/3/assign"))
         assert(createdId(Data(#"{"id":42,"name":"Milch"}"#.utf8)) == 42)
     }
 }
@@ -608,6 +618,7 @@ struct HouseholdPatch: Encodable {
     var stores: [StoreDTO]?
     var stepImages: Bool?
     var variety: VarietyDTO?
+    var storageSpace: String?
 }
 
 /// App-Zustand: lädt und hält Haushalt, Angebote und Plan.
@@ -618,6 +629,10 @@ final class AppStore {
         didSet { if !demo { StoreReminder.shared.update(household) } }  // Standort-Erinnerung (36) folgt den gewählten Läden
     }
     var offers: [OfferDTO] = []
+    var nextOffers: [OfferDTO] = []  // Vorschau nächste Woche (30)
+    var watches: [WatchDTO] = []  // Merkliste + Preisalarme (27/40/58)
+    var barcode = false  // Barcode-Scanner (27): aus Schnell-Aktion und Merkliste
+    var budgetIdeas: (key: String, ideas: [BudgetIdeaDTO])?  // Budget-Rest-Ideen (43), je Plan-Stand einmal laden
     var plan: PlanDTO?
     var error: String?
     var generating = false
@@ -637,7 +652,6 @@ final class AppStore {
     var recipeFilter: String?  // Start-Karte → Rezepte-Tab mit diesem Filter
     var scanning = false  // Kühlschrank-Foto (69): Sheet aus Schnell-Aktion, Start-Karte, Vorrat
     var generatorSpecial: String?  // Start-Banner (25) → Plan-Generator mit dieser Special-Vorlage
-    var watchlist: Set<Int> = Persist.load("watchlist") ?? [] { didSet { Persist.save(watchlist, "watchlist") } }
 
     /// Toast oben, optional mit Aktions-Knopf (bleibt dann länger stehen).
     func flash(_ text: String, action: (title: String, run: () -> Void)? = nil) {
@@ -655,18 +669,13 @@ final class AppStore {
 
     func addToList(_ offer: OfferDTO) {
         guard !isOnList(offer), let list = householdList else { return }
+        let later = offer.startsLater  // Vorschau-Angebot (30) → Gruppe „Nächste Woche“
         // sofort anzeigen, Server bestätigt im Hintergrund
         householdList?.items.append(ListItemDTO(id: -offer.id, name: offer.title, amount: nil, unit: "", chain: offer.chain,
-                                                offerId: offer.id, checked: false, addedBy: "", checkedBy: "", source: "manual"))
-        flash("Zur Einkaufsliste hinzugefügt")
-        Task { await addItem(name: offer.title, chain: offer.chain, offerId: offer.id, to: list.id) }
-    }
-
-    func toggleWatch(_ offer: OfferDTO) {
-        if watchlist.remove(offer.id) == nil {
-            watchlist.insert(offer.id)
-            flash("Auf der Merkliste")
-        }
+                                                offerId: offer.id, checked: false, addedBy: "", checkedBy: "", source: "manual",
+                                                nextWeek: later))
+        flash(later ? "Für nächste Woche auf der Liste" : "Zur Einkaufsliste hinzugefügt")
+        Task { await addItem(name: offer.title, chain: offer.chain, offerId: offer.id, nextWeek: later, to: list.id) }
     }
 
     let demo = Demo.screen != nil
@@ -674,7 +683,8 @@ final class AppStore {
     init(api: API) {
         self.api = api
         if demo, Demo.screen != "empty" {
-            household = Demo.household; offers = Demo.offers; plan = Demo.plan
+            household = Demo.household; offers = Demo.offers; nextOffers = Demo.nextOffers; watches = Demo.watches; plan = Demo.plan
+            barcode = Demo.screen == "scanner"
             householdList = Demo.householdList; lists = Demo.lists
             profiles = Demo.profiles; profile = Demo.profiles.first; pantry = Demo.pantry; nutrition = Demo.nutrition
         }
@@ -709,7 +719,9 @@ final class AppStore {
         do {
             household = try await api.request("GET", "/household")
             offers = try await api.request("GET", "/offers")
+            nextOffers = (try? await api.request("GET", "/offers?week=next")) ?? nextOffers
             plan = try? await api.request("GET", "/plans/current")
+            await loadWatch()
             await loadLists()
             await loadProfiles()
             try? await loadPantry()
@@ -726,6 +738,7 @@ final class AppStore {
         do {
             let _: Result = try await api.request("POST", "/offers/refresh", timeout: 180)
             offers = try await api.request("GET", "/offers")
+            nextOffers = (try? await api.request("GET", "/offers?week=next")) ?? nextOffers
         } catch {
             self.error = error.localizedDescription
         }
@@ -785,10 +798,13 @@ extension AppStore {
         try await api.request("GET", "/stores/nearby?radius_km=\(radiusKm)", timeout: 60)
     }
 
-    func reroll(_ meal: MealDTO) async {
+    /// Neu würfeln; `maxCost`: „günstigere Alternative“ mit Kostengrenze (43).
+    func reroll(_ meal: MealDTO, maxCost: Int? = nil) async {
         guard let id = meal.id else { return }
+        struct Body: Encodable { var maxCostCents: Int }
         do {
-            plan = try await api.request("POST", "/plans/current/entries/\(id)/reroll", timeout: 180)
+            plan = try await api.request("POST", "/plans/current/entries/\(id)/reroll", body: maxCost.map { c in Body(maxCostCents: c) },
+                                         timeout: 180)
             await loadNutrition()  // Tagesringe reagieren aufs Würfeln
         } catch {
             self.error = error.localizedDescription

@@ -38,6 +38,7 @@ Einstellung in S13 › App › „Erscheinungsbild“: **System · Hell · Dunke
 | `success` / `successSoft` | `#1FA35C` / `#DFF5E8` | `#34C77B` / `#12301F` |
 | `danger` | `#E5483B` | `#FF6B5E` |
 | `tabInactive` | `#A9ACB2` | `#6C6C70` |
+| Nutri-Score A–E (`Theme.C.nutri`) | `#038141` `#85BB2F` `#FECB02` `#EE8100` `#E63E11` | unverändert (Originalfarben); Buchstabe weiß, auf C `onBright` `#111111` |
 | `imageBg` (Produktbild-Fläche) | `#F7F7F7` | `#2A2A2D` |
 | `heroDark` (Kopf Angebotsdetail, Tab-Leiste ohne Glas) | `#141414` | `#1C1C1E` |
 | `scrim` (hinter Schnell-Aktionen) | Schwarz 25 % | Schwarz 55 % |
@@ -99,6 +100,8 @@ SF Symbols, Strichstärke `regular`, in Buttons `semibold`. Kleine Icons stehen 
 | `OfferCard` | Raster-Karte: Produktbild auf getönter Fläche, `DealBadge` oben links, `AddToListButton` unten rechts, Name, Preis, Grundpreis, Laden-Chip |
 | `DealBadge` | Pill mit Rabatt („−30 %“) oder „Angebot“ |
 | `StoreChip` | Neutraler Pill mit Händlername |
+| `VerdictBadge` | Kleines Urteil aus dem Preisverlauf (28) auf Karten: „🔥 Bestpreis“ (`deal`), „👍 Gutes Angebot“ (`success`), „😐 Normal“ (`text2`), „⚠️ Kein echtes Angebot“ (`warning`), getönte Kapsel auf `card`; bei zu wenig Daten keiner |
+| `LabelBadges` / `NutriBadge` | Nutri-Score-Quadrat (Radius 30 %) in Originalfarbe, 🌱 vegan im `card`-Kreis, „Bio“ (`success` auf `successSoft`) – nur sichere Treffer (49) |
 | `FilterChips` | Horizontal scrollende Pills mit Anzahl, aktiver Chip schwarz |
 | `PrimaryButton` | Schwarzer voll runder Pill-Button, weißer Text, Höhe 56 |
 | `SecondaryButton` | `surface`-Pill, schwarzer Text |

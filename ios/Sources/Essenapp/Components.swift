@@ -315,8 +315,9 @@ struct EmptyState: View {
                 .background(Theme.C.accentSoft, in: Circle())
                 .offset(y: float ? -4 : 4)
                 .onAppear { withAnimation(.easeInOut(duration: 1.8).repeatForever()) { float = true } }
-            Text(title).font(Theme.F.headline).padding(.top, 6)
+            Text(title).font(Theme.F.headline).padding(.top, 6).multilineTextAlignment(.center).fixedSize(horizontal: false, vertical: true)
             Text(text).font(Theme.F.caption).foregroundStyle(Theme.C.text2).multilineTextAlignment(.center)
+                .fixedSize(horizontal: false, vertical: true)  // mehrzeilig, nie abgeschnitten (Erklär-Sheets)
             if let buttonTitle, let action {
                 Button(buttonTitle, action: action).buttonStyle(PrimaryButtonStyle()).padding(.top, 8).frame(maxWidth: 260)
             }
@@ -411,6 +412,7 @@ enum AppTab: CaseIterable {
 struct TabBar: View {
     @Binding var selected: AppTab
     @Binding var quickOpen: Bool
+    var badges: [AppTab: Int] = [:]  // z. B. Merklisten-Treffer am Angebote-Tab (27)
     var reselect: () -> Void = {}
     @Namespace private var pill
 
@@ -468,6 +470,15 @@ struct TabBar: View {
         } label: {
             VStack(spacing: 2) {
                 Image(systemName: tab.symbol).font(.system(size: 18, weight: .semibold)).symbolEffect(.bounce, value: on)
+                    .overlay(alignment: .topTrailing) {
+                        if let n = badges[tab], n > 0 {
+                            Text("\(n)").font(.system(size: 10, weight: .bold, design: .rounded)).foregroundStyle(.white)
+                                .padding(.horizontal, 4).frame(minWidth: 16, minHeight: 16)
+                                .background(Theme.C.deal, in: Capsule())
+                                .offset(x: 10, y: -6)
+                                .transition(.scale.combined(with: .opacity))
+                        }
+                    }
                 Text(tab.title).font(.system(size: 10, weight: .semibold))
             }
             .foregroundStyle(on ? Theme.C.accent : (glass ? Theme.C.text1 : Color.white.opacity(0.6)))
@@ -481,7 +492,7 @@ struct TabBar: View {
             .contentShape(Capsule())
         }
         .buttonStyle(PressableStyle())
-        .accessibilityLabel(tab.title)
+        .accessibilityLabel(badges[tab].map { n in n > 0 ? "\(tab.title), \(n) Treffer" : tab.title } ?? tab.title)
         .accessibilityAddTraits(on ? .isSelected : [])
     }
 }

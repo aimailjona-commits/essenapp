@@ -24,10 +24,10 @@ shoot() {  # $1 = Screen, $2 = Dateiname, danach weitere App-Argumente (z. B. -d
 }
 
 xcrun simctl ui "$udid" appearance light
-for s in onboarding start quick generator generating offers offer stores plan recipe cooking sharecard recipes myrecipe recipeform shopping list pantry settings profile notifications instagram imported importlink sharepair shareimport shareresult fridgecam fridgereview cooknow offline voiceadd storeask substitute nomood guests leftovers basics variety empty; do shoot "$s" "$s"; done
+for s in onboarding start quick generator generating offers offer stores plan recipe cooking sharecard recipes myrecipe recipeform shopping list pantry settings profile notifications instagram imported importlink sharepair shareimport shareresult fridgecam fridgereview cooknow offline voiceadd storeask substitute nomood guests leftovers basics variety watch scanner nextweek offerstock savings budgetover singlestore empty; do shoot "$s" "$s"; done
 # Dark Mode (68): Simulator dunkel (Einstellung „System“) und zusätzlich per Demo-Argument erzwungen
 xcrun simctl ui "$udid" appearance dark
-for s in onboarding start quick generator offers offer stores plan recipe cooking sharecard recipes myrecipe recipeform shopping list pantry settings profile notifications instagram imported importlink sharepair shareresult fridgecam fridgereview cooknow offline voiceadd storeask substitute nomood guests leftovers basics variety; do
+for s in onboarding start quick generator offers offer stores plan recipe cooking sharecard recipes myrecipe recipeform shopping list pantry settings profile notifications instagram imported importlink sharepair shareresult fridgecam fridgereview cooknow offline voiceadd storeask substitute nomood guests leftovers basics variety watch scanner nextweek offerstock savings budgetover singlestore; do
   shoot "$s" "dark-$s" -demoAppearance dark
 done
 xcrun simctl ui "$udid" appearance light

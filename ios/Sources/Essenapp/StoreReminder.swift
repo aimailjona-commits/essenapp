@@ -131,7 +131,7 @@ final class StoreReminder: NSObject, CLLocationManagerDelegate {
         guard let lists: [ListSummaryDTO] = try? await api.request("GET", "/lists"),
               let id = lists.first(where: { l in l.kind == "household" })?.id,
               let list: ListDTO = try? await api.request("GET", "/lists/\(id)") else { return 0 }
-        return list.items.filter { i in !i.checked && i.chain == chain }.count
+        return list.items.filter { i in !i.checked && i.chain == chain && i.nextWeek != true }.count
     }
 
     // MARK: CLLocationManagerDelegate (Aufrufe kommen auf dem Main-Thread, der den Manager erzeugt hat)
@@ -197,7 +197,7 @@ struct StoreReminderCard: View {
                 }
                 reminder.enabled = true
             }
-            .presentationDetents([.medium]).presentationCornerRadius(Theme.R.sheet)
+            .presentationCornerRadius(Theme.R.sheet)
         }
     }
 }

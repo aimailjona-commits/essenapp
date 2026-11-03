@@ -53,6 +53,8 @@ struct PlanOptions: Encodable {
     var guests: [GuestSlot]?  // „+ Gäste“ je Tag/Mahlzeit (15)
     var guestBudgetCents: Int?  // „Gäste-Budget extra“
     var special: String?  // Special-Vorlage = key aus GET /specials (25)
+    var nextWeek = false  // „Plan für nächste Woche“ mit den Vorschau-Angeboten (30)
+    var singleStore: String?  // „Nur ein Laden“ (41): chain eines gewählten Ladens
     var saveAsDefault = false
 }
 

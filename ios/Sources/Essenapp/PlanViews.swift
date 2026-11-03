@@ -216,6 +216,7 @@ struct RecipeDetailView: View {
     private let given: MealDTO
     @State private var swapped: MealDTO?  // gespeichertes Rezept nach „Ersatz finden“ (7)
     @State private var substituting: Int?  // Index der Zutat für „Ersatz finden“
+    @State private var alarmFor: String?  // Zutat für „Preisalarm“ (40)
     @State private var showRating = false
     @State private var openOffer: OfferDTO?
     @State private var searchIngredient: IngredientDTO?
@@ -384,8 +385,10 @@ struct RecipeDetailView: View {
                             .buttonStyle(PressableStyle())
                             .contextMenu {  // lange drücken → Ersatz (7)
                                 Button("Ersatz finden", systemImage: "arrow.left.arrow.right") { substituting = index }
+                                Button("Preisalarm", systemImage: "bell.badge") { alarmFor = ing.name }
                             }
                             .accessibilityAction(named: "Ersatz finden") { substituting = index }
+                            .accessibilityAction(named: "Preisalarm") { alarmFor = ing.name }
                         }
                     }
                     .padding(16).card()
@@ -469,6 +472,9 @@ struct RecipeDetailView: View {
             Text("„\(recipe.title)“ verschwindet aus Meine Rezepte. Steht es im Wochenplan, bleibt es dort.")
         }
         .navigationDestination(item: $openOffer) { OfferDetailView(offer: $0) }
+        .sheet(isPresented: Binding(get: { alarmFor != nil }, set: { on in if !on { alarmFor = nil } })) {
+            WatchSheet(ingredient: alarmFor ?? "").presentationDetents([.large]).presentationCornerRadius(Theme.R.sheet)
+        }
         .sheet(item: $searchIngredient) { IngredientOffersSheet(ingredient: $0).presentationDetents([.medium, .large]).presentationCornerRadius(Theme.R.sheet) }
         .sheet(isPresented: Binding(get: { substituting != nil }, set: { on in if !on { substituting = nil } })) {
             if let i = substituting {
@@ -742,6 +748,8 @@ struct PlanGeneratorSheet: View {
     @State private var special: String?
     @State private var guests: [String: Int] = [:]  // „+ Gäste“ (15)
     @State private var guestEuro: Double?
+    @State private var nextWeek = Demo.screen == "singlestore"  // „Plan für nächste Woche“ (30)
+    @State private var singleStore: String? = Demo.screen == "singlestore" ? "lidl" : nil  // „Nur ein Laden“ (41)
 
     private let steps = [("Angebote auswerten", "🏷️"), ("Lieblingsrezepte prüfen", "❤️"),
                          ("Gerichte planen", "👩‍🍳"), ("Preise rechnen", "🧮")]
@@ -786,8 +794,10 @@ struct PlanGeneratorSheet: View {
                 ScrollView {
                     VStack(alignment: .leading, spacing: 14) {
                         Text("Wochenplan erstellen").font(Theme.F.title)
-                        Text("\(info.map { i in "KW \(i.week) · " } ?? "")Passe an, was du diese Woche essen möchtest – gilt nur für diesen Plan.")
+                        Text("\(weekLabel)Passe an, was du diese Woche essen möchtest – gilt nur für diesen Plan.")
                             .font(Theme.F.caption).foregroundStyle(Theme.C.text2)
+                            .contentTransition(.numericText())
+                        weekAndStoreCard.appear()
                         if let top = info?.topOffers, !top.isEmpty { TopOffersHint(offers: top).appear() }
                         if !specials.isEmpty { SpecialPicker(specials: specials, selected: $special).appear(delay: 0.04) }
                         VStack(alignment: .leading, spacing: 8) {
@@ -824,6 +834,57 @@ struct PlanGeneratorSheet: View {
         }
     }
 
+    /// „KW 46 · “ – mit „Plan für nächste Woche“ die KW des nächsten Montags.
+    private var weekLabel: String {
+        let cal = Calendar(identifier: .iso8601)
+        let week = nextWeek ? cal.component(.weekOfYear, from: cal.date(byAdding: .weekOfYear, value: 1, to: .now) ?? .now) : info?.week
+        return week.map { w in "KW \(w) · " } ?? ""
+    }
+
+    /// „Plan für nächste Woche“ (30) und „Nur ein Laden“ mit Logo-Auswahl (41).
+    private var weekAndStoreCard: some View {
+        let chains = Labels.chains.map(\.key).filter { c in store.household?.stores.contains { s in s.chain == c && s.enabled } ?? false }
+        let preview = store.nextOffers.count
+        return VStack(alignment: .leading, spacing: 10) {
+            Label { Text("Woche & Läden").font(Theme.F.headline) } icon: { Text("🛒") }
+            Toggle("Plan für nächste Woche", isOn: $nextWeek.animation(Theme.spring))
+                .font(Theme.F.callout)
+                .disabled(preview == 0 && !nextWeek)
+            Text(preview == 0 ? "Noch keine Prospekte für nächste Woche – meist ab Donnerstag oder Freitag."
+                              : "Nutzt die Vorschau-Angebote (\(preview)) der nächsten Woche.")
+                .font(Theme.F.micro).foregroundStyle(Theme.C.text2)
+            Divider()
+            Toggle("Nur ein Laden", isOn: Binding(get: { singleStore != nil }, set: { on in
+                withAnimation(Theme.spring) { singleStore = on ? chains.first : nil }
+            }))
+            .font(Theme.F.callout)
+            .disabled(chains.count < 2 && singleStore == nil)
+            if let picked = singleStore {
+                HStack(spacing: 10) {
+                    ForEach(chains, id: \.self) { c in
+                        let on = c == picked
+                        Button { withAnimation(Theme.spring) { singleStore = c } } label: {
+                            StoreLogo(chain: c, size: 44)
+                                .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous).strokeBorder(on ? Theme.C.accent : .clear, lineWidth: 3))
+                                .scaleEffect(on ? 1.08 : 1)
+                                .opacity(on ? 1 : 0.55)
+                        }
+                        .buttonStyle(PressableStyle())
+                        .accessibilityLabel(Labels.chain(c))
+                        .accessibilityAddTraits(on ? .isSelected : [])
+                    }
+                }
+                .sensoryFeedback(.selection, trigger: picked)
+                Text("Einkauf komplett bei \(Labels.chain(picked)) – Zutaten ohne Angebot zum Normalpreis von \(Labels.chain(picked)).")
+                    .font(Theme.F.micro).foregroundStyle(Theme.C.text2).fixedSize(horizontal: false, vertical: true)
+                    .transition(.opacity)
+            }
+        }
+        .tint(Theme.C.accent)
+        .padding(16)
+        .card()
+    }
+
     private func start() {
         withAnimation(Theme.spring) { started = true; phase = 0 }
         guard !store.demo else { return }
@@ -833,6 +894,8 @@ struct PlanGeneratorSheet: View {
             options.guests = slots.isEmpty ? nil : slots
             options.guestBudgetCents = slots.isEmpty ? nil : guestEuro.map { e in Int(e) * 100 }
             options.special = special
+            options.nextWeek = nextWeek
+            options.singleStore = singleStore
             let body = options
             async let done: Void = store.generatePlan(body)
             for i in 1..<steps.count {  // Fortschritt ist nur Anzeige, das Backend arbeitet in einem Aufruf

@@ -41,6 +41,10 @@ enum Theme {
         static let bloom: [Color] = [0xFF5B2E, 0x3DBE6B, 0xF7B731, 0x3E9BFF, 0x8E7CFF, 0xFF5DA2, 0x22B5C9, 0xFF8A3D].map { Color(hex: $0) }
         static let listTints: [Color] = ([(0xFFE8E2, 0x3A2420), (0xE3F6EA, 0x1E3326), (0xEEEBFF, 0x2A2640), (0xFFF4D6, 0x3A3320),
                                           (0xE3F0FF, 0x1E2A3A), (0xFFE6F1, 0x3A2030)] as [(UInt32, UInt32)]).map { t in Color(t.0, t.1) }
+        // Nutri-Score A–E in den Originalfarben (49), in beiden Modi gleich; Buchstabe weiß, auf C dunkel (`onBright`)
+        static let nutri: [String: Color] = ["A": Color(hex: 0x038141), "B": Color(hex: 0x85BB2F), "C": Color(hex: 0xFECB02),
+                                             "D": Color(hex: 0xEE8100), "E": Color(hex: 0xE63E11)]
+        static let onBright = Color(hex: 0x111111)
         // Kochmodus (S18): immer dunkler Grund, weiße Schrift
         static let cookBg = Color(hex: 0x111111)
         static let cookText2 = Color.white.opacity(0.6)

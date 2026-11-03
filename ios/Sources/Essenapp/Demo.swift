@@ -10,7 +10,10 @@ import UIKit
 /// fridgecam / fridgereview / cooknow (Kühlschrank-Foto S23–S25), offline (Einkauf mit Offline-Banner, 66),
 /// voiceadd (Einkauf mit Sprach-Eingabe, 45), storeask (Benachrichtigungen mit Erklär-Sheet Standort-Erinnerung, 36),
 /// substitute (Ersatz finden, 7), nomood („Keine Lust“, 16), guests (Gäste-Sheet über dem Wochenplan, 15),
-/// leftovers (Reste in den Vorrat, 19), basics (Frühstück & Snacks, 23), variety (Präferenzen › Abwechslung, 12).
+/// leftovers (Reste in den Vorrat, 19), basics (Frühstück & Snacks, 23), variety (Präferenzen › Abwechslung, 12),
+/// Phase 12: watch (Merkliste S10), scanner (Barcode-Scan + „Auf Merkliste?“), nextweek (Angebote nächste Woche),
+/// offerstock (Angebotsdetail mit Vorratstipp + Bio/Nutri), savings (Start: Budget-Rest, nächste Woche günstiger, Vorrat),
+/// budgetover (Start: über Budget), singlestore (Plan-Generator: nächste Woche + nur ein Laden).
 /// Erscheinungsbild (68): zusätzlich `-demoAppearance dark|light` (überschreibt die Einstellung).
 enum Demo {
     static let screen: String? = arg("-demoScreen")
@@ -61,21 +64,85 @@ enum Demo {
     ]
 
     static let offers: [OfferDTO] = [
-        offer(1, "rewe", "Hähnchenbrustfilet", "fleisch_fisch", 399, 599, 400, "g", 998),
-        offer(2, "aldi_sued", "Avocado, essreif", "obst_gemuese", 79, 119, 1, "stk", 79),
+        offer(1, "rewe", "Hähnchenbrustfilet", "fleisch_fisch", 399, 599, 400, "g", 998, verdict: "gut"),
+        offer(2, "aldi_sued", "Avocado, essreif", "obst_gemuese", 79, 119, 1, "stk", 79, verdict: "bestpreis", vegan: true),
         offer(3, "lidl", "Rispentomaten", "obst_gemuese", 199, nil, 500, "g", 398),
-        offer(4, "lidl", "Lachsfilet", "fleisch_fisch", 349, 499, 250, "g", 1396),
-        offer(5, "aldi_sued", "Skyr Natur", "kuehlung", 129, 159, 450, "g", 287),
-        offer(6, "dm", "Shampoo Repair", "drogerie", 179, 239, 300, "ml", 597),
-        offer(7, "rewe", "Basmatireis", "vorrat", 149, 199, 500, "g", 298),
-        offer(8, "lidl", "Feta", "kuehlung", 99, 139, 200, "g", 495),
+        offer(4, "lidl", "Lachsfilet", "fleisch_fisch", 349, 499, 250, "g", 1396, verdict: "kein_echtes"),
+        offer(5, "aldi_sued", "Skyr Natur", "kuehlung", 129, 159, 450, "g", 287, verdict: "normal", nutri: "A"),
+        offer(6, "dm", "Shampoo Repair", "drogerie", 179, 239, 300, "ml", 597, monthly: true),
+        offer(7, "rewe", "Basmatireis", "vorrat", 149, 199, 500, "g", 298, verdict: "bestpreis", nutri: "A", bio: true, vegan: true),
+        offer(8, "lidl", "Feta", "kuehlung", 99, 139, 200, "g", 495, verdict: "gut", nutri: "D"),
     ]
 
     static func offer(_ id: Int, _ chain: String, _ title: String, _ category: String, _ price: Int, _ regular: Int?,
-                      _ amount: Double, _ unit: String, _ base: Int) -> OfferDTO {
+                      _ amount: Double, _ unit: String, _ base: Int, verdict: String = "zu_wenig_daten", nutri: String? = nil,
+                      bio: Bool = false, vegan: Bool = false, monthly: Bool = false, from: String = "2026-11-02",
+                      to: String = "2026-11-07") -> OfferDTO {
         OfferDTO(id: id, chain: chain, title: title, brand: "", category: category, priceCents: price, regularPriceCents: regular,
-                 amount: amount, unit: unit, basePriceCents: base, validFrom: "2026-11-02", validTo: "2026-11-07", imageUrl: "")
+                 amount: amount, unit: unit, basePriceCents: base, validFrom: from, validTo: to, imageUrl: "", verdict: verdict,
+                 bio: bio, vegan: vegan, vegetarian: vegan, nutriScore: nutri,
+                 labelSources: nutri == nil ? ["Prospekttext"] : ["Prospekttext", "Open Food Facts (ODbL)"],
+                 offCode: nutri == nil ? "" : "4311501000000", monthly: monthly)
     }
+
+    // MARK: Sparen (Phase 12)
+
+    static let nextOffers: [OfferDTO] = [
+        offer(21, "lidl", "Hähnchenbrustfilet", "fleisch_fisch", 349, 499, 400, "g", 873, from: "2099-11-09", to: "2099-11-14"),
+        offer(22, "aldi_sued", "Butter", "kuehlung", 139, 199, 250, "g", 556, from: "2099-11-09", to: "2099-11-14"),
+        offer(23, "dm", "Shampoo Repair", "drogerie", 149, 239, 300, "ml", 497, from: "2099-11-09", to: "2099-11-14"),
+        offer(24, "rewe", "Spaghetti", "vorrat", 79, 129, 500, "g", 158, from: "2099-11-09", to: "2099-11-14"),
+    ]
+
+    static let nextWeekDeals = [
+        NextWeekDealDTO(name: "Hähnchenbrustfilet", itemId: 1, watchId: nil, offer: nextOffers[0], nowPriceCents: 499, nowChain: "rewe",
+                        savingPct: 30),
+        NextWeekDealDTO(name: "Shampoo Repair", itemId: nil, watchId: 1, offer: nextOffers[2], nowPriceCents: 179, nowChain: "dm",
+                        savingPct: 17),
+    ]
+
+    static let stockups = [
+        StockupDTO(offer: offers[6], packs: 6, weeks: 6, weeklyUse: 1, savingCents: 300, normalPriceCents: 199),
+        StockupDTO(offer: offers[5], packs: 3, weeks: nil, weeklyUse: nil, savingCents: 180, normalPriceCents: 239),
+    ]
+
+    static func watch(_ id: Int, _ kind: String, _ label: String, brand: String = "", category: String = "", max: Int? = nil,
+                      maxBase: Int? = nil, unit: String = "", lasts: Double? = nil, bought: String? = nil, empty: String? = nil,
+                      hits: [OfferDTO] = []) -> WatchDTO {
+        WatchDTO(id: id, kind: kind, label: label, brand: brand, ean: "", imageUrl: "", category: category, maxPriceCents: max,
+                 maxBasePriceCents: maxBase, baseUnit: unit, chains: [], lastsWeeks: lasts, lastsWeeksSuggestion: lasts,
+                 lastBought: bought, emptyOn: empty, hits: hits)
+    }
+
+    static let watches = [
+        watch(1, "produkt", "Shampoo Repair", brand: "Balea", category: "drogerie", max: 199, lasts: 6, bought: "2026-10-20",
+              empty: "2026-12-01", hits: [offers[5]]),
+        watch(2, "produkt", "Skyr Natur", category: "kuehlung", hits: [offers[4]]),
+        watch(3, "produkt", "Haferdrink Barista", brand: "Oatly", category: "kuehlung", max: 149),
+        watch(4, "produkt", "Toilettenpapier 4-lagig", category: "haushalt", lasts: 3, bought: "2026-10-27", empty: "2026-11-17"),
+        watch(5, "zutat", "Butter", max: 149),
+        watch(6, "zutat", "Lachsfilet", maxBase: 1500, unit: "kg", hits: [offers[3]]),
+    ]
+
+    static let storeCombos = [
+        StoreComboDTO(chains: ["rewe", "lidl"], totalCents: 3890, perStore: ["rewe": 1620, "lidl": 2270], savedCents: 230, unpriced: 1,
+                      distanceKm: 2.4, extraKm: 1.2),
+        StoreComboDTO(chains: ["lidl"], totalCents: 4120, perStore: ["lidl": 4120], savedCents: 0, unpriced: 1, distanceKm: 1.2, extraKm: 0),
+        StoreComboDTO(chains: ["rewe"], totalCents: 4380, perStore: ["rewe": 4380], savedCents: 0, unpriced: 1, distanceKm: 0.6, extraKm: 0),
+    ]
+
+    static let budget = BudgetDTO(budgetCents: 6000, totalCents: 3820, restCents: 2180, state: "rest", over: nil)
+    static let budgetOver = BudgetDTO(budgetCents: 3500, totalCents: 3820, restCents: -320, state: "over",
+                                      over: .init(entryId: 12, day: 1, title: "Lachs-Bowl mit Avocado", costCents: 620, maxCostCents: 300))
+
+    static let budgetIdeas = [
+        BudgetIdeaDTO(kind: "dessert", title: "Skyr-Creme mit Beeren", costCents: 240, recipe: idea(401, "Skyr-Creme mit Beeren", 10, []).recipe),
+        BudgetIdeaDTO(kind: "snack", title: "Ofen-Kichererbsen", costCents: 180, recipe: idea(402, "Ofen-Kichererbsen", 25, []).recipe),
+        BudgetIdeaDTO(kind: "vorrat", title: "Basmatireis", costCents: 894, stockup: stockups[0]),
+    ]
+
+    static let eanProduct = EanProductDTO(ean: "4066447240962", found: true, name: "Repair Shampoo", brand: "Balea", imageUrl: "",
+                                          nutriScore: nil)
 
     static func meal(_ day: Int, _ type: String, _ title: String, _ cost: Int, _ minutes: Int, _ ings: [IngredientDTO]) -> MealDTO {
         // Jona (Faktor 1,25) ist mittwochs mittags nicht zu Hause, Malina (1,0) isst immer mit
@@ -320,6 +387,9 @@ enum Demo {
         item(5, "Lachsfilet", 250, "g", "lidl", 4),
         item(6, "Avocado", 1, "stk", "aldi_sued", 2),
         item(7, "Spülmittel", nil, "", "", nil, source: "manual", added: "Malina"),
+        item(8, "Basmatireis", 6, "stk", "rewe", 7, source: "stockup", added: "Jona"),  // Vorratskauf (31)
+        item(9, "Toilettenpapier", nil, "", "dm", nil, source: "rhythm"),  // bald leer (58)
+        item(10, "Butter", 1, "stk", "aldi_sued", 22, source: "manual", added: "Jona", next: true),  // Nächste Woche (30)
     ])
 
     static let lists = [
@@ -328,8 +398,9 @@ enum Demo {
     ]
 
     static func item(_ id: Int, _ name: String, _ amount: Double?, _ unit: String, _ chain: String, _ offer: Int?,
-                     checked: Bool = false, by: String = "", source: String = "plan", added: String = "") -> ListItemDTO {
+                     checked: Bool = false, by: String = "", source: String = "plan", added: String = "",
+                     next: Bool = false) -> ListItemDTO {
         ListItemDTO(id: id, name: name, amount: amount, unit: unit, chain: chain, offerId: offer, checked: checked,
-                    addedBy: added, checkedBy: by, source: source)
+                    addedBy: added, checkedBy: by, source: source, deferWeek: next ? "2026-W46" : nil, nextWeek: next)
     }
 }
