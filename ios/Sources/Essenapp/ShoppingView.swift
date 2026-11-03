@@ -203,6 +203,7 @@ struct ShoppingListView: View {
     @Environment(\.dismiss) private var dismiss
     let chain: String
     @State private var coupons: [CouponDTO] = []  // Coupon-Leiste (38d)
+    @State private var live = false  // Live-Aktivität läuft für diesen Laden (37)
 
     var body: some View {
         let items = store.listItems.filter { $0.chain == chain && $0.nextWeek != true }
@@ -218,6 +219,21 @@ struct ShoppingListView: View {
                 DisplayHeader(line1: chain.isEmpty ? "Überall" : Labels.chain(chain),
                               line2: total > 0 ? "\(items.filter { !$0.checked }.count) offen · \(euro(total))" : "\(items.filter { !$0.checked }.count) offen")
                     .padding(.bottom, 10)
+                if (store.demo || LiveShop.available), live || items.contains(where: { i in !i.checked }) {
+                    Button {
+                        if live {
+                            LiveShop.end()
+                        } else {
+                            do { try LiveShop.start(chain: chain, list: store.householdList) } catch { store.flash("Live-Aktivität nicht möglich"); return }
+                        }
+                        withAnimation(Theme.spring) { live.toggle() }
+                    } label: {
+                        Label(live ? "Einkauf beenden" : "Einkauf starten", systemImage: live ? "stop.fill" : "cart.fill")
+                    }
+                    .buttonStyle(SecondaryButtonStyle())
+                    .sensoryFeedback(.impact, trigger: live)
+                    .padding(.bottom, 6)
+                }
                 if !coupons.isEmpty { CouponBar(coupons: coupons).padding(.bottom, 6) }
                 ForEach(items) { item in
                     Button { Task { await store.toggle(item) } } label: { ItemRow(item: item, offer: store.offer(for: item)) }
@@ -237,7 +253,10 @@ struct ShoppingListView: View {
         }
         .background(Theme.C.bg)
         .toolbar(.hidden, for: .navigationBar)
-        .task { if !chain.isEmpty { coupons = await store.storeCoupons(chain) } }
+        .task {
+            live = LiveShop.running(chain)
+            if !chain.isEmpty { coupons = await store.storeCoupons(chain) }
+        }
     }
 }
 

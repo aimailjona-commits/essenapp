@@ -72,10 +72,13 @@ enum Theme {
     }
 
     /// Eigene, neutrale Farbe pro Laden (keine Markenfarben, E18).
-    static func storeColor(_ chain: String) -> Color {
+    static func storeColor(_ chain: String) -> Color { Color(hex: storeHex(chain)) }
+
+    /// Als Zahl für die Live-Aktivität (37), die `Color` nicht speichern kann.
+    static func storeHex(_ chain: String) -> UInt32 {
         let palette: [UInt32] = [0xFF6B4A, 0x3DBE6B, 0x3E9BFF, 0xF7B731, 0x8E7CFF, 0xFF5DA2, 0x22B5C9, 0x15804F, 0xB0703C, 0x5B6CF0]
         let keys = Labels.chains.map(\.key)
-        return Color(hex: palette[(keys.firstIndex(of: chain) ?? 0) % palette.count])
+        return palette[(keys.firstIndex(of: chain) ?? 0) % palette.count]
     }
 
     /// iOS-Textstile (Dynamic Type). Überschriften und Zahlen „rounded“ für einen freundlichen, modernen Look.

@@ -95,9 +95,10 @@ struct StepImage: View {
     }
 }
 
-// MARK: S21 Teilen aus Instagram (Einstellungen)
+// MARK: S21 Teilen aus Instagram / S38 Widget einrichten (Einstellungen) – gleiche Kopplung (E53/E83)
 
 struct InstagramShareView: View {
+    var widget = false
     @Environment(AppStore.self) private var store
     @Environment(\.dismiss) private var dismiss
     @Environment(\.scenePhase) private var scenePhase
@@ -113,17 +114,24 @@ struct InstagramShareView: View {
         "Beim ersten Mal Server-Adresse und Code eingeben – danach geht es mit einem Tipp.",
         "Das Rezept landet in Meine Rezepte (Filter „Importiert“).",
     ]
+    private static let widgetSteps = [
+        "Unten „Code erzeugen“ tippen.",
+        "Home-Bildschirm lange drücken › „Bearbeiten“ › „Widget hinzufügen“ › „Essenapp“ (klein, mittel oder Sperrbildschirm).",
+        "Widget lange drücken › „Widget bearbeiten“ › Server-Adresse und Kopplungscode eintragen.",
+        "Das Widget lädt das heutige Gericht selbst, etwa alle 30 Minuten. Weitere Widgets brauchen nur die Server-Adresse.",
+    ]
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 14) {
                 RoundIconButton(systemName: "chevron.left", label: "Zurück") { dismiss() }
-                DisplayHeader(line1: "Teilen aus", line2: "Instagram")
-                Text("Reels und Rezept-Webseiten direkt aus dem Teilen-Menü in Meine Rezepte holen.")
+                DisplayHeader(line1: widget ? "Widget" : "Teilen aus", line2: widget ? "einrichten" : "Instagram")
+                Text(widget ? "Heutiges Gericht, nächste Mahlzeit und offene Artikel auf Home- und Sperrbildschirm."
+                            : "Reels und Rezept-Webseiten direkt aus dem Teilen-Menü in Meine Rezepte holen.")
                     .font(Theme.F.caption).foregroundStyle(Theme.C.text2)
 
                 section("So geht's") {
-                    ForEach(Array(Self.steps.enumerated()), id: \.offset) { i, s in
+                    ForEach(Array((widget ? Self.widgetSteps : Self.steps).enumerated()), id: \.offset) { i, s in
                         HStack(alignment: .top, spacing: 12) {
                             Text("\(i + 1)").font(.system(.footnote, design: .rounded, weight: .bold)).foregroundStyle(Theme.C.onAction)
                                 .frame(width: 26, height: 26).background(Theme.C.action, in: Circle())
@@ -141,7 +149,7 @@ struct InstagramShareView: View {
         .toolbar(.hidden, for: .navigationBar)
         .refreshable { await loadTokens() }
         .task {
-            if Demo.screen == "instagram" { code = try? await store.pairingCode() }
+            if ["instagram", "widgetsetup"].contains(Demo.screen ?? "") { code = try? await store.pairingCode() }
             await loadTokens()
         }
         .onChange(of: scenePhase) { _, phase in if phase == .active { Task { await loadTokens() } } }  // zurück aus Instagram
@@ -153,7 +161,7 @@ struct InstagramShareView: View {
                 }
             }
         } message: { _ in
-            Text("Die Teilen-Erweiterung muss sich danach mit einem neuen Code koppeln.")
+            Text("Das Gerät muss sich danach mit einem neuen Code koppeln.")
         }
     }
 
@@ -214,7 +222,8 @@ struct InstagramShareView: View {
             }
             ForEach(tokens) { t in
                 HStack(spacing: 12) {
-                    Image(systemName: "square.and.arrow.up.fill").font(.system(size: 15, weight: .semibold)).foregroundStyle(Theme.C.accent)
+                    Image(systemName: t.label == "Widget" ? "square.grid.2x2.fill" : "square.and.arrow.up.fill")
+                        .font(.system(size: 15, weight: .semibold)).foregroundStyle(Theme.C.accent)
                         .frame(width: 34, height: 34).background(Theme.C.accent.opacity(0.14), in: RoundedRectangle(cornerRadius: 10))
                     VStack(alignment: .leading, spacing: 2) {
                         Text(t.label).font(.system(.body, weight: .semibold))

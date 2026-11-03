@@ -1,0 +1,144 @@
+{
+    "actions": {
+        "CheckItemIntent": {
+            "assistantDefinedSchemaTraits": [],
+            "assistantDefinedSchemas": [],
+            "authenticationPolicy": 0,
+            "availabilityAnnotations": {
+                "LNPlatformNameWildcard": {
+                    "introducedVersion": "*"
+                }
+            },
+            "descriptionMetadata": {
+                "descriptionText": {
+                    "alternatives": [],
+                    "key": "Hakt einen Artikel der Einkaufsliste ab."
+                },
+                "searchKeywords": []
+            },
+            "effectiveBundleIdentifiers": [],
+            "fullyQualifiedTypeName": "EssenappShareUI.CheckItemIntent",
+            "identifier": "CheckItemIntent",
+            "isAuthPolExplicit": false,
+            "isDiscoverable": false,
+            "mangledTypeName": "15EssenappShareUI15CheckItemIntentV",
+            "mangledTypeNameByBundleIdentifier": {
+                "de.jsenf.essenapp": "15EssenappShareUI15CheckItemIntentV",
+                "de.jsenf.essenapp.EssenappWidget": "15EssenappShareUI15CheckItemIntentV"
+            },
+            "mangledTypeNameByBundleIdentifierV2": {
+                "de.jsenf.essenapp": "15EssenappShareUI15CheckItemIntentV",
+                "de.jsenf.essenapp.EssenappWidget": "15EssenappShareUI15CheckItemIntentV"
+            },
+            "mangledTypeNameV2": "15EssenappShareUI15CheckItemIntentV",
+            "openAppWhenRun": false,
+            "outputFlags": 0,
+            "parameters": [
+                {
+                    "capabilities": 0,
+                    "dynamicOptionsSupport": 0,
+                    "inputConnectionBehavior": 0,
+                    "isInput": false,
+                    "isOptional": true,
+                    "name": "item",
+                    "parameterDescription": {
+                        "alternatives": [],
+                        "key": "ID des Listen-Artikels"
+                    },
+                    "resolvableInputTypes": [
+                        {
+                            "kindValue": 0,
+                            "valueType": {
+                                "primitive": {
+                                    "wrapper": {
+                                        "typeIdentifier": 0
+                                    }
+                                }
+                            }
+                        },
+                        {
+                            "kindValue": 0,
+                            "valueType": {
+                                "array": {
+                                    "wrapper": {
+                                        "capabilities": 3,
+                                        "memberValueType": {
+                                            "primitive": {
+                                                "wrapper": {
+                                                    "typeIdentifier": 2
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        {
+                            "kindValue": 0,
+                            "valueType": {
+                                "primitive": {
+                                    "wrapper": {
+                                        "typeIdentifier": 2
+                                    }
+                                }
+                            }
+                        }
+                    ],
+                    "title": {
+                        "alternatives": [],
+                        "key": "Artikel"
+                    },
+                    "typeSpecificMetadata": [],
+                    "valueType": {
+                        "primitive": {
+                            "wrapper": {
+                                "typeIdentifier": 0
+                            }
+                        }
+                    }
+                }
+            ],
+            "presentationStyle": 0,
+            "requiredCapabilities": [],
+            "supportedModes": 1,
+            "systemProtocolMetadata": [
+                "com.apple.link.systemProtocol.SessionStarting",
+                {
+                    "empty": {}
+                }
+            ],
+            "systemProtocolMetadataV2": [
+                "com.apple.link.systemProtocol.SessionStarting",
+                {
+                    "empty": {}
+                }
+            ],
+            "systemProtocols": [
+                "com.apple.link.systemProtocol.SessionStarting"
+            ],
+            "title": {
+                "alternatives": [],
+                "key": "Artikel abhaken"
+            },
+            "typeSpecificMetadata": [],
+            "visibilityMetadata": {
+                "assistantOnly": false,
+                "isDiscoverable": false
+            }
+        }
+    },
+    "assistantEntities": [],
+    "assistantIntentNegativePhrases": [],
+    "assistantIntents": [],
+    "autoShortcuts": [],
+    "entities": {},
+    "enums": [],
+    "generator": {
+        "name": "xcode-tools",
+        "version": "17F113"
+    },
+    "negativePhrases": [],
+    "queries": {},
+    "shortcutTileColor": 14,
+    "version": 1
+}

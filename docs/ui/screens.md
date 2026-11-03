@@ -214,6 +214,7 @@ Mockups: `mockups/weitere-screens-v1.html`.
     - Mitteilung (lokal, 120 m um den Laden): „🛒 Du bist bei Rewe: 4 Sachen auf der Liste · Coupon Kaffee“ (38d, bald ablaufender Coupon der Kette); nichts offen, aber Coupon → „🎟 Du bist bei Rewe: Denk an deinen Payback-Coupon für Kaffee (läuft So ab)“ → öffnet die Laden-Liste S5b.
   - **Familie:** Mitglieder (Avatare), „Einladungslink teilen“
   - **Rezepte** (Phase 9): „Teilen aus Instagram“ → S21; Schalter „Schritt-Bilder erzeugen“ mit Untertitel „ca. 2 Cent/Rezept“ (nur wenn `step_images_available`, speichert `PATCH /household {step_images}`).
+  - **Geräte & Widget** (Phase 16): „Widget einrichten“ (Icon `square.grid.2x2.fill`, Wert „koppeln“) → S38
   - **App:** Erscheinungsbild (Menü **System · Hell · Dunkel**, Feature 68, sofort wirksam für alle Screens und Sheets), Server-Adresse, Version, „Neu installieren fällig in 5 Tagen“ (7-Tage-Signatur, E2)
 - Änderungen werden sofort gespeichert (kein Speichern-Button), Fehler als Banner.
 
@@ -410,3 +411,25 @@ Demo: `wallet`, `bonus`, `coupon`, `couponadd`, `spending`, `achievements`, `unl
 ### S37 Geteiltes Rezept (Sheet über allem, Deep-Link `essenapp://import-recipe/<code>`, Feature 56)
 - Kopf „Geteiltes Rezept“ + ✕; Tellerfoto 180 pt, Titel, Chip „👥 von Familie Müller“, „45 min · 4 Portionen · 3 Schritte“, Beschreibung, Karte „Zutaten“ (Name, Menge).
 - Fester `PrimaryButton` „Übernehmen“ → `POST /shared-recipes/{code}/import`, Toast „„Omas Linsensuppe“ liegt jetzt in deinen Rezepten“, Sheet zu → Tab Rezepte › S3 der Kopie (Quelle-Chip „👥 von Familie Müller“). Ungültiger Code (404 oder unzulässige Zeichen) → `EmptyState` 🤷 „Rezept-Link ungültig“; Fehler → `ErrorState`.
+
+## Phase 16 – Widget & Live-Aktivität (S38–S40)
+
+Ohne Vorlage im Mockup entschieden (Nutzer schläft, E84/E85); Werte nur aus `Theme.swift`/`ShareTheme.swift`. Widget und Live-Aktivität laufen in der Erweiterung `EssenappWidget` mit dem kleinen Theme aus `EssenappShareUI` (E58).
+
+### S38 Widget einrichten (Push-Screen aus S13 › Geräte & Widget)
+- Gleiche Oberfläche wie S21 (eine View): `DisplayHeader` „Widget / einrichten“, Satz „Heutiges Gericht, nächste Mahlzeit und offene Artikel auf Home- und Sperrbildschirm.“
+- Karte „So geht's“: 1 „Code erzeugen“ tippen · 2 Home-Bildschirm lange drücken › „Bearbeiten“ › „Widget hinzufügen“ › „Essenapp“ (klein, mittel oder Sperrbildschirm) · 3 Widget lange drücken › „Widget bearbeiten“ › Server-Adresse und Kopplungscode eintragen · 4 Widget lädt selbst, etwa alle 30 Minuten; weitere Widgets brauchen nur die Server-Adresse.
+- Karten „Kopplungscode“ (mit Zeile „Server-Adresse“ + „Kopieren“) und „Gekoppelte Geräte“ wie S21; Icon je Gerät: Widget `square.grid.2x2.fill`, sonst `square.and.arrow.up.fill`. Rückfrage beim Widerrufen: „Das Gerät muss sich danach mit einem neuen Code koppeln.“
+
+### S39 Widget „Heute“ (Home- und Sperrbildschirm, Feature 65)
+- **Klein:** Foto des Gerichts randlos (ohne Foto: `accentSoft` + Gericht-Emoji wie `Plate`), unten Verlauf nach Schwarz 65 %, weiß: „HEUTE · MITTAG“ (`micro`, 85 %), Titel (`headline`, 2 Zeilen), „🕑 35 min“ (`caption`).
+- **Mittel:** links Foto 130 pt (Radius `tile`), rechts „HEUTE · MITTAG“ (`micro`, `accentDeep`), Titel (`headline`, 2 Zeilen), „🕑 35 min“, unten „Danach: Linsen-Dal mit Spinat“ und „🛒 6 offen · Hähnchenbrust, Feta, Lachsfilet“ (`caption`, 1 Zeile; nichts offen → „🛒 Liste erledigt“). Grund `card`.
+- **Sperrbildschirm:** rechteckig „Heute · Mittag“ / „🍛 Tikka Masala“ / „35 min · 🛒 6 offen“; Zeile über der Uhr „🍛 Tikka Masala · 35 min“.
+- Welches Gericht: Mittag bis 14 Uhr, Abend bis 21 Uhr, danach das nächste (Label „Morgen“ bzw. Wochentag); ohne Mittag/Abend im Plan alle Mahlzeiten. Antippen → `essenapp://recipe/<id>`.
+- **Zustände:** ungekoppelt → 🔗 „Widget bearbeiten → Code eingeben“ + „Code: Essenapp › Einstellungen › Widget einrichten“ (bzw. Fehler des Kopplungscodes, z. B. „Code ungültig“); kein Plan → 🗓️ „Noch kein Wochenplan“ / „In der App einen Plan erstellen.“; Server nicht erreichbar → letzter Stand + „Stand 14:05“ mit `wifi.slash` (`micro`), ohne gespeicherten Stand 📡 „Gerade kein Stand“ + Meldung.
+
+### S40 Live-Aktivität „Einkauf“ (Sperrbildschirm + Dynamic Island, Feature 37)
+- **S5b:** unter dem Kopf `SecondaryButton` „🛒 Einkauf starten“ (nur wenn Live-Aktivitäten erlaubt sind und etwas offen ist), läuft sie: „■ Einkauf beenden“. Ein Einkauf zur Zeit.
+- **Sperrbildschirm** (Grund `card`): Kürzel des Ladens auf `Theme.storeColor` (36 pt, wie `StoreLogo` ohne Bild, „Überall“: 🧺 auf `surface`), Name (`headline`), rechts „5 von 12“ (gerundet, fett); Fortschrittsbalken `accent`; die nächsten 3 offenen Artikel: ○ (`accent`) + Name (`callout`) + Menge (`caption`, `text2`) – antippen hakt ab. Nach 2 h: „Einkauf vorbei? In der App beenden.“
+- **Dynamic Island:** kompakt links Kürzel (22 pt), rechts „5/12“ (`accent`); minimal Zahl der offenen Artikel; ausgeklappt Kürzel + Name links, „5 von 12“ rechts, darunter die 3 Artikel mit Abhak-Knopf (weiße Schrift).
+- Endet von selbst, wenn alles abgehakt ist (bleibt kurz mit Endstand stehen) oder nach 2 h. Antippen → `essenapp://list/<kette>`.

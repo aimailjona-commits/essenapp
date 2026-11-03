@@ -11,3 +11,5 @@ cd "$dst"
 # iPhone hängt an Windows (Apple Devices), WSL spricht dessen usbmux-Dienst über das Gateway an (E33)
 export USBMUXD_SOCKET_ADDRESS="${USBMUXD_SOCKET_ADDRESS:-$(ip route list default | awk '{print $3}'):27015}"
 xtool dev "${1:-run}"
+# App-Intents-Index passt zu den gerade gebauten Intents? Sonst tun Widget-Konfiguration und Abhak-Knopf nichts (E83)
+python3 "$src/tools/appintents_index.py" --check || echo "WARNUNG: python3 tools/appintents_index.py ausführen und neu bauen"

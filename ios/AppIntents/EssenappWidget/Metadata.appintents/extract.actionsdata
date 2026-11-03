@@ -1,0 +1,327 @@
+{
+    "actions": {
+        "CheckItemIntent": {
+            "assistantDefinedSchemaTraits": [],
+            "assistantDefinedSchemas": [],
+            "authenticationPolicy": 0,
+            "availabilityAnnotations": {
+                "LNPlatformNameWildcard": {
+                    "introducedVersion": "*"
+                }
+            },
+            "descriptionMetadata": {
+                "descriptionText": {
+                    "alternatives": [],
+                    "key": "Hakt einen Artikel der Einkaufsliste ab."
+                },
+                "searchKeywords": []
+            },
+            "effectiveBundleIdentifiers": [],
+            "fullyQualifiedTypeName": "EssenappShareUI.CheckItemIntent",
+            "identifier": "CheckItemIntent",
+            "isAuthPolExplicit": false,
+            "isDiscoverable": false,
+            "mangledTypeName": "15EssenappShareUI15CheckItemIntentV",
+            "mangledTypeNameByBundleIdentifier": {
+                "de.jsenf.essenapp": "15EssenappShareUI15CheckItemIntentV",
+                "de.jsenf.essenapp.EssenappWidget": "15EssenappShareUI15CheckItemIntentV"
+            },
+            "mangledTypeNameByBundleIdentifierV2": {
+                "de.jsenf.essenapp": "15EssenappShareUI15CheckItemIntentV",
+                "de.jsenf.essenapp.EssenappWidget": "15EssenappShareUI15CheckItemIntentV"
+            },
+            "mangledTypeNameV2": "15EssenappShareUI15CheckItemIntentV",
+            "openAppWhenRun": false,
+            "outputFlags": 0,
+            "parameters": [
+                {
+                    "capabilities": 0,
+                    "dynamicOptionsSupport": 0,
+                    "inputConnectionBehavior": 0,
+                    "isInput": false,
+                    "isOptional": true,
+                    "name": "item",
+                    "parameterDescription": {
+                        "alternatives": [],
+                        "key": "ID des Listen-Artikels"
+                    },
+                    "resolvableInputTypes": [
+                        {
+                            "kindValue": 0,
+                            "valueType": {
+                                "primitive": {
+                                    "wrapper": {
+                                        "typeIdentifier": 0
+                                    }
+                                }
+                            }
+                        },
+                        {
+                            "kindValue": 0,
+                            "valueType": {
+                                "array": {
+                                    "wrapper": {
+                                        "capabilities": 3,
+                                        "memberValueType": {
+                                            "primitive": {
+                                                "wrapper": {
+                                                    "typeIdentifier": 2
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        {
+                            "kindValue": 0,
+                            "valueType": {
+                                "primitive": {
+                                    "wrapper": {
+                                        "typeIdentifier": 2
+                                    }
+                                }
+                            }
+                        }
+                    ],
+                    "title": {
+                        "alternatives": [],
+                        "key": "Artikel"
+                    },
+                    "typeSpecificMetadata": [],
+                    "valueType": {
+                        "primitive": {
+                            "wrapper": {
+                                "typeIdentifier": 0
+                            }
+                        }
+                    }
+                }
+            ],
+            "presentationStyle": 0,
+            "requiredCapabilities": [],
+            "supportedModes": 1,
+            "systemProtocolMetadata": [
+                "com.apple.link.systemProtocol.SessionStarting",
+                {
+                    "empty": {}
+                }
+            ],
+            "systemProtocolMetadataV2": [
+                "com.apple.link.systemProtocol.SessionStarting",
+                {
+                    "empty": {}
+                }
+            ],
+            "systemProtocols": [
+                "com.apple.link.systemProtocol.SessionStarting"
+            ],
+            "title": {
+                "alternatives": [],
+                "key": "Artikel abhaken"
+            },
+            "typeSpecificMetadata": [],
+            "visibilityMetadata": {
+                "assistantOnly": false,
+                "isDiscoverable": false
+            }
+        },
+        "TodayIntent": {
+            "assistantDefinedSchemaTraits": [],
+            "assistantDefinedSchemas": [],
+            "authenticationPolicy": 0,
+            "availabilityAnnotations": {
+                "LNPlatformNameWildcard": {
+                    "introducedVersion": "*"
+                }
+            },
+            "descriptionMetadata": {
+                "descriptionText": {
+                    "alternatives": [],
+                    "key": "Server-Adresse und Kopplungscode aus Essenapp › Einstellungen › Widget einrichten."
+                },
+                "searchKeywords": []
+            },
+            "effectiveBundleIdentifiers": [],
+            "fullyQualifiedTypeName": "EssenappWidget.TodayIntent",
+            "identifier": "TodayIntent",
+            "isAuthPolExplicit": false,
+            "isDiscoverable": true,
+            "mangledTypeName": "14EssenappWidget11TodayIntentV",
+            "mangledTypeNameByBundleIdentifier": {},
+            "mangledTypeNameByBundleIdentifierV2": {},
+            "mangledTypeNameV2": "14EssenappWidget11TodayIntentV",
+            "openAppWhenRun": false,
+            "outputFlags": 0,
+            "parameters": [
+                {
+                    "capabilities": 0,
+                    "dynamicOptionsSupport": 0,
+                    "inputConnectionBehavior": 0,
+                    "isInput": false,
+                    "isOptional": true,
+                    "name": "server",
+                    "parameterDescription": {
+                        "alternatives": [],
+                        "key": "z. B. http://192.168.0.10:8000"
+                    },
+                    "resolvableInputTypes": [
+                        {
+                            "kindValue": 0,
+                            "valueType": {
+                                "primitive": {
+                                    "wrapper": {
+                                        "typeIdentifier": 0
+                                    }
+                                }
+                            }
+                        },
+                        {
+                            "kindValue": 0,
+                            "valueType": {
+                                "array": {
+                                    "wrapper": {
+                                        "capabilities": 3,
+                                        "memberValueType": {
+                                            "primitive": {
+                                                "wrapper": {
+                                                    "typeIdentifier": 2
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        {
+                            "kindValue": 0,
+                            "valueType": {
+                                "primitive": {
+                                    "wrapper": {
+                                        "typeIdentifier": 2
+                                    }
+                                }
+                            }
+                        }
+                    ],
+                    "title": {
+                        "alternatives": [],
+                        "key": "Server-Adresse"
+                    },
+                    "typeSpecificMetadata": [],
+                    "valueType": {
+                        "primitive": {
+                            "wrapper": {
+                                "typeIdentifier": 0
+                            }
+                        }
+                    }
+                },
+                {
+                    "capabilities": 0,
+                    "dynamicOptionsSupport": 0,
+                    "inputConnectionBehavior": 0,
+                    "isInput": false,
+                    "isOptional": true,
+                    "name": "code",
+                    "parameterDescription": {
+                        "alternatives": [],
+                        "key": "6 Ziffern, 10 Minuten gültig"
+                    },
+                    "resolvableInputTypes": [
+                        {
+                            "kindValue": 0,
+                            "valueType": {
+                                "primitive": {
+                                    "wrapper": {
+                                        "typeIdentifier": 0
+                                    }
+                                }
+                            }
+                        },
+                        {
+                            "kindValue": 0,
+                            "valueType": {
+                                "array": {
+                                    "wrapper": {
+                                        "capabilities": 3,
+                                        "memberValueType": {
+                                            "primitive": {
+                                                "wrapper": {
+                                                    "typeIdentifier": 2
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        {
+                            "kindValue": 0,
+                            "valueType": {
+                                "primitive": {
+                                    "wrapper": {
+                                        "typeIdentifier": 2
+                                    }
+                                }
+                            }
+                        }
+                    ],
+                    "title": {
+                        "alternatives": [],
+                        "key": "Kopplungscode"
+                    },
+                    "typeSpecificMetadata": [],
+                    "valueType": {
+                        "primitive": {
+                            "wrapper": {
+                                "typeIdentifier": 0
+                            }
+                        }
+                    }
+                }
+            ],
+            "presentationStyle": 0,
+            "requiredCapabilities": [],
+            "supportedModes": 1,
+            "systemProtocolMetadata": [
+                "com.apple.link.systemProtocol.WidgetConfiguration",
+                {
+                    "empty": {}
+                }
+            ],
+            "systemProtocolMetadataV2": [
+                "com.apple.link.systemProtocol.WidgetConfiguration",
+                {
+                    "empty": {}
+                }
+            ],
+            "systemProtocols": [
+                "com.apple.link.systemProtocol.WidgetConfiguration"
+            ],
+            "title": {
+                "alternatives": [],
+                "key": "Essenapp koppeln"
+            },
+            "typeSpecificMetadata": [],
+            "visibilityMetadata": {
+                "assistantOnly": false,
+                "isDiscoverable": true
+            }
+        }
+    },
+    "assistantEntities": [],
+    "assistantIntentNegativePhrases": [],
+    "assistantIntents": [],
+    "autoShortcuts": [],
+    "entities": {},
+    "enums": [],
+    "generator": {
+        "name": "xcode-tools",
+        "version": "17F113"
+    },
+    "negativePhrases": [],
+    "queries": {},
+    "shortcutTileColor": 14,
+    "version": 1
+}

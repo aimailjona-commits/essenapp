@@ -3,6 +3,7 @@ import Network
 import SwiftUI
 import Observation
 import Security
+import WidgetKit
 
 // Codable-Modelle = backend/app/schemas.py (snake_case wird automatisch umgewandelt).
 
@@ -634,7 +635,9 @@ final class AppStore {
     var watches: [WatchDTO] = []  // Merkliste + Preisalarme (27/40/58)
     var barcode = false  // Barcode-Scanner (27): aus Schnell-Aktion und Merkliste
     var budgetIdeas: (key: String, ideas: [BudgetIdeaDTO])?  // Budget-Rest-Ideen (43), je Plan-Stand einmal laden
-    var plan: PlanDTO?
+    var plan: PlanDTO? {  // Widget „Heute“ lädt selbst vom Server (65) – nach einer Planänderung gleich neu
+        didSet { if !demo, plan?.entries.map(\.recipe.id) != oldValue?.entries.map(\.recipe.id) { WidgetCenter.shared.reloadAllTimelines() } }
+    }
     var error: String?
     var generating = false
     var toast: String?
@@ -646,7 +649,11 @@ final class AppStore {
     }
     var lists: [ListSummaryDTO] = []
     var householdList: ListDTO? {  // Änderungen gehen auch in den Offline-Cache (66)
-        didSet { if !demo, let l = householdList { api.store(l, "/lists/\(l.id)") } }
+        didSet {
+            guard !demo else { return }
+            if let l = householdList { api.store(l, "/lists/\(l.id)") }
+            LiveShop.sync(householdList)  // Live-Aktivität folgt jedem Haken (37)
+        }
     }
     var nutrition: PlanNutritionDTO?  // Tagesringe (2)
     var recipesVersion = 0  // +1 nach Anlegen/Ändern/Bewerten → Listen und Detail laden neu
@@ -685,6 +692,16 @@ final class AppStore {
     }
 
     let demo = Demo.screen != nil
+
+    /// Eine Instanz für Oberfläche und App Intents (Abhaken aus der Live-Aktivität startet die App ohne Fenster).
+    static let shared = AppStore(api: API())
+
+    /// Abhaken aus der Live-Aktivität (37): wie in der App (sofort lokal, Server bzw. Offline-Warteschlange);
+    /// `householdList.didSet` aktualisiert danach die Aktivität.
+    func checkFromActivity(_ id: Int) async {
+        if householdList == nil { await loadLists() }
+        if let item = householdList?.items.first(where: { i in i.id == id }), !item.checked { await toggle(item) }
+    }
 
     init(api: API) {
         self.api = api

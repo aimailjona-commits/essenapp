@@ -290,6 +290,11 @@ struct SettingsView: View {
                         .tint(Theme.C.accent)
                     }
                 }
+                group("GERÄTE & WIDGET") {
+                    NavigationLink { InstagramShareView(widget: true) } label: {
+                        row("square.grid.2x2.fill", Theme.C.accent, "Widget einrichten", "koppeln")
+                    }
+                }
                 group("BENACHRICHTIGUNGEN") {
                     NavigationLink { NotificationsView() } label: {
                         row("bell.fill", Theme.C.accent, "Mitteilungen", "Erinnerung, Ruhezeit")

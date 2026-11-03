@@ -17,6 +17,7 @@ import UIKit
 /// Phase 13: wallet (Einkauf › Coupons), bonus (Plus/Minus-Sheet Payback), coupon (Kassen-Vollbild), couponadd (Coupon prüfen
 /// nach Foto), spending (Monats-Dashboard). Phase 14: achievements (Erfolge), unlock (Vollbild-Moment), review (Wochenrückblick),
 /// reviews (Archiv), recipelink (Rezept als Link teilen), sharedrecipe (geteiltes Rezept übernehmen).
+/// Phase 16: widgetsetup (Widget einrichten S38), widget (Widget „Heute“ S39), liveactivity (Live-Aktivität S40).
 /// Erscheinungsbild (68): zusätzlich `-demoAppearance dark|light` (überschreibt die Einstellung).
 enum Demo {
     static let screen: String? = arg("-demoScreen")
@@ -217,7 +218,8 @@ enum Demo {
         composition: composition([("Spaghetti", 250), ("Kirschtomaten", 300), ("Feta", 200), ("Olivenöl", 20), ("Knoblauch", 10)]),
         avgStars: nil, lastCooked: nil, costPerServingCents: 180, offerShare: 0.2, ratings: [])
 
-    static let pairedTokens = [PairedTokenDTO(id: 1, label: "Teilen-Erweiterung", createdAt: "2026-11-02T10:12:00")]
+    static let pairedTokens = [PairedTokenDTO(id: 1, label: "Teilen-Erweiterung", createdAt: "2026-11-02T10:12:00"),
+                               PairedTokenDTO(id: 2, label: "Widget", createdAt: "2026-11-03T08:40:00")]
 
     static let offerNutrition = OfferNutritionDTO(
         status: "ok", food: "Chicken, broiler or fryers, breast, skinless, boneless, meat only, raw",

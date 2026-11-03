@@ -2,7 +2,7 @@ import EssenappShareUI
 import SwiftUI
 
 struct ContentView: View {
-    @State private var store = AppStore(api: API())
+    @State private var store = AppStore.shared
     @AppStorage("appearance") private var appearance = "system"  // System · Hell · Dunkel (68, ersetzt E15)
 
     init() {
@@ -13,6 +13,8 @@ struct ContentView: View {
         StoreReminder.selfTest()
         SavingSelfTest.run()
         Month.selfTest()
+        TodayData.selfTest()
+        LiveShop.selfTest()
         #endif
     }
 
@@ -104,7 +106,7 @@ struct MainView: View {
 
     /// Demo-Screens, die in der App als Sheet bzw. in der Erweiterung ohne Tab-Leiste erscheinen.
     private static let modalDemo = ["recipeform", "fridgecam", "fridgereview", "cooknow", "sharepair", "shareimport", "shareresult", "importlink",
-                                    "nomood", "substitute", "leftovers", "couponadd"]
+                                    "nomood", "substitute", "leftovers", "couponadd", "widget", "liveactivity"]
 
     @ViewBuilder private var tabContent: some View {
         switch tab {
@@ -127,6 +129,9 @@ struct MainView: View {
                     case ("recipeform", _): RecipeFormSheet(editing: Demo.savedRecipe, page: 1)
                     case ("imported", _): SavedRecipeView(recipeId: Demo.importedRecipe.id)
                     case ("instagram", _): InstagramShareView()
+                    case ("widgetsetup", _): InstagramShareView(widget: true)
+                    case ("widget", _): WidgetGallery()
+                    case ("liveactivity", _): LiveActivityGallery()
                     case ("fridgecam", _): FridgeScanSheet()
                     case ("fridgereview", _): FridgeScanSheet(stage: .review)
                     case ("cooknow", _): FridgeScanSheet(stage: .cook)

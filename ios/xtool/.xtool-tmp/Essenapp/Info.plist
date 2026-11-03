@@ -56,6 +56,8 @@
 	<string>Zum Auswählen von Fotos deines Kühlschranks oder deiner Rezepte.</string>
 	<key>NSSpeechRecognitionUsageDescription</key>
 	<string>Erkennt deine Sprachbefehle im Kochmodus und gesprochene Einkaufsartikel, wenn möglich direkt auf dem iPhone.</string>
+	<key>NSSupportsLiveActivities</key>
+	<true/>
 	<key>UILaunchScreen</key>
 	<dict/>
 	<key>UISupportedInterfaceOrientations</key>

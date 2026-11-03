@@ -10,9 +10,14 @@
 		06CAE7BDBD85848989257840 /* EssenappShare in Frameworks */ = {isa = PBXBuildFile; productRef = 7E35D40A70B6558E61517D00 /* EssenappShare */; };
 		2B3E8B244991A95F4A612F21 /* EssenappShare-Extension.appex in Embed App Extensions */ = {isa = PBXBuildFile; fileRef = E2A5BE83C94B620591F51FC2 /* EssenappShare-Extension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		591B51B8AA2CFE9FFA5E3B3C /* empty.c in Sources */ = {isa = PBXBuildFile; fileRef = 1751EA30657B2457258677FD /* empty.c */; };
+		5D13CB89B5428E8009D614E1 /* ../../AppIntents/EssenappWidget/Metadata.appintents in Copy Root Resources */ = {isa = PBXBuildFile; fileRef = EA09135F6A37DF7709931454 /* ../../AppIntents/EssenappWidget/Metadata.appintents */; };
 		77512F28124830DC5983EAF9 /* Essenapp in Frameworks */ = {isa = PBXBuildFile; productRef = B242BDA54046794C090821D9 /* Essenapp */; };
+		7A27A28748B7048C1D2F80C6 /* empty.c in Sources */ = {isa = PBXBuildFile; fileRef = 634B89C565E836FACE01D854 /* empty.c */; };
+		7C86A1E1B01697C794F3F9E3 /* EssenappWidget-Extension.appex in Embed App Extensions */ = {isa = PBXBuildFile; fileRef = 1B162950423F43E121D93D7E /* EssenappWidget-Extension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		AD4B0F52973EE420EF6CAF3F /* empty.c in Sources */ = {isa = PBXBuildFile; fileRef = 12E9E3689DE8AE64614CF835 /* empty.c */; };
 		B38CEA44C00BEF6E4F53F8C9 /* ../../Icon.png in Copy Root Resources */ = {isa = PBXBuildFile; fileRef = AFE570DCB1D3963BD7AA1E4E /* ../../Icon.png */; };
+		D069FB24F14F31E111C7B732 /* ../../AppIntents/Essenapp/Metadata.appintents in Copy Root Resources */ = {isa = PBXBuildFile; fileRef = 68346AFAAAB85A17EB064189 /* ../../AppIntents/Essenapp/Metadata.appintents */; };
+		F83F9791CAD85FFC3619BD88 /* EssenappWidget in Frameworks */ = {isa = PBXBuildFile; productRef = 8F1A6C58D2057FC3C11C61B8 /* EssenappWidget */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -23,15 +28,34 @@
 			remoteGlobalIDString = "xtool:EssenappShare";
 			remoteInfo = "EssenappShare-Extension";
 		};
+		A27C961E6A75C8F8A542D82F /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 8812F5B274B12730E70F1F16 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = "xtool:EssenappWidget";
+			remoteInfo = "EssenappWidget-Extension";
+		};
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXCopyFilesBuildPhase section */
+		00B51528D1A9FE0264FB96A3 /* Copy Root Resources */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 7;
+			files = (
+				5D13CB89B5428E8009D614E1 /* ../../AppIntents/EssenappWidget/Metadata.appintents in Copy Root Resources */,
+			);
+			name = "Copy Root Resources";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		9ACDB9B39A391AD203CB158D /* Copy Root Resources */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
 			dstPath = "";
 			dstSubfolderSpec = 7;
 			files = (
+				D069FB24F14F31E111C7B732 /* ../../AppIntents/Essenapp/Metadata.appintents in Copy Root Resources */,
 				B38CEA44C00BEF6E4F53F8C9 /* ../../Icon.png in Copy Root Resources */,
 			);
 			name = "Copy Root Resources";
@@ -43,6 +67,7 @@
 			dstPath = "";
 			dstSubfolderSpec = 13;
 			files = (
+				7C86A1E1B01697C794F3F9E3 /* EssenappWidget-Extension.appex in Embed App Extensions */,
 				2B3E8B244991A95F4A612F21 /* EssenappShare-Extension.appex in Embed App Extensions */,
 			);
 			name = "Embed App Extensions";
@@ -53,11 +78,16 @@
 /* Begin PBXFileReference section */
 		12E9E3689DE8AE64614CF835 /* empty.c */ = {isa = PBXFileReference; path = empty.c; sourceTree = "<group>"; };
 		1751EA30657B2457258677FD /* empty.c */ = {isa = PBXFileReference; path = empty.c; sourceTree = "<group>"; };
+		1B162950423F43E121D93D7E /* EssenappWidget-Extension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = "EssenappWidget-Extension.appex"; sourceTree = BUILT_PRODUCTS_DIR; };
 		2E91130F2E9A634056A0CF1C /* Essenapp-App.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Essenapp-App.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		397F61DC1DC18FA159F0B11E /* Info.plist */ = {isa = PBXFileReference; path = Info.plist; sourceTree = "<group>"; };
 		3B9DE06702EF30196126E789 /* Info.plist */ = {isa = PBXFileReference; path = Info.plist; sourceTree = "<group>"; };
+		634B89C565E836FACE01D854 /* empty.c */ = {isa = PBXFileReference; path = empty.c; sourceTree = "<group>"; };
+		68346AFAAAB85A17EB064189 /* ../../AppIntents/Essenapp/Metadata.appintents */ = {isa = PBXFileReference; explicitFileType = folder; path = ../../AppIntents/Essenapp/Metadata.appintents; sourceTree = SOURCE_ROOT; };
 		91087B2CC85297C3066426CC /* Info.plist */ = {isa = PBXFileReference; path = Info.plist; sourceTree = "<group>"; };
 		AFE570DCB1D3963BD7AA1E4E /* ../../Icon.png */ = {isa = PBXFileReference; path = ../../Icon.png; sourceTree = SOURCE_ROOT; };
 		E2A5BE83C94B620591F51FC2 /* EssenappShare-Extension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = "EssenappShare-Extension.appex"; sourceTree = BUILT_PRODUCTS_DIR; };
+		EA09135F6A37DF7709931454 /* ../../AppIntents/EssenappWidget/Metadata.appintents */ = {isa = PBXFileReference; explicitFileType = folder; path = ../../AppIntents/EssenappWidget/Metadata.appintents; sourceTree = SOURCE_ROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -66,6 +96,14 @@
 			buildActionMask = 2147483647;
 			files = (
 				06CAE7BDBD85848989257840 /* EssenappShare in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		66F962192382D21C87744FDC /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				F83F9791CAD85FFC3619BD88 /* EssenappWidget in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -84,9 +122,20 @@
 			isa = PBXGroup;
 			children = (
 				2E91130F2E9A634056A0CF1C /* Essenapp-App.app */,
+				1B162950423F43E121D93D7E /* EssenappWidget-Extension.appex */,
 				E2A5BE83C94B620591F51FC2 /* EssenappShare-Extension.appex */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		8259DFC19601A607169485DF /* EssenappWidget */ = {
+			isa = PBXGroup;
+			children = (
+				634B89C565E836FACE01D854 /* empty.c */,
+				397F61DC1DC18FA159F0B11E /* Info.plist */,
+				EA09135F6A37DF7709931454 /* ../../AppIntents/EssenappWidget/Metadata.appintents */,
+			);
+			path = EssenappWidget;
 			sourceTree = "<group>";
 		};
 		8459C1D9B618DF7E2E74EDC2 /* EssenappShare */ = {
@@ -103,6 +152,7 @@
 			children = (
 				12E9E3689DE8AE64614CF835 /* empty.c */,
 				3B9DE06702EF30196126E789 /* Info.plist */,
+				68346AFAAAB85A17EB064189 /* ../../AppIntents/Essenapp/Metadata.appintents */,
 				AFE570DCB1D3963BD7AA1E4E /* ../../Icon.png */,
 			);
 			path = Essenapp;
@@ -112,6 +162,7 @@
 			isa = PBXGroup;
 			children = (
 				965F2509C45D0D7024474646 /* Essenapp */,
+				8259DFC19601A607169485DF /* EssenappWidget */,
 				8459C1D9B618DF7E2E74EDC2 /* EssenappShare */,
 				32A1AA6939FD8392FB22FAF5 /* Products */,
 			);
@@ -132,6 +183,7 @@
 			buildRules = (
 			);
 			dependencies = (
+				6D6EA8661EC3596C0C029430 /* PBXTargetDependency */,
 				F01989CD7CF5E49F8ED8C3CA /* PBXTargetDependency */,
 			);
 			name = "Essenapp-App";
@@ -159,6 +211,25 @@
 			productReference = E2A5BE83C94B620591F51FC2 /* EssenappShare-Extension.appex */;
 			productType = "com.apple.product-type.app-extension";
 		};
+		"xtool:EssenappWidget" /* EssenappWidget-Extension */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 33965CD2B71868C12CBEF376 /* Build configuration list for PBXNativeTarget "EssenappWidget-Extension" */;
+			buildPhases = (
+				A20F1490994D26334D9468DD /* Sources */,
+				66F962192382D21C87744FDC /* Frameworks */,
+				00B51528D1A9FE0264FB96A3 /* Copy Root Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = "EssenappWidget-Extension";
+			packageProductDependencies = (
+				8F1A6C58D2057FC3C11C61B8 /* EssenappWidget */,
+			);
+			productReference = 1B162950423F43E121D93D7E /* EssenappWidget-Extension.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -183,12 +254,21 @@
 			projectRoot = "";
 			targets = (
 				"xtool:Essenapp" /* Essenapp-App */,
+				"xtool:EssenappWidget" /* EssenappWidget-Extension */,
 				"xtool:EssenappShare" /* EssenappShare-Extension */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXSourcesBuildPhase section */
+		A20F1490994D26334D9468DD /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				7A27A28748B7048C1D2F80C6 /* empty.c in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		B10AD9FA979A891B79E75525 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -208,6 +288,12 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
+		6D6EA8661EC3596C0C029430 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			name = "EssenappWidget-Extension";
+			target = "xtool:EssenappWidget" /* EssenappWidget-Extension */;
+			targetProxy = A27C961E6A75C8F8A542D82F /* PBXContainerItemProxy */;
+		};
 		F01989CD7CF5E49F8ED8C3CA /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			name = "EssenappShare-Extension";
@@ -263,6 +349,23 @@
 			};
 			name = Debug;
 		};
+		6B49FD8E3EEA8663DFED97D0 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				APPLICATION_EXTENSION_API_ONLY = YES;
+				INFOPLIST_FILE = EssenappWidget/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = de.jsenf.essenapp.EssenappWidget;
+				PRODUCT_NAME = "EssenappWidget-Extension";
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
 		82D658D53FE5E6B10F897440 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -295,9 +398,35 @@
 			};
 			name = Release;
 		};
+		CD0D76B719DDFD58F45EA7B1 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				APPLICATION_EXTENSION_API_ONLY = YES;
+				INFOPLIST_FILE = EssenappWidget/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = de.jsenf.essenapp.EssenappWidget;
+				PRODUCT_NAME = "EssenappWidget-Extension";
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		33965CD2B71868C12CBEF376 /* Build configuration list for PBXNativeTarget "EssenappWidget-Extension" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				CD0D76B719DDFD58F45EA7B1 /* Debug */,
+				6B49FD8E3EEA8663DFED97D0 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
 		9D3A3E42CBFF5BD3A408802A /* Build configuration list for PBXNativeTarget "EssenappShare-Extension" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
@@ -338,6 +467,10 @@
 		7E35D40A70B6558E61517D00 /* EssenappShare */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = EssenappShare;
+		};
+		8F1A6C58D2057FC3C11C61B8 /* EssenappWidget */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = EssenappWidget;
 		};
 		B242BDA54046794C090821D9 /* Essenapp */ = {
 			isa = XCSwiftPackageProductDependency;
