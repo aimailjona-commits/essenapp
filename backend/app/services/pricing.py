@@ -1,8 +1,34 @@
 """Kosten eines Plans: ganze Packungen kaufen, Reste ausweisen, Vorrat kostet nichts."""
 import math
+import re
 from dataclasses import dataclass
 
+from app.services.matching import stem
 from app.services.normalize import cents, ingredient_key
+
+# Zusätze, die am Produkt nichts ändern („Joghurt, mild“ = Basic „Joghurt“); Text nach Komma/Klammer zählt nicht
+STOCK_IGNORE = {"frisch", "frische", "frischer", "frisches", "bio", "mild", "milde", "milder", "natur", "fettarm",
+                "fettarme", "fettarmer", "klein", "kleine", "groß", "große", "gross", "reif", "reife"}
+
+
+def stock_key(name: str) -> str:
+    """Schlüssel für den Vorrats-Abgleich (60/23): 'Joghurt, mild' → 'joghurt', 'Bananen' → 'banan'."""
+    head = re.split(r"[,(]", name, maxsplit=1)[0]
+    ws = sorted(stem(w) for w in re.findall(r"\w+", head.lower()) if w not in STOCK_IGNORE)
+    return " ".join(ws) or ingredient_key(name)
+
+
+SLICES = 15  # Scheiben je Brot (500–750 g)
+WHOLE_BREAD = ("fladenbrot", "pitabrot", "naanbrot")  # werden als ganzes Stück gekauft und verwendet
+
+
+def pack_amount(name: str, unit: str, amount: float) -> float:
+    """Brot/Toast in „stk“ sind Scheiben: eine Packung „1 stk“ ist ein ganzes Brot, nicht eine Scheibe (sonst kostet
+    das Frühstück mit 4 Scheiben 4 Brote)."""
+    if unit == "stk" and amount <= 1 and any(w.endswith(("brot", "toast")) and w not in WHOLE_BREAD
+                                             for w in ingredient_key(name).split()):
+        return SLICES
+    return amount
 
 
 @dataclass(frozen=True)
@@ -64,15 +90,15 @@ class Stock:
     sonst zählen Mengen gleicher Einheit; ohne Vorrats-Eintrag bleibt die in_pantry-Schätzung der KI."""
 
     def __init__(self, items=()):
-        self.basics = {i.ingredient_key: i.amount != 0 for i in items if i.is_basic}
+        self.basics = {stock_key(i.name): i.amount != 0 for i in items if i.is_basic}
         self.left: dict[tuple[str, str], float] = {}
         for i in items:
             if not i.is_basic:
-                k = (i.ingredient_key, i.unit)
+                k = (stock_key(i.name), i.unit)
                 self.left[k] = self.left.get(k, 0) + (math.inf if i.amount is None else i.amount)
 
     def basic(self, name: str) -> bool | None:
-        key = ingredient_key(name)
+        key = stock_key(name)
         # shortcut: Komposita wie "Olivenöl" zählen zum Basic "Öl", Wortgruppen nicht; bei Fehltreffern Synonymliste
         return next((full for b, full in self.basics.items() if key == b or (" " not in key and key.endswith(b))), None)
 
@@ -80,7 +106,7 @@ class Stock:
         """Menge aus dem Vorrat (inf = unbegrenzt) und zieht sie für weitere Zeilen ab."""
         if (basic := self.basic(name)) is not None:
             return math.inf if basic else 0.0
-        k = (ingredient_key(name), unit)
+        k = (stock_key(name), unit)
         if k not in self.left and self.left.get((k[0], "")) == math.inf:
             return math.inf  # ohne Einheit und Menge vorhanden (z.B. Wochen-Basic „Brot“): gilt für jede Einheit
         if k not in self.left:

@@ -78,7 +78,8 @@ def test_ten_fake_plans_keep_all_variety_rules():
 def test_check_texts_and_rules_line():
     meals = [meal(0, "Spaghetti A", side="pasta", protein="rot", cuisine="italienisch"),
              meal(1, "Spaghetti B", side="pasta", protein="rot", cuisine="italienisch"),
-             meal(2, "Steak", protein="rot")]
+             meal(2, "Steak", protein="rot"), meal(3, "Bowl A", protein="gefluegel", cuisine="a"),
+             meal(4, "Bowl B", protein="gefluegel", cuisine="b")]  # 5 Tage: Fisch 1×, 1 vegetarischer Tag (anteilig)
     c = variety.check(planner.dishes(meals), RULES)
     assert c.issues[:2] == ["2× Pasta", "3× rotes Fleisch"] and "kein Fisch" in c.issues
     assert "2× italienisch hintereinander" in c.issues and "nur 0 vegetarische Tage" not in c.issues
@@ -87,7 +88,7 @@ def test_check_texts_and_rules_line():
     line = variety.rules_line(RULES, fish_ok=True)
     assert "Pasta max. 1×" in line and "Fisch mind. 1×" in line and "Folgetagen" not in line
     assert "Fisch" not in variety.rules_line(RULES, fish_ok=False)
-    assert variety.check(planner.dishes(meals), RULES | {"max_pasta": 2, "max_red_meat": 3, "min_fish": 0,
+    assert variety.check(planner.dishes(meals[:3]), RULES | {"max_pasta": 2, "max_red_meat": 3, "min_fish": 0,
                                                          "veggie_days": 0, "no_same_cuisine_row": False}).issues == []
 
 
@@ -534,3 +535,62 @@ def test_stock_without_unit_counts_for_any_unit():
                    PantryItem(name="Milch", ingredient_key="milch", amount=500, unit="", is_basic=False)])
     assert stock.take("Brot", "stk", 4) == float("inf")
     assert stock.take("Milch", "ml", 200) == 0  # Menge ohne Einheit ist nicht umrechenbar
+
+
+def test_variety_minimums_scale_with_plan_days():
+    """Fix: 1–2-Tage-Pläne bekommen Fisch/vegetarische Tage anteilig statt fest (sonst unerfüllbar)."""
+    assert variety.scaled(RULES, 7) == RULES
+    assert {k: variety.scaled(RULES, d)[k] for d in [1] for k in ("min_fish", "veggie_days")} == {"min_fish": 0, "veggie_days": 0}
+    assert (variety.scaled(RULES, 2)["min_fish"], variety.scaled(RULES, 2)["veggie_days"]) == (0, 1)
+    assert (variety.scaled(RULES, 4)["min_fish"], variety.scaled(RULES, 4)["veggie_days"]) == (1, 1)
+    assert variety.scaled(RULES, 2)["max_pasta"] == 1  # Höchstregeln bleiben
+    one_day = [meal(0, "Hähnchen", protein="gefluegel"), meal(0, "Gulasch", meal_type="abend", protein="rot")]
+    assert variety.check(planner.dishes(one_day), RULES).issues == []  # vorher: kein Fisch + kein vegetarischer Tag
+    two_days = one_day + [meal(1, "Schnitzel", protein="rot", cuisine="x")]
+    assert variety.check(planner.dishes(two_days), RULES).issues == ["kein vegetarischer Tag"]
+    line = variety.rules_line(RULES, True, days=2)
+    assert "Fisch" not in line and "mind. 1 vegetarische Tage" in line
+    assert "vegetarisch" not in variety.rules_line(RULES, True, days=1)
+
+
+def test_weekly_basic_matches_ai_variants():
+    """Fix: KI schreibt „Joghurt, mild“ statt „Joghurt“ → Wochen-Basic zählt trotzdem (kein Doppelkauf)."""
+    from app.services.pricing import Stock, stock_key
+    assert stock_key("Joghurt, mild") == stock_key("Joghurt") == stock_key("joghurt (natur)") == stock_key("Bio-Joghurt")
+    assert stock_key("Bananen") == stock_key("Banane") and stock_key("Kokosmilch") != stock_key("Milch")
+    stock = Stock([PantryItem(name="Joghurt", ingredient_key="joghurt", amount=1000, unit="g", is_basic=False),
+                   PantryItem(name="Öl", ingredient_key="öl", amount=None, unit="", is_basic=True)])
+    assert stock.take("Joghurt, mild", "g", 300) == 300 and stock.take("Joghurt mild", "g", 800) == 700
+    assert stock.take("Olivenöl", "ml", 20) == float("inf")
+
+
+def test_weekly_basic_joghurt_not_on_list_twice(client, auth, monkeypatch):
+    client.patch("/household", headers=auth, json={"meal_types": ["fruehstueck"], "plan_days": [0]})
+    client.post("/weekly-basics", headers=auth, json={"name": "Joghurt", "amount": 1000, "unit": "g"})
+    monkeypatch.setattr(planner, "ask_claude", lambda p: (PlanDraft(meals=[
+        meal(0, "Joghurt-Bowl", [ing("Joghurt, mild", 300, pack=500, price=99), ing("Haferflocken", 60)],
+             meal_type="fruehstueck", prep=5)]), USAGE))
+    plan = client.post("/plans", headers=auth).json()
+    items = client.get("/lists", headers=auth).json()[0]
+    lst = client.get(f"/lists/{items['id']}", headers=auth).json()["items"]
+    assert [i["name"] for i in lst if i["source"] == "plan"] == ["Haferflocken"]
+    assert plan["entries"][0]["cost_cents"] == 24  # nur Haferflocken (60/500 × 200), Joghurt kommt über die Basics
+
+
+def test_bread_slices_bought_as_one_loaf():
+    """Fix: „Brot 4 Stück“ (Scheiben) mit KI-Packung 1 Stück kostete 4 Brote → Frühstück 12,61 €."""
+    draft = PlanDraft(meals=[meal(4, "Brot mit Frischkäse und Banane", [
+        ing("Brot", 4, "stk", pack=1, price=279), ing("Frischkäse", 150, offer_id=102, pack=195, price=111),
+        ing("Banane", 2, "stk", pack=6, price=179)], meal_type="fruehstueck", prep=5)])
+    offers = {102: Offer(id=102, chain="lidl", title="Frischkäse", price_cents=111, amount=195, unit="g",
+                         category="kuehlung", valid_from=date.today(), valid_to=date.today())}
+    p = planner.price(draft, offers)
+    assert p.total_cents == 279 + 111 + 179  # 1 Brot, 1 Frischkäse, 1 Bananen-Packung
+    assert p.meal_costs[0] == 74 + 85 + 60  # Verbrauch: 4/15 Brot, 150/195 Frischkäse, 2/6 Bananen
+    fladen = planner.price(PlanDraft(meals=[meal(0, "Döner", [ing("Fladenbrot", 2, "stk", pack=1, price=149)])]), {})
+    assert fladen.total_cents == 298  # ganze Fladenbrote bleiben Stück
+    with_offer = {5: Offer(id=5, chain="lidl", title="Bauernbrot", price_cents=199, amount=750, unit="g",
+                           category="vorrat", valid_from=date.today(), valid_to=date.today())}
+    p = planner.price(PlanDraft(meals=[meal(0, "Brotzeit", [ing("Bauernbrot", 4, "stk", offer_id=5, pack=1, price=199)])]),
+                      with_offer)
+    assert p.total_cents == 199

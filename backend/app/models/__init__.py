@@ -36,6 +36,7 @@ class Household(Base):
     radius_km: Mapped[int] = mapped_column(default=5, server_default="5")  # Umkreis für die Ladensuche
     step_images: Mapped[bool] = mapped_column(default=True, server_default=true())  # KI-Schritt-Bilder (9), nur mit FAL_KEY
     variety: Mapped[dict] = mapped_column(JSON, default=dict, server_default="{}")  # Abwechslungsregeln (12), fehlende Schlüssel = VARIETY_DEFAULT
+    storage_space: Mapped[str] = mapped_column(String(10), default="mittel", server_default="mittel")  # Vorratsplatz (31): klein|mittel|gross
     created_at: Mapped[datetime] = mapped_column(server_default=func.now())
 
     members: Mapped[list["Member"]] = relationship(back_populates="household")
@@ -342,7 +343,8 @@ class ShoppingItem(Base):
     checked: Mapped[bool] = mapped_column(default=False)
     added_by: Mapped[str] = mapped_column(String(50), default="")  # Mitglied oder Gast
     checked_by: Mapped[str] = mapped_column(String(50), default="")
-    source: Mapped[str] = mapped_column(String(10), default="manual")  # plan | manual | basics
+    source: Mapped[str] = mapped_column(String(10), default="manual")  # plan | manual | basics | stockup | rhythm
+    defer_week: Mapped[str | None] = mapped_column(String(8))  # „Nächste Woche“-Gruppe (30) bis zu dieser ISO-Woche
     created_at: Mapped[datetime] = mapped_column(server_default=func.now())
 
 
@@ -368,6 +370,13 @@ class Product(Base):
     amount: Mapped[float | None]
     unit: Mapped[str] = mapped_column(String(10), default="")
     ean: Mapped[str] = mapped_column(String(14), default="", index=True)
+    # Open Food Facts (49, ODbL), nur bei sicherem Treffer; off_checked_at gesetzt = schon gesucht
+    nutri_score: Mapped[str | None] = mapped_column(String(1))  # a–e
+    off_code: Mapped[str] = mapped_column(String(20), default="", server_default="")
+    off_bio: Mapped[bool] = mapped_column(default=False, server_default="0")
+    off_vegan: Mapped[bool] = mapped_column(default=False, server_default="0")
+    off_vegetarian: Mapped[bool] = mapped_column(default=False, server_default="0")
+    off_checked_at: Mapped[datetime | None]
 
 
 class PricePoint(Base):
@@ -414,3 +423,41 @@ class IngredientMap(Base):
     grams_per_piece: Mapped[float | None]
     confidence: Mapped[str] = mapped_column(String(10), default="")  # hoch | mittel | niedrig
     created_at: Mapped[datetime] = mapped_column(server_default=func.now())
+
+
+class WatchItem(Base):
+    """Merkliste (27) bzw. Preisalarm für eine Zutat (40), je Haushalt. Verbrauchsrhythmus (58) über lasts_weeks."""
+    __tablename__ = "watch_item"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    household_id: Mapped[int] = mapped_column(ForeignKey("household.id"), index=True)
+    kind: Mapped[str] = mapped_column(String(10), default="produkt")  # produkt | zutat
+    label: Mapped[str] = mapped_column(String(200))
+    brand: Mapped[str] = mapped_column(String(100), default="")
+    ean: Mapped[str] = mapped_column(String(14), default="")
+    image_url: Mapped[str] = mapped_column(String(500), default="")
+    category: Mapped[str] = mapped_column(String(30), default="")  # Angebots-Kategorie, z.B. drogerie
+    max_price_cents: Mapped[int | None]  # Wunschpreis „Alarm unter 2,00 €“
+    max_base_price_cents: Mapped[int | None]  # Grundpreis-Alarm „unter 7 €/kg“ (40)
+    base_unit: Mapped[str] = mapped_column(String(3), default="")  # kg | l | stk (zu max_base_price_cents)
+    chains: Mapped[list[str]] = mapped_column(JSON, default=list)  # leer = alle Läden des Haushalts
+    lasts_weeks: Mapped[float | None]  # „Hält ca. X Wochen“ (58)
+    last_bought: Mapped[date | None]  # automatisch beim Abhaken auf der Liste (58)
+    rhythm_push_at: Mapped[date | None]  # „bald leer – gerade im Angebot“ gesendet (einmal je Zyklus)
+    rhythm_listed_at: Mapped[date | None]  # „bald leer“ auf die Liste gesetzt (einmal je Zyklus)
+    created_by: Mapped[int | None] = mapped_column(ForeignKey("member.id"))
+    created_at: Mapped[datetime] = mapped_column(server_default=func.now())
+
+    hits: Mapped[list["WatchHit"]] = relationship(cascade="all, delete-orphan")
+
+
+class WatchHit(Base):
+    """Treffer eines Merklisten-Eintrags; Push höchstens einmal je Eintrag und ISO-Woche (27)."""
+    __tablename__ = "watch_hit"
+    __table_args__ = (UniqueConstraint("watch_item_id", "offer_id"),)
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    watch_item_id: Mapped[int] = mapped_column(ForeignKey("watch_item.id", ondelete="CASCADE"), index=True)
+    offer_id: Mapped[int]  # kein FK: alte Angebote dürfen gelöscht werden
+    week: Mapped[str] = mapped_column(String(8))
+    notified_at: Mapped[datetime | None]

@@ -1,5 +1,6 @@
 """Abwechslungsregeln (12) + Regeln für Frühstück (23b) und Lunchbox (24): der Code prüft den Plan, Verstöße werden
 als Anweisungen je Slot für die eine Reparatur-Runde zurückgegeben (nur betroffene Slots, günstig)."""
+import math
 import re
 from dataclasses import dataclass, field
 
@@ -55,11 +56,21 @@ def rules_of(variety: dict | None) -> dict:
     return {**VARIETY_DEFAULT, **(variety or {})}
 
 
-def rules_line(rules: dict, fish_ok: bool) -> str:
-    """Kompakte Prompt-Zeile (variabler Teil)."""
+def scaled(rules: dict, days: int) -> dict:
+    """Mindestregeln gelten pro Woche → bei kürzeren Plänen anteilig, kaufmännisch gerundet (2 Tage: 0× Fisch,
+    1 vegetarischer Tag); Höchstregeln bleiben."""
+    if days >= 7:
+        return rules
+    return rules | {k: math.floor(rules[k] * days / 7 + 0.5) for k in ("min_fish", "veggie_days")}
+
+
+def rules_line(rules: dict, fish_ok: bool, days: int = 7) -> str:
+    """Kompakte Prompt-Zeile (variabler Teil); days = Plan-Tage mit Hauptgerichten (Mindestregeln anteilig)."""
+    rules = scaled(rules, days)
     parts = [f"Pasta max. {rules['max_pasta']}×", f"Reis max. {rules['max_rice']}×",
-             f"Kartoffeln max. {rules['max_potato']}×", f"rotes Fleisch max. {rules['max_red_meat']}×",
-             f"mind. {rules['veggie_days']} vegetarische Tage (alle Hauptgerichte des Tages)"]
+             f"Kartoffeln max. {rules['max_potato']}×", f"rotes Fleisch max. {rules['max_red_meat']}×"]
+    if rules["veggie_days"]:
+        parts.append(f"mind. {rules['veggie_days']} vegetarische Tage (alle Hauptgerichte des Tages)")
     if fish_ok and rules["min_fish"]:
         parts.insert(3, f"Fisch mind. {rules['min_fish']}×")
     if rules["no_same_cuisine_row"]:
@@ -87,6 +98,7 @@ def check(dishes: list[Dish], rules: dict, fish_ok: bool = True, recent: list[st
     order = sorted(dishes, key=lambda d: (d.day, MAIN.index(d.meal_type) if d.meal_type in MAIN else -1))
     main = [d for d in order if d.meal_type in MAIN]
     free = [d for d in main if (d.day, d.meal_type) not in locked]
+    rules = scaled(rules, len({d.day for d in main}))
 
     def slot(d: Dish) -> tuple[int, str]:
         return d.day, d.meal_type

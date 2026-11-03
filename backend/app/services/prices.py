@@ -119,3 +119,18 @@ def history(points: list, price_cents: int, regular_price_cents: int | None, wee
                         "regular_price_cents": p.regular_price_cents, "is_offer": p.is_offer} for p in window],
             "median_cents": median, "min_cents": low, "verdict": verdict, "last_low": last_low,
             "avg_interval_weeks": interval}
+
+
+def verdicts(db: Session, offers: list[Offer], today: date | None = None) -> dict[int, dict]:
+    """history() für viele Angebote mit EINER Abfrage (Badges + Filter in GET /offers, Vorratstipps).
+    Angebote ohne Produkt werden vorher zugeordnet."""
+    today = today or date.today()
+    if missing := [o for o in offers if o.product_id is None]:
+        record(db, missing, today)
+    ids = {o.product_id for o in offers}
+    points: dict[int, list] = {}
+    if ids:
+        for p in db.scalars(select(PricePoint).where(PricePoint.product_id.in_(ids))):
+            points.setdefault(p.product_id, []).append(p)
+    return {o.id: history(points.get(o.product_id, []), o.price_cents, o.regular_price_cents, point_week(o, today))
+            for o in offers}

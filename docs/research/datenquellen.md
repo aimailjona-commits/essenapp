@@ -351,6 +351,12 @@ Eine EAN liefert keine der verifizierten Quellen.
 
 ---
 
+## 9a. Ergänzungen 03.11.2026 (Phase 12)
+
+- **Folgewoche bei kaufDA ✅:** Der Shelf für Köln listete am Montag 02.11. und Dienstag 03.11. bereits Lidls Prospekt 09.–14.11. (`validFrom` in der Zukunft); `/pages` liefert die Angebote normal (live 433 Angebote ab 09., 12. und 13.11.). REWE, ALDI SÜD und EDEKA hatten am Dienstag noch keinen Folgeprospekt. Der Import übernimmt solche Prospekte ohne Datumsfilter; zusätzlicher Abruf freitags 06:00.
+- **Open Food Facts ✅** (Nutri-Score/Bio/Vegan, Barcode): Produkt `GET https://world.openfoodfacts.org/api/v2/product/{ean}.json?fields=code,product_name,product_name_de,brands,nutriscore_grade,labels_tags,image_front_url,quantity` (Antwort `{status:1, product:{…}}`), Suche `GET https://search.openfoodfacts.org/search?q=Barilla%20Spaghetti%20n.5&langs=de&page_size=5&fields=…` (Antwort `{hits:[{code, product_name(_de), brands:[…], nutriscore_grade, labels_tags}], count, page_count}`). Limits laut API-Doku (openfoodfacts.github.io/openfoodfacts-server/api/): 15 Produkt-Abrufe/min, 10 Suchen/min je IP; User-Agent „App/Version (Kontakt)“. Lizenz: ODbL (Datenbank), DbCL (Inhalte), CC BY-SA 3.0 (Bilder). Treffer sind ähnliche Produkte verschiedener Größen/Varianten mit teils unterschiedlichem Nutri-Score → nur sichere Treffer übernehmen (Marke + Ähnlichkeit ≥ 0,8, keine widersprüchlichen Werte). Fixtures: `openfoodfacts/product_8076800195057.json`, `openfoodfacts/search_barilla_spaghetti.json`.
+- dm/Rossmann-Monatsaktionen: am 03.11. bei kaufDA keine dm/Rossmann-Prospekte bis Monatsende (dm „Aktuelle Angebote“ 01.–15.11., Rossmann bis 13.11., einzelne Rossmann-Angebote bis 06.12.).
+
 ## 10. Gespeicherte Fixtures
 
 Alle Dateien stammen aus Antworten, die ich am 02.11.2026 selbst abgerufen habe (Standort Köln 50667). Eintrag „extrahiert“ bedeutet: JSON aus dem abgerufenen HTML herausgelöst, sonst unverändert.

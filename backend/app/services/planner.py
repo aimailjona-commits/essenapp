@@ -15,7 +15,7 @@ from app.core.config import settings
 from app.models import AiCost, Household, MemberProfile, Offer, PantryItem
 from app.services import recipe_images, variety
 from app.services.normalize import cents
-from app.services.pricing import Pack, Stock, cost_line, shelf_days
+from app.services.pricing import Pack, Stock, cost_line, pack_amount, shelf_days
 
 logger = logging.getLogger(__name__)
 
@@ -71,7 +71,10 @@ Regeln:
 - in_pantry=true nur für Basics und typische Vorratszutaten (Salz, Pfeffer, Öl, Essig, Gewürze, Zucker, Mehl, Brühe).
 - Vorrat zuerst verwenden, bald ablaufende Sachen zuerst; gleiche Namen und Einheiten wie im Vorrat.
 - Mengen je Mahlzeit für die dort angegebenen Portionen (1 Portion = Esser mit 2000 kcal/Tag). Einheiten nur g, ml oder stk.
-- Nutze Zutaten über mehrere Gerichte, damit wenig übrig bleibt (z.B. halbe Packung Feta am nächsten Tag).
+  Brot/Toast in g (1 Scheibe ≈ 40 g), pack_amount immer in derselben Einheit wie amount.
+- Nutze Zutaten über mehrere Gerichte, damit wenig übrig bleibt (z.B. halbe Packung Feta am nächsten Tag): angebrochene
+  frische Packungen (Fleisch, Gemüse, Obst, Milchprodukte) in den nächsten 1–3 Tagen ganz aufbrauchen; keine
+  Großpackung (z.B. 2 kg Obst, 1 kg Fleisch), wenn die Woche sie nicht verbraucht.
 - Ernährungsform, Allergien und Ausschlüsse sind harte Regeln. Kochzeit nicht überschreiten.
 - Alle Texte auf Deutsch. Schritte kurz und konkret, 3–8 Schritte.
 - image_query: 2–4 englische Suchbegriffe für ein Foto des Gerichts, z.B. "chicken tikka masala".
@@ -83,7 +86,8 @@ Regeln:
 - lunchbox: Essen für die Arbeit, kalt essbar oder gut aufwärmbar, transportsicher, am Vorabend vorbereitbar (erster
   Schritt „Am Vorabend: …“). Suppen/Eintöpfe nur mit Hinweis „im Thermobehälter“.
 - Mahlzeiten mit Gästen: gästetauglich (gut teilbar, nicht zu experimentell).
-- „verwende Rest …“: diese Zutat mit gleichem Namen und gleicher offer_id einplanen.
+- „verwende Rest …“: diese Zutat mit gleichem Namen, gleicher offer_id und mindestens dieser Menge einplanen (Rest ganz
+  aufbrauchen, Mengen der anderen Zutaten anpassen).
 - Plane genau die genannten Mahlzeiten, nicht mehr und nicht weniger."""
 
 
@@ -253,11 +257,12 @@ def price(draft: PlanDraft, offers_by_id: dict[int, Offer], pantry: list[PantryI
         if key[0] == "offer":
             o = offers_by_id[key[1]]
             # Packungsgröße aus dem Angebot, wenn bekannt und in derselben Einheit
-            amount = o.amount if o.amount and o.unit == first.unit else first.pack_amount
+            amount = o.amount if o.amount and o.unit == first.unit else pack_amount(first.name, first.unit,
+                                                                                    first.pack_amount)
             pack = Pack(o.price_cents, amount, o.regular_price_cents, o.id, o.chain)
             category = o.category
         else:
-            pack = Pack(first.pack_price_cents, first.pack_amount)
+            pack = Pack(first.pack_price_cents, pack_amount(first.name, first.unit, first.pack_amount))
         needed = sum(ing.amount for _, ing in uses)
         have = stock.take(first.name, first.unit, needed, all(ing.in_pantry for _, ing in uses))
         line = cost_line(first.name, max(needed - have, 0), [pack])
@@ -298,7 +303,8 @@ def track_rests(rests: dict, draft: PlanDraft, uses: list, have: float, pack: Pa
         rests["planned"] += used_rest
         if worth_keeping(open_left, first.unit, pack.amount):
             rests["left"].append({"name": first.name, "amount": round(open_left, 1), "unit": first.unit,
-                                  "until_day": opened[0] + shelf, "opened_day": opened[0], "offer_id": pack.offer_id,
+                                  "until_day": opened[0] + shelf, "opened_day": opened[0], "opened_meal": opened[1],
+                                  "offer_id": pack.offer_id,
                                   "meat": shelf == 2, "protein": opener.protein})
 
 
@@ -378,21 +384,29 @@ def rest_targets(planned: PricedPlan, slots: list[tuple[int, str]], fixes: dict,
     base = violations(protein)
     targets: dict[tuple[int, str], list[str]] = {}
     for r in planned.rests.get("left", []):
-        def ok(s):
-            if s not in current or not r["opened_day"] < s[0] <= r["until_day"]:
+        if (r["opened_day"], r.get("opened_meal")) in fixes:
+            continue  # das anbrechende Gericht wird wegen einer Regel ersetzt → der Rest entsteht so nicht
+        opened = (r["opened_day"], SLOT_ORDER.index(r.get("opened_meal", "dessert")))
+
+        def ok(s):  # später als der Anbruch (auch am selben Tag) und vor dem Ablauf
+            if s not in current or not opened < (s[0], SLOT_ORDER.index(s[1])) or s[0] > r["until_day"]:
                 return False
             if r["meat"]:
                 return s[1] in variety.MAIN and s not in fixes and (
                     protein[s] == r["protein"] or violations(protein | {s: r["protein"]}) <= base)
-            return s[1] in (*variety.MAIN, "fruehstueck")
+            return s[1] in (*variety.MAIN, "fruehstueck", "snack", "dessert")
         cands = sorted((s for s in slots if ok(s)), key=lambda s: (
             r["meat"] and protein[s] != r["protein"], len(targets.get(s, [])), s[0]))
-        if cands:
+        # große Reste (z.B. 600 g Hähnchen, 1,5 kg Mandarinen) auf zwei Folgegerichte verteilen
+        big = r["amount"] >= (4 if r["unit"] == "stk" else 400)
+        picked = cands[:2 if big else 1]
+        for s in picked:
             if r["meat"]:
-                protein[cands[0]] = r["protein"]
-            targets.setdefault(cands[0], []).append(
-                f"verwende Rest {r['amount']:g} {r['unit']} {r['name']}"
-                + (f" (offer_id={r['offer_id']})" if r["offer_id"] else ""))
+                protein[s] = r["protein"]
+            part = r["amount"] / len(picked)
+            targets.setdefault(s, []).append(
+                f"verwende Rest {round(part, 1) if r['unit'] == 'stk' else round(part):g} {r['unit']} {r['name']}"
+                + (f" (offer_id={r['offer_id']})" if r["offer_id"] else "") + " komplett")
     return targets, protein
 
 
@@ -406,15 +420,18 @@ def second_pass(best: PricedPlan, usage: dict, household, offers_by_id: dict, sl
     current = {(m.day, m.meal_type): m for m in best.draft.meals}
     targets, protein = rest_targets(best, slots, c.fixes, rules, fish_ok)
     for s, f in targets.items():
-        if s not in todo:  # nur wegen Resten neu: Eigenschaften für die Abwechslung festlegen
+        if s not in todo:  # nur wegen Resten: Gericht behalten und ergänzen, sonst brechen neue Zutaten neue Packungen an
             m = current[s]
-            f = [*f, f"sonst: Beilage {m.side}, Protein {protein[s]}, Küche {m.cuisine or 'beliebig'}"]
+            f = [*f, f"sonst: Beilage {m.side}, Protein {protein[s]}, Küche {m.cuisine or 'beliebig'}; am besten das "
+                     f"bisherige Gericht „{m.title}“ ({', '.join(i.name for i in m.ingredients)}) behalten und den Rest "
+                     "einbauen"]
         todo.setdefault(s, []).extend(f)
     if not todo:
         return best, usage
     order = sorted(todo, key=lambda s: (s[0], SLOT_ORDER.index(s[1]) if s[1] in SLOT_ORDER else 9))
     kept = [m for m in best.draft.meals if (m.day, m.meal_type) not in todo]
-    note = ("Zweiter Durchgang: plane NUR diese Mahlzeiten neu, der Rest der Woche bleibt:\n"
+    note = ("Zweiter Durchgang: plane NUR diese Mahlzeiten neu, der Rest der Woche bleibt. Keine weiteren frischen "
+            "Packungen anbrechen, die übrig blieben (frische Zutaten aus den Resten, sonst Vorrat/Haltbares):\n"
             + "\n".join(f"- day={d} ({DAYS[d]}), meal_type={m}: {'; '.join(todo[(d, m)])}" for d, m in order)
             + "\nBleibt im Plan: " + "; ".join(f"{DAYS[m.day][:2]} {m.meal_type}: {m.title} [{m.side}, {m.protein}, "
                                                 f"{m.cuisine}]" for m in sorted(kept, key=chrono)))
@@ -429,8 +446,9 @@ def second_pass(best: PricedPlan, usage: dict, household, offers_by_id: dict, sl
     candidate = price(merged, offers_by_id, stock)
     budget = household.budget_food_week_cents
     old, now = score(best, budget, rules, fish_ok, recent, never), score(candidate, budget, rules, fish_ok, recent, never)
-    logger.info("Zweiter Durchgang: %d Slots, (Verstöße, Reste) %s → %s, %s", len(todo), old, now,
-                "übernommen" if now <= old else "verworfen")
+    logger.info("Zweiter Durchgang: %d Slots, (Verstöße, Reste) %s → %s, %s; offen: %s", len(todo), old, now,
+                "übernommen" if now <= old else "verworfen",
+                variety.check(dishes(candidate.draft.meals), rules, fish_ok, recent).issues)
     return (candidate if now <= old else best), usage
 
 
@@ -445,10 +463,15 @@ def add_images(planned: PricedPlan, find: Callable[[str], str] | None = None) ->
 def reroll_meal(household: Household, offers: list[Offer], slot: tuple[int, str], avoid: list[str],
                 wishes: str = "", portions: dict | None = None, pantry: list[PantryItem] = (),
                 favorites: list[str] = (), never: list[str] = (), recent: list[str] = (), extra: list[str] = (),
-                guests: dict | None = None, repeat_weeks: int = 3) -> tuple[PlannedMeal, dict]:
-    """Genau ein neues Gericht für einen Platz im Plan; avoid[0] ist das alte Gericht, danach die übrigen der Woche."""
+                guests: dict | None = None, repeat_weeks: int = 3,
+                max_cost_cents: int | None = None) -> tuple[PlannedMeal, dict]:
+    """Genau ein neues Gericht für einen Platz im Plan; avoid[0] ist das alte Gericht, danach die übrigen der Woche.
+    max_cost_cents: günstigere Alternative mit Kostengrenze (43)."""
     note = (f"Plane genau EIN neues Gericht, anders als: {avoid[0]} und andere Gerichte der Woche "
             f"({', '.join(avoid[1:]) or '-'}).")
+    if max_cost_cents is not None:
+        note += (f" Es darf höchstens {max_cost_cents} ct kosten (Zutaten anteilig): günstige Angebote, "
+                 "einfache Zutaten.")
     draft, usage = ask_claude(build_prompt(household, offers, [slot], favorites=favorites, wishes=wishes, note=note,
                                            portions=portions, pantry=pantry, never=never, recent=recent, extra=extra,
                                            guests=guests, repeat_weeks=repeat_weeks))

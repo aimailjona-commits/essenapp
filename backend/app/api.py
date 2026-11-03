@@ -10,6 +10,7 @@ from types import SimpleNamespace
 
 import httpx
 from fastapi import APIRouter, Body, Depends, File, Form, HTTPException, Query, Request, Response, UploadFile
+from fastapi import Path as Path_
 from sqlalchemy import or_, select
 from sqlalchemy.orm import Session
 
@@ -17,8 +18,8 @@ from app.core.auth import current_member, new_token
 from app.core.config import settings
 from app.core.db import get_db
 from app.models import (AiCost, Household, HouseholdStore, Invite, MealPlan, MealPlanEntry, Member, MemberProfile,
-                        MemberToken, Offer, PairingCode, PantryItem, PricePoint, PushDevice, Rating, Recipe,
-                        RecipeFavorite, ShoppingItem, ShoppingList, WeeklyBasic)
+                        MemberToken, Offer, PairingCode, PantryItem, PricePoint, Product, PushDevice, Rating, Recipe,
+                        RecipeFavorite, ShoppingItem, ShoppingList, WatchItem, WeeklyBasic)
 from app.schemas import (ConsumeIn, CookIdeaOut, DeviceIn, EntryUpdate, FavoriteOut, HouseholdCreate,
                          HouseholdCreated, HouseholdOut, HouseholdSettings, ImportIn, InviteOut, ItemCreate, ItemOut,
                          ItemPatchOut, ItemUpdate, JoinIn, ListCreate, ListOut, ListSummary, MemberOut,
@@ -28,9 +29,12 @@ from app.schemas import (ConsumeIn, CookIdeaOut, DeviceIn, EntryUpdate, Favorite
                          PushSettingsUpdate, RatingIn, RatingOut, RecipeCard, RecipeCostOut, RecipeDetail, RecipeIn,
                          RecipeOut, RecipePatch, ReplaceIn, ScanOut, ShareOut, StepImagesOut, UsageOut,
                          EntryLeftover, GeneratorOut, GuestsIn, NoMoodIn, PostponeIn, SpecialsOut, SubstituteIn,
-                         SubstitutesOut, WeeklyBasicIn, WeeklyBasicOut, WeeklyBasicUpdate)
-from app.services import (food_map, nearby_stores, nutrition, offers_import, pantry_ai, planner, prices, push,
-                          recipe_images, recipe_import, recipes, seasons, substitutes, variety)
+                         SubstitutesOut, WeeklyBasicIn, WeeklyBasicOut, WeeklyBasicUpdate, AddEntryIn, AssignIn,
+                         BudgetIdeaOut, BudgetOut, EanProductOut, NextWeekDealOut, NextWeekIn, RerollIn,
+                         StockupOut, StoreComboOut, WatchIn, WatchOut, WatchUpdate)
+from app.services import (food_map, labels, nearby_stores, nutrition, offers_import, pantry_ai, planner, prices, push,
+                          recipe_images, recipe_import, recipes, seasons, stockup, store_split, substitutes, variety,
+                          watch)
 from app.services.matching import Matcher
 from app.services.normalize import base_unit, cents, ingredient_key
 from app.services.pricing import PANTRY_WORDS, Stock
@@ -71,23 +75,147 @@ def update_household(body: HouseholdSettings, member: Member = Depends(current_m
     return household
 
 
-def household_offers(db: Session, household: Household, chain: str | None = None) -> list[Offer]:
-    """Heute gültige Angebote der eingestellten Läden/Filialen."""
+def _store_filter(household: Household, chain: str | None):
     stores = {(s.chain, s.store_ref) for s in household.stores if s.enabled and (chain is None or s.chain == chain)}
-    if not stores:
+    return or_(*[(Offer.chain == c) & (Offer.store_ref == ref) for c, ref in stores]) if stores else None
+
+
+def household_offers(db: Session, household: Household, chain: str | None = None, on: date | None = None) -> list[Offer]:
+    """Am Stichtag (Standard heute) gültige Angebote der eingestellten Läden/Filialen."""
+    stores, day = _store_filter(household, chain), on or date.today()
+    if stores is None:
         return []
-    today = date.today()
-    return list(db.scalars(select(Offer).where(
-        or_(*[(Offer.chain == c) & (Offer.store_ref == ref) for c, ref in stores]),
-        Offer.valid_from <= today, Offer.valid_to >= today,
-    ).order_by(Offer.category, Offer.title)))
+    return list(db.scalars(select(Offer).where(stores, Offer.valid_from <= day, Offer.valid_to >= day)
+                           .order_by(Offer.category, Offer.title)))
+
+
+def next_monday(today: date | None = None) -> date:
+    today = today or date.today()
+    return today + timedelta(days=7 - today.weekday())
+
+
+def next_week_offers(db: Session, household: Household, chain: str | None = None) -> list[Offer]:
+    """Vorschau (30): Angebote, deren Gültigkeit in der nächsten Woche beginnt (kaufDA listet sie meist ab Do/Fr/Sa)."""
+    stores, monday = _store_filter(household, chain), next_monday()
+    if stores is None:
+        return []
+    return list(db.scalars(select(Offer).where(stores, Offer.valid_from >= monday,
+                                               Offer.valid_from <= monday + timedelta(days=6))
+                           .order_by(Offer.category, Offer.title)))
+
+
+DRUGSTORES = ("dm", "rossmann")
+
+
+def is_monthly(o: Offer) -> bool:
+    """dm/Rossmann-Monatsaktion (59): gilt bis Monatsende bzw. mindestens 3 Wochen."""
+    return o.chain in DRUGSTORES and ((o.valid_to + timedelta(days=1)).day == 1 or (o.valid_to - o.valid_from).days >= 20)
+
+
+def offer_rows(db: Session, offers: list[Offer]) -> list[dict]:
+    """OfferOut mit Urteil (28), Bio/Vegan/Nutri-Score (49) und Monatsaktion (59) – je eine Abfrage für Preispunkte
+    und Produkte, keine N+1."""
+    verdicts = prices.verdicts(db, offers)
+    ids = {o.product_id for o in offers if o.product_id}
+    products = {p.id: p for p in db.scalars(select(Product).where(Product.id.in_(ids)))} if ids else {}
+    return [OfferOut.model_validate(o).model_dump() | labels.flags(o, products.get(o.product_id))
+            | {"verdict": verdicts[o.id]["verdict"], "monthly": is_monthly(o)} for o in offers]
 
 
 @router.get("/offers", response_model=list[OfferOut])
 def list_offers(chain: str | None = None, category: str | None = None, q: str | None = None,
+                week: str = Query("this", pattern="^(this|next)$"), real: bool = False, bio: bool = False,
+                vegan: bool = False, nutri_ab: bool = False, monthly: bool = False,
                 member: Member = Depends(current_member), db: Session = Depends(get_db)):
-    offers = household_offers(db, member.household, chain)
-    return [o for o in offers if (not category or o.category == category) and (not q or q.lower() in o.title.lower())]
+    """Angebote dieser Woche (heute gültig) bzw. week=next: Vorschau der nächsten Woche (30). Filter: real = „Nur echte
+    Angebote“ (Urteil nicht kein_echtes, 28), bio/vegan/nutri_ab (Nutri-Score A/B, 49), monthly = dm/Rossmann-
+    Monatsaktionen (59)."""
+    offers = (next_week_offers if week == "next" else household_offers)(db, member.household, chain)
+    offers = [o for o in offers if (not category or o.category == category) and (not q or q.lower() in o.title.lower())
+              and (not monthly or is_monthly(o))]
+    rows = offer_rows(db, offers)
+    db.commit()  # Preispunkte für Angebote ohne Produkt (vor dem Preisverlauf importiert)
+    return [r for r in rows if (not real or r["verdict"] != "kein_echtes") and (not bio or r["bio"])
+            and (not vegan or r["vegan"]) and (not nutri_ab or r["nutri_score"] in ("A", "B"))]
+
+
+def _same_pack_price(now: Offer, nxt: Offer, regular: bool = False) -> int:
+    """Heutiger Preis umgerechnet auf die Packung des Vorschau-Angebots (Grundpreis, wenn beide einen haben)."""
+    price = (now.regular_price_cents or now.price_cents) if regular else now.price_cents
+    if now.base_price_cents and nxt.amount and now.unit == nxt.unit and now.amount and now.amount != nxt.amount:
+        return cents(price * nxt.amount / now.amount)
+    return price
+
+
+@router.get("/offers/next-week-cheaper", response_model=list[NextWeekDealOut])
+def next_week_cheaper(member: Member = Depends(current_member), db: Session = Depends(get_db)):
+    """Start-Karte „👀 Nächste Woche günstiger“ (30): offene Listenartikel (inkl. Plan) und Merkliste, die nächste Woche
+    mindestens 10 % günstiger werden. Vergleich: heutiges Angebot, sonst Normalpreis (Streichpreis bzw. Historie)."""
+    h = member.household
+    nxt = next_week_offers(db, h)
+    if not nxt:
+        return []
+    now_offers = household_offers(db, h)
+    m_next, m_now = Matcher(nxt, False), Matcher(now_offers, False)
+    m_hist = Matcher(recipes.history_offers(db), False)
+    wants = [(i.name, i.id, None) for i in household_list(db, h.id).items
+             if not i.checked and not ItemOut.model_validate(i).next_week]
+    watches = list(db.scalars(select(WatchItem).where(WatchItem.household_id == h.id, WatchItem.kind == "produkt")))
+    deals, seen = [], set()
+    for name, item_id, w in [*wants, *[(w.label, None, w) for w in watches]]:
+        cands = watch.matches(w, nxt) if w else m_next.find(name)
+        if not cands or name.lower() in seen:
+            continue
+        o = min(cands, key=lambda c: c.price_cents)
+        now = (watch.matches(w, now_offers) if w else m_now.find(name))
+        if now:
+            ref, chain = min(_same_pack_price(n, o) for n in now), min(now, key=lambda n: _same_pack_price(n, o)).chain
+        elif o.regular_price_cents:
+            ref, chain = o.regular_price_cents, ""
+        elif hist := m_hist.find(name):
+            ref, chain = min(_same_pack_price(n, o, regular=True) for n in hist), ""
+        else:
+            continue
+        pct = round(100 * (1 - o.price_cents / ref)) if ref else 0
+        if pct >= 10:
+            seen.add(name.lower())
+            deals.append({"name": name, "item_id": item_id, "watch_id": w.id if w else None, "offer": o,
+                          "now_price_cents": ref, "now_chain": chain, "saving_pct": pct})
+    rows = {r["id"]: r for r in offer_rows(db, [d["offer"] for d in deals])}
+    db.commit()
+    return sorted(({**d, "offer": rows[d["offer"].id]} for d in deals), key=lambda d: -d["saving_pct"])
+
+
+def stockup_tips(db: Session, household: Household, offers: list[Offer]) -> list[dict]:
+    """Vorratskauf-Tipps (31) für diese Angebote, größte Ersparnis zuerst, je Titel einer."""
+    cands = [o for o in offers if stockup.durable(o)]
+    verdicts = prices.verdicts(db, cands)
+    usage, tips, seen = None, [], set()
+    for o in cands:
+        if o.title.lower() in seen or stockup.tip(o, verdicts[o.id], None) is None:
+            continue
+        usage = usage or stockup.load_usage(db, household.id)
+        seen.add(o.title.lower())
+        tips.append(stockup.tip(o, verdicts[o.id], stockup.weekly_use(usage, o), household.storage_space))
+    rows = {r["id"]: r for r in offer_rows(db, [t["offer"] for t in tips])}
+    db.commit()
+    return sorted(({**t, "offer": rows[t["offer"].id]} for t in tips), key=lambda t: -t["saving_cents"])
+
+
+@router.get("/stockup", response_model=list[StockupOut])
+def list_stockup(limit: int = Query(3, ge=1, le=50), member: Member = Depends(current_member),
+                 db: Session = Depends(get_db)):
+    """Start-Karte „💡 Vorrat anlegen lohnt sich“ (31, max. 3)."""
+    return stockup_tips(db, member.household, household_offers(db, member.household))[:limit]
+
+
+@router.get("/offers/{offer_id}/stockup", response_model=StockupOut | None)
+def offer_stockup(offer_id: int, member: Member = Depends(current_member), db: Session = Depends(get_db)):
+    """Angebotsdetail „Vorratstipp: 3 Packungen reichen ~6 Wochen, sparst 4,20 €“; null = kein Tipp."""
+    offer = db.get(Offer, offer_id)
+    if offer is None:
+        raise HTTPException(404, "Angebot nicht gefunden")
+    return next(iter(stockup_tips(db, member.household, [offer])), None)
 
 
 @router.get("/offers/{offer_id}/history", response_model=OfferHistoryOut)
@@ -181,7 +309,7 @@ def _eaters(household: Household, persons: int, slots: list[tuple[int, str]]) ->
     return planner.slot_eaters(_profiles(household), persons, slots)
 
 
-PLAN_ONLY = ("wishes", "guests", "guest_budget_cents", "special")  # gelten nie als Haushalts-Standard
+PLAN_ONLY = ("wishes", "guests", "guest_budget_cents", "special", "next_week", "single_store")  # nie Haushalts-Standard
 
 
 def fish_ok(prefs) -> bool:
@@ -206,11 +334,19 @@ def plan_stock(db: Session, household_id: int) -> list[PantryItem]:
     return household_pantry(db, household_id) + weekly_stock(db, household_id)
 
 
-def plan_extra(db: Session, household: Household, prefs, slots: list[tuple[int, str]], hint: str = "") -> list[str]:
-    """Kompakte Zusatzzeilen für den variablen Prompt-Teil: Abwechslung (12), Saison/Feiertage (25),
-    Frühstücks-Basics und Snack-Ziel (23), Special-Hinweis (25)."""
-    lines = [variety.rules_line(variety.rules_of(household.variety), fish_ok(prefs)),
+def plan_extra(db: Session, household: Household, prefs, slots: list[tuple[int, str]], hint: str = "",
+               offers: list[Offer] = (), days: int | None = None) -> list[str]:
+    """Kompakte Zusatzzeilen für den variablen Prompt-Teil: Abwechslung (12, Mindestregeln anteilig zu den Plan-Tagen),
+    Saison/Feiertage (25), Frühstücks-Basics und Snack-Ziel (23), Nutri-Score A/B (49), Special-Hinweis (25)."""
+    days = days or len({d for d, m in slots if m in variety.MAIN}) or 7
+    lines = [variety.rules_line(variety.rules_of(household.variety), fish_ok(prefs), days),
              *seasons.prompt_lines(date.today(), household.plz)]
+    picked = planner.select_offers(list(offers))
+    ids = {o.product_id for o in picked if o.product_id}
+    good = set(db.scalars(select(Product.id).where(Product.id.in_(ids), Product.nutri_score.in_(("a", "b"))))) if ids else set()
+    if names := list(dict.fromkeys(o.title for o in picked if o.product_id in good))[:25]:
+        lines.append(f"Nutri-Score A/B (bei Ziel „{prefs.nutrition_goal}“ bei ähnlichem Preis bevorzugen): "
+                     + ", ".join(names))
     meals = {m for _, m in slots}
     if meals & {"fruehstueck", "snack"} and (basics := weekly_basics(db, household.id)):
         lines.append("Frühstücks-/Snack-Basics (kauft der Haushalt jede Woche, bevorzugt nutzen): " + ", ".join(
@@ -231,8 +367,12 @@ def create_plan(options: PlanOptions | None = None, member: Member = Depends(cur
     das Budget; special (25) fügt die Slots der Vorlage hinzu."""
     household = member.household
     opts = options.model_dump(exclude_none=True, exclude={"save_as_default"}) if options else {}
+    if not opts.get("next_week"):
+        opts.pop("next_week", None)
     prefs = _prefs(household, opts)
     extra_slots, hint = [], ""
+    if (single := opts.get("single_store")) and single not in {s.chain for s in household.stores if s.enabled}:
+        raise HTTPException(422, "Laden ist nicht ausgewählt")
     if key := opts.get("special"):
         if key not in seasons.EVENTS:
             raise HTTPException(422, "Unbekanntes Special")
@@ -249,12 +389,18 @@ def create_plan(options: PlanOptions | None = None, member: Member = Depends(cur
     portions = {s: eaters[s][1] + guests.get(s, 0) for s in slots}
     rules = variety.rules_of(household.variety)
     memory = recipes.planner_memory(db, household.id, repeat_weeks=rules["repeat_weeks"])
+    monday = next_monday() if opts.get("next_week") else None
+    offers = household_offers(db, household, single, monday)
+    if single:
+        name = watch.CHAIN_NAMES.get(single, single)
+        hint = (hint + "\n" if hint else "") + (f"Einkauf komplett bei {name}: nur dessen Angebote; Zutaten ohne "
+                                                 f"Angebot zum Normalpreis von {name} schätzen.")
     try:
-        priced = planner.make_plan(prefs, household_offers(db, household), slots, favorites=memory["favorites"],
+        priced = planner.make_plan(prefs, offers, slots, favorites=memory["favorites"],
                                    wishes=opts.get("wishes", ""), portions=portions,
                                    pantry=household_pantry(db, household.id), never=memory["never"],
                                    recent=memory["recent"], rules=rules, fish_ok=fish_ok(prefs),
-                                   extra=plan_extra(db, household, prefs, slots, hint), guests=guests,
+                                   extra=plan_extra(db, household, prefs, slots, hint, offers), guests=guests,
                                    stock=plan_stock(db, household.id))
     except RuntimeError as e:
         raise HTTPException(502, str(e))
@@ -263,8 +409,7 @@ def create_plan(options: PlanOptions | None = None, member: Member = Depends(cur
         for key, value in opts.items():
             if key not in PLAN_ONLY:
                 setattr(household, key, value)
-    year, week, _ = date.today().isocalendar()
-    plan = MealPlan(household_id=household.id, week=f"{year}-W{week:02d}", total_cents=priced.total_cents,
+    plan = MealPlan(household_id=household.id, week=prices.iso_week(monday or date.today()), total_cents=priced.total_cents,
                     saved_cents=priced.saved_cents,
                     params={"budget": prefs.budget_food_week_cents, "options": opts, "usage": priced.usage,
                             "rests": priced.rests})
@@ -309,6 +454,14 @@ def _current(db: Session, household_id: int) -> MealPlan:
     return plan
 
 
+def plan_offers(db: Session, household: Household, plan: MealPlan | None) -> list[Offer]:
+    """Angebote, mit denen ein Plan rechnet: nur der Laden im Ein-Laden-Modus (41), Stichtag Montag beim Plan für
+    nächste Woche (30)."""
+    opts = ((plan.params or {}).get("options") or {}) if plan else {}
+    return household_offers(db, household, opts.get("single_store"),
+                            plan_monday(plan) if opts.get("next_week") else None)
+
+
 def _entry(plan: MealPlan, entry_id: int) -> MealPlanEntry:
     entry = next((e for e in plan.entries if e.id == entry_id), None)
     if entry is None:
@@ -331,13 +484,15 @@ def update_entry(entry_id: int, body: EntryUpdate, member: Member = Depends(curr
 
 
 @router.post("/plans/current/entries/{entry_id}/reroll", response_model=PlanOut)
-def reroll_entry(entry_id: int, member: Member = Depends(current_member), db: Session = Depends(get_db)):
-    """Ersetzt ein Gericht durch ein neues der KI und rechnet die Kosten des ganzen Plans neu."""
+def reroll_entry(entry_id: int, body: RerollIn | None = None, member: Member = Depends(current_member),
+                 db: Session = Depends(get_db)):
+    """Ersetzt ein Gericht durch ein neues der KI und rechnet die Kosten des ganzen Plans neu. max_cost_cents (43):
+    „günstigere Alternative“ mit Kostengrenze."""
     household, plan = member.household, _current(db, member.household_id)
     entry = _entry(plan, entry_id)
     if entry.locked:
         raise HTTPException(409, "Gericht ist fixiert")
-    offers = household_offers(db, household)
+    offers = plan_offers(db, household, plan)
     others = [e.recipe.title for e in plan.entries if e is not entry]
     opts = (plan.params or {}).get("options", {})
     prefs, slot, pantry = _prefs(household, opts), (entry.day, entry.meal_type), household_pantry(db, household.id)
@@ -350,9 +505,11 @@ def reroll_entry(entry_id: int, member: Member = Depends(current_member), db: Se
     try:
         meal, call_usage = planner.reroll_meal(prefs, offers, slot, [entry.recipe.title, *others],
                                                wishes=opts.get("wishes", ""), portions={slot: total}, pantry=pantry,
-                                               extra=plan_extra(db, household, prefs, [slot]),
+                                               extra=plan_extra(db, household, prefs, [slot], offers=offers,
+                                                                days=len({e.day for e in plan.entries
+                                                                          if e.meal_type in variety.MAIN})),
                                                guests={slot: entry.guests}, repeat_weeks=rules["repeat_weeks"],
-                                               **memory)
+                                               max_cost_cents=body.max_cost_cents if body else None, **memory)
     except RuntimeError as e:
         raise HTTPException(502, str(e))
     entry.recipe = _recipe(household, meal, recipe_images.find_image(meal.image_query or meal.title))
@@ -402,7 +559,7 @@ def replace_entry(entry_id: int, body: ReplaceIn, member: Member = Depends(curre
     recipe = household_recipe(db, member, body.recipe_id)
     target = entry.portions_total or entry.recipe.servings
     entry.recipe, entry.scale = recipe, target / recipe.servings
-    reprice(db, plan, household_offers(db, household), household_pantry(db, household.id))
+    reprice(db, plan, plan_offers(db, household, plan), household_pantry(db, household.id))
     sync_plan(db, household.id)
     db.commit()
     food_map.map_later([i["name"] for i in recipe.ingredients])
@@ -603,7 +760,8 @@ def list_out(request: Request, lst: ShoppingList) -> dict:
 
 
 def add_item(db: Session, lst: ShoppingList, body: ItemCreate, by: str) -> ShoppingItem:
-    item = ShoppingItem(**body.model_dump(), added_by=by, source="manual")
+    item = ShoppingItem(**body.model_dump(exclude={"next_week"}), added_by=by,
+                        defer_week=prices.iso_week(next_monday()) if body.next_week else None)
     lst.items.append(item)
     db.commit()
     return item
@@ -613,10 +771,14 @@ def update_item(db: Session, item: ShoppingItem, body: ItemUpdate, by: str) -> S
     changes = body.model_dump(exclude_unset=True)
     if changes.get("name") is None:
         changes.pop("name", None)
+    if (later := changes.pop("next_week", None)) is not None:
+        item.defer_week = prices.iso_week(next_monday()) if later else None
     if changes.get("checked") is None:
         changes.pop("checked", None)
     else:
         item.checked_by = by if changes["checked"] else ""
+        if changes["checked"]:  # Verbrauchsrhythmus (58): „zuletzt gekauft“
+            watch.mark_bought(db, db.get(ShoppingList, item.list_id).household_id, item.name, date.today())
     for key, value in changes.items():
         setattr(item, key, value)
     db.commit()
@@ -635,8 +797,9 @@ def sync_plan(db: Session, household_id: int) -> ShoppingList:
         return ("offer", offer_id) if offer_id else ("name", name.strip().lower(), unit)
 
     entries = plan.entries if plan else []
+    single = ((plan.params or {}).get("options") or {}).get("single_store") if plan else None
     user_names = [i["name"] for e in entries for i in e.recipe.ingredients if "offer_id" not in i]
-    match = pricer(db, household_offers(db, db.get(Household, household_id)), user_names) if user_names else None
+    match = pricer(db, plan_offers(db, db.get(Household, household_id), plan), user_names) if user_names else None
     needed: dict[tuple, dict] = {}
     for entry in entries:
         for ing in entry_ingredients(entry):
@@ -668,7 +831,7 @@ def sync_plan(db: Session, household_id: int) -> ShoppingList:
             lst.items.append(item)
         item.name, item.unit, item.offer_id = row["name"], row["unit"], row["offer_id"]
         item.amount = row["amount"] or None
-        item.chain = chains.get(row["offer_id"], "")
+        item.chain = single or chains.get(row["offer_id"], "")  # Ein-Laden-Modus (41): alles bei diesem Laden
     db.flush()
     return lst
 
@@ -695,6 +858,43 @@ def create_list(body: ListCreate, request: Request, member: Member = Depends(cur
 @router.post("/lists/household/sync-plan", response_model=ListOut)
 def sync_plan_endpoint(request: Request, member: Member = Depends(current_member), db: Session = Depends(get_db)):
     lst = sync_plan(db, member.household_id)
+    db.commit()
+    return list_out(request, lst)
+
+
+def _split(db: Session, member: Member, list_id: int, chains: list[str] | None = None):
+    h = member.household
+    lst = member_list(db, member, list_id)
+    enabled = list(dict.fromkeys(s.chain for s in h.stores if s.enabled))
+    if chains and not set(chains) <= set(enabled):
+        raise HTTPException(422, "Laden ist nicht ausgewählt")
+    chains = chains or enabled
+    items = [i for i in lst.items if not i.checked and not ItemOut.model_validate(i).next_week]
+    coords = {}
+    for s_ in h.stores:
+        if s_.enabled and s_.lat is not None and s_.chain not in coords:
+            coords[s_.chain] = (s_.lat, s_.lng)
+    p = store_split.Prices(household_offers(db, h), recipes.history_offers(db), chains)
+    home = (h.lat, h.lng) if h.lat is not None else None
+    return lst, items, store_split.combos(items, p, chains, home, coords)
+
+
+@router.get("/lists/{list_id}/stores", response_model=list[StoreComboOut])
+def list_stores(list_id: int, member: Member = Depends(current_member), db: Session = Depends(get_db)):
+    """Laden-Empfehlung (42): offene Artikel in allen Kombinationen aus max. 2 gewählten Läden (Angebote +
+    Normalpreise, ganze Packungen), günstigste zuerst."""
+    return _split(db, member, list_id)[2]
+
+
+@router.post("/lists/{list_id}/assign", response_model=ListOut)
+def assign_stores(list_id: int, body: AssignIn, request: Request, member: Member = Depends(current_member),
+                  db: Session = Depends(get_db)):
+    """„So aufteilen“ (42): jeder offene Artikel kommt in den günstigsten der gewählten Läden (Laden-Gruppen neu)."""
+    lst, items, combos = _split(db, member, list_id, body.chains)
+    combo = next(c for c in combos if c["chains"] == list(dict.fromkeys(body.chains)))
+    for item in items:
+        if item.id in combo["assignment"]:
+            item.chain, item.offer_id, _ = combo["assignment"][item.id]
     db.commit()
     return list_out(request, lst)
 
@@ -739,6 +939,22 @@ def pantry_suggest(db: Session, item: ShoppingItem) -> bool:
 def patch_item(item_id: int, body: ItemUpdate, member: Member = Depends(current_member), db: Session = Depends(get_db)):
     item = update_item(db, member_item(db, member, item_id), body, member.name)
     return {**ItemOut.model_validate(item).model_dump(), "pantry_suggest": bool(body.checked) and pantry_suggest(db, item)}
+
+
+@router.post("/items/{item_id}/next-week", response_model=ItemOut)
+def item_next_week(item_id: int, body: NextWeekIn | None = None, member: Member = Depends(current_member),
+                   db: Session = Depends(get_db)):
+    """„Auf nächste Woche schieben“ (30): Artikel wandert in die Gruppe „Nächste Woche“; mit offer_id bekommt ein
+    nicht aus dem Plan stammender Artikel Laden und Angebot der nächsten Woche."""
+    item = member_item(db, member, item_id)
+    item.defer_week = prices.iso_week(next_monday())
+    if body and body.offer_id and item.source != "plan":
+        offer = db.get(Offer, body.offer_id)
+        if offer is None:
+            raise HTTPException(404, "Angebot nicht gefunden")
+        item.offer_id, item.chain = offer.id, offer.chain
+    db.commit()
+    return item
 
 
 @router.post("/items/{item_id}/to-pantry", response_model=PantryOut)
@@ -1489,7 +1705,7 @@ def set_guests(entry_id: int, body: GuestsIn, member: Member = Depends(current_m
         raise HTTPException(422, "Bei dieser Mahlzeit isst dann niemand mit")
     entry.scale = (entry.scale or 1) * new / old
     entry.portions_total, entry.guests = new, body.count
-    reprice(db, plan, household_offers(db, member.household), household_pantry(db, member.household_id))
+    reprice(db, plan, plan_offers(db, member.household, plan), household_pantry(db, member.household_id))
     sync_plan(db, member.household_id)
     db.commit()
     return plan_out(db, plan)
@@ -1513,7 +1729,7 @@ def postpone(body: PostponeIn, member: Member = Depends(current_member), db: Ses
         moves.append((target, r, scale))
     for target, r, scale in moves:
         target.recipe, target.scale = r, scale
-    reprice(db, plan, household_offers(db, member.household), household_pantry(db, member.household_id))
+    reprice(db, plan, plan_offers(db, member.household, plan), household_pantry(db, member.household_id))
     sync_plan(db, member.household_id)
     db.commit()
     return plan_out(db, plan)
@@ -1602,7 +1818,9 @@ def apply_weekly_basics(db: Session, household: Household) -> ShoppingList:
     der eigenen Läden setzt Laden + Preis (offer_id). Offene Basics-Einträge werden aktualisiert, nicht verdoppelt."""
     lst = household_list(db, household.id)
     stock = Stock(household_pantry(db, household.id))
-    matcher = Matcher(household_offers(db, household))
+    plan = db.scalar(select(MealPlan).where(MealPlan.household_id == household.id).order_by(MealPlan.id.desc()).limit(1))
+    single = ((plan.params or {}).get("options") or {}).get("single_store") if plan else None
+    matcher = Matcher(household_offers(db, household, single))
     open_items = {ingredient_key(i.name): i for i in lst.items if i.source == "basics" and not i.checked}
     for b in weekly_basics(db, household.id):
         need = b.amount
@@ -1618,7 +1836,7 @@ def apply_weekly_basics(db: Session, household: Household) -> ShoppingList:
             item = ShoppingItem(source="basics", added_by="Frühstück & Snacks")
             lst.items.append(item)
         item.name, item.amount, item.unit = b.name, round(need, 1) if need else None, b.unit
-        item.offer_id, item.chain = (offers[0].id, offers[0].chain) if offers else (None, "")
+        item.offer_id, item.chain = (offers[0].id, offers[0].chain) if offers else (None, single or "")
     db.flush()
     return lst
 
@@ -1691,8 +1909,184 @@ def apply_substitute(recipe_id: int, index: int, body: SubstituteIn, member: Mem
     recipe.ingredients = [*recipe.ingredients[:index], *rows, *recipe.ingredients[index + 1:]]
     db.flush()
     if plan and any(e.recipe_id == recipe.id for e in plan.entries):
-        reprice(db, plan, household_offers(db, member.household), household_pantry(db, member.household_id))
+        reprice(db, plan, plan_offers(db, member.household, plan), household_pantry(db, member.household_id))
         sync_plan(db, member.household_id)
     db.commit()
     food_map.map_later([r["name"] for r in rows])
     return recipe_detail(db, member, recipe)
+
+
+# --- Merkliste (27), Preisalarm (40), Verbrauchsrhythmus (58) ---
+
+def member_watch(db: Session, member: Member, watch_id: int) -> WatchItem:
+    item = db.get(WatchItem, watch_id)
+    if item is None or item.household_id != member.household_id:
+        raise HTTPException(404, "Merklisten-Eintrag nicht gefunden")
+    return item
+
+
+def watch_out(item: WatchItem, hits: list[dict]) -> dict:
+    return {c.key: getattr(item, c.key) for c in WatchItem.__table__.columns} | {
+        "lasts_weeks_suggestion": watch.lasts_suggestion(item.label, item.category),
+        "empty_on": watch.empty_on(item), "hits": hits}
+
+
+def watch_list(db: Session, member: Member, items: list[WatchItem]) -> list[dict]:
+    offers = household_offers(db, member.household)
+    found = {i.id: watch.matches(i, offers) for i in items}
+    rows = {r["id"]: r for r in offer_rows(db, list({o.id: o for os in found.values() for o in os}.values()))}
+    db.commit()
+    return [watch_out(i, [rows[o.id] for o in found[i.id]]) for i in items]
+
+
+@router.get("/watch", response_model=list[WatchOut])
+def get_watch(member: Member = Depends(current_member), db: Session = Depends(get_db)):
+    """S10 Merkliste: Einträge mit aktuellen Treffern (hits nicht leer → „Diese Woche günstig“, Badge am Angebote-Tab),
+    Produkte ohne Treffer → „Beobachtet“, kind zutat → „Preisalarme“."""
+    items = list(db.scalars(select(WatchItem).where(WatchItem.household_id == member.household_id)
+                            .order_by(WatchItem.id)))
+    return watch_list(db, member, items)
+
+
+@router.post("/watch", response_model=WatchOut, status_code=201)
+def create_watch(body: WatchIn, member: Member = Depends(current_member), db: Session = Depends(get_db)):
+    """Herz am Angebot (offer_id), Barcode (ean), Freitext oder „+ Zutat“ (kind zutat). Drogerie/Haushalt bekommen
+    „Hält ca. X Wochen“ als Vorschlag (58)."""
+    data = body.model_dump(exclude={"offer_id"})
+    if body.offer_id is not None:
+        o = db.get(Offer, body.offer_id)
+        if o is None:
+            raise HTTPException(404, "Angebot nicht gefunden")
+        data |= {"label": body.label or o.title, "brand": body.brand or o.brand, "category": body.category or o.category,
+                 "image_url": body.image_url or o.image_url, "ean": body.ean or o.ean}
+    if data["lasts_weeks"] is None and body.kind == "produkt":
+        data["lasts_weeks"] = watch.lasts_suggestion(data["label"], data["category"]) if data["category"] in (
+            "drogerie", "haushalt") else None
+    item = WatchItem(household_id=member.household_id, created_by=member.id, **data)
+    db.add(item)
+    db.commit()
+    return watch_list(db, member, [item])[0]
+
+
+@router.patch("/watch/{watch_id}", response_model=WatchOut)
+def patch_watch(watch_id: int, body: WatchUpdate, member: Member = Depends(current_member),
+                db: Session = Depends(get_db)):
+    item = member_watch(db, member, watch_id)
+    nullable = ("max_price_cents", "max_base_price_cents", "lasts_weeks", "last_bought")
+    for key, value in body.model_dump(exclude_unset=True).items():
+        if value is not None or key in nullable:
+            setattr(item, key, value)
+    if item.max_base_price_cents is not None and not item.base_unit:
+        raise HTTPException(422, "base_unit fehlt (kg, l oder stk)")
+    db.commit()
+    return watch_list(db, member, [item])[0]
+
+
+@router.delete("/watch/{watch_id}", status_code=204)
+def delete_watch(watch_id: int, member: Member = Depends(current_member), db: Session = Depends(get_db)):
+    db.delete(member_watch(db, member, watch_id))
+    db.commit()
+    return Response(status_code=204)
+
+
+@router.get("/products/ean/{ean}", response_model=EanProductOut)
+def product_by_ean(ean: str = Path_(pattern=r"^(\d{8}|\d{12,14})$"), member: Member = Depends(current_member)):
+    """Barcode-Scan (27): EAN → Open Food Facts (Name, Marke, Bild, Nutri-Score); found false = unbekannt."""
+    try:
+        hit = labels.by_ean(ean)
+    except (httpx.HTTPError, RuntimeError, KeyError) as e:
+        raise HTTPException(502, f"Open Food Facts nicht erreichbar: {e}")
+    if hit is None:
+        return {"ean": ean, "found": False, "name": "", "brand": "", "image_url": "", "nutri_score": None}
+    return {"ean": ean, "found": True, "name": hit["name"], "brand": hit["brand"], "image_url": hit["image_url"],
+            "nutri_score": hit["nutri_score"].upper() if hit["nutri_score"] else None}
+
+
+# --- Budget-Rest-Hinweis (43) ---
+
+REST_MIN = 500  # ab 5 € Rest Ideen anbieten
+
+
+def budget_state(plan: MealPlan, household: Household) -> dict:
+    budget = (plan.params or {}).get("budget") or household.budget_food_week_cents
+    rest = budget - plan.total_cents
+    over = None
+    if rest < 0 and (free := [e for e in plan.entries if not e.locked]):
+        e = max(free, key=lambda e: e.cost_cents)
+        over = {"entry_id": e.id, "day": e.day, "title": e.recipe.title, "cost_cents": e.cost_cents,
+                "max_cost_cents": max(e.cost_cents + rest, 0)}
+    return {"budget_cents": budget, "total_cents": plan.total_cents, "rest_cents": rest,
+            "state": "over" if rest < 0 else "rest" if rest >= REST_MIN else "ok", "over": over}
+
+
+@router.get("/plans/current/budget", response_model=BudgetOut)
+def plan_budget(member: Member = Depends(current_member), db: Session = Depends(get_db)):
+    """Karte nach dem Plan: „💶 Noch 6,80 € übrig – wie wär's mit …“ (state rest) bzw. „⚠️ 3,20 € über Budget –
+    günstigere Alternative für Do?“ (state over → POST …/entries/{over.entry_id}/reroll {max_cost_cents})."""
+    return budget_state(_current(db, member.household_id), member.household)
+
+
+def buy_cents(p: recipes.Pricer, stock: Stock, ingredients: list[dict]) -> int:
+    """Einkaufspreis (ganze Packungen) ohne Vorhandenes."""
+    total = 0
+    for i in ingredients:
+        row = p.planned(i)
+        need = row["amount"] - min(stock.take(row["name"], row["unit"], row["amount"]), row["amount"])
+        if need > 0 and row["pack_amount"]:
+            total += -(-need // row["pack_amount"]) * row["pack_price_cents"]
+    return int(total)
+
+
+@router.post("/plans/current/budget/ideas", response_model=list[BudgetIdeaOut])
+def budget_ideas(member: Member = Depends(current_member), db: Session = Depends(get_db)):
+    """3 Ideen für den Rest (Dessert, Snack per Haiku; Vorratskauf aus 31) mit Kosten ≤ Rest. Dessert/Snack sind
+    gespeicherte Rezepte → einplanen über POST /plans/current/entries; Vorrat → „auf die Liste“."""
+    household, plan = member.household, _current(db, member.household_id)
+    state = budget_state(plan, household)
+    if state["state"] != "rest":
+        raise HTTPException(422, "Kein Restbudget ab 5 €")
+    rest, offers = state["rest_cents"], plan_offers(db, household, plan)
+    prefs = _prefs(household, (plan.params or {}).get("options") or {})
+    try:
+        ideas, usage = pantry_ai.budget_ideas(prefs, offers, rest)
+    except RuntimeError as e:
+        raise HTTPException(502, str(e))
+    planner.log_cost(db, household.id, "budget", usage["cost_cents"], usage["model"], f"{len(ideas)} Ideen, Rest {rest} ct")
+    p = pricer(db, offers, [i.name for idea in ideas for i in idea.ingredients])
+    priced = []
+    for idea in ideas:
+        cost = buy_cents(p, Stock(plan_stock(db, household.id)), [ingredient_row(i.model_dump()) for i in idea.ingredients])
+        if cost <= rest and idea.meal_type in ("dessert", "snack") and idea.meal_type not in {k for k, _, _ in priced}:
+            priced.append((idea.meal_type, idea, cost))
+    saved = save_ideas(db, household, [(idea, []) for _, idea, _ in priced], image_wait=1)
+    out = [{"kind": k, "title": idea.title, "cost_cents": cost, "recipe": r["recipe"], "stockup": None}
+           for (k, idea, cost), r in zip(priced, saved)]
+    for t in stockup_tips(db, household, offers):
+        packs = min(t["packs"], rest // t["offer"]["price_cents"])
+        if packs >= 1:
+            t = t | {"packs": packs, "saving_cents": (t["normal_price_cents"] - t["offer"]["price_cents"]) * packs}
+            out.append({"kind": "vorrat", "title": t["offer"]["title"], "cost_cents": t["offer"]["price_cents"] * packs,
+                        "recipe": None, "stockup": t})
+            break
+    return out
+
+
+@router.post("/plans/current/entries", response_model=PlanOut, status_code=201)
+def add_entry(body: AddEntryIn, member: Member = Depends(current_member), db: Session = Depends(get_db)):
+    """Gericht zusätzlich einplanen (43: Dessert/Snack aus den Budget-Ideen), Mengen für die Esser des Slots,
+    Kosten + Liste neu."""
+    household, plan = member.household, _current(db, member.household_id)
+    recipe = household_recipe(db, member, body.recipe_id)
+    prefs = _prefs(household, (plan.params or {}).get("options") or {})
+    slot = (body.day, body.meal_type)
+    portions, total = _eaters(household, prefs.persons, [slot])[slot]
+    if not total:
+        raise HTTPException(422, "Bei dieser Mahlzeit isst niemand mit")
+    plan.entries.append(MealPlanEntry(day=body.day, meal_type=body.meal_type, recipe=recipe, portions=portions,
+                                      portions_total=total, scale=total / recipe.servings))
+    db.flush()
+    reprice(db, plan, plan_offers(db, household, plan), household_pantry(db, household.id))
+    sync_plan(db, household.id)
+    db.commit()
+    food_map.map_later([i["name"] for i in recipe.ingredients])
+    return plan_out(db, plan)

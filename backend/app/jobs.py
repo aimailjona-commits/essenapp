@@ -13,8 +13,8 @@ from sqlalchemy.orm import Session, object_session
 
 from app.core.config import settings
 from app.core.db import SessionLocal
-from app.models import Household, JobRun, MealPlan, Member, Offer, PushOutbox
-from app.services import prices, push
+from app.models import Household, JobRun, MealPlan, Member, Offer, Product, PushOutbox, WatchItem
+from app.services import labels, prices, push, watch
 from app.services.offers_import import refresh_household
 
 log = logging.getLogger(__name__)
@@ -110,12 +110,13 @@ def send_outbox(db: Session, now: datetime) -> int:
 
 # --- Jobs ---
 
-AFTER_IMPORT = ("price_history", "watch_alarms")
+AFTER_IMPORT = ("price_history", "watch_alarms", "product_facts")
 
 
 def import_offers(db: Session, now: datetime) -> str:
     """Angebote aller Haushalte. Folgewoche (30): refresh_household nimmt alle Prospekte aus dem kaufDA-Shelf
-    ohne Datumsfilter, also auch die ab nächstem Montag, sobald kaufDA sie listet."""
+    ohne Datumsfilter, also auch die ab nächstem Montag, sobald kaufDA sie listet (live geprüft: Lidl ab Montag der
+    Vorwoche); sie erscheinen in GET /offers?week=next."""
     results, failed = [], False
     for household in db.scalars(select(Household).where(Household.plz != "")).all():
         try:
@@ -140,6 +141,43 @@ def price_history(db: Session, now: datetime) -> str:
     written = prices.record(db, offers, today)
     db.commit()
     return f"{written} Preispunkte aus {len(offers)} Angeboten"
+
+
+def watch_households(db: Session, rhythm: bool = False) -> list[Household]:
+    q = select(WatchItem.household_id)
+    if rhythm:
+        q = q.where(WatchItem.lasts_weeks.is_not(None), WatchItem.last_bought.is_not(None))
+    return list(db.scalars(select(Household).where(Household.id.in_(q))))
+
+
+def watch_alarms(db: Session, now: datetime) -> str:
+    """Merkliste (27) + Preisalarme (40) nach jedem Import: Treffer → Push, höchstens 1 je Eintrag und Woche."""
+    from app.api import household_offers  # spät importiert: api importiert jobs nicht
+    sent = [watch.check(db, h.id, household_offers(db, h, on=now.date()), now, notify) for h in watch_households(db)]
+    return f"{sum(sent)} Hinweise in {len(sent)} Haushalten"
+
+
+def watch_rhythm(db: Session, now: datetime) -> str:
+    """Verbrauchsrhythmus (58), täglich: „bald leer“ als Push (im Angebot, 2 Wochen vorher) bzw. auf die Liste
+    (3 Tage vorher)."""
+    from app.api import household_list, household_offers
+    done = [x for h in watch_households(db, rhythm=True)
+            for x in watch.rhythm(db, h.id, household_offers(db, h, on=now.date()), household_list(db, h.id), now,
+                                  notify)]
+    return ", ".join(done) or "nichts fällig"
+
+
+def product_facts(db: Session, now: datetime) -> str:
+    """Nutri-Score/Bio/Vegan aus Open Food Facts (49) für Produkte aktueller Lebensmittel-Angebote mit Marke,
+    schonend: höchstens 30 Suchen je Lauf (Limit 10/min), Ergebnis am product gecacht."""
+    today = now.date()
+    products = list(db.scalars(select(Product).where(Product.off_checked_at.is_(None), Product.brand != "",
+                                                     Product.id.in_(select(Offer.product_id).where(
+                                                         Offer.valid_to >= today,
+                                                         Offer.category.in_(labels.FOOD))))))
+    found = labels.enrich(products)
+    db.commit()
+    return f"{found} sichere Treffer, {len([p for p in products if p.off_checked_at])} geprüft, {len(products)} offen"
 
 
 def waiting(phase: str):
@@ -240,9 +278,12 @@ def reinstall_reminder(db: Session, now: datetime) -> str:
 
 
 JOBS = {  # name: (Zeitplan oder None, Funktion(db, now) -> Info); Zeitpläne per JOB_SCHEDULES überschreibbar
-    "import_offers": ("Sa 22:00, Mo 06:00, Mi 06:00", import_offers),
+    # Fr 06:00: Vorschau der nächsten Woche (30) ist ab Freitag sichtbar (kaufDA listet sie meist ab Do/Fr/Sa)
+    "import_offers": ("Sa 22:00, Mo 06:00, Mi 06:00, Fr 06:00", import_offers),
     "price_history": (None, price_history),  # nach jedem Import
-    "watch_alarms": (None, waiting("Phase 12 (27/40/58 Merkliste, Preisalarme)")),  # nach jedem Import
+    "watch_alarms": (None, watch_alarms),  # nach jedem Import
+    "product_facts": (None, product_facts),  # nach jedem Import (Open Food Facts, 49)
+    "watch_rhythm": ("täglich 08:00", watch_rhythm),  # Verbrauchsrhythmus (58)
     "plan_prompt": (None, lambda db, now: f"{sum(send_plan_prompt(m, now) for m in prompt_members(db))} gesendet"),
     "coupon_expiry": ("täglich 09:00", waiting("Phase 13 (38 Payback & Rewe Bonus)")),
     "week_review": ("So 19:00", waiting("Phase 14 (55 Wochenrückblick)")),

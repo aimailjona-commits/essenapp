@@ -148,3 +148,30 @@ def cook_now(prefs, pantry: list[PantryItem], ask: Callable | None = None, minut
                for idea in ideas.ideas if idea.ingredients and idea.steps and idea.prep_minutes <= minutes]
     checked = sorted((c for c in checked if len(c[1]) <= max_missing), key=lambda c: len(c[1]))
     return checked[:IDEAS], usage
+
+
+BUDGET = """Für diese Woche sind noch {rest} ct Einkaufsbudget übrig. Schlage genau 2 Ideen vor: ein Dessert (meal_type
+dessert) und einen Snack (meal_type snack), je für {persons} Portionen.
+Regeln:
+- Einkauf beider Ideen zusammen höchstens {rest} ct; Zutaten möglichst aus diesen Angeboten (Namen übernehmen).
+- Höchstens 30 Minuten, 3–5 kurze Schritte, Beschreibung ein kurzer Satz, alles auf Deutsch.
+- Ernährungsform, Allergien und Ausschlüsse sind harte Regeln. image_query: 2–4 englische Suchbegriffe.
+
+Ernährung: {diet}
+Allergien: {allergies}
+Mag nicht: {dislikes}
+Angebote (produkt|preis ct|menge): {offers}"""
+
+
+def budget_ideas(prefs, offers: list, rest_cents: int, ask: Callable | None = None) -> tuple[list[Idea], dict]:
+    """Budget-Rest (43): Dessert + Snack aus Angeboten; Kosten rechnet der Code (api.buy_cents), nicht die KI."""
+    ask = ask or food_map.ask_claude
+    food = sorted((o for o in offers if o.category in ("obst_gemuese", "kuehlung", "vorrat", "sonstiges")),
+                  key=lambda o: (o.regular_price_cents is None, o.price_cents))[:40]
+    prompt = BUDGET.format(rest=rest_cents, persons=prefs.persons, diet=prefs.diet,
+                           allergies=", ".join(prefs.allergies) or "keine",
+                           dislikes=", ".join(prefs.excluded_ingredients) or "-",
+                           offers=", ".join(f"{o.title}|{o.price_cents}|{f'{o.amount:g}{o.unit}' if o.amount else '?'}"
+                                            for o in food) or "-")
+    ideas, usage = ask(prompt, Ideas, think=False)
+    return [i for i in ideas.ideas if i.ingredients and i.steps], usage

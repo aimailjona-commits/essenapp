@@ -63,3 +63,14 @@ def no_real_ai(monkeypatch):
     def blocked(*a, **kw):
         raise AssertionError("Echter Anthropic-Aufruf im Test")
     monkeypatch.setattr(anthropic, "Anthropic", blocked)
+
+
+@pytest.fixture(autouse=True)
+def no_open_food_facts(monkeypatch):
+    """Nie echte Open-Food-Facts-Abrufe (Suche/Barcode); Tests ersetzen labels._get bzw. find selbst."""
+    from app.services import labels
+
+    def blocked(*a, **kw):
+        raise AssertionError("Echter Open-Food-Facts-Abruf im Test")
+    monkeypatch.setattr(labels, "_get", blocked)
+    monkeypatch.setattr(labels, "_ean_cache", {})

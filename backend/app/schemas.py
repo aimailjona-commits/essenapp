@@ -63,6 +63,7 @@ class HouseholdSettings(BaseModel):
     radius_km: int | None = Field(None, ge=1, le=30)
     step_images: bool | None = None  # Schalter „Schritt-Bilder erzeugen (ca. 2 Cent/Rezept)“ (9)
     variety: VarietyUpdate | None = None  # Abwechslungsregeln (12)
+    storage_space: Literal["klein", "mittel", "gross"] | None = None  # Vorratsplatz für Vorratskauf-Tipps (31)
     stores: list[StoreIn] | None = None
 
 
@@ -88,6 +89,7 @@ class HouseholdOut(BaseModel):
     radius_km: int
     step_images: bool  # Schalter (Standard an); wirkt nur, wenn step_images_available
     variety: VarietyRules  # Abwechslungsregeln (12), immer vollständig
+    storage_space: str  # klein | mittel | gross (31)
     stores: list[StoreOut]
 
     @computed_field
@@ -124,6 +126,16 @@ class OfferOut(BaseModel):
     valid_from: date
     valid_to: date
     image_url: str
+    # Preisverlauf-Urteil (28) für Badge + Filter „Nur echte Angebote“; null nur in Listen ohne Urteil (top_offers)
+    verdict: Literal["bestpreis", "gut", "normal", "kein_echtes", "zu_wenig_daten"] | None = None
+    # Nutri-Score, Bio, Vegan (49): lieber kein Badge als ein falsches
+    bio: bool = False
+    vegan: bool = False
+    vegetarian: bool = False
+    nutri_score: Literal["A", "B", "C", "D", "E"] | None = None
+    label_sources: list[str] = []  # „Prospekttext“, „Open Food Facts (ODbL)“ (Erklärung im Detail)
+    off_code: str = ""  # Open-Food-Facts-Barcode des sicheren Treffers → world.openfoodfacts.org/product/<code>
+    monthly: bool = False  # dm/Rossmann-Monatsaktion (59)
 
 
 class NutritionOut(BaseModel):
@@ -263,6 +275,8 @@ class PlanOptions(BaseModel):
     guests: list[GuestSlot] | None = Field(None, max_length=50)  # „+ Gäste“ je Tag/Mahlzeit (15)
     guest_budget_cents: int | None = Field(None, ge=0)  # „Gäste-Budget extra“, sonst aus dem Wochenbudget
     special: str | None = Field(None, max_length=20)  # Special-Vorlage = key aus GET /specials (25)
+    next_week: bool = False  # „Plan für nächste Woche“ mit den Vorschau-Angeboten (30)
+    single_store: str | None = Field(None, max_length=30)  # „Nur ein Laden“ (41): chain eines gewählten Ladens
     save_as_default: bool = False  # zusätzlich (ohne wishes/guests/special) in den Haushalt schreiben
 
 
@@ -326,12 +340,15 @@ class ItemCreate(BaseModel):
     unit: str = Field("", max_length=10)
     chain: str = Field("", max_length=30)
     offer_id: int | None = None
+    source: Literal["manual", "stockup"] = "manual"  # stockup = „n× auf die Liste“ (Badge „Vorratskauf“, 31)
+    next_week: bool = False  # gleich in die Gruppe „Nächste Woche“ (30)
 
 
 class ItemUpdate(BaseModel):
     checked: bool | None = None
     name: str | None = Field(None, min_length=1, max_length=100)
     amount: float | None = Field(None, ge=0, le=100000)
+    next_week: bool | None = None  # „Auf nächste Woche schieben“ (30) bzw. zurück
 
 
 class ItemOut(BaseModel):
@@ -346,7 +363,15 @@ class ItemOut(BaseModel):
     checked: bool
     added_by: str
     checked_by: str
-    source: str  # plan | manual | basics
+    source: str  # plan | manual | basics | stockup (Badge „Vorratskauf“) | rhythm („bald leer“, 58)
+    defer_week: str | None = None  # ISO-Woche der Gruppe „Nächste Woche“ (30)
+
+    @computed_field
+    @property
+    def next_week(self) -> bool:
+        """In der Gruppe „Nächste Woche“; ab dieser Woche wieder normal."""
+        year, week, _ = date.today().isocalendar()
+        return bool(self.defer_week) and self.defer_week > f"{year}-W{week:02d}"
 
 
 class ListOut(BaseModel):
@@ -815,3 +840,151 @@ class GeneratorOut(BaseModel):
     defaults: PlanOptions
     top_offers: list[OfferOut]  # Top-3 Angebote (höchster Rabatt, Lebensmittel)
     banner: BannerOut | None
+
+
+# --- Sparen (Phase 12) ---
+
+class NextWeekDealOut(BaseModel):
+    """Start-Karte „👀 Nächste Woche günstiger“ (30): „Hähnchenbrust nächste Woche −30 % bei Lidl (3,49 € statt 4,99 €)
+    – Kauf verschieben?“"""
+    name: str
+    item_id: int | None  # Listenartikel → POST /items/{id}/next-week; null = aus der Merkliste (→ POST …/items next_week)
+    watch_id: int | None
+    offer: OfferOut  # Angebot der nächsten Woche
+    now_price_cents: int  # heutiger Preis für dieselbe Packung (Angebot, sonst Normalpreis)
+    now_chain: str  # "" = Normalpreis ohne Laden
+    saving_pct: int  # ≥ 10
+
+
+class NextWeekIn(BaseModel):
+    offer_id: int | None = None  # Angebot der nächsten Woche → Laden/Preis des Artikels (nicht bei Plan-Artikeln)
+
+
+class StockupOut(BaseModel):
+    """Vorratskauf-Tipp (31): „3 Packungen reichen ~6 Wochen, sparst 4,20 €“ → „3× auf die Liste“ (source stockup)."""
+    offer: OfferOut
+    packs: int
+    weeks: float | None  # reicht ~so viele Wochen; null = ohne Verbrauchshistorie (konservativ 2 Packungen)
+    weekly_use: float | None  # Packungen pro Woche
+    saving_cents: int  # (Normalpreis − Angebotspreis) × packs
+    normal_price_cents: int
+
+
+WatchKind = Literal["produkt", "zutat"]
+
+
+class WatchIn(BaseModel):
+    """Merkliste (27): Herz am Angebot (offer_id), Barcode (ean + Daten aus GET /products/ean/{ean}) oder Freitext;
+    Preisalarm für eine Zutat (40): kind zutat + max_price_cents oder max_base_price_cents/base_unit."""
+    kind: WatchKind = "produkt"
+    offer_id: int | None = None  # füllt label/brand/category/image_url aus dem Angebot
+    label: str | None = Field(None, min_length=1, max_length=200)
+    brand: str = Field("", max_length=100)
+    ean: str = Field("", pattern=r"^(\d{8}|\d{12,14})?$")
+    image_url: str = Field("", max_length=500)
+    category: str = Field("", max_length=30)
+    max_price_cents: int | None = Field(None, ge=1)  # Wunschpreis „Alarm unter 2,00 €“
+    max_base_price_cents: int | None = Field(None, ge=1)  # Grundpreis „unter 7 €/kg“
+    base_unit: Literal["", "kg", "l", "stk"] = ""
+    chains: list[Annotated[str, Field(max_length=30)]] = Field(default_factory=list, max_length=12)  # leer = alle
+    lasts_weeks: float | None = Field(None, gt=0, le=104)  # „Hält ca. X Wochen“ (58); null = Vorschlag aus Kategorie
+    last_bought: date | None = None
+
+    @model_validator(mode="after")
+    def _check(self):
+        if self.offer_id is None and not self.label:
+            raise ValueError("label oder offer_id fehlt")
+        if self.max_base_price_cents is not None and not self.base_unit:
+            raise ValueError("base_unit fehlt (kg, l oder stk)")
+        return self
+
+
+class WatchUpdate(BaseModel):
+    label: str | None = Field(None, min_length=1, max_length=200)
+    brand: str | None = Field(None, max_length=100)
+    max_price_cents: int | None = Field(None, ge=1)  # explizit null = kein Wunschpreis
+    max_base_price_cents: int | None = Field(None, ge=1)
+    base_unit: Literal["", "kg", "l", "stk"] | None = None
+    chains: list[Annotated[str, Field(max_length=30)]] | None = Field(None, max_length=12)
+    lasts_weeks: float | None = Field(None, gt=0, le=104)  # explizit null = kein Rhythmus
+    last_bought: date | None = None
+
+
+class WatchOut(BaseModel):
+    id: int
+    kind: str  # produkt | zutat
+    label: str
+    brand: str
+    ean: str
+    image_url: str
+    category: str
+    max_price_cents: int | None
+    max_base_price_cents: int | None
+    base_unit: str
+    chains: list[str]
+    lasts_weeks: float | None
+    lasts_weeks_suggestion: float | None  # Vorschlag aus Kategorie/Stichwort (58)
+    last_bought: date | None
+    empty_on: date | None  # last_bought + lasts_weeks
+    hits: list[OfferOut]  # aktuelle Treffer (erfüllen den Alarm), günstigste zuerst → „Diese Woche günstig“
+
+
+class EanProductOut(BaseModel):
+    """Barcode → Open Food Facts (27/49)."""
+    ean: str
+    found: bool
+    name: str
+    brand: str
+    image_url: str
+    nutri_score: str | None  # A–E
+
+
+class StoreComboOut(BaseModel):
+    """Laden-Empfehlung (42): „🏆 Am günstigsten: alles bei Lidl 41,20 € · Rewe+Lidl 38,90 € (2,30 € gespart, +1 Laden)“."""
+    chains: list[str]
+    total_cents: int  # Summe der offenen Artikel (Angebote + Normalpreise, ganze Packungen)
+    per_store: dict[str, int]
+    saved_cents: int  # gegenüber dem günstigsten einzelnen Laden
+    unpriced: int  # Artikel ohne bekannten Preis (zählen nicht mit)
+    distance_km: float | None  # Rundweg Zuhause → Läden → Zuhause (Luftlinie)
+    extra_km: float | None  # Weg-Hinweis „+1,2 km“ gegenüber dem günstigsten einzelnen Laden
+
+
+class AssignIn(BaseModel):
+    chains: list[Annotated[str, Field(max_length=30)]] = Field(min_length=1, max_length=2)
+
+
+class BudgetOver(BaseModel):
+    entry_id: int
+    day: int
+    title: str
+    cost_cents: int
+    max_cost_cents: int  # Kostengrenze fürs Neu würfeln (POST …/entries/{id}/reroll {max_cost_cents})
+
+
+class BudgetOut(BaseModel):
+    """Budget-Rest-Hinweis (43): state rest (≥ 5 € übrig) → Ideen über POST /plans/current/budget/ideas;
+    over → „⚠️ 3,20 € über Budget – günstigere Alternative für Do?“."""
+    budget_cents: int
+    total_cents: int
+    rest_cents: int  # negativ = über Budget
+    state: Literal["rest", "over", "ok"]
+    over: BudgetOver | None
+
+
+class BudgetIdeaOut(BaseModel):
+    kind: Literal["dessert", "snack", "vorrat"]
+    title: str
+    cost_cents: int
+    recipe: RecipeOut | None  # dessert/snack → einplanen über POST /plans/current/entries
+    stockup: StockupOut | None  # vorrat → „auf die Liste“ (POST /lists/{id}/items, source stockup)
+
+
+class AddEntryIn(BaseModel):
+    recipe_id: int
+    day: Annotated[int, Field(ge=0, le=6)]
+    meal_type: PlanMeal
+
+
+class RerollIn(BaseModel):
+    max_cost_cents: int | None = Field(None, ge=0)  # Kostengrenze (43, „günstigere Alternative“)

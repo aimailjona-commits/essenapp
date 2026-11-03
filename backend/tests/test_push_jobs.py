@@ -70,7 +70,7 @@ def test_import_runs_once_per_slot_also_after_restart(db, imports, sent):
     jobs.tick(db, at(7, "21:59"))
     assert runs(db) == [] and imports == []
     jobs.tick(db, at(7, "22:00"))
-    assert [r.name for r in runs(db)] == ["import_offers", "price_history", "watch_alarms"]
+    assert [r.name for r in runs(db)] == ["import_offers", "price_history", "watch_alarms", "product_facts"]
     assert imports == [h.id] and runs(db)[0].ok and runs(db)[0].info == f"{h.id}: 42"
     assert runs(db, "price_history")[0].info == "0 Preispunkte aus 0 Angeboten"
     jobs.tick(db, at(7, "22:01"))

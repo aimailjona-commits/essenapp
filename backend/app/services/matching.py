@@ -41,8 +41,8 @@ SYN = {" ".join(words(k)): [words(v) for v in vs] for k, vs in SYNONYMS.items()}
 class Matcher:
     """Index über Angebotstitel: Wortende (4 Zeichen) → Angebote, damit viele Zutaten schnell gesucht werden können."""
 
-    def __init__(self, offers: list[Offer]):
-        self.offers = [o for o in offers if o.category in FOOD]
+    def __init__(self, offers: list[Offer], food_only: bool = True):
+        self.offers = [o for o in offers if o.category in FOOD or not food_only]
         # Titelwörter roh und gestemmt („Langkornreis“ verliert sonst sein s und passt nicht mehr zu „Reis“)
         self.titles = [set(words(o.title)) | set(re.findall(r"\w+", o.title.lower())) for o in self.offers]
         self.index: dict[str, set[int]] = {}
