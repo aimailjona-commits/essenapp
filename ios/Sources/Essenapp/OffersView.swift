@@ -243,7 +243,7 @@ struct OfferCard: View {
                 .foregroundStyle(Theme.C.text1)
             Text([Labels.chain(offer.chain), offer.amountText].compactMap { $0 }.joined(separator: " · ")
                  + (offer.basePriceCents.map { " · \(euro($0))/\(offer.baseUnitLabel)" } ?? ""))
-                .font(.caption).foregroundStyle(Color(hex: 0x6A665E)).lineLimit(1).padding(.top, 2)
+                .font(.caption).foregroundStyle(Theme.C.text2).lineLimit(1).padding(.top, 2)
             if let b = offer.bonusText { DealBadge(text: b, style: .ok).lineLimit(1).padding(.top, 4) }  // 39
             Spacer(minLength: 10)
             HStack {

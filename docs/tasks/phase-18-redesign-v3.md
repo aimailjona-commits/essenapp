@@ -8,7 +8,7 @@ Regeln: nur Werte aus `redesign-v3.md`/Mockup. Was nicht gemockt ist, zuerst moc
 
 - [x] a `docs/ui/design-system.md` auf v3: Farben, Schrift, Maße, Bausteine aus `redesign-v3.md` Abschnitte 2–5 (alte v2-Tabellen raus, Hinweis „Quelle: redesign-v3.md“)
 - [x] b `docs/ui/screens.md`: Verhaltensänderungen aus `redesign-v3.md` 6.2 eintragen, Kopf auf „v3“
-- [ ] c Mockup Teil 3, Gruppe I (Dunkelmodus) zeichnen → 👤 Freigabe → Dunkel-Werte in `redesign-v3.md` Abschnitt 2
+- [x] c Mockup Teil 3, Gruppe I (Dunkelmodus) zeichnen → 👤 Freigabe → Dunkel-Werte in `redesign-v3.md` Abschnitt 2
 
 ## 18.2 Grundlage iOS
 

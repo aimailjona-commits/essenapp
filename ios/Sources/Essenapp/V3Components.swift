@@ -210,7 +210,8 @@ struct TotalBar<Value: View>: View {
         }
         .padding(.leading, 24).padding(.trailing, 8)
         .frame(height: Theme.S.totalBar)
-        .background(Theme.C.ink, in: Capsule())
+        .background(Theme.C.bar, in: Capsule())
+        .overlay(Capsule().strokeBorder(Theme.C.barEdge, lineWidth: 1))
         .floatShadow()
         .padding(.horizontal, Theme.S.barSide)
     }

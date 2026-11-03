@@ -204,7 +204,7 @@ struct DayCard: View {
                 if meal.id != nil { actions.padding(.top, 10) }
                 MealBadges(meal: meal, onGuests: meal.id != nil ? onGuests : nil, guestsOnly: true).padding(.top, 6)  // Lunchbox/Rest stehen schon oben
             }
-            .foregroundStyle(Theme.C.ink)
+            .foregroundStyle(white ? Theme.C.text1 : Theme.C.ink)  // weiße Karte wird im Dunkeln dunkel
             .frame(maxWidth: .infinity, minHeight: 96, alignment: .leading)
             .padding(.vertical, 20).padding(.trailing, 20).padding(.leading, 116)
             .background(alignment: .topLeading) {

@@ -68,7 +68,7 @@ Schrift auf Kartenfarben immer `ink`. Ordnerfarbe je Laden: feste Zuordnung aus 
 
 **Rezept-Kopf:** Verlaufsfarbe = dunkle Hauptfarbe des Fotos (Durchschnittsfarbe, Helligkeit auf ~25 % gezogen); Fallback `#5C4038`. Text darauf weiß, Nebentext `#E3CFC5`, Knöpfe weiß 14 %.
 
-**Dunkelmodus:** im Mockup **noch nicht festgelegt** → Aufgabe 18.1c (erst Mockup, dann Werte hier eintragen). Bis dahin keinen Dunkel-Wert erfinden.
+**Dunkelmodus** (Mockup Teil 3, freigegeben 2026-11-03): `bg` `#121110`, `card` `#1D1C1A`, `surface` `#2A2825`, `line` Weiß 9 %, `text1`/`action` `#F4F1EA` (Knöpfe Creme mit Tinten-Schrift), `text2` `#A09B92`, `text3` `#6B675F`, `chipBorder` `#3A3733`, `deal` `#F07A5C`; Kategorie-Tönungen `#22301F` `#3A2621` `#1F2838` `#38301C` `#2A2638` `#3A2230`. Unverändert hell: `lime`, Wochentage, `star`, `paper` (Kassenbon), Ladenfarbe im Listenkopf. Tab-/Summen-Leiste `#000000` mit Kante Weiß 8 %, aktiver Tab Limette. Start-Sheet = `card`.
 
 ## 3. Schrift
 

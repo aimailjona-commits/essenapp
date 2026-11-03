@@ -243,14 +243,14 @@ struct ShoppingListView: View {
     private func header(open: [ListItemDTO], total: Int, saved: Int, color: Color) -> some View {
         VStack(alignment: .leading, spacing: 0) {
             HStack {
-                RoundIconButton(systemName: "chevron.left", fill: Theme.C.card, label: "Zurück") { dismiss() }
+                RoundIconButton(systemName: "chevron.left", fill: Theme.C.plate, label: "Zurück") { dismiss() }
                 Spacer()
                 if !store.profiles.isEmpty {
                     Text("Geteilt mit").font(.system(.subheadline, weight: .bold))
                     HStack(spacing: -10) {
                         ForEach(store.profiles.prefix(3)) { p in
                             Text(p.emoji).font(.system(size: 18)).frame(width: 36, height: 36)
-                                .background(Theme.C.card, in: Circle()).overlay(Circle().strokeBorder(color, lineWidth: 2))
+                                .background(Theme.C.plate, in: Circle()).overlay(Circle().strokeBorder(color, lineWidth: 2))
                         }
                     }
                     .accessibilityElement().accessibilityLabel("Geteilt mit \(store.profiles.map(\.name).joined(separator: ", "))")
@@ -345,8 +345,8 @@ struct ShareButton: View {
             Image(systemName: "square.and.arrow.up")
                 .font(.system(size: small ? 14 : 18, weight: .semibold))
                 .frame(width: small ? Theme.S.roundButtonSmall : Theme.S.roundButton, height: small ? Theme.S.roundButtonSmall : Theme.S.roundButton)
-                .foregroundStyle(Theme.C.text1)
-                .background(small ? Theme.C.card : Theme.C.surface, in: Circle())
+                .foregroundStyle(small ? Theme.C.ink : Theme.C.text1)
+                .background(small ? Theme.C.plate : Theme.C.surface, in: Circle())
                 .frame(minWidth: 44, minHeight: 44)
         }
         .accessibilityLabel("Plan und Liste teilen")

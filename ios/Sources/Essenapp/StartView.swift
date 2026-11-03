@@ -19,7 +19,7 @@ struct StartView: View {
                 .padding(.horizontal, 22).padding(.top, 22)
                 .padding(.bottom, 120)
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .background(Theme.C.bg, in: UnevenRoundedRectangle(topLeadingRadius: Theme.R.sheet, topTrailingRadius: Theme.R.sheet, style: .continuous))
+                .background(Theme.C.startSheet, in: UnevenRoundedRectangle(topLeadingRadius: Theme.R.sheet, topTrailingRadius: Theme.R.sheet, style: .continuous))
             }
             .background(alignment: .top) { Theme.C.ink.frame(height: 900).offset(y: -400) }  // Tinte auch beim Überziehen oben
         }

@@ -19,7 +19,7 @@ Pastell nie als Schriftfarbe auf hellem Grund. Vollständige Liste (dunkle Fläc
 
 ## Dark Mode (Feature 68)
 
-Einstellung in S13 › App › „Erscheinungsbild“: **System · Hell · Dunkel** (Standard System). Alle Tokens in `Theme.swift` sind Hell/Dunkel-Paare (`Color(hell, dunkel)`, keine `.xcassets`). **Dunkle v3-Werte folgen mit Aufgabe 18.1c** (erst Mockup, dann hier eintragen); bis dahin gelten die v2-Dunkelwerte in `Theme.swift`. Immer dunkel: Kochmodus, Start-Kopf, Menü. Immer hell: Bildkarte (Feature 10). Logos und Teller auf weißen Plättchen.
+Einstellung in S13 › App › „Erscheinungsbild“: **System · Hell · Dunkel** (Standard System). Alle Tokens in `Theme.swift` sind Hell/Dunkel-Paare (`Color(hell, dunkel)`, keine `.xcassets`). v3-Dunkelwerte (freigegeben 2026-11-03): warmes Fast-Schwarz `#121110`, Karten `#1D1C1A`, Creme-Schrift `#F4F1EA`; Pastell, Limette, Kassenbon bleiben hell (Liste: `redesign-v3.md` Abschnitt 2). Immer dunkel: Kochmodus, Start-Kopf, Menü. Immer hell: Bildkarte (Feature 10). Logos und Teller auf weißen Plättchen.
 
 ## Schrift
 

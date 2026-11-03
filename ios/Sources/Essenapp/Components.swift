@@ -60,7 +60,7 @@ struct RoundIconButton: View {
             Image(systemName: systemName)
                 .font(.system(size: small ? 14 : 18, weight: .semibold))
                 .frame(width: size, height: size)
-                .foregroundStyle(dark ? Theme.C.onAction : Theme.C.text1)
+                .foregroundStyle(dark ? Theme.C.onAction : fill == Theme.C.plate ? Theme.C.ink : Theme.C.text1)
                 .background(dark ? Theme.C.action : fill ?? Theme.C.surface, in: Circle())
                 .frame(minWidth: 44, minHeight: 44)
         }
@@ -308,7 +308,7 @@ struct FilterChip: View {
                     Text("\(count)")
                         .font(.system(.caption, weight: .bold)).monospacedDigit()
                         .padding(.horizontal, 7).frame(minWidth: 24, minHeight: 24)
-                        .foregroundStyle(solid ? Theme.C.onLime : countHighlight ? .white : selected ? Theme.C.onAction : Color(hex: 0x666666))
+                        .foregroundStyle(solid ? Theme.C.onLime : countHighlight ? .white : selected ? Theme.C.onAction : Theme.C.text2)
                         .background(solid ? Theme.C.lime : countHighlight ? Theme.C.deal : selected ? Theme.C.action : Theme.C.surface, in: Capsule())
                         .contentTransition(.numericText())
                 }
@@ -489,7 +489,8 @@ struct TabBar: View {
         }
         .padding(.horizontal, 9)
         .frame(height: Theme.S.tabBar)
-        .background(quickOpen ? Theme.C.plate : Theme.C.ink, in: Capsule())
+        .background(quickOpen ? Theme.C.plate : Theme.C.bar, in: Capsule())
+        .overlay(Capsule().strokeBorder(quickOpen ? .clear : Theme.C.barEdge, lineWidth: 1))
         .shadow(color: .black.opacity(quickOpen ? 0.4 : 0.22), radius: 20, y: 18)
         .padding(.horizontal, Theme.S.barSide)
         .sensoryFeedback(.selection, trigger: selected)
@@ -527,14 +528,14 @@ struct TabBar: View {
             .foregroundStyle(on ? Theme.C.ink : quickOpen ? Theme.C.onInk3 : Theme.C.tabInactive)
             .frame(width: Theme.S.tab, height: Theme.S.tab)
             .background {
-                if on { Circle().fill(Theme.C.plate).matchedGeometryEffect(id: "pill", in: pill) }
+                if on { Circle().fill(Theme.C.tabActive).matchedGeometryEffect(id: "pill", in: pill) }
             }
             .overlay(alignment: .topTrailing) {
                 if let n = badges[tab], n > 0, !on {
                     Text("\(n)").font(.system(size: 10, weight: .heavy)).foregroundStyle(.white)
                         .padding(.horizontal, 4).frame(minWidth: 18, minHeight: 18)
                         .background(Theme.C.deal, in: Capsule())
-                        .overlay(Capsule().strokeBorder(Theme.C.ink, lineWidth: 2))
+                        .overlay(Capsule().strokeBorder(Theme.C.bar, lineWidth: 2))
                         .offset(x: -2, y: 4)
                         .transition(.scale.combined(with: .opacity))
                 }

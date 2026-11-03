@@ -4,31 +4,31 @@ import UIKit
 
 /// Alle Werte aus docs/ui/redesign-v3.md (v3 „Küchen-Pinnwand“, E87). Views nutzen nur diese Tokens.
 enum Theme {
-    /// Dynamische Farben: erster Wert hell (v3), zweiter dunkel (bis zum Dunkel-Mockup 18.1c noch die v2-Werte, Feature 68).
+    /// Dynamische Farben: erster Wert hell, zweiter dunkel (v3, Mockup Teil 3, freigegeben 2026-11-03; Feature 68).
     enum C {
-        static let bg = Color(0xF4F1EA, 0x0F0F10)
-        static let surface = Color(0xE9E5DC, 0x2C2C2E)
-        static let card = Color(0xFFFFFF, 0x1C1C1E)
+        static let bg = Color(0xF4F1EA, 0x121110)
+        static let surface = Color(0xE9E5DC, 0x2A2825)
+        static let card = Color(0xFFFFFF, 0x1D1C1A)
         static let cardTop = card  // Alias für ältere Stellen
-        static let line = Color(light: UIColor.black.withAlphaComponent(0.07), dark: UIColor.white.withAlphaComponent(0.1))
-        static let text1 = Color(0x111111, 0xF5F5F5)
-        static let text2 = Color(0x7A766E, 0xA0A0A5)
-        static let text3 = Color(0xB3AEA4, 0x8A8A8E)
-        static let action = Color(0x111111, 0xF5F5F5)  // dunkel: helle Pille mit dunkler Schrift
+        static let line = Color(light: UIColor.black.withAlphaComponent(0.07), dark: UIColor.white.withAlphaComponent(0.09))
+        static let text1 = Color(0x111111, 0xF4F1EA)
+        static let text2 = Color(0x7A766E, 0xA09B92)
+        static let text3 = Color(0xB3AEA4, 0x6B675F)
+        static let action = Color(0x111111, 0xF4F1EA)  // dunkel: Creme-Pille mit Tinten-Schrift
         static let onAction = Color(0xFFFFFF, 0x111111)
         static let lime = Color(hex: 0xDCEDA0)  // Aktionsfarbe „los“ (Mittel-Knopf, AccentButton, abgehakt, Fortschritt auf Dunkel)
         static let onLime = Color(hex: 0x111111)
         /// v3: Auswahl/Fortschritt auf hellem Grund = Tinte (Orange entfällt); auf dunklem Grund `lime` nehmen.
-        static let accent = Color(0x111111, 0xF5F5F5)
-        static let accentSoft = Color(0xDCEDA0, 0x2E3320)  // weiche Hervorhebung (gewählte Person, „gespart“-Pille)
-        static let accentDeep = Color(0x111111, 0xF5F5F5)  // Schrift auf accentSoft
+        static let accent = Color(0x111111, 0xF4F1EA)
+        static let accentSoft = Color(hex: 0xDCEDA0)  // weiche Hervorhebung (gewählte Person, „gespart“-Pille)
+        static let accentDeep = Color(hex: 0x111111)  // Schrift auf accentSoft (Limette bleibt auch dunkel hell)
         static let highlight = lime
-        static let deal = Color(hex: 0xE8694A)
+        static let deal = Color(0xE8694A, 0xF07A5C)
         static let star = Color(hex: 0xE8B33A)
-        static let chipBorder = Color(0xCFC9BD, 0x3A3A3C)
-        static let chipText = Color(0x8A857B, 0xA0A0A5)  // inaktive Chips
-        static let starEmpty = Color(0xDDD7CB, 0x3A3A3C)
-        static let paper = Color(0xFFFDF7, 0x1C1C1E)  // Kassenbon
+        static let chipBorder = Color(0xCFC9BD, 0x3A3733)
+        static let chipText = Color(0x8A857B, 0xA09B92)  // inaktive Chips
+        static let starEmpty = Color(0xDDD7CB, 0x3A3733)
+        static let paper = Color(hex: 0xFFFDF7)  // Kassenbon bleibt auch dunkel Papier
         static let success = Color(0x1FA35C, 0x34C77B)
         static let successSoft = Color(0xDFF5E8, 0x12301F)
         static let warning = Color(hex: 0xF7B731)
@@ -39,15 +39,19 @@ enum Theme {
         static let carbs = Color(hex: 0x3DBE6B)
         static let fat = Color(hex: 0xF7B731)
         // Nährwert-Tönungen (NutrientStat/-Tile)
-        static let kcalTint = Color(0xFFE7D6, 0x3A2A1E)
-        static let proteinTint = Color(0xFFE0E1, 0x3A2022)
-        static let carbsTint = Color(0xE4F5D9, 0x1E3326)
-        static let fatTint = Color(0xFFF1C9, 0x3A3320)
+        static let kcalTint = Color(0xFFE7D6, 0x3A2621)
+        static let proteinTint = Color(0xFFE0E1, 0x3A2230)
+        static let carbsTint = Color(0xE4F5D9, 0x22301F)
+        static let fatTint = Color(0xFFF1C9, 0x38301C)
         static let violet = Color(hex: 0xD5CDF0)  // Schnell-Aktion „Rezept anlegen“ (= Mi)
         // Pastell je Wochentag Mo…So (DayCard, Ordner, Kacheln); Schrift darauf immer text1
         static let tomato = Color(hex: 0xF2B9A8), sun = Color(hex: 0xF3DC9E), lav = Color(hex: 0xD5CDF0), sky = Color(hex: 0xBCD0F2)
         static let mint = Color(hex: 0xC3E3CF), orange = Color(hex: 0xF2CBA6), pink = Color(hex: 0xF0CADA)
         static let day: [Color] = [tomato, sun, lav, sky, mint, orange, pink]
+        static let startSheet = Color(0xF4F1EA, 0x1D1C1A)  // Start: Sheet unter dem Tinten-Kopf (dunkel = card)
+        static let bar = Color(0x111111, 0x000000)  // Tab-/Summen-Leiste (dunkel: Schwarz mit Kante)
+        static let barEdge = Color(light: .clear, dark: UIColor.white.withAlphaComponent(0.08))
+        static let tabActive = Color(0xFFFFFF, 0xDCEDA0)  // aktiver Tab: weiß, dunkel Limette
         // Dunkle Flächen (Start-Kopf, Kochmodus, Menü) – in beiden Modi gleich
         static let ink = Color(hex: 0x111111)
         static let inkSheet = Color(hex: 0x161616)
@@ -88,14 +92,14 @@ enum Theme {
 
     static func hue(category: String) -> Hue {
         switch category {
-        case "obst_gemuese": Hue(color: Color(hex: 0x3DBE6B), tint: Color(0xE4F5D9, 0x1E3326), emoji: "🥦")
-        case "fleisch_fisch": Hue(color: Color(hex: 0xFF6B4A), tint: Color(0xFFE3DB, 0x3A2420), emoji: "🥩")
-        case "kuehlung": Hue(color: Color(hex: 0x3E9BFF), tint: Color(0xDFE9FF, 0x1E2A3A), emoji: "🧀")
-        case "vorrat": Hue(color: Color(hex: 0xF7B731), tint: Color(0xFFF1C9, 0x3A3320), emoji: "🥫")
-        case "getraenke": Hue(color: Color(hex: 0x22B5C9), tint: Color(0xE9E5DC, 0x1A3236), emoji: "🥤")
-        case "drogerie": Hue(color: Color(hex: 0x8E7CFF), tint: Color(0xECE6FF, 0x2A2640), emoji: "🧴")
-        case "haushalt": Hue(color: Color(hex: 0xFF5DA2), tint: Color(0xFFE4EF, 0x3A2030), emoji: "🧽")
-        default: Hue(color: Color(hex: 0x8A8F98), tint: Color(0xE9E5DC, 0x2C2C2E), emoji: "🛒")
+        case "obst_gemuese": Hue(color: Color(hex: 0x3DBE6B), tint: Color(0xE4F5D9, 0x22301F), emoji: "🥦")
+        case "fleisch_fisch": Hue(color: Color(hex: 0xFF6B4A), tint: Color(0xFFE3DB, 0x3A2621), emoji: "🥩")
+        case "kuehlung": Hue(color: Color(hex: 0x3E9BFF), tint: Color(0xDFE9FF, 0x1F2838), emoji: "🧀")
+        case "vorrat": Hue(color: Color(hex: 0xF7B731), tint: Color(0xFFF1C9, 0x38301C), emoji: "🥫")
+        case "getraenke": Hue(color: Color(hex: 0x22B5C9), tint: Color(0xE9E5DC, 0x2A2825), emoji: "🥤")
+        case "drogerie": Hue(color: Color(hex: 0x8E7CFF), tint: Color(0xECE6FF, 0x2A2638), emoji: "🧴")
+        case "haushalt": Hue(color: Color(hex: 0xFF5DA2), tint: Color(0xFFE4EF, 0x3A2230), emoji: "🧽")
+        default: Hue(color: Color(hex: 0x8A8F98), tint: Color(0xE9E5DC, 0x2A2825), emoji: "🛒")
         }
     }
 
