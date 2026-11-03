@@ -296,9 +296,12 @@ struct MyRecipesList: View {
         case .imported(let n):
             Button { withAnimation(Theme.spring) { filter = "importiert" } } label: {
                 RTile(color: Theme.C.lav, height: 150) {
-                    Text("Aus Instagram").font(Theme.F.cardTitle(17))
+                    Text("Aus Instagram").font(Theme.F.cardTitle(17)).fixedSize(horizontal: false, vertical: true)
                     Text(n == 1 ? "1 Rezept" : "\(n) Rezepte").font(.footnote.weight(.medium)).foregroundStyle(Color(hex: 0x3D3566)).padding(.top, 4)
-                } corner: { Text("📲").font(.system(size: 58)).rotationEffect(.degrees(10)) }
+                    Spacer(minLength: 0)
+                    Text("📲").font(.system(size: 58)).rotationEffect(.degrees(10))
+                        .frame(maxWidth: .infinity, alignment: .trailing).padding(.bottom, -10).padding(.trailing, -6)
+                }
             }
             .buttonStyle(PressableStyle())
         case .deals:
@@ -329,6 +332,7 @@ struct MyRecipesList: View {
         let mains = entries.filter { ["mittag", "abend"].contains($0.mealType) }
         return RTile(color: Theme.C.tomato, height: 236) {
             Text("Plan\ndieser Woche").font(Theme.F.cardTitle(17)).multilineTextAlignment(.leading)
+                .fixedSize(horizontal: false, vertical: true).padding(.trailing, 40)
             VStack(alignment: .leading, spacing: 6) {
                 ForEach(Array(mains.prefix(3).enumerated()), id: \.offset) { _, m in miniRow(m.recipe.title, done: m.day < store.today) }
                 if mains.count > 3 { miniRow("+ \(mains.count - 3) weitere", done: false) }
@@ -383,7 +387,7 @@ struct RTile<Content: View, Corner: View>: View {
         VStack(alignment: .leading, spacing: 0, content: content)
             .foregroundStyle(Theme.C.ink)
             .padding(16)
-            .frame(maxWidth: .infinity, minHeight: height, maxHeight: height, alignment: .topLeading)
+            .frame(maxWidth: .infinity, minHeight: height, alignment: .topLeading)
             .overlay(alignment: .topTrailing) { corner().padding(12) }
             .background(color, in: RoundedRectangle(cornerRadius: Theme.R.rtile, style: .continuous))
             .clipShape(RoundedRectangle(cornerRadius: Theme.R.rtile, style: .continuous))

@@ -202,7 +202,7 @@ struct DayCard: View {
                     .padding(.trailing, deals > 0 ? 24 : 0)
                 Text(info).font(.system(.footnote, weight: .semibold)).opacity(0.75)
                 if meal.id != nil { actions.padding(.top, 10) }
-                MealBadges(meal: meal, onGuests: meal.id != nil ? onGuests : nil).padding(.top, 6)
+                MealBadges(meal: meal, onGuests: meal.id != nil ? onGuests : nil, guestsOnly: true).padding(.top, 6)  // Lunchbox/Rest stehen schon oben
             }
             .foregroundStyle(Theme.C.ink)
             .frame(maxWidth: .infinity, minHeight: 96, alignment: .leading)

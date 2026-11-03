@@ -417,11 +417,12 @@ struct MealBadges: View {
     @Environment(AppStore.self) private var store
     let meal: MealDTO
     var onGuests: (() -> Void)?
+    var guestsOnly = false  // DayCard (v3) zeigt Lunchbox und Reste schon in Kopf und Infozeile
 
     var body: some View {
-        let days = (meal.rests ?? []).map(\.fromDay).filter { d in Labels.days.indices.contains(d) }.uniqued()
+        let days = guestsOnly ? [] : (meal.rests ?? []).map(\.fromDay).filter { d in Labels.days.indices.contains(d) }.uniqued()
         let guests = meal.guests ?? 0
-        let lunch = meal.mealType == "lunchbox"
+        let lunch = meal.mealType == "lunchbox" && !guestsOnly
         if lunch || !days.isEmpty || guests > 0 || onGuests != nil {
             let names = store.profiles.filter { p in meal.portions.contains { x in x.memberId == p.memberId } }.map(\.name)
             FlowLayout(spacing: 6) {
