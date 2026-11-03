@@ -6,7 +6,7 @@ from datetime import date, datetime, timedelta
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.models import Member, Offer, ShoppingItem, WatchHit, WatchItem
+from app.models import Member, Offer, PricePoint, Product, ShoppingItem, WatchHit, WatchItem
 from app.services.matching import Matcher, words
 from app.services.prices import iso_week
 
@@ -44,14 +44,22 @@ def _has(tokens: set[str], w: str) -> bool:
 def name_match(item: WatchItem, title: str, brand: str = "") -> bool:
     """Name/Marke normalisiert per Token-Abgleich: Marke (falls gesetzt) muss vorkommen, vom Namen dann ≥ 1/2 der
     Wörter (Sorte wie „Classic“ fehlt im Prospekt oft), ohne Marke ≥ 2/3; Mengenangaben wie „300ml“ zählen nicht."""
-    have = _tokens(f"{title} {brand}")
-    if item.brand and not all(_has(have, w) for w in words(item.brand)):
-        return False
-    want = [w for w in words(item.label) if not w[0].isdigit() and w not in words(item.brand)]
-    if not want:
-        return bool(item.brand)
-    found = sum(_has(have, w) for w in want)
-    return found * 2 >= len(want) if item.brand else found * 3 >= len(want) * 2
+    return fitter(item)(_tokens(f"{title} {brand}"))
+
+
+def fitter(item: WatchItem):
+    """name_match als Funktion über fertige Tokens (Wörter des Eintrags nur einmal zerlegt, für viele Titel)."""
+    brand = words(item.brand)
+    want = [w for w in words(item.label) if not w[0].isdigit() and w not in brand]
+
+    def fits(have: set[str]) -> bool:
+        if brand and not all(_has(have, w) for w in brand):
+            return False
+        if not want:
+            return bool(brand)
+        found = sum(_has(have, w) for w in want)
+        return found * 2 >= len(want) if brand else found * 3 >= len(want) * 2
+    return fits
 
 
 def matches(item: WatchItem, offers: list[Offer]) -> list[Offer]:
@@ -71,6 +79,30 @@ def matches(item: WatchItem, offers: list[Offer]) -> list[Offer]:
                  and o.base_price_cents <= item.max_base_price_cents]
     return sorted(found, key=lambda o: (o.base_price_cents if item.max_base_price_cents is not None else o.price_cents,
                                         o.price_cents))
+
+
+def last_offers(db: Session, items: list[WatchItem], chains: set[str], week: str) -> dict[int, PricePoint]:
+    """„Zuletzt im Angebot: KW …“ aus dem Preisverlauf (28): neuester Preispunkt bis `week` der passenden Produkte
+    (EAN, sonst Name/Marke wie name_match) in den Läden des Eintrags bzw. des Haushalts; gleiche Woche → günstigster."""
+    if not items:
+        return {}
+    # shortcut: alle Produkte je Aufruf im Speicher (4300 → ~10 ms je Eintrag), bei viel mehr Produkten per SQL vorfiltern
+    products = [(pid, ean, _tokens(f"{title} {brand}"))
+                for pid, ean, title, brand in db.execute(select(Product.id, Product.ean, Product.title, Product.brand))]
+    found = {}
+    for i in items:
+        fits = fitter(i)
+        found[i.id] = ({pid for pid, ean, _ in products if i.ean and ean == i.ean}
+                       or {pid for pid, _, have in products if fits(have)})
+    points: dict[int, list[PricePoint]] = {}
+    if ids := set().union(*found.values()):
+        for p in db.scalars(select(PricePoint).where(PricePoint.product_id.in_(ids), PricePoint.week <= week)):
+            points.setdefault(p.product_id, []).append(p)
+    out = {}
+    for i in items:
+        if cands := [p for pid in found[i.id] for p in points.get(pid, ()) if p.chain in (i.chains or chains)]:
+            out[i.id] = max(cands, key=lambda p: (p.week, -p.price_cents))
+    return out
 
 
 def discount(o: Offer) -> int | None:

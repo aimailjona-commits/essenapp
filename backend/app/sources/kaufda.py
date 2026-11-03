@@ -18,13 +18,23 @@ SEARCH_QUERIES = {"aldi_sued": "ALDI", "dm": "dm-drogerie markt"}  # Prospekt nu
 # Erste passende Kategorie gewinnt (Reihenfolge zählt).
 CATEGORIES = [
     ("getraenke", ("getränk", "saft", "wasser", "bier", "pils", "wein", "sekt", "cola", "limo", "drink", "schorle", "pfand")),
-    ("fleisch_fisch", ("fleisch", "hack", "schnitzel", "gulasch", "wurst", "steak", "hähnchen", "chicken", "schinken", "salami", "lachs", "fisch")),
+    ("fleisch_fisch", ("fleisch", "schwein", "hack", "schnitzel", "gulasch", "wurst", "steak", "hähnchen", "chicken", "schinken", "salami", "lachs", "fisch")),
     ("obst_gemuese", ("obst", "gemüse", "apfel", "äpfel", "banane", "tomate", "kartoffel", "zwiebel", "salat", "paprika", "gurke", "möhre", "clementine", "trauben")),
     ("kuehlung", ("milch", "joghurt", "käse", "quark", "butter", "sahne", "pudding", "dessert", "gekühlt", "tiefgefroren", "pizza", "eier")),
     ("vorrat", ("nudel", "pasta", "mehl", "zucker", "sauce", "soße", "müsli", "kaffee", "schokolade", "keks", "chips", "brot", "konserve")),
     ("drogerie", ("shampoo", "dusch", "creme", "pflege", "zahn", "deo", "windel", "schaumbad", "kosmetik")),
     ("haushalt", ("wasch", "spülmittel", "reiniger", "küchenrolle", "toilettenpapier", "müllbeutel", "duft", "kerze", "deko", "vase", "lampe")),
 ]
+# Teilwort-Abgleich, damit Komposita treffen („Rotwein“, „Thunfisch“, „Colorwaschmittel“); reiner Wortanfang verlöre
+# die. Stattdessen Wörter, in denen ein Stichwort nur zufällig steckt (gefunden in echten Prospekten 11/2026):
+TRAPS = {k: re.compile(v) for k, v in {
+    "wein": r"schwein|weinkocher", "bier": r"bier(?=schinken|wurst|käse)", "cola": r"chocola|rucola|piccola",
+    "deo": r"video", "eier": r"freier", "obst": r"grobst", "sekt": r"insekt", "tomate": r"automat",
+    "lachs": r"flachs", "hack": r"gehackt", "fleisch": r"zahnfleisch|fruchtfleisch", "pasta": r"zahnpasta",
+    "saft": r"hustensaft", "wasser": r"spritzwasser|mizellenwasser|meerwasser", "wasch": r"waschbar",
+    "kaffee": r"kaffee(?:vollautomat|maschine|becher)",
+    "creme": r"(?:eis|nuss|pistazien|gebäck|koch|nougat|schoko)creme",
+}.items()}
 _BASE = re.compile(  # "(1 kg = 2.98 €)", "1 l = € 1.38", "12.99/kg", "EUR 2,83 / 1 l", "kg-Preis 4.48"
     r"\b1\s*(?:kg|l|liter)\s*=\s*(?:ab\s*)?€?\s*(\d+[.,]\d+)"
     r"|(\d+[.,]\d+)\s*€?\s*/\s*(?:1\s*)?(?:kg|l|st)\b"
@@ -46,7 +56,8 @@ def chain_of(publisher_name: str | None) -> str | None:
 
 def category_of(chain: str, text: str) -> str:
     text = text.lower()
-    found = next((cat for cat, words in CATEGORIES if any(w in text for w in words)), "sonstiges")
+    found = next((cat for cat, words in CATEGORIES
+                  if any(w in (TRAPS[w].sub(" ", text) if w in TRAPS else text) for w in words)), "sonstiges")
     if chain in ("dm", "rossmann"):
         return "haushalt" if found == "haushalt" else "drogerie"
     return found

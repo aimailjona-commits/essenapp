@@ -1957,10 +1957,12 @@ def member_watch(db: Session, member: Member, watch_id: int) -> WatchItem:
     return item
 
 
-def watch_out(item: WatchItem, hits: list[dict], coupon: Coupon | None = None) -> dict:
+def watch_out(item: WatchItem, hits: list[dict], coupon: Coupon | None = None, last: PricePoint | None = None) -> dict:
     return {c.key: getattr(item, c.key) for c in WatchItem.__table__.columns} | {
         "lasts_weeks_suggestion": watch.lasts_suggestion(item.label, item.category),
-        "empty_on": watch.empty_on(item), "hits": hits, "coupon": coupon_badge(coupon)}
+        "empty_on": watch.empty_on(item), "hits": hits, "coupon": coupon_badge(coupon),
+        "last_offer_week": last and last.week, "last_offer_chain": last and last.chain,
+        "last_offer_price_cents": last and last.price_cents}
 
 
 def watch_list(db: Session, member: Member, items: list[WatchItem]) -> list[dict]:
@@ -1968,10 +1970,12 @@ def watch_list(db: Session, member: Member, items: list[WatchItem]) -> list[dict
     found = {i.id: watch.matches(i, offers) for i in items}
     rows = {r["id"]: r for r in offer_rows(db, list({o.id: o for os in found.values() for o in os}.values()))}
     coupons = bonus.active(db, member.household_id)
+    last = watch.last_offers(db, items, {s.chain for s in member.household.stores if s.enabled},
+                              prices.iso_week(date.today()))
     db.commit()
     return [watch_out(i, [rows[o.id] for o in found[i.id]], coupons and bonus.item_coupon(
         coupons, f"{i.label} {i.brand}", i.chains[0] if len(i.chains) == 1 else "",
-        found[i.id][0] if found[i.id] else None)) for i in items]
+        found[i.id][0] if found[i.id] else None), last.get(i.id)) for i in items]
 
 
 @router.get("/watch", response_model=list[WatchOut])

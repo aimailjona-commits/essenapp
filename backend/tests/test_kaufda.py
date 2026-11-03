@@ -114,6 +114,16 @@ def test_category():
     assert category_of("rossmann", "Duschgel 250 ml") == "drogerie"
     assert category_of("dm", "Spülmittel 500 ml") == "haushalt"
     assert category_of("lidl", "Holzkugelbahn") == "sonstiges"
+    # Stichwort zufällig im Wort (echte Prospekttitel), Komposita treffen weiter
+    for text, cat in [("Schweine-Hackfleisch", "fleisch_fisch"), ("Schweinefilet", "fleisch_fisch"),
+                      ("Rotwein trocken", "getraenke"), ("Glühwein", "getraenke"), ("Mineralwasser", "getraenke"),
+                      ("Bierschinken", "fleisch_fisch"), ("König Ludwig Bierkäse", "kuehlung"),
+                      ("Weißbier", "getraenke"), ("Rucola", "sonstiges"), ("Thunfisch", "fleisch_fisch"),
+                      ("The Chocolate Block, Rotwein", "getraenke"), ("Vanilla & Chocolate Swirl", "sonstiges"),
+                      ("Zahnpasta mit Zahnfleischschutz", "drogerie"), ("Erdnusskerne gehackt", "sonstiges"),
+                      ("Pistaziencreme Kugeln", "sonstiges"), ("Handcreme", "drogerie"),
+                      ("Colorwaschmittel", "haushalt"), ("Kaffeevollautomat", "sonstiges")]:
+        assert category_of("lidl", text) == cat, text
 
 
 def test_upsert_offers(db):

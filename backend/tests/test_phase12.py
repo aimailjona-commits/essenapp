@@ -212,6 +212,18 @@ def test_heart_on_offer_and_patch(client, auth, db):
     assert client.get("/watch", headers=auth).json() == []
 
 
+def test_watch_last_offer_week_from_price_history(client, auth, db):
+    stores(client, auth, "lidl", "rewe")
+    history(db, "Nivea Creme", [199, 189], brand="Nivea", chain="rewe")  # vor 2 und vor 1 Woche
+    history(db, "Nivea Creme", [179], brand="Nivea", chain="aldi_sued")  # Laden nicht gewählt
+    w = client.post("/watch", headers=auth, json={"label": "Creme", "brand": "Nivea", "max_price_cents": 100}).json()
+    last_week = prices.iso_week(TODAY - timedelta(weeks=1))
+    assert (w["hits"], w["last_offer_week"], w["last_offer_chain"], w["last_offer_price_cents"]) == (
+        [], last_week, "rewe", 189)
+    other = client.post("/watch", headers=auth, json={"label": "Zahnseide"}).json()
+    assert other["last_offer_week"] is None and other["last_offer_chain"] is None
+
+
 # --- 58: Verbrauchsrhythmus ---
 
 def test_rhythm_push_two_weeks_before_and_list_three_days_before(client, auth, db, pushes):

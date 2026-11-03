@@ -938,6 +938,10 @@ class WatchOut(BaseModel):
     empty_on: date | None  # last_bought + lasts_weeks
     hits: list[OfferOut]  # aktuelle Treffer (erfüllen den Alarm), günstigste zuerst → „Diese Woche günstig“
     coupon: CouponBadge | None = None  # passender Drogerie-Coupon (59)
+    # „zuletzt im Angebot: KW 44“ aus dem Preisverlauf (ISO-Woche „2026-W44“, bis zur laufenden Woche)
+    last_offer_week: str | None = None
+    last_offer_chain: str | None = None
+    last_offer_price_cents: int | None = None
 
 
 class EanProductOut(BaseModel):
