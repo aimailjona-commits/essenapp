@@ -287,8 +287,8 @@ public struct TodayWidgetView: View {
     }
 
     private func photo(_ dish: TodayDish) -> some View {
-        ZStack {
-            ST.accentSoft
+        // Overlay statt ZStack: scaledToFill darf das Widget nicht verbreitern (sonst wird der Text links abgeschnitten)
+        ST.accentSoft.overlay {
             if let data = entry.images[dish.recipeId], let image = UIImage(data: data) {
                 Image(uiImage: image).resizable().scaledToFill()
             } else {
@@ -339,7 +339,7 @@ public struct TodayWidgetView: View {
 
     @ViewBuilder private var staleLine: some View {
         if entry.stale, let updated = entry.data?.updated {
-            Label("Stand \(updated.formatted(.dateTime.hour().minute()))", systemImage: "wifi.slash").font(ST.micro)
+            Label("Stand \(updated.formatted(.dateTime.hour().minute().locale(Locale(identifier: "de_DE"))))", systemImage: "wifi.slash").font(ST.micro)
         }
     }
 
