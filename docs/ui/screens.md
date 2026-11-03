@@ -1,6 +1,6 @@
 # Screens
 
-Status: **Entwurf v2** – offene Punkte im autonomen Modus entschieden (E17–E21, siehe Playbook). Mockups: `mockups/kern-screens-v1.html`, `mockups/weitere-screens-v1.html`.
+Status: **v3 (E87)** – Inhalte, Aktionen und Zustände unten gelten weiter; Aussehen und die Verhaltensänderungen aus [`redesign-v3.md`](redesign-v3.md) Abschnitt 6.2 gehen vor (u. a. Rezepte-Tab startet mit der Kachel-Wand, Merkliste als Chip, Menge im Angebotsdetail, Summen-Leiste statt festem Aktionsbereich, Tab-Leiste nur Symbole). Mockup: `mockups/redesign-v3.html` (v1-Mockups abgelöst).
 
 ## Navigation
 

@@ -314,6 +314,33 @@ svg.l{width:28px;height:28px}
 .tabbar .bump{position:absolute;left:50%;top:-26px;width:92px;height:92px;margin-left:-46px;border-radius:50%;background:#fff;display:grid;place-items:center}
 .tabbar .bump .x{width:64px;height:64px;border-radius:50%;background:#111;color:#fff;display:grid;place-items:center}
 .logo img{max-width:50px;max-height:38px;object-fit:contain;display:block}
+
+/* ===== Dunkelmodus (18.1c, Vorschlag) ===== */
+.phone.dark{--bg:#121110;--card:#1D1C1A;--surface:#2A2825;--line:rgba(255,255,255,.09);--ink:#F4F1EA;--t2:#A09B92;--t3:#6B675F;
+  --deal:#F07A5C;--chipBorder:#3A3733;--tint-green:#22301F;--tint-red:#3A2621;--tint-blue:#1F2838;--tint-yellow:#38301C;--tint-lav:#2A2638;--tint-pink:#3A2230;
+  color:var(--ink);box-shadow:0 0 0 10px #000,0 30px 60px rgba(0,0,0,.35)}
+.phone.dark .sb{color:var(--ink)}
+.phone.dark .chip{border-color:#3A3733;color:#A09B92}.phone.dark .chip.on{border-color:var(--ink);color:var(--ink)}
+.phone.dark .chip .n{color:#A09B92}.phone.dark .chip.on .n{background:var(--ink);color:#111}
+.phone.dark .search,.phone.dark .crow,.phone.dark .daysel span,.phone.dark .store{background:var(--card)}
+.phone.dark .daysel span.on{background:var(--ink);color:#111;border-color:var(--ink)}
+.phone.dark .rbtn.k,.phone.dark .btn.k{color:#111}
+.phone.dark .rbtn.w{background:var(--card)}
+.phone.dark .scr[style*="#111"] .rbtn.w{background:#fff}
+.phone.dark .tabbar{background:#000;box-shadow:0 0 0 1px rgba(255,255,255,.08),0 18px 40px rgba(0,0,0,.5)}
+.phone.dark .tab.on{background:var(--lime);color:#111}
+.phone.dark .tab .count{border-color:#000}
+.phone.dark .total{background:#000;box-shadow:0 0 0 1px rgba(255,255,255,.08),0 18px 40px rgba(0,0,0,.5)}
+.phone.dark .day,.phone.dark .rtile,.phone.dark .coupon,.phone.dark .folder .body{color:#111}
+.phone.dark .day[style*="background:#fff"]{background:var(--card)!important;color:var(--ink)}
+.phone.dark .bar.light i{background:var(--ink)!important}
+.phone.dark .add{background:var(--surface);color:var(--ink)}.phone.dark .add.on{background:var(--lime);color:#111}
+.phone.dark .offer .gp{color:#A09B92}
+.phone.dark .verdict{background:#000;color:#fff}.phone.dark .verdict.good{background:var(--lime);color:#111}
+.phone.dark::after{mix-blend-mode:screen;opacity:.35;filter:invert(1)}
+.dtable{width:100%;max-width:820px;border-collapse:collapse;font-size:13px;margin-top:14px;background:#fff;border-radius:16px;overflow:hidden}
+.dtable td,.dtable th{padding:8px 12px;border-bottom:1px solid #eee;text-align:left}
+.dtable i{display:inline-block;width:14px;height:14px;border-radius:4px;vertical-align:-2px;margin-right:6px;border:1px solid rgba(0,0,0,.1)}
 </style>
 </head>
 <body>
@@ -355,7 +382,7 @@ svg.l{width:28px;height:28px}
   <h1>Essenapp – Redesign v3 „Küchen-Pinnwand“</h1>
   <p><b>Was sie einzigartig macht:</b> Die App sieht aus wie die Kühlschranktür einer Familie, die nach Prospekt einkauft – <b>Schrift mit Charakter</b> (Fraunces, weich und leicht schief, zweite Zeile kursiv), <b>Preis-Sticker als Stern</b> wie im Prospekt, <b>handgemalte Kreise</b> um die Ersparnis, die <b>Einkaufsliste als Kassenbon</b> mit Zackenrand, <b>Coupon-Kerben</b> an Angebots-Highlights und ein feines <b>Papierkorn</b> über allem.</p>
   <p>Basis aus deinen Inspirationen aus deinen 10 Inspirationen: <b>riesige, fette Überschriften</b> mit Zähler daneben („Saved · 9 folders“), <b>sanfte Pastell-Farbkarten</b> statt grauer Kästen (GoodNotes, Chats), <b>freigestellte Teller</b> und <b>Fotos randlos</b> mit Farbverlauf (Apple-News-Rezept), eine <b>schwarze schwebende Leiste</b> unten (Salat-App), <b>Limette als Aktionsfarbe</b> (Snack Shop) und eine <b>Tages-Zusammenfassung als Satz mit Sticker-Bildern</b> („Today“-Screen). Hintergrund warmes Creme statt Grau.</p>
-  <div class="nav"><a href="#bausteine">1 · Bausteine</a><a class="o" href="#screens">2 · Gesamt-Mockup</a></div>
+  <div class="nav"><a href="#bausteine">1 · Bausteine</a><a class="o" href="#screens">2 · Gesamt-Mockup</a><a class="o" href="#dunkel">3 · Dunkelmodus</a></div>
   <div class="open"><b>Noch offen (bitte entscheiden)</b>
     1. Passt die Richtung? Welche Eigenheiten behalten (Schrift, Sticker, Kreise, Kassenbon, Coupon, Papierkorn)?<br>
     1b. Schrift Fraunces (frei, OFL-Lizenz) wird in die App eingebaut – ok?<br>
@@ -902,6 +929,162 @@ svg.l{width:28px;height:28px}
       </div>
     </div>
     <div class="caption"><b>S6 Onboarding</b>Statt Vollbild-Foto eine verspielte Sticker-Collage (Lern-App-Referenz), dann die gewohnten Schritte im neuen Stil.</div>
+  </div>
+
+</div>
+
+<!-- ================= 3 DUNKELMODUS ================= -->
+<section class="sec" id="dunkel">
+  <h2>3 · Dunkelmodus (Vorschlag)</h2>
+  <p>Warmes Fast-Schwarz statt Grau, Creme als Schrift. Die Pastell-Karten, die Limette, der Kassenbon und die Laden-Farbe bleiben hell – wie farbige Zettel auf dunklem Grund. Tab-Leiste und Summen-Leiste werden reines Schwarz mit feiner Kante, der aktive Tab ist Limette.</p>
+  <table class="dtable">
+    <tr><th>Token</th><th>Hell</th><th>Dunkel</th></tr>
+    <tr><td>bg</td><td><i style="background:#F4F1EA"></i>#F4F1EA</td><td><i style="background:#121110"></i>#121110</td></tr>
+    <tr><td>card</td><td><i style="background:#FFFFFF"></i>#FFFFFF</td><td><i style="background:#1D1C1A"></i>#1D1C1A</td></tr>
+    <tr><td>surface</td><td><i style="background:#E9E5DC"></i>#E9E5DC</td><td><i style="background:#2A2825"></i>#2A2825</td></tr>
+    <tr><td>line</td><td>Schwarz 7 %</td><td>Weiß 9 %</td></tr>
+    <tr><td>text1 / action</td><td><i style="background:#111"></i>#111111</td><td><i style="background:#F4F1EA"></i>#F4F1EA (Knöpfe: Creme mit Tinten-Schrift)</td></tr>
+    <tr><td>text2 / text3</td><td>#7A766E / #B3AEA4</td><td>#A09B92 / #6B675F</td></tr>
+    <tr><td>chipBorder</td><td>#CFC9BD</td><td>#3A3733</td></tr>
+    <tr><td>deal</td><td><i style="background:#E8694A"></i>#E8694A</td><td><i style="background:#F07A5C"></i>#F07A5C</td></tr>
+    <tr><td>lime, Wochentage, star, paper</td><td colspan="2">unverändert (bleiben hell)</td></tr>
+    <tr><td>Kategorie-Tönungen</td><td>#E4F5D9 #FFE3DB #DFE9FF #FFF1C9 #ECE6FF #FFE4EF</td><td>#22301F #3A2621 #1F2838 #38301C #2A2638 #3A2230</td></tr>
+    <tr><td>Tab-/Summen-Leiste</td><td>#111111</td><td>#000000 + Kante Weiß 8 %, aktiver Tab Limette</td></tr>
+  </table>
+</section>
+
+<div class="screens">
+  <!-- S1 Start -->
+  <div class="screen">
+    <div class="phone dark" style="background:#111">
+      <div class="sb w"><b>9:41</b><span class="island"></span><svg><use href="#status"/></svg></div>
+      <div class="scr" style="padding-top:66px">
+        <div class="row between" style="align-items:flex-start">
+          <div class="disp" style="color:#fff;font-size:52px">Heute</div>
+          <div class="row" style="gap:10px;margin-top:4px">
+            <div style="text-align:right;font-size:15px;font-weight:600;line-height:1.3"><span style="color:var(--tomato)">●</span> <span style="color:#fff">KW 45</span><br><span style="color:#77736B">Dienstag</span></div>
+            <span class="rbtn sm" style="background:#2A2A2A;color:#fff"><svg class="i s"><use href="#user"/></svg></span>
+          </div>
+        </div>
+        <p class="sent" style="margin-top:30px">Hallo Jona! Heute gibt's <b>Spaghetti Pomodoro</b> <i class="stk r1 ph ph-pasta"></i>, morgen <b>Lachs mit Salat</b> <i class="stk r2 ph ph-grill"></i> – und mit den Angeboten <b>sparst du <span class="circ">12,40 €<svg viewBox="0 0 120 50" preserveAspectRatio="none"><path d="M22 6 C 62 0, 112 4, 117 24 C 121 44, 72 50, 42 48 C 10 46, 0 34, 3 22 C 6 10, 30 4, 60 3"/></svg></span></b> <span class="estk">🏷️</span></p>
+        <div class="row" style="margin-top:22px;color:#77736B;font-size:14px;font-weight:600">Aus 3 Prospekten
+          <span class="store" style="background:#222;border-color:#333;color:#ddd"><i style="background:var(--sun)"></i>Lidl</span>
+          <span class="store" style="background:#222;border-color:#333;color:#ddd"><i style="background:var(--tomato)"></i>Rewe</span>
+          <span class="store" style="background:#222;border-color:#333;color:#ddd"><i style="background:var(--lav)"></i>dm</span></div>
+      </div>
+      <div style="position:absolute;left:0;right:0;top:470px;bottom:0;background:var(--card);border-radius:40px 40px 0 0;padding:22px 22px 0">
+        <div class="row between"><span style="font-size:22px;font-weight:800;letter-spacing:-.03em">Diese Woche</span><span class="row t2" style="font-weight:600;font-size:14px">7 Gerichte <svg class="i s"><use href="#filter"/></svg></span></div>
+        <div class="wrow"><div class="plate ph ph-pasta" style="width:56px;height:56px"></div><div style="flex:1"><div class="m" style="color:var(--deal)">Heute · Abend</div><div class="n">Spaghetti al Pomodoro</div><div class="p">2,10 € · 25 min</div></div><span class="deal">2 im Angebot</span></div>
+        <div class="wrow"><div class="plate ph ph-grill" style="width:56px;height:56px"></div><div style="flex:1"><div class="m">Mi · Abend</div><div class="n">Lachs mit Salat</div><div class="p">3,40 € · 30 min</div></div><svg class="i s t3"><use href="#chev"/></svg></div>
+        <div class="wrow"><div class="eplate" style="width:56px;height:56px;font-size:30px">🍛</div><div style="flex:1"><div class="m">Do · Abend</div><div class="n">Chicken Tikka Masala</div><div class="p">2,40 € · 35 min</div></div><svg class="i s t3"><use href="#chev"/></svg></div>
+      </div>
+      <div class="tabbar"><span class="tab on"><svg class="i"><use href="#home"/></svg></span><span class="tab"><svg class="i"><use href="#tag"/></svg><span class="count">3</span></span><span class="tab plus"><svg class="i"><use href="#plus"/></svg></span><span class="tab"><svg class="i"><use href="#bag"/></svg></span><span class="tab"><svg class="i"><use href="#book"/></svg></span></div>
+      <div class="homebar"></div>
+    </div>
+    <div class="caption"><b>S1 Start · dunkel</b>Kopf bleibt Tinte, das Sheet wird `card`-dunkel (sonst verschmilzt es mit dem Kopf).</div>
+  </div>
+
+  <!-- S2 Wochenplan -->
+  <div class="screen">
+    <div class="phone dark">
+      <div class="sb"><b>9:41</b><span class="island"></span><svg><use href="#status"/></svg></div>
+      <div class="scr">
+        <div class="row between" style="align-items:flex-start"><div class="disp">Woche<br><span class="disp2">KW 45</span></div><div class="row" style="margin-top:4px"><span class="rbtn"><svg class="i"><use href="#share"/></svg></span><span class="rbtn k"><svg class="i"><use href="#dice"/></svg></span></div></div>
+        <div style="margin-top:14px"><div class="row between"><span style="font-weight:800;font-size:17px">38,20 € <span class="t2" style="font-weight:600">von 60 €</span></span><span class="verdict good">12,40 € gespart</span></div><div class="bar light" style="margin:10px 0 0"><i style="width:64%;background:#111"></i></div></div>
+        <div class="daysel">
+          <span><b>Mo</b><i style="background:var(--tomato)"></i></span><span class="on"><b>Di</b><i style="background:var(--sun)"></i></span><span><b>Mi</b><i style="background:var(--lav)"></i></span><span><b>Do</b><i style="background:var(--sky)"></i></span><span><b>Fr</b><i style="background:var(--mint)"></i></span><span><b>Sa</b><i style="background:var(--orange)"></i></span><span><b>So</b><i style="background:var(--pink)"></i></span>
+        </div>
+        <div class="day" style="background:var(--sun)"><div class="plate ph ph-bowl"></div><span class="badge">2</span><div class="m">🥡 Lunchbox · Jona</div><div class="n">Buddha Bowl to go</div><div class="p">1,80 € · 15 min · 540 kcal</div>
+          <div class="acts"><span><svg class="i"><use href="#heart"/></svg></span><span><svg class="i"><use href="#swap"/></svg></span><span><svg class="i"><use href="#lock"/></svg></span><span><svg class="i"><use href="#dice"/></svg></span></div></div>
+        <div class="day" style="background:var(--lav)"><div class="plate ph ph-pasta"></div><div class="m">Abend · 25 min</div><div class="n">Spaghetti al Pomodoro</div><div class="p">2,10 € · 640 kcal · ♻︎ Rest von Mo</div>
+          <div class="acts"><span><svg class="i"><use href="#heart"/></svg></span><span><svg class="i"><use href="#swap"/></svg></span><span><svg class="i"><use href="#lock"/></svg></span><span><svg class="i"><use href="#dice"/></svg></span></div></div>
+        <div class="day" style="background:#fff;border:1px solid var(--line)"><div class="eplate" style="background:var(--tint-pink)">🍰</div><div class="m">Dessert · 10 min</div><div class="n">Quarkcreme mit Beeren</div><div class="p">0,90 € · 280 kcal</div></div>
+      </div>
+      <div class="tabbar"><span class="tab"><svg class="i"><use href="#home"/></svg></span><span class="tab"><svg class="i"><use href="#tag"/></svg><span class="count">3</span></span><span class="tab plus"><svg class="i"><use href="#plus"/></svg></span><span class="tab"><svg class="i"><use href="#bag"/></svg></span><span class="tab on"><svg class="i"><use href="#book"/></svg></span></div>
+      <div class="homebar"></div>
+    </div>
+    <div class="caption"><b>S2 Wochenplan · dunkel</b>Pastell-Karten bleiben hell mit Tinten-Schrift – wie farbige Zettel auf dunklem Grund.</div>
+  </div>
+
+  <!-- S4 Angebote -->
+  <div class="screen">
+    <div class="phone dark">
+      <div class="sb"><b>9:41</b><span class="island"></span><svg><use href="#status"/></svg></div>
+      <div class="scr">
+        <div class="row between"><div class="disp">Angebote</div><span class="rbtn k"><svg class="i"><use href="#search"/></svg></span></div>
+        <div class="row t2" style="margin-top:8px;font-weight:600;font-size:15px"><svg class="i s"><use href="#pin"/></svg>10115 Berlin · 6 Läden<svg class="i s"><use href="#down"/></svg><span style="margin-left:auto;color:var(--ink)">128 diese Woche</span></div>
+        <div class="chips" style="margin:16px -20px 0 0"><span class="chip on">Alle <span class="n">128</span></span><span class="chip">Merkliste <span class="n" style="background:var(--deal);color:#fff">3</span></span><span class="chip">Obst <span class="n">24</span></span><span class="chip">Fleisch <span class="n">18</span></span></div>
+        <div class="coupon" style="margin-top:14px;border-radius:24px;padding:16px 18px 14px;height:150px;background:var(--lime);position:relative;overflow:hidden">
+          <div class="type-m" style="opacity:.6">Knaller der Woche</div>
+          <div style="font-family:var(--serif);font-size:25px;font-weight:800;letter-spacing:-.02em;line-height:1.02;margin-top:4px">Hähnchen<br><i style="font-weight:400">bei Lidl</i></div>
+          <span class="perf"></span>
+          <div class="row" style="position:absolute;left:18px;bottom:12px"><span class="verdict">🔥 Bestpreis seit 12 Wochen</span></div>
+          <div style="position:absolute;right:58px;top:2px;font-size:76px;transform:rotate(-12deg);filter:drop-shadow(0 10px 10px rgba(0,0,0,.2))">🍗</div>
+          <span class="burst k" style="position:absolute;right:10px;top:12px;width:66px;height:66px;font-size:17px"><span class="bt">−35<small>%</small></span></span>
+        </div>
+        <div class="grid2" style="margin-top:10px">
+          <div class="offer" style="background:var(--tint-green)"><span class="burst tl"><span class="bt">−20<small>%</small></span></span><span class="tr" style="font-size:18px">👍</span><div class="img">🥑</div><div class="nm">Avocado</div><div class="gp">Rewe · Stück</div><div class="bot"><span class="price">0,99 €</span><span class="add"><svg class="i s"><use href="#plus"/></svg></span></div></div>
+          <div class="offer" style="background:var(--tint-blue)"><span class="burst tl"><span class="bt">−30<small>%</small></span></span><div class="img">🧀</div><div class="nm">Feta</div><div class="gp">Lidl · 200 g</div><div class="bot"><span class="price">1,29 €</span><span class="add on"><svg class="i s"><use href="#check"/></svg></span></div></div>
+        </div>
+      </div>
+      <div class="tabbar"><span class="tab"><svg class="i"><use href="#home"/></svg></span><span class="tab on"><svg class="i"><use href="#tag"/></svg></span><span class="tab plus"><svg class="i"><use href="#plus"/></svg></span><span class="tab"><svg class="i"><use href="#bag"/></svg></span><span class="tab"><svg class="i"><use href="#book"/></svg></span></div>
+      <div class="homebar"></div>
+    </div>
+    <div class="caption"><b>S4 Angebote · dunkel</b>Kategorie-Tönungen werden dunkel, Preis-Stern und Knaller-Coupon bleiben farbig.</div>
+  </div>
+
+  <!-- S5 Liste Detail -->
+  <div class="screen">
+    <div class="phone dark">
+      <div class="sb" style="color:#111"><b>9:41</b><span class="island"></span><svg><use href="#status"/></svg></div>
+      <div style="position:absolute;left:0;right:0;top:0;height:300px;background:var(--sun);border-radius:0 0 40px 40px"></div>
+      <div class="scr" style="color:#111">
+        <div class="row between"><span class="rbtn w"><svg class="i"><use href="#back"/></svg></span><div class="row"><span style="font-weight:700;font-size:14px">Geteilt mit</span><span style="display:flex"><span class="av" style="width:36px;height:36px;border-radius:50%;background:#fff;display:grid;place-items:center">🧑‍🍳</span><span style="width:36px;height:36px;border-radius:50%;background:#fff;display:grid;place-items:center;margin-left:-10px;border:2px solid var(--sun)">🦊</span></span><span class="rbtn w sm"><svg class="i s"><use href="#share"/></svg></span></div></div>
+        <div class="row" style="gap:14px;margin-top:22px"><span class="logo" style="width:60px;height:60px;border-radius:18px;background:#fff;display:grid;place-items:center"><img src="https://upload.wikimedia.org/wikipedia/commons/thumb/9/91/Lidl-Logo.svg/250px-Lidl-Logo.svg.png" alt="Lidl"></span><div class="disp" style="font-size:56px">Lidl</div></div>
+        <div class="row between" style="margin-top:8px"><span style="font-weight:700;font-size:16px">12 offen · 24,80 €</span><span class="verdict" style="height:30px;font-size:13px"><span style="color:var(--lime)">−6,10 €</span>&nbsp;gespart</span></div>
+        <div class="rcpt-wrap" style="margin-top:34px"><div class="receipt">
+          <div class="hd">Lidl · Berlin-Mitte<br>KW 45 · 12 Artikel</div>
+          <hr>
+          <div class="rl"><span class="bx"></span><span class="t">Tomaten</span><span class="q">1 kg</span><span class="dl">−30%</span><span class="p">1,99</span></div>
+          <div class="rl"><span class="bx"></span><span class="t">Avocado</span><span class="q">2 St</span><span class="p">1,98</span></div>
+          <div class="rl"><span class="bx"></span><span class="t">Hähnchen</span><span class="q">600 g</span><span class="dl">−35%</span><span class="p">3,59</span></div>
+          <div class="rl"><span class="bx"></span><span class="t">Spaghetti</span><span class="q">500 g</span><span class="p">0,89</span></div>
+          <div class="rl done"><span class="bx"><svg class="i"><use href="#check"/></svg></span><span class="t">Lachsfilet</span><span class="q">250 g</span><span class="p">3,99</span></div>
+          <hr>
+          <div class="rsum"><span>SUMME</span><span>24,80 €</span></div>
+          <div class="rl" style="padding-bottom:0"><span>davon gespart</span><span class="p" style="color:var(--deal)"><span class="circ r">6,10 €<svg viewBox="0 0 120 50" preserveAspectRatio="none"><path d="M22 6 C 62 0, 112 4, 117 24 C 121 44, 72 50, 42 48 C 10 46, 0 34, 3 22 C 6 10, 30 4, 60 3"/></svg></span></span></div>
+        </div></div>
+        <div class="search" style="margin-top:14px;height:52px">Artikel hinzufügen …<span class="rbtn" style="background:var(--surface)"><svg class="i s"><use href="#mic"/></svg></span></div>
+      </div>
+      <div class="total"><div class="col"><span class="lab">Noch offen</span><span class="val">24,80 €</span></div><span class="arr">››››</span><span class="btn lime"><svg class="i s"><use href="#bag"/></svg>Einkauf starten</span></div>
+      <div class="homebar"></div>
+    </div>
+    <div class="caption"><b>S5 Liste · dunkel</b>Ladenfarbe oben und der Kassenbon bleiben hell – Papier ist Papier.</div>
+  </div>
+
+  <!-- S12 Rezepte -->
+  <div class="screen">
+    <div class="phone dark">
+      <div class="sb"><b>9:41</b><span class="island"></span><svg><use href="#status"/></svg></div>
+      <div class="scr">
+        <div class="row between"><div class="disp">Rezepte</div><div class="row"><span class="hmeta">42</span><span class="rbtn"><svg class="i"><use href="#plus"/></svg></span></div></div>
+        <div class="chips" style="margin:16px -20px 0 0"><span class="chip on">Alle <span class="n">42</span></span><span class="chip">Favoriten <span class="n">12</span></span><span class="chip">Im Angebot <span class="n">5</span></span><span class="chip">Eigene</span></div>
+        <div class="masonry" style="margin-top:16px">
+          <div class="col" style="gap:10px">
+            <div class="rtile" style="background:var(--tomato);height:236px;overflow:visible"><div class="ttl">Plan<br>dieser Woche</div><span class="hrt"><svg class="i"><use href="#heart"/></svg></span>
+              <div style="margin-top:14px"><div class="mini done"><i></i>Pasta Pomodoro</div><div class="mini"><i></i>Lachs mit Salat</div><div class="mini"><i></i>Tikka Masala</div><div class="mini"><i></i>+ 4 weitere</div></div></div>
+            <div class="rtile" style="background:var(--lav);height:150px;overflow:visible"><div class="ttl">Aus Instagram</div><div class="type-c" style="color:#3d3566;margin-top:4px">5 Rezepte</div><div style="position:absolute;right:10px;bottom:6px;font-size:58px;transform:rotate(10deg)">📲</div></div>
+          </div>
+          <div class="col" style="gap:10px">
+            <div class="rtile ph ph-bowl" style="height:186px;color:#fff"><div style="position:absolute;inset:0;background:linear-gradient(transparent 40%,rgba(0,0,0,.55))"></div><span class="hrt" style="background:rgba(255,255,255,.3);color:#fff"><svg class="i"><use href="#heart"/></svg></span><div style="position:absolute;left:16px;bottom:14px"><div class="ttl">Buddha Bowl</div><div style="font-size:12px;opacity:.85">20 min · 2,40 €</div></div></div>
+            <div class="rtile" style="background:var(--lime);height:200px"><div class="ttl">5 Lieblings&shy;rezepte günstig</div><div class="row" style="margin-top:14px"><div class="plate ph ph-pasta" style="width:48px;height:48px"></div><div class="plate ph ph-grill" style="width:48px;height:48px;margin-left:-16px"></div><div class="eplate" style="width:48px;height:48px;margin-left:-16px;font-size:24px">🍛</div></div><div style="position:absolute;left:16px;bottom:14px" class="deal">bis −35 %</div></div>
+          </div>
+        </div>
+      </div>
+      <div class="tabbar"><span class="tab"><svg class="i"><use href="#home"/></svg></span><span class="tab"><svg class="i"><use href="#tag"/></svg><span class="count">3</span></span><span class="tab plus"><svg class="i"><use href="#plus"/></svg></span><span class="tab"><svg class="i"><use href="#bag"/></svg></span><span class="tab on"><svg class="i"><use href="#book"/></svg></span></div>
+      <div class="homebar"></div>
+    </div>
+    <div class="caption"><b>S12 Rezepte · dunkel</b>Kacheln bleiben Pastell, Hintergrund warmes Fast-Schwarz.</div>
   </div>
 
 </div>
