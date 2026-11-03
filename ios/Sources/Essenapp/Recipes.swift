@@ -332,7 +332,7 @@ struct MyRecipesList: View {
         let mains = entries.filter { ["mittag", "abend"].contains($0.mealType) }
         return RTile(color: Theme.C.tomato, height: 236) {
             Text("Plan\ndieser Woche").font(Theme.F.cardTitle(17)).multilineTextAlignment(.leading)
-                .fixedSize(horizontal: false, vertical: true).padding(.trailing, 40)
+                .fixedSize(horizontal: false, vertical: true)
             VStack(alignment: .leading, spacing: 6) {
                 ForEach(Array(mains.prefix(3).enumerated()), id: \.offset) { _, m in miniRow(m.recipe.title, done: m.day < store.today) }
                 if mains.count > 3 { miniRow("+ \(mains.count - 3) weitere", done: false) }
@@ -388,6 +388,7 @@ struct RTile<Content: View, Corner: View>: View {
             .foregroundStyle(Theme.C.ink)
             .padding(16)
             .frame(maxWidth: .infinity, minHeight: height, alignment: .topLeading)
+            .fixedSize(horizontal: false, vertical: true)  // nicht auf Spaltenhöhe strecken
             .overlay(alignment: .topTrailing) { corner().padding(12) }
             .background(color, in: RoundedRectangle(cornerRadius: Theme.R.rtile, style: .continuous))
             .clipShape(RoundedRectangle(cornerRadius: Theme.R.rtile, style: .continuous))

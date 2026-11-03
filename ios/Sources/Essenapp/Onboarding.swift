@@ -128,8 +128,8 @@ struct OnboardingView: View {
     private var welcome: some View {
         @Bindable var api = store.api
         let pasta = Bundle.module.url(forResource: "pasta", withExtension: "jpg")
-        return ZStack(alignment: .bottom) {
-            Theme.C.bg.ignoresSafeArea()
+        return VStack(spacing: 0) {
+            GeometryReader { g in  // Collage skaliert in den freien Platz über dem Text
             ZStack(alignment: .topLeading) {  // Positionen wie im Mockup (390 pt breit)
                 Ellipse().fill(Theme.C.lav).frame(width: 150, height: 150).offset(x: 28, y: 44)
                 Plate(url: pasta, size: 112).offset(x: 52, y: 66)
@@ -148,7 +148,9 @@ struct OnboardingView: View {
                     .offset(x: 40, y: 378)
             }
             .frame(width: 390, height: 470, alignment: .topLeading)
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+            .scaleEffect(min(1, g.size.height / 470, g.size.width / 390), anchor: .top)
+            .frame(width: g.size.width, height: g.size.height, alignment: .top)
+            }
             .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 0) {
                 HStack(spacing: 6) {
@@ -173,6 +175,7 @@ struct OnboardingView: View {
             .padding(.horizontal, 24).padding(.bottom, 24)
             .appear(delay: 0.2)
         }
+        .background(Theme.C.bg.ignoresSafeArea())
     }
 
     private var plzStep: some View {

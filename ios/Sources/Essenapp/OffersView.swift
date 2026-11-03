@@ -247,14 +247,10 @@ struct OfferCard: View {
             if let b = offer.bonusText { DealBadge(text: b, style: .ok).lineLimit(1).padding(.top, 4) }  // 39
             Spacer(minLength: 10)
             HStack {
-                HStack(alignment: .firstTextBaseline, spacing: 6) {
-                    Text(euro(offer.priceCents)).font(.system(.callout, weight: .heavy)).monospacedDigit()
-                    if let regular = offer.regularPriceCents {
-                        Text(euro(regular).replacingOccurrences(of: " €", with: "")).font(.system(size: 11, weight: .semibold))
-                            .strikethrough().foregroundStyle(Theme.C.onInk3)
-                    }
+                ViewThatFits(in: .horizontal) {  // Streichpreis nur, wenn er neben die Plus-Taste passt
+                    pricePill(strike: true)
+                    pricePill(strike: false)
                 }
-                .foregroundStyle(.white).padding(.horizontal, 14).frame(height: 36).background(Theme.C.ink, in: Capsule())
                 Spacer(minLength: 4)
                 Button { withAnimation(Theme.spring) { store.addToList(offer) } } label: {
                     Image(systemName: onList ? "checkmark" : "plus")
@@ -278,6 +274,18 @@ struct OfferCard: View {
         }
         .overlay(alignment: .topTrailing) { VerdictBadge(verdict: offer.verdict, emojiOnly: true).padding(10) }  // 28
     }
+
+    private func pricePill(strike: Bool) -> some View {
+        HStack(alignment: .firstTextBaseline, spacing: 6) {
+            Text(euro(offer.priceCents)).font(.system(.callout, weight: .heavy)).monospacedDigit()
+            if strike, let regular = offer.regularPriceCents {
+                Text(euro(regular).filter { $0 != "€" }.trimmingCharacters(in: .whitespaces)).font(.system(size: 11, weight: .semibold))
+                    .strikethrough().foregroundStyle(Theme.C.onInk3)
+            }
+        }
+        .lineLimit(1).fixedSize()
+        .foregroundStyle(.white).padding(.horizontal, 12).frame(height: 36).background(Theme.C.ink, in: Capsule())
+    }
 }
 
 /// „Knaller der Woche“ (S4): Limetten-Coupon mit Kerben, Name in Fraunces, Produkt, Stern in Tinte.
@@ -296,9 +304,9 @@ struct KnallerCard: View {
                 Text("bei \(Labels.chain(offer.chain))").font(.custom("FrauncesV3-TextItalic", size: 25, relativeTo: .title2))
             }
             .foregroundStyle(Theme.C.ink)
-            .padding(.leading, 18).padding(.top, 16).padding(.trailing, 140)
+            .padding(.leading, 18).padding(.top, 16).padding(.trailing, 160)
             RemoteImage(url: URL(string: offer.imageUrl)) { Text(hue.emoji).font(.system(size: 76)) }
-                .frame(width: 90, height: 90).rotationEffect(.degrees(-12))
+                .frame(width: 80, height: 80).rotationEffect(.degrees(-12))
                 .shadow(color: .black.opacity(0.2), radius: 5, y: 10)
                 .frame(maxWidth: .infinity, alignment: .trailing).padding(.trailing, 58).padding(.top, 2)
             if let d = offer.discount {

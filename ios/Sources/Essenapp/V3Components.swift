@@ -335,7 +335,7 @@ struct ReceiptRow: View {
                     .frame(width: 20, height: 20)
                     .background(checked ? Theme.C.lime : .clear, in: RoundedRectangle(cornerRadius: 6, style: .continuous))
                     .overlay(RoundedRectangle(cornerRadius: 6, style: .continuous).strokeBorder(Color(hex: 0x222222), lineWidth: 1.8))
-                Text(name).strikethrough(checked).lineLimit(2)
+                Text(name).strikethrough(checked).lineLimit(1).truncationMode(.middle)
                 if let amount { Text(amount).foregroundStyle(checked ? Color(hex: 0xA9A398) : Theme.C.chipText) }
                 if let discount, !checked { Text(discount).font(Theme.F.monoBold(11)).foregroundStyle(Theme.C.deal) }
                 Spacer(minLength: 4)
