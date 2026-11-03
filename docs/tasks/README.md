@@ -1,36 +1,39 @@
 # Aufgaben
 
-**Aktive Phase: [Phase 8 – Fundament](phase-8-fundament-server.md)** (Phasen 1–7: Grundlage steht, Rest aufgegangen in 8–17) (blockiert durch 👤 Apple-ID-Login; im autonomen Modus (E16) wurde an Phase 2 und 3 weitergearbeitet)
+**Stand 2026-11-03: Phasen 8–16 gebaut (Code + Tests + CI-Screenshots), offen sind die Abnahmen auf dem iPhone und der APNs-Ende-zu-Ende-Test (wartet auf bezahlten Apple-Account). Phase 17 (VPS) wird vorbereitet, Umzug am Ende.**
 
 | Phase | Datei | Status |
 |---|---|---|
 | 0 | [UI-Planung](phase-0-ui-planung.md) | vorläufig fertig (Feedback offen) |
-| 1 | [Fundament](phase-1-fundament.md) | aktiv – fehlt: Login, App aufs iPhone, Netzwerk |
+| 1 | [Fundament](phase-1-fundament.md) | fertig |
 | 2 | [Angebote](phase-2-angebote.md) | großteils fertig |
 | 3 | [Wochenplan](phase-3-wochenplan.md) | begonnen |
 | 4 | [Personalisierung + Web](phase-4-personalisierung-web.md) | offen |
 | 5 | [Drogerie & Alarme](phase-5-drogerie-alarme.md) | offen |
 | 6 | [Extras](phase-6-extras.md) | offen |
 | 7 | [VPS](phase-7-vps.md) | → aufgegangen in Phase 8 (IONOS) |
-| 8 | [Fundament: Server, Personen, Vorrat](phase-8-fundament-server.md) | geplant |
-| 9 | [Rezepte, Instagram-Import, Kühlschrank-Foto](phase-9-rezepte-import.md) | geplant |
-| 10 | [Kochen](phase-10-kochen.md) | geplant |
-| 11 | [Clever planen](phase-11-planen.md) | geplant |
-| 12 | [Sparen](phase-12-sparen.md) | geplant |
-| 13 | [Bonus, Laden, Ausgaben](phase-13-bonus-laden.md) | geplant |
-| 14 | [Motivation & Teilen](phase-14-motivation.md) | geplant |
-| 15 | [Komfort](phase-15-komfort.md) | geplant |
-| 16 | [Erweiterungen (Widget, Live-Aktivität)](phase-16-erweiterungen.md) | geplant |
-| 17 | [Umzug auf IONOS-VPS](phase-17-vps.md) | geplant (ganz am Ende) |
+| 8 | [Fundament: Server, Personen, Vorrat](phase-8-fundament-server.md) | gebaut – Abnahme iPhone + APNs offen |
+| 9 | [Rezepte, Instagram-Import, Kühlschrank-Foto](phase-9-rezepte-import.md) | gebaut – Abnahme iPhone offen |
+| 10 | [Kochen](phase-10-kochen.md) | gebaut – Abnahme iPhone offen |
+| 11 | [Clever planen](phase-11-planen.md) | gebaut – Abnahme iPhone offen |
+| 12 | [Sparen](phase-12-sparen.md) | gebaut – Abnahme iPhone offen |
+| 13 | [Bonus, Laden, Ausgaben](phase-13-bonus-laden.md) | gebaut – Abnahme iPhone offen |
+| 14 | [Motivation & Teilen](phase-14-motivation.md) | gebaut – Abnahme iPhone offen |
+| 15 | [Komfort](phase-15-komfort.md) | gebaut – Abnahme iPhone offen |
+| 16 | [Erweiterungen (Widget, Live-Aktivität)](phase-16-erweiterungen.md) | gebaut – Abnahme iPhone offen |
+| 17 | [Umzug auf IONOS-VPS](phase-17-vps.md) | Vorbereitung läuft – wartet auf 👤 IONOS-VPS + Domain |
 
 ## Wartet auf dich 👤
 
 | Was | Wofür | Phase |
 |---|---|---|
-| Xcode 27.1 `.xip` herunterladen (https://developer.apple.com/download/all/?q=Xcode) | iOS-SDK für xtool | 1 |
-| `xtool setup` mit Apple-ID (Claude startet es, du tippst Login/2FA) | Signieren | 1 |
-| iPhone per USB, „Vertrauen“, Entwicklermodus | App installieren | 1 |
-| Offene (C)-Entscheidungen im Playbook prüfen (E17–E21) | optional | – |
+| iPhone anschließen + entsperren, Apple Devices offen | neue Version installieren, Abnahmen | 8–16 |
+| Bezahlter Apple-Account aktiv → APNs-Schlüssel (`.p8`) erstellen, nach `backend/secrets/`, Key-ID + Team-ID nennen; xtool neu einloggen | Push Ende-zu-Ende | 8, 11–14 |
+| 3 Instagram-Reels mit Rezept in der Beschreibung | Abnahme Import | 9 |
+| Kühlschrank-Foto, 10 echte Coupons, Testscan an der Kasse | Abnahmen | 9, 13 |
+| Entscheidung Payback-Umrechnung (Spec „10fach = 10 %“ vs. 1 °P/2 € = 5 %; umgesetzt 5 %) | Coupons | 13 |
+| Selbst getroffene Entscheidungen prüfen (Playbook E78–E85) | optional | 11–16 |
+| IONOS-VPS (Ubuntu 24.04, ≥ 2 GB) + Domain anlegen | Umzug | 17 |
 
 ## Regeln
 
