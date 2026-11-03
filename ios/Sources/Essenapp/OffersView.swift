@@ -13,6 +13,7 @@ struct OffersView: View {
     @State private var bio = false  // 49
     @State private var vegan = false
     @State private var nutri = false
+    @State private var bonusOnly = false  // Rewe-Bonus-Aktionen (39)
 
     var body: some View {
         let all = nextWeek ? store.nextOffers : store.offers
@@ -22,7 +23,7 @@ struct OffersView: View {
             (chain == nil || $0.chain == chain) && (category == nil || $0.category == category)
                 && (search.isEmpty || $0.title.localizedCaseInsensitiveContains(search))
                 && (!realOnly || $0.verdict != "kein_echtes") && (!bio || $0.bio == true) && (!vegan || $0.vegan == true)
-                && (!nutri || ["A", "B"].contains($0.nutriScore ?? ""))
+                && (!nutri || ["A", "B"].contains($0.nutriScore ?? "")) && (!bonusOnly || ($0.bonusCents ?? 0) > 0)
         }
         // Monatsaktionen (59): eigener Abschnitt unter Drogerie
         let drugstore = category == "drogerie" && !nextWeek
@@ -80,6 +81,9 @@ struct OffersView: View {
                             FilterChip(label: "Bio", selected: bio) { withAnimation(Theme.spring) { bio.toggle() } }
                             FilterChip(label: "🌱 Vegan", selected: vegan) { withAnimation(Theme.spring) { vegan.toggle() } }
                             FilterChip(label: "Nutri A/B", selected: nutri) { withAnimation(Theme.spring) { nutri.toggle() } }
+                            FilterChip(label: "🎁 Bonus-Aktionen", count: all.filter { o in (o.bonusCents ?? 0) > 0 }.count, selected: bonusOnly) {
+                                withAnimation(Theme.spring) { bonusOnly.toggle() }
+                            }
                         }
                         .padding(.horizontal, Theme.pagePadding)
                     }
@@ -152,6 +156,9 @@ extension OfferDTO {
         return Int((Double(regular - priceCents) / Double(regular) * 100).rounded())
     }
 
+    /// „🎁 0,50 € Bonus“ (Rewe-Bonus-Aktion, 39).
+    var bonusText: String? { bonusCents.flatMap { b in b > 0 ? "🎁 \(euro(b)) Bonus" : nil } }
+
     var baseUnitLabel: String { unit == "stk" ? "Stk" : unit == "ml" ? "l" : "kg" }
 
     var amountText: String? {
@@ -182,9 +189,12 @@ struct OfferCard: View {
                 .overlay(alignment: .topLeading) { StoreLogo(chain: offer.chain, size: 26).padding(8) }
                 .overlay(alignment: .topTrailing) { VerdictBadge(verdict: offer.verdict).padding(6) }  // 28
                 .overlay(alignment: .bottomLeading) { LabelBadges(offer: offer).padding(6) }  // 49
-            Text(offer.discount.map { "−\($0) %" } ?? "Angebot")
-                .font(.system(size: 11, weight: .bold)).foregroundStyle(Theme.C.onAction)
-                .padding(.horizontal, 9).frame(height: 20).background(Theme.C.action, in: Capsule())
+            HStack(spacing: 4) {
+                Text(offer.discount.map { "−\($0) %" } ?? "Angebot")
+                    .font(.system(size: 11, weight: .bold)).foregroundStyle(Theme.C.onAction)
+                    .padding(.horizontal, 9).frame(height: 20).background(Theme.C.action, in: Capsule())
+                if let b = offer.bonusText { DealBadge(text: b, style: .ok).lineLimit(1) }  // 39
+            }
             Text(offer.title).font(.system(.subheadline, weight: .semibold)).lineLimit(2).multilineTextAlignment(.center)
                 .foregroundStyle(Theme.C.text1).frame(minHeight: 36)
             if let amount = offer.amountText {
@@ -269,6 +279,7 @@ struct OfferDetailView: View {
                             LabelBadges(offer: offer)  // 49
                             VStack(alignment: .leading, spacing: 6) {
                                 if let d = offer.discount { darkChip("tag.fill", "−\(d) %") }
+                                if let b = offer.bonusText { DealBadge(text: b, style: .ok) }  // Rewe-Bonus (39)
                                 darkChip("calendar", offer.startsLater ? "ab \(shortDate(offer.validFrom))"
                                                      : offer.daysLeft.map { $0 <= 0 ? "nur heute" : "noch \($0) Tage" } ?? "diese Woche")
                             }

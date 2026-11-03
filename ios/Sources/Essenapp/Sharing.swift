@@ -15,6 +15,7 @@ struct ListItemDTO: Codable, Identifiable, Hashable {
     var source: String  // plan | manual | basics | stockup („Vorratskauf“, 31) | rhythm („bald leer“, 58)
     var deferWeek: String? = nil  // ISO-Woche der Gruppe „Nächste Woche“ (30)
     var nextWeek: Bool? = nil  // in der Gruppe „Nächste Woche“ (Backend rechnet)
+    var coupon: CouponBadgeDTO? = nil  // passender aktiver Coupon (38c/59): „🎟 10fach“
 }
 
 struct ListDTO: Codable {
@@ -276,6 +277,7 @@ struct ItemRow: View {
                 }
                 if item.source == "stockup" { DealBadge(text: "Vorratskauf", style: .ok) }  // 31
                 if item.source == "rhythm" { DealBadge(text: "bald leer", style: .soft) }  // 58
+                if let c = item.coupon, !item.checked { CouponTag(coupon: c) }  // 38c/59: antippen = Kasse
             }
             Spacer()
             if let price = offer?.priceCents {

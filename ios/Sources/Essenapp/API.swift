@@ -82,6 +82,7 @@ struct OfferDTO: Codable, Identifiable, Hashable {
     var labelSources: [String]? = nil  // „Prospekttext“, „Open Food Facts (ODbL)“
     var offCode: String? = nil  // Open-Food-Facts-Barcode des sicheren Treffers
     var monthly: Bool? = nil  // dm/Rossmann-Monatsaktion (59)
+    var bonusCents: Int? = nil  // Rewe-Bonus-Aktion (39): Badge „🎁 0,50 € Bonus“
 }
 
 enum APIError: LocalizedError {
@@ -295,8 +296,8 @@ final class API {
         return data
     }
 
-    /// Multipart-Upload (Kühlschrank-Fotos): Dateien als „files“ (JPEG), dazu Formularfelder; `progress` 0–1 beim Senden.
-    func upload<T: Decodable>(_ path: String, files: [Data], fields: [String: String], timeout: TimeInterval = 120,
+    /// Multipart-Upload (Kühlschrank-Fotos „files“, Coupon-Foto „file“): JPEGs + Formularfelder; `progress` 0–1 beim Senden.
+    func upload<T: Decodable>(_ path: String, files: [Data], fields: [String: String], field: String = "files", timeout: TimeInterval = 120,
                               progress: @escaping @Sendable (Double) -> Void) async throws -> T {
         guard let url = URL(string: baseURL.trimmingCharacters(in: .whitespaces) + path), !baseURL.isEmpty else { throw APIError.noServer }
         let boundary = "essenapp-\(UUID().uuidString)"
@@ -305,7 +306,7 @@ final class API {
             body.append(Data("--\(boundary)\r\nContent-Disposition: form-data; name=\"\(key)\"\r\n\r\n\(value)\r\n".utf8))
         }
         for (i, file) in files.enumerated() {
-            body.append(Data("--\(boundary)\r\nContent-Disposition: form-data; name=\"files\"; filename=\"foto\(i + 1).jpg\"\r\nContent-Type: image/jpeg\r\n\r\n".utf8))
+            body.append(Data("--\(boundary)\r\nContent-Disposition: form-data; name=\"\(field)\"; filename=\"foto\(i + 1).jpg\"\r\nContent-Type: image/jpeg\r\n\r\n".utf8))
             body.append(file)
             body.append(Data("\r\n".utf8))
         }
@@ -652,6 +653,11 @@ final class AppStore {
     var recipeFilter: String?  // Start-Karte → Rezepte-Tab mit diesem Filter
     var scanning = false  // Kühlschrank-Foto (69): Sheet aus Schnell-Aktion, Start-Karte, Vorrat
     var generatorSpecial: String?  // Start-Banner (25) → Plan-Generator mit dieser Special-Vorlage
+    var coupons: [CouponDTO] = []  // Wallet (38)
+    var bonusAccounts: [BonusAccountDTO] = []  // Payback / Rewe Bonus (38b)
+    var checkoutCoupon: Int? = Demo.screen == "coupon" ? 1 : nil  // Kassen-Vollbild (Wallet, Badge, Push essenapp://coupon/<id>)
+    var review: String? = Demo.screen == "review" ? "" : nil  // Wochenrückblick-Story: Woche, "" = aktuelle (55)
+    var newAchievements: [AchievementDTO] = Demo.screen == "unlock" ? Demo.unlocked : []  // Vollbild-Moment (54)
 
     /// Toast oben, optional mit Aktions-Knopf (bleibt dann länger stehen).
     func flash(_ text: String, action: (title: String, run: () -> Void)? = nil) {
@@ -727,6 +733,7 @@ final class AppStore {
             try? await loadPantry()
             error = nil
             await loadNutrition()
+            await loadAchievements()  // schaltet Neues frei → Vollbild-Moment
         } catch {
             self.error = error.localizedDescription
         }

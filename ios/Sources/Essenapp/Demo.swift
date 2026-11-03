@@ -14,6 +14,9 @@ import UIKit
 /// Phase 12: watch (Merkliste S10), scanner (Barcode-Scan + „Auf Merkliste?“), nextweek (Angebote nächste Woche),
 /// offerstock (Angebotsdetail mit Vorratstipp + Bio/Nutri), savings (Start: Budget-Rest, nächste Woche günstiger, Vorrat),
 /// budgetover (Start: über Budget), singlestore (Plan-Generator: nächste Woche + nur ein Laden).
+/// Phase 13: wallet (Einkauf › Coupons), bonus (Plus/Minus-Sheet Payback), coupon (Kassen-Vollbild), couponadd (Coupon prüfen
+/// nach Foto), spending (Monats-Dashboard). Phase 14: achievements (Erfolge), unlock (Vollbild-Moment), review (Wochenrückblick),
+/// reviews (Archiv), recipelink (Rezept als Link teilen), sharedrecipe (geteiltes Rezept übernehmen).
 /// Erscheinungsbild (68): zusätzlich `-demoAppearance dark|light` (überschreibt die Einstellung).
 enum Demo {
     static let screen: String? = arg("-demoScreen")
@@ -64,25 +67,25 @@ enum Demo {
     ]
 
     static let offers: [OfferDTO] = [
-        offer(1, "rewe", "Hähnchenbrustfilet", "fleisch_fisch", 399, 599, 400, "g", 998, verdict: "gut"),
+        offer(1, "rewe", "Hähnchenbrustfilet", "fleisch_fisch", 399, 599, 400, "g", 998, verdict: "gut", bonus: 50),
         offer(2, "aldi_sued", "Avocado, essreif", "obst_gemuese", 79, 119, 1, "stk", 79, verdict: "bestpreis", vegan: true),
         offer(3, "lidl", "Rispentomaten", "obst_gemuese", 199, nil, 500, "g", 398),
         offer(4, "lidl", "Lachsfilet", "fleisch_fisch", 349, 499, 250, "g", 1396, verdict: "kein_echtes"),
         offer(5, "aldi_sued", "Skyr Natur", "kuehlung", 129, 159, 450, "g", 287, verdict: "normal", nutri: "A"),
         offer(6, "dm", "Shampoo Repair", "drogerie", 179, 239, 300, "ml", 597, monthly: true),
-        offer(7, "rewe", "Basmatireis", "vorrat", 149, 199, 500, "g", 298, verdict: "bestpreis", nutri: "A", bio: true, vegan: true),
+        offer(7, "rewe", "Basmatireis", "vorrat", 149, 199, 500, "g", 298, verdict: "bestpreis", nutri: "A", bio: true, vegan: true, bonus: 20),
         offer(8, "lidl", "Feta", "kuehlung", 99, 139, 200, "g", 495, verdict: "gut", nutri: "D"),
     ]
 
     static func offer(_ id: Int, _ chain: String, _ title: String, _ category: String, _ price: Int, _ regular: Int?,
                       _ amount: Double, _ unit: String, _ base: Int, verdict: String = "zu_wenig_daten", nutri: String? = nil,
                       bio: Bool = false, vegan: Bool = false, monthly: Bool = false, from: String = "2026-11-02",
-                      to: String = "2026-11-07") -> OfferDTO {
+                      to: String = "2026-11-07", bonus: Int? = nil) -> OfferDTO {
         OfferDTO(id: id, chain: chain, title: title, brand: "", category: category, priceCents: price, regularPriceCents: regular,
                  amount: amount, unit: unit, basePriceCents: base, validFrom: from, validTo: to, imageUrl: "", verdict: verdict,
                  bio: bio, vegan: vegan, vegetarian: vegan, nutriScore: nutri,
                  labelSources: nutri == nil ? ["Prospekttext"] : ["Prospekttext", "Open Food Facts (ODbL)"],
-                 offCode: nutri == nil ? "" : "4311501000000", monthly: monthly)
+                 offCode: nutri == nil ? "" : "4311501000000", monthly: monthly, bonusCents: bonus)
     }
 
     // MARK: Sparen (Phase 12)
@@ -108,17 +111,18 @@ enum Demo {
 
     static func watch(_ id: Int, _ kind: String, _ label: String, brand: String = "", category: String = "", max: Int? = nil,
                       maxBase: Int? = nil, unit: String = "", lasts: Double? = nil, bought: String? = nil, empty: String? = nil,
-                      hits: [OfferDTO] = []) -> WatchDTO {
+                      hits: [OfferDTO] = [], coupon: CouponBadgeDTO? = nil, last: (String, String, Int)? = nil) -> WatchDTO {
         WatchDTO(id: id, kind: kind, label: label, brand: brand, ean: "", imageUrl: "", category: category, maxPriceCents: max,
                  maxBasePriceCents: maxBase, baseUnit: unit, chains: [], lastsWeeks: lasts, lastsWeeksSuggestion: lasts,
-                 lastBought: bought, emptyOn: empty, hits: hits)
+                 lastBought: bought, emptyOn: empty, hits: hits, coupon: coupon, lastOfferWeek: last?.0, lastOfferChain: last?.1,
+                 lastOfferPriceCents: last?.2)
     }
 
     static let watches = [
         watch(1, "produkt", "Shampoo Repair", brand: "Balea", category: "drogerie", max: 199, lasts: 6, bought: "2026-10-20",
-              empty: "2026-12-01", hits: [offers[5]]),
+              empty: "2026-12-01", hits: [offers[5]], coupon: CouponBadgeDTO(id: 3, text: "🎟 −20 %", program: "dm", partner: "dm")),
         watch(2, "produkt", "Skyr Natur", category: "kuehlung", hits: [offers[4]]),
-        watch(3, "produkt", "Haferdrink Barista", brand: "Oatly", category: "kuehlung", max: 149),
+        watch(3, "produkt", "Haferdrink Barista", brand: "Oatly", category: "kuehlung", max: 149, last: ("2026-W44", "lidl", 199)),
         watch(4, "produkt", "Toilettenpapier 4-lagig", category: "haushalt", lasts: 3, bought: "2026-10-27", empty: "2026-11-17"),
         watch(5, "zutat", "Butter", max: 149),
         watch(6, "zutat", "Lachsfilet", maxBase: 1500, unit: "kg", hits: [offers[3]]),
@@ -382,6 +386,8 @@ enum Demo {
     static let householdList = ListDTO(id: 1, name: "Haushalt", kind: "household", shareUrl: nil, items: [
         item(1, "Hähnchenbrustfilet", 400, "g", "rewe", 1),
         item(2, "Basmatireis", 480, "g", "rewe", 7, checked: true, by: "Malina"),
+        item(11, "Kaffee", 500, "g", "rewe", nil, source: "manual", added: "Jona",
+             coupon: CouponBadgeDTO(id: 1, text: "🎟 10fach", program: "payback", partner: "REWE")),  // Coupon-Badge (38c)
         item(3, "Rispentomaten", 700, "g", "lidl", 3),
         item(4, "Feta", 200, "g", "lidl", 8),
         item(5, "Lachsfilet", 250, "g", "lidl", 4),
@@ -399,8 +405,8 @@ enum Demo {
 
     static func item(_ id: Int, _ name: String, _ amount: Double?, _ unit: String, _ chain: String, _ offer: Int?,
                      checked: Bool = false, by: String = "", source: String = "plan", added: String = "",
-                     next: Bool = false) -> ListItemDTO {
+                     next: Bool = false, coupon: CouponBadgeDTO? = nil) -> ListItemDTO {
         ListItemDTO(id: id, name: name, amount: amount, unit: unit, chain: chain, offerId: offer, checked: checked,
-                    addedBy: added, checkedBy: by, source: source, deferWeek: next ? "2026-W46" : nil, nextWeek: next)
+                    addedBy: added, checkedBy: by, source: source, deferWeek: next ? "2026-W46" : nil, nextWeek: next, coupon: coupon)
     }
 }

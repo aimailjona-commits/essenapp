@@ -28,14 +28,18 @@ struct ShoppingView: View {
     @State private var newItem = ""
     @State private var newListName = ""
     @State private var askNewList = false
-    @State private var pantryMode = Demo.screen == "pantry"
+    @State private var page = Demo.screen == "pantry" ? 1 : ["wallet", "bonus"].contains(Demo.screen ?? "") ? 2 : 0  // Liste | Vorrat | Coupons
     @State private var voiceOpen = Demo.screen == "voiceadd"
 
     var body: some View {
         VStack(spacing: 6) {
-            PillSegment(options: [(false, "Liste"), (true, "Vorrat")], selection: $pantryMode)
+            PillSegment(options: [(0, "Liste"), (1, "Vorrat"), (2, "Coupons")], selection: $page)
                 .padding(.horizontal, Theme.pagePadding)
-            if pantryMode { PantryView() } else { listPage }
+            switch page {
+            case 1: PantryView()
+            case 2: CouponWalletView()
+            default: listPage
+            }
         }
         .overlay {
             if voiceOpen {
@@ -198,6 +202,7 @@ struct ShoppingListView: View {
     @Environment(AppStore.self) private var store
     @Environment(\.dismiss) private var dismiss
     let chain: String
+    @State private var coupons: [CouponDTO] = []  // Coupon-Leiste (38d)
 
     var body: some View {
         let items = store.listItems.filter { $0.chain == chain && $0.nextWeek != true }
@@ -213,11 +218,15 @@ struct ShoppingListView: View {
                 DisplayHeader(line1: chain.isEmpty ? "Überall" : Labels.chain(chain),
                               line2: total > 0 ? "\(items.filter { !$0.checked }.count) offen · \(euro(total))" : "\(items.filter { !$0.checked }.count) offen")
                     .padding(.bottom, 10)
+                if !coupons.isEmpty { CouponBar(coupons: coupons).padding(.bottom, 6) }
                 ForEach(items) { item in
                     Button { Task { await store.toggle(item) } } label: { ItemRow(item: item, offer: store.offer(for: item)) }
                         .buttonStyle(PressableStyle())
                         .sensoryFeedback(.success, trigger: item.checked)
                         .contextMenu {
+                            if let c = item.coupon {
+                                Button("Coupon zeigen", systemImage: "barcode") { store.checkoutCoupon = c.id }
+                            }
                             Button("Entfernen", systemImage: "trash", role: .destructive) { Task { await store.deleteItem(item) } }
                         }
                 }
@@ -228,6 +237,7 @@ struct ShoppingListView: View {
         }
         .background(Theme.C.bg)
         .toolbar(.hidden, for: .navigationBar)
+        .task { if !chain.isEmpty { coupons = await store.storeCoupons(chain) } }
     }
 }
 

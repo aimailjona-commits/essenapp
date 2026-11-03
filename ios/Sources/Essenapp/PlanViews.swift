@@ -227,6 +227,7 @@ struct RecipeDetailView: View {
     @State private var cooking = Demo.screen == "cooking"
     @State private var rateAfterCooking = false
     @State private var shareCard = Demo.screen == "sharecard"
+    @State private var shareLink = false  // „Als Link teilen“ (56)
     @State private var info: RecipeDTO?  // GET /recipes/{id}: Bewertungen, Favorit, Nährwerte, falls im Plan noch null
     @State private var favorite: Bool?
     @State private var planIt = false
@@ -274,7 +275,7 @@ struct RecipeDetailView: View {
                         }
                         Menu {
                             Button("Als Bild teilen", systemImage: "photo") { shareCard = true }
-                            Button("Als Link teilen (kommt bald)", systemImage: "link") {}.disabled(true)  // Feature 56
+                            Button("Als Link teilen", systemImage: "link") { shareLink = true }  // Feature 56
                         } label: { roundLabel("square.and.arrow.up") }
                         .accessibilityLabel("Rezept teilen")
                     }
@@ -299,7 +300,7 @@ struct RecipeDetailView: View {
                             }
                         }
                     }
-                    if ["instagram", "web"].contains(recipe.source) { sourceRow }
+                    if ["instagram", "web", "shared"].contains(recipe.source) { sourceRow }
                     // Infozeile mit Trennstrichen (Vorlage „Grilled Chicken Breast“)
                     HStack(spacing: 0) {
                         infoCell("clock", "\(recipe.prepMinutes) min")
@@ -459,6 +460,9 @@ struct RecipeDetailView: View {
                         onSubstitute: { m in if let m { swapped = m } })
         }
         .sheet(isPresented: $shareCard) { ShareCardSheet(meal: meal).presentationDetents([.large]).presentationCornerRadius(Theme.R.sheet) }
+        .sheet(isPresented: $shareLink) {
+            RecipeLinkSheet(recipeId: recipe.id, title: recipe.title).presentationDetents([.medium, .large]).presentationCornerRadius(Theme.R.sheet)
+        }
         .sheet(isPresented: $showRating) { RatingSheet(meal: meal).presentationDetents([.medium, .large]).presentationCornerRadius(Theme.R.sheet) }
         .sheet(isPresented: $planIt) { PlanSlotSheet(recipeId: recipe.id, title: recipe.title).presentationDetents([.medium, .large]).presentationCornerRadius(Theme.R.sheet) }
         .sheet(isPresented: $editing) { RecipeFormSheet(editing: details).presentationDetents([.large]).presentationCornerRadius(Theme.R.sheet) }
@@ -528,8 +532,9 @@ extension RecipeDetailView {
         let insta = recipe.source == "instagram"
         let host = URL(string: recipe.sourceUrl)?.host()?.replacingOccurrences(of: "www.", with: "") ?? ""
         return HStack(spacing: 8) {
-            Label("\(insta ? "Instagram" : "Web") · \(recipe.sourceAuthor.isEmpty ? host : recipe.sourceAuthor)",
-                  systemImage: insta ? "camera.fill" : "globe")
+            Label(recipe.source == "shared" ? "von \(recipe.sourceAuthor)"  // übernommen aus einem anderen Haushalt (56)
+                    : "\(insta ? "Instagram" : "Web") · \(recipe.sourceAuthor.isEmpty ? host : recipe.sourceAuthor)",
+                  systemImage: recipe.source == "shared" ? "person.2.fill" : insta ? "camera.fill" : "globe")
                 .font(Theme.F.micro).foregroundStyle(Theme.C.text2).lineLimit(1)
                 .padding(.horizontal, 10).frame(height: 28).background(Theme.C.surface, in: Capsule())
             Spacer(minLength: 0)

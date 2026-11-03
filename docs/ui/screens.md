@@ -56,7 +56,7 @@ Einstellungen/Profil: über den Avatar oben rechts auf dem Start-Screen.
 - Portionen-Stepper
 - Zubereitungsschritte nummeriert
 - Unten fest: `PrimaryButton` „Gekocht – bewerten“
-- Darüber fest: `PrimaryButton` in `accent` „▶︎ Kochen starten“ → S18. Oben rechts runder Teilen-Knopf → Menü „Als Bild teilen“ (Bildkarte, Feature 10), „Als Link teilen“ (kommt mit Feature 56)
+- Darüber fest: `PrimaryButton` in `accent` „▶︎ Kochen starten“ → S18. Oben rechts runder Teilen-Knopf → Menü „Als Bild teilen“ (Bildkarte, Feature 10), „Als Link teilen“ (Feature 56 → S36)
 - Phase 9 (Features 2 + 3), gilt für Plan-Gerichte und gespeicherte Rezepte (aus S12):
   - Kopfzeile: Zurück · Herz (Favorit des Haushalts, `symbolEffect(.bounce)` + Haptik) · bei eigenen/importierten Rezepten runder „…“-Knopf (Bearbeiten → S17, Löschen → Rückfrage „Rezept löschen?“; steht es im Plan, bleibt es dort) · Teilen.
   - Unter dem Namen: Sterne-Durchschnitt + „4,5 · 2 Bewertungen“ (nur wenn bewertet).
@@ -80,7 +80,7 @@ Einstellungen/Profil: über den Avatar oben rechts auf dem Start-Screen.
 - Zustände: keine Angebote für Filter → `EmptyState`; Händler nicht erreichbar → Hinweis-Banner, Rest anzeigen
 - Phase 12:
   - Unter dem Segment Pillen „Diese Woche“ · „Nächste Woche“ (`FilterChip`, mit Anzahl; zweite mit `DealBadge` „neu“, sobald `GET /offers?week=next` etwas liefert, Feature 30). Nächste Woche: Kopf „N ab nächster Woche“, leer → `EmptyState` 👀 „Noch keine Prospekte für nächste Woche“ + „Die meisten Läden zeigen sie ab Donnerstag oder Freitag …“. Im Angebotsdetail statt „noch N Tage“ der Chip „ab 9.11.“; „Zur Einkaufsliste“ legt Vorschau-Angebote in die Gruppe „Nächste Woche“.
-  - Zweite Chip-Reihe unter den Läden: „✓ Nur echte Angebote“ (blendet `kein_echtes` aus, 28), „Bio“, „🌱 Vegan“, „Nutri A/B“ (49), kombinierbar, lokal gefiltert. Hat noch kein Angebot ein Urteil: Hinweis „Noch zu wenig Preisdaten (ab 3 Wochen) – bis dahin zeigt der Filter alle Angebote.“
+  - Zweite Chip-Reihe unter den Läden: „✓ Nur echte Angebote“ (blendet `kein_echtes` aus, 28), „Bio“, „🌱 Vegan“, „Nutri A/B“ (49), „🎁 Bonus-Aktionen“ mit Anzahl (39, `bonus_cents`), kombinierbar, lokal gefiltert. Hat noch kein Angebot ein Urteil: Hinweis „Noch zu wenig Preisdaten (ab 3 Wochen) – bis dahin zeigt der Filter alle Angebote.“
   - `OfferCard`: oben rechts auf dem Bild `VerdictBadge` (klein, gleiche Texte/Farben wie S9, bei `zu_wenig_daten` keiner), unten links `LabelBadges` (Nutri-Score in Originalfarbe, 🌱 vegan, „Bio“). Lieber kein Badge als ein falsches.
   - Kategorie Drogerie: oben Karte „📅 Monatsaktionen“ (dm/Rossmann, `monthly`, horizontale `MiniOffer`s), leer → „Gerade keine Monatsaktion bei dm oder Rossmann.“; das Raster zeigt die übrigen (59). Demo: `nextweek`.
 
@@ -156,7 +156,7 @@ Mockups: `mockups/weitere-screens-v1.html`.
 ### S10 Merkliste (Tab „Angebote“, Segment „Merkliste“, Phase 12: Server `/watch`, Features 27/40/58)
 - Kopf wie S4 („Merkliste / N beobachtet“), Segment auf „Merkliste · N“.
 - Zuerst Abschnitt **„🔥 Diese Woche günstig“** (Einträge mit `hits`): Zeilen (Kachel) mit Produktbild auf Kategorie-Tönung, Name, „1,79 € bei dm“ + `DealBadge` „−25 %“, Chevron → S9 des günstigsten Treffers.
-- Dann **„👀 Beobachtet“** (Produkte ohne Treffer): Name · Marke, darunter „Alarm unter 2,00 € · hält ca. 6 Wochen · leer ca. 1.12.“ bzw. „gerade nicht im Angebot“ (eine „zuletzt im Angebot“-Angabe liefert das Backend nicht). Antippen → Bearbeiten-Sheet.
+- Dann **„👀 Beobachtet“** (Produkte ohne Treffer): Name · Marke, darunter „Alarm unter 2,00 € · hält ca. 6 Wochen · leer ca. 1.12.“ und „zuletzt im Angebot: KW 44 bei Lidl (1,99 €)“ (`last_offer_week/chain/price_cents`; fehlt alles → „gerade nicht im Angebot“). Drogerie-Coupon (59) als Badge „🎟 −20 %“ (antippen → Kasse S31b). Antippen → Bearbeiten-Sheet.
 - Dann **„🔔 Preisalarme“** (Zutaten, 40) mit Knopf „+ Zutat“ rechts: „Butter unter 1,49 €“ / „Lachsfilet unter 15,00 €/kg“, darunter „greift: 3,49 € bei Lidl – Lachsfilet“ (`success`) bzw. „wartet auf ein passendes Angebot“. Leer: Hinweis „Z. B. „Butter unter 1,49 €“ oder „Hähnchenbrust unter 7 €/kg“ – auch per langem Druck auf eine Rezept-Zutat.“
 - Jede Zeile lange drücken → „Bearbeiten“, „Entfernen“.
 - Unten zwei Buttons nebeneinander: `SecondaryButton` „Suchen“ und `PrimaryButton` „Barcode scannen“.
@@ -201,16 +201,17 @@ Mockups: `mockups/weitere-screens-v1.html`.
 ### S13 Einstellungen (Push-Screen über Avatar)
 - Kopf: Avatar groß, Name, Haushaltsname.
 - Gruppen als weiße Karten mit Zeilen (Icon im getönten Quadrat, Titel, aktueller Wert grau, Chevron):
-  - **Mein Profil** (ganz oben): Emoji-Avatar, Name, Ziel → S15
+  - **Mein Profil** (ganz oben): Emoji-Avatar, Name, Ziel → S15; darunter Zeile „Erfolge“ (🏅, „Sparen & Gesundheit“) → S34
+  - Phase 13: in **Einkaufen** Zeile „Ausgaben“ („Monats-Dashboard“) → S32
   - **Haushalt:** Personen, Ernährung, Allergien, Mag ich nicht
   - **Einkaufen:** Ort (PLZ), Läden & Filialen, Budget Lebensmittel, Budget Drogerie
   - **Planung:** Mahlzeiten, Tage, Küchen, Nährwertziel, Max. Kochzeit
   - Phase 11: in der Gruppe **Präferenzen** zusätzlich Zeile „Abwechslung“ („max. 1× Pasta · 2 Veggie-Tage“) und – nach einer Trennlinie – „Frühstück & Snacks“ („jede Woche auf die Liste“) → S29.
   - **Benachrichtigungen** (Push über Apple/APNs, kein ntfy; Test-Push: 422 → Toast „Erst Mitteilungen erlauben“, 502 → „Apple hat abgelehnt“; die Wochenplan-Erinnerung hat die Aktionen „Plan erstellen“ → S7 und „Später“): Status der iOS-Erlaubnis (abgelehnt → „In iOS-Einstellungen öffnen“), „Test-Push senden“, Push an/aus, Wochenplan-Erinnerung (an/aus, Wochentag, Uhrzeit), Ruhezeit (an/aus, Von/Bis), Angebotsalarme an/aus. Vor der iOS-Abfrage einmal ein Erklär-Sheet „Nichts verpassen“ (nach dem Onboarding bzw. beim ersten Öffnen der Einstellungen). Antippen einer Mitteilung öffnet `essenapp://start|generator|offer/<id>|recipe/<id>|list/<kette>`.
     - Phase 11 (Feature 24): unter der Ruhezeit Schalter „Lunchbox-Erinnerung am Vorabend“ (Standard 20:00) + Uhrzeit, Hinweis „🥡 „Lunchbox für morgen vorbereiten“ – nur am Abend vor deinen Lunchbox-Tagen (Mein Profil).“ (`PATCH /me/push/settings {lunchbox_push}`, aus = null). Die Mitteilung öffnet `essenapp://recipe/<id>` → Tab Rezepte, S3 (Plan-Gericht mit Mengen des Slots, sonst gespeichertes Rezept).
-    - Karte **Standort-Erinnerung** (Feature 36) unter den Push-Einstellungen: Schalter „Erinnern, wenn ich in einem Laden bin“, darunter (`micro`, `text2`) „Bis zu 20 deiner Läden (nächste zuerst), 8–21 Uhr, höchstens einmal pro Laden und Tag – nur wenn dort etwas auf der Liste steht.“ Eingeschaltet: „N Läden überwacht“ mit 📍-Symbol (`success`); ohne Laden mit Standort „Noch kein Laden mit Standort – wähle deine Läden auf der Karte (Einstellungen › Läden & Filialen).“; Standort nicht „Immer“ → Hinweis in `danger` („Standort steht auf „Beim Verwenden“ – für Erinnerungen „Immer“ wählen.“ bzw. „Standort ist in iOS nicht erlaubt.“) + `SecondaryButton` „In iOS-Einstellungen öffnen“.
+    - Karte **Standort-Erinnerung** (Feature 36) unter den Push-Einstellungen: Schalter „Erinnern, wenn ich in einem Laden bin“, darunter (`micro`, `text2`) „Bis zu 20 deiner Läden (nächste zuerst), 8–21 Uhr, höchstens einmal pro Laden und Tag – nur wenn dort etwas auf der Liste steht oder ein Coupon gilt.“ Eingeschaltet: „N Läden überwacht“ mit 📍-Symbol (`success`); ohne Laden mit Standort „Noch kein Laden mit Standort – wähle deine Läden auf der Karte (Einstellungen › Läden & Filialen).“; Standort nicht „Immer“ → Hinweis in `danger` („Standort steht auf „Beim Verwenden“ – für Erinnerungen „Immer“ wählen.“ bzw. „Standort ist in iOS nicht erlaubt.“) + `SecondaryButton` „In iOS-Einstellungen öffnen“.
     - Einschalten ohne Erlaubnis „Immer“ → Erklär-Sheet (wie „Nichts verpassen“, halbe Höhe): 📍 „Erinnerung im Laden“, „Bist du bei einem deiner Läden, sagen wir dir, was dort auf der Liste steht. Dafür braucht die App den Standort „Immer“ – er bleibt auf deinem iPhone.“, `PrimaryButton` „Standort erlauben“ (iOS-Abfrage „Immer“, danach ggf. Mitteilungen; schon abgelehnt → iOS-Einstellungen), `SecondaryButton` „Später“. Demo: `storeask`.
-    - Mitteilung (lokal, 120 m um den Laden): „🛒 Du bist bei Rewe: 4 Sachen auf der Liste“ (Coupon-Zusatz „· Coupon Kaffee“ kommt mit 38d) → öffnet die Laden-Liste S5b.
+    - Mitteilung (lokal, 120 m um den Laden): „🛒 Du bist bei Rewe: 4 Sachen auf der Liste · Coupon Kaffee“ (38d, bald ablaufender Coupon der Kette); nichts offen, aber Coupon → „🎟 Du bist bei Rewe: Denk an deinen Payback-Coupon für Kaffee (läuft So ab)“ → öffnet die Laden-Liste S5b.
   - **Familie:** Mitglieder (Avatare), „Einladungslink teilen“
   - **Rezepte** (Phase 9): „Teilen aus Instagram“ → S21; Schalter „Schritt-Bilder erzeugen“ mit Untertitel „ca. 2 Cent/Rezept“ (nur wenn `step_images_available`, speichert `PATCH /household {step_images}`).
   - **App:** Erscheinungsbild (Menü **System · Hell · Dunkel**, Feature 68, sofort wirksam für alle Screens und Sheets), Server-Adresse, Version, „Neu installieren fällig in 5 Tagen“ (7-Tage-Signatur, E2)
@@ -226,7 +227,7 @@ Mockups: `mockups/weitere-screens-v1.html`.
 - Fester `PrimaryButton` „Speichern“ (PATCH, Toast „Profil gespeichert“). Zustände: Laden → Skeleton, Fehler → `ErrorState`.
 - Dazu: S3 zeigt „Für: 🧑‍🍳 Jona ▾“ (alle Profile) mit „Deine Portion: 520 g · 2,10 €“ und je Zutat die Menge der Person; Portionen-Stepper skaliert weiter das ganze Rezept. S2-Kopf zeigt die Avatare der Esser des Tages.
 
-### S16 Vorrat (Tab „Einkauf“, Pille „Liste | Vorrat“, Feature 60)
+### S16 Vorrat (Tab „Einkauf“, Pille „Liste | Vorrat | Coupons“, Feature 60)
 - `DisplayHeader` „Vorrat / N Sachen zu Hause“ + runder „+“-Button.
 - `SearchField`, `CategoryCircles` (Kategorie aus dem Namen, eigene Gruppe „Basics“ 🧂).
 - Zeilen (weiße Kacheln): Emoji auf Kategorie-Tönung, Name, Menge, Haltbarkeits-Chip („läuft in 2 Tagen ab“ orange, „abgelaufen“ rot, sonst grau), rechts Stepper (g/ml 10er bzw. ab 100 50er, Stück 1er; 0 → Eintrag weg). Basics statt Stepper Schalter vorhanden/leer; leer → kommt auf die Liste, Toast „Öl steht auf der Liste“.
@@ -339,3 +340,73 @@ Mockups: `mockups/weitere-screens-v1.html`.
 
 ### Einstellungen › Präferenzen › Abwechslung (Feature 12)
 - Unter dem Präferenzen-Formular Überschrift „🔄 Abwechslung“ + „Der Planer hält diese Regeln ein – Verstöße zeigt der Plan-Kopf.“, drei Karten mit Stepper-Zeilen (Wert groß rechts, Zahlen-Übergang, Haptik): „🍝 Beilagen pro Woche“ (Pasta höchstens 1×, Reis 2×, Kartoffeln 2×; 0–14), „🐟 Fisch, Fleisch, Gemüse“ (Fisch mindestens 0–3, Vegetarische Tage 0–7, Rotes Fleisch höchstens 0–14), „🔁 Wiederholungen“ (Gleiches Gericht frühestens nach 1–12 Wochen, Schalter „Gleiche Küche nicht zwei Tage hintereinander“). Speichern mit dem festen Button → `PATCH /household {variety}`. Demo: `variety`.
+
+## Phase 13/14 – Bonus, Ausgaben, Motivation (S31–S37)
+
+Demo: `wallet`, `bonus`, `coupon`, `couponadd`, `spending`, `achievements`, `unlock`, `review`, `reviews`, `recipelink`, `sharedrecipe` (hell + dunkel).
+
+### S31 Coupons (Tab „Einkauf“, Pille „Liste | Vorrat | Coupons“, Feature 38/59)
+- `DisplayHeader` „Coupons / N gültig“ + runder schwarzer „+“ → S31c.
+- Zwei Konto-Karten nebeneinander (Kachel, `card`): Programm-Emoji im `accentSoft`-Quadrat, rechts ±-Symbol; „Payback“ / „1.240 °P“ (`title2` rounded, Zahlen-Übergang) / „≈ 12,40 €“; „Rewe Bonus“ / „8,50 €“ / „+2,30 € im Monat“ (`success`). Antippen → S31d.
+- Coupon-Zeilen (Kachel): Laden-Logo bzw. Programm-Emoji (🅿️ Payback, 🎁 Rewe Bonus, 🧴 dm/Rossmann, 🎟 sonst), Vorteil fett („10fach Punkte“), „Payback · Kaffee“ (sonst Kategorie bzw. „den ganzen Einkauf“), Ablauf („läuft heute/morgen/So ab“ ≤ 2 Tage als `DealBadge` soft, sonst „gültig bis 30.11.“ `text2`), „ab 20,00 € Einkauf“; rechts Barcode-/QR-Symbol. Reihenfolge vom Server (bald ablaufende oben). Antippen → S31b; lange drücken → „An der Kasse zeigen“, „Bearbeiten“, „Löschen“.
+- Abschnitt „⌛️ Abgelaufen“: gleiche Zeilen grau (Graustufen, 50 %).
+- Laden → 3 Skeleton-Zeilen; Fehler → `ErrorState`; leer → `EmptyState` 🎟 „Noch keine Coupons“ + „Coupon hinzufügen“.
+
+### S31b Kasse (Vollbild aus S31, Badge, Coupon-Leiste, Push `essenapp://coupon/<id>`)
+- Kopf „An der Kasse zeigen“ + runder ✕. Helligkeit auf Maximum, beim Schließen zurück.
+- Weißes Plättchen (immer hell, Radius Karte, Schatten `float`): Logo + Partner + Programm, Vorteil groß (`largeTitle` heavy rounded), „für Kaffee“, Barcode (Code128/QR per CoreImage, EAN-13/EAN-8 selbst gezeichnet, ganze Pixel je Modul, Ruhezone), darunter der Code in Monospace (nicht bei QR), Chips Ablauf + Mindestumsatz.
+- Ohne Code: „Kein Barcode gespeichert – zeig den Coupon in der Payback-App oder scanne ihn hier ein.“ + `SecondaryButton` „Barcode ergänzen“ → S31c (Bearbeiten). Unbekannte ID → `EmptyState` „Coupon nicht gefunden“.
+
+### S31c Coupon hinzufügen / prüfen / bearbeiten (Sheet)
+- Auswahl: Zeilen „📸 Coupon fotografieren“ (Kamera; Pille „Foto aus der Mediathek“ darunter), „▦ Barcode scannen“ (Scanner aus S10 mit Code128/EAN/QR, Titel „Coupon-Barcode scannen“, Pille „Barcode oder QR-Code in den Rahmen halten“), „✏️ Manuell eingeben“.
+- Foto → Skeleton + „Coupon wird gelesen …“ (`POST /coupons/scan`, JPEG ≤ 5 MB) → Formular „Coupon prüfen / Aus dem Foto gelesen – bitte kurz prüfen.“; Fehler: 422 „Das Foto konnte nicht gelesen werden …“, 502 „Die Erkennung ist gerade nicht erreichbar …“ + „Anderes Foto“ / „Manuell eingeben“.
+- Formular (Karten): **Partner** (Chips Payback · Rewe Bonus · dm · Rossmann · Sonstige; Feld Partner; Menü „Laden“ mit den Läden des Haushalts, „Kein bestimmter“), **Vorteil** (Segment Xfach · € Bonus · % Rabatt · Sonstiges + Zahl, Text – leer → „10fach Punkte“/„0,50 € Bonus“/„20 % Rabatt“, Produkt/Marke, Kategorie-Menü, Mindestumsatz €), **Gültigkeit** (Schalter „Gültig bis“ + Datum, Hinweis Erinnerung 2 Tage vorher), **Barcode** (Vorschau auf weißem Plättchen + Typ-Segment, Feld „Code eintippen“, „Barcode scannen“/„Neu scannen“). `PrimaryButton` „Speichern“ (aktiv mit Partner oder Programm) → `POST`/`PATCH /coupons`, Toast; beim Bearbeiten „Löschen“ rot.
+
+### S31d Plus/Minus (Sheet aus der Konto-Karte, Höhe passt sich an)
+- Kopf Emoji + „Payback“, runder ✕; Kontostand groß (40 pt rounded) + „≈ 12,40 €“.
+- `PillSegment` „Bekommen · Eingelöst · Korrigieren“, Feld mit „+ / − / =“ und Einheit (°P Ziffern, € Dezimal), Schnell-Chips (10/50/100/500 °P bzw. 0,50/1,00/2,00/5,00 €).
+- `PrimaryButton` „Heute bekommen: +60 °P“ / „Eingelöst: −500 °P“ / „Kontostand: 1.240 °P“ → `POST /bonus/{program}` `{delta}` bzw. `{set}`; Toast „Payback: 1.300 °P“; 422 → „Kontostand darf nicht negativ werden“. Hinweis: Bekommen zählt als Ersparnis „Bonus“, Korrektur nicht.
+
+### Phase 13 – Ergänzungen bestehender Screens
+- **S4/S9:** Rewe-Bonus-Aktion (39) als `DealBadge` (ok, Orange) „🎁 0,50 € Bonus“ neben dem Rabatt-Pill der `OfferCard` und im dunklen Kopf von S9.
+- **S5 `ItemRow`:** Coupon-Badge „🎟 10fach“ (`ItemOut.coupon`, nur offene Artikel), antippen → S31b. **S5b Laden-Liste:** unter dem Kopf **Coupon-Leiste** (`GET /coupons?chain=`, nur wenn vorhanden): `accentSoft`-Kapseln „🎟 10fach“ (`accentDeep`) + „Kaffee“ / „läuft So ab“ (≤ 2 Tage `deal`), antippen → S31b; Zeile lange drücken → zusätzlich „Coupon zeigen“.
+- **S1 Start:** nach „Vorrat anlegen lohnt sich“ Karte „🧾 Ausgaben November“: „182,40 € von 257,14 €“ + Fortschrittsbalken (`accent`, über Budget `danger`), Chevron → S32; danach Karte „📖 Wochenrückblick KW 45“ (S35).
+
+### S32 Monats-Dashboard (Push-Screen aus S1 und S13, Feature 34)
+- Kopf: Zurück, rechts runder Teilen-Knopf (CSV `ausgaben-2026-11.csv`, nur mit Käufen). `DisplayHeader` „Ausgaben / November 2026“, darunter „‹ Oktober“ … „Dezember ›“ (nicht über den aktuellen Monat hinaus); waagerecht wischen wechselt den Monat (Haptik).
+- Karte Ring (104 pt, `accent`, über Budget `danger`, wächst beim Erscheinen) mit „61 % vom Budget“; daneben „Ausgegeben“ + Summe (30 pt rounded, zählt hoch), „Budget 257,14 €“ (ohne Budget „Kein Budget eingestellt“), „davon 12,60 € geschätzt“, „+8,6 % zum Oktober“ (`danger` mehr / `success` weniger).
+- Karte „💰 Gespart“ (Summe `success`) mit zwei `surface`-Kacheln „Angebote“ / „Bonus“.
+- Karte „Pro Woche“: Swift-Charts-Balken je KW (`accent`, aktuelle Woche `accentDeep`), Betrag über dem Balken, Balken wachsen beim Erscheinen.
+- Karten „Pro Laden“ (Ring-Torte in `Theme.storeColor`, Legende mit Farbpunkt, Logo, Name, %) und „Pro Kategorie“ (Kategorie-Farben + Emoji); Torte dreht und skaliert beim Erscheinen auf.
+- Karte „Top 5 teuerste“: Rang im Kreis, Name, `StoreChip`, Datum, Badge „geschätzt“, Preis.
+- Laden → 3 Skeleton-Karten; Fehler → `ErrorState`; Monat ohne Käufe → `EmptyState` 🧾 „Noch keine Einkäufe im Oktober“ + „Ausgaben entstehen, wenn ihr Artikel auf der Liste abhakt …“.
+
+### S34 Erfolge (Push-Screen aus S13 › Mein Profil, Push `essenapp://achievements`, Feature 54)
+- Zurück, `DisplayHeader` „Erfolge / 5 von 18 erreicht“; Abschnitte „💰 Sparen · Haushalt“ und „💪 Gesundheit · Jona“, je Raster mit 3 Spalten.
+- Medaille 76 pt: erreicht = Verlauf `highlight` → `accent` mit weißem Innenring und Schatten, darunter Titel + Datum (`accentDeep`); gesperrt = `surface`, Emoji grau/halb transparent, Fortschrittsring `accent`, darunter „34 / 50 €“ (`text3`). Erscheinen gestaffelt.
+- Antippen → Sheet (halbe Höhe): Medaille 130 pt, Titel, „✓ Erreicht am 2.11.2026“ (`success`) bzw. Fortschrittsbalken + „34 / 50 €“ + „Noch 16 € bis zum Ziel“.
+- Laden → 9 Skeleton-Kacheln; Fehler → `ErrorState`.
+- **Vollbild-Moment** (über allem, sobald `GET /achievements` etwas mit `new` liefert – beim Start/Neuladen und in S34): `heroDark` 94 %, Konfetti (aus bei „Bewegung reduzieren“), „Neuer Erfolg!“, Medaille 170 pt fliegt gedreht von oben ein (Feder), Titel, Gruppe, Haptik; `PrimaryButton` (`accent`) „Weiter (1/2)“ bzw. „Super!“ → danach `POST /achievements/seen`.
+
+### S35 Wochenrückblick (Vollbild-Story aus S1, Archiv, Push `essenapp://review/<woche>`, Feature 55)
+- 6 Seiten, wischen oder tippen (linkes Drittel zurück, sonst weiter); oben 6 Fortschrittsstriche, „📖 Wochenrückblick KW 45“, runde Knöpfe Teilen + ✕ (Weiß 18 %). Weiße Schrift; Hintergrund je Seite `accent`, `success`, `heroDark`, `accentDeep`, `heroDark`, `accent` (sanfter Verlauf).
+  1. „Deine Woche“ / „KW 45 · 2.–8. November“: gekochte Gerichte (84 pt, zählt hoch), „von 9 geplanten“; Lieblingsgericht (Tellerfoto 150 pt springt auf, Titel, Sterne) bzw. Hinweis „Bewertet Gerichte mit „Gekocht ★“ …“.
+  2. „Gespart & ausgegeben“: Ausgegeben (zählt hoch), „davon … geschätzt“, Glas-Kacheln „durch Angebote“ / „Bonus“, Kapsel „✓ Im Budget (60,00 €)“ bzw. „⚠ 8,90 € über Budget“.
+  3. „Gesundheit / Schnitt pro Tag“: je Person Kachel mit Emoji, Name, „🥦 18 Pflanzen“, Balken kcal (`kcal`) und Protein (`protein`) gegen das Ziel.
+  4. „Vorrat & Reste“: Kacheln „Reste verwendet“, „noch übrig“; „weggeworfen“ nur, wenn erfasst (`thrown_away` ≠ null).
+  5. „Neue Erfolge“: Medaillen springen gestaffelt auf + Konfetti; leer „Diese Woche kein neuer Erfolg – nächste Woche klappt’s!“.
+  6. „Nächste Woche günstig“: bis zu 3 Zeilen (Bild auf Plättchen, Titel, Logo, „3,49 € statt 4,99 €“, „−30 %“), `PrimaryButton` „✨ Plan erstellen“ → schließt und öffnet S7.
+- Teilen → Sheet „Als Bild teilen“ (wie Feature 10): Bildkarte 1080×1350, immer hell: „Meine Woche“, KW + Zeitraum, 4 Kacheln (gekocht, gespart, Pflanzen, neue Erfolge), Lieblingsgericht, „Mit Essenapp geplant“.
+- Start-Karte (S1): 📖 im `accentSoft`-Quadrat, „Wochenrückblick KW 45“, „5 gekocht · 14,50 € gespart“, rechts „Archiv“ (`accentDeep`) → S35b. Sonntags öffnet sich die Story beim ersten Öffnen der Woche einmal von selbst.
+- Laden → Spinner (weiß); Fehler → Satz + „Erneut versuchen“.
+
+### S35b Rückblicke (Archiv, Push-Screen)
+- Zurück, `DisplayHeader` „Rückblicke / 3 Wochen“; Zeilen (Kachel): „KW 45“ im `accentSoft`-Quadrat, „Woche 45 · 2026“, „5 gekocht · 68,90 € ausgegeben“, Chevron → S35. Leer → `EmptyState` 📖 „Noch kein Rückblick“ / „Der erste kommt am Sonntag um 19 Uhr.“; Laden → Skeleton; Fehler → `ErrorState`.
+
+### S36 Als Link teilen (Sheet aus S3 › Teilen, Feature 56)
+- „Als Link teilen“ + runder ✕, Satz „Wer den Link öffnet, sieht Foto, Zutaten und Schritte – mit Essenapp lässt sich „…“ in die eigenen Rezepte übernehmen.“
+- Link-Kachel (🔗 `accent`, Monospace, auswählbar), `PrimaryButton` „Teilen“ (System-Teilen mit „Rezept „…“ aus unserer Essenapp:“), `SecondaryButton` „Link kopieren“ → „Kopiert ✓“ (Haptik). Laden → 2 Skeleton; Fehler → `ErrorState`.
+
+### S37 Geteiltes Rezept (Sheet über allem, Deep-Link `essenapp://import-recipe/<code>`, Feature 56)
+- Kopf „Geteiltes Rezept“ + ✕; Tellerfoto 180 pt, Titel, Chip „👥 von Familie Müller“, „45 min · 4 Portionen · 3 Schritte“, Beschreibung, Karte „Zutaten“ (Name, Menge).
+- Fester `PrimaryButton` „Übernehmen“ → `POST /shared-recipes/{code}/import`, Toast „„Omas Linsensuppe“ liegt jetzt in deinen Rezepten“, Sheet zu → Tab Rezepte › S3 der Kopie (Quelle-Chip „👥 von Familie Müller“). Ungültiger Code (404 oder unzulässige Zeichen) → `EmptyState` 🤷 „Rezept-Link ungültig“; Fehler → `ErrorState`.

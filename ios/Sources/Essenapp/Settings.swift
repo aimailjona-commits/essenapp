@@ -216,6 +216,10 @@ struct SettingsView: View {
                         }
                     }
                     .buttonStyle(PressableStyle())
+                    NavigationLink { AchievementsView() } label: {  // Profil › Erfolge (54)
+                        row("medal.fill", Theme.C.accent, "Erfolge", "Sparen & Gesundheit")
+                    }
+                    .buttonStyle(PressableStyle())
                 }
 
                 if let h = store.household {
@@ -226,6 +230,9 @@ struct SettingsView: View {
                         }
                         NavigationLink { PreferencesView() } label: {
                             row("eurosign.circle.fill", Theme.C.warning, "Budget", "\(euro(h.budgetFoodWeekCents)) / Woche")
+                        }
+                        NavigationLink { SpendingView() } label: {  // Monats-Dashboard (34)
+                            row("chart.pie.fill", Theme.C.success, "Ausgaben", "Monats-Dashboard")
                         }
                         HStack(spacing: 12) {  // Vorratsplatz für Vorratskauf-Tipps (31)
                             icon("shippingbox.fill", Theme.C.fat)

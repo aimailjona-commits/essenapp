@@ -12,6 +12,7 @@ struct ContentView: View {
         PendingRequest.selfTest()
         StoreReminder.selfTest()
         SavingSelfTest.run()
+        Month.selfTest()
         #endif
     }
 
@@ -89,19 +90,21 @@ struct MainView: View {
     @State private var quickOpen = Demo.screen == "quick"
     @State private var showGenerator = ["generator", "generating", "singlestore"].contains(Demo.screen ?? "")
     @State private var showRecipeForm = false  // Schnell-Aktion „Rezept anlegen“ (S17)
+    @State private var deepAchievements = false  // Push „Neuer Erfolg“ (54)
+    @State private var sharedCode: String? = Demo.screen == "sharedrecipe" ? Demo.sharedRecipe.code : nil  // essenapp://import-recipe/<code> (56)
 
     private static var demoTab: AppTab {
         switch Demo.screen {
         case "offers", "offer", "stores", "watch", "scanner", "nextweek", "offerstock": .angebote
         case "plan", "recipe", "cooking", "sharecard", "recipes", "myrecipe", "recipeform", "imported", "importlink", "guests": .rezepte
-        case "shopping", "list", "pantry", "fridgecam", "fridgereview", "cooknow", "offline", "voiceadd": .einkauf
+        case "shopping", "list", "pantry", "fridgecam", "fridgereview", "cooknow", "offline", "voiceadd", "wallet", "bonus", "coupon": .einkauf
         default: .start
         }
     }
 
     /// Demo-Screens, die in der App als Sheet bzw. in der Erweiterung ohne Tab-Leiste erscheinen.
     private static let modalDemo = ["recipeform", "fridgecam", "fridgereview", "cooknow", "sharepair", "shareimport", "shareresult", "importlink",
-                                    "nomood", "substitute", "leftovers"]
+                                    "nomood", "substitute", "leftovers", "couponadd"]
 
     @ViewBuilder private var tabContent: some View {
         switch tab {
@@ -143,6 +146,11 @@ struct MainView: View {
                     case ("leftovers", _): RatingSheet(meal: Demo.plan.entries[2], demoRests: true)
                     case ("basics", _): WeeklyBasicsView()
                     case ("variety", _): PreferencesView()
+                    case ("couponadd", _): CouponAddSheet()
+                    case ("spending", _): SpendingView()
+                    case ("achievements", _), ("unlock", _): AchievementsView()
+                    case ("reviews", _): ReviewArchiveView()
+                    case ("recipelink", _): RecipeLinkSheet(recipeId: Demo.savedRecipe.id, title: Demo.savedRecipe.title)
                     default: tabContent.id(tab).transition(.opacity)
                     }
                 }
@@ -158,6 +166,7 @@ struct MainView: View {
                         SavedRecipeView(recipeId: id)
                     }
                 }
+                .navigationDestination(isPresented: $deepAchievements) { AchievementsView() }
             }
             .id("\(tab)-\(resetToken)")  // Tab-Wechsel schließt offene Detailseiten
             .animation(.easeInOut(duration: 0.2), value: tab)
@@ -184,6 +193,8 @@ struct MainView: View {
             if !Self.modalDemo.contains(Demo.screen ?? "") {
                 TabBar(selected: $tab, quickOpen: $quickOpen, badges: [.angebote: store.watchHits]) { resetToken += 1 }
             }
+
+            if !store.newAchievements.isEmpty { UnlockOverlay().zIndex(2) }  // Vollbild-Moment (54)
         }
         .sheet(isPresented: Binding(get: { store.scanning }, set: { on in store.scanning = on })) {
             FridgeScanSheet().presentationDetents([.large]).presentationCornerRadius(Theme.R.sheet)
@@ -191,6 +202,26 @@ struct MainView: View {
         .fullScreenCover(isPresented: Binding(get: { store.barcode }, set: { on in store.barcode = on })) { BarcodeScanView() }
         .sheet(isPresented: $showGenerator) { PlanGeneratorSheet().presentationDetents([.large]) }
         .sheet(isPresented: $showRecipeForm) { RecipeFormSheet().presentationDetents([.large]).presentationCornerRadius(Theme.R.sheet) }
+        .fullScreenCover(isPresented: Binding(get: { store.checkoutCoupon != nil }, set: { on in if !on { store.checkoutCoupon = nil } })) {
+            if let id = store.checkoutCoupon { CouponCheckoutView(id: id) }
+        }
+        .fullScreenCover(isPresented: Binding(get: { store.review != nil }, set: { on in if !on { store.review = nil } })) {
+            ReviewStoryView(week: store.review ?? "") {
+                Task { try? await Task.sleep(for: .milliseconds(600)); showGenerator = true }  // erst nach dem Schließen der Story
+            }
+        }
+        .sheet(isPresented: Binding(get: { sharedCode != nil }, set: { on in if !on { sharedCode = nil } })) {
+            if let code = sharedCode {
+                SharedRecipeSheet(code: code) { id in
+                    Task {
+                        withAnimation(Theme.spring) { tab = .rezepte }
+                        try? await Task.sleep(for: .milliseconds(450))  // Sheet zu, Tab-Wechsel baut den NavigationStack neu
+                        deepRecipe = id
+                    }
+                }
+                .presentationDetents([.large]).presentationCornerRadius(Theme.R.sheet)
+            }
+        }
         .task { await store.loadAll() }
         .onChange(of: store.api.online) { _, on in  // Netz zurück → Warteschlange senden und frisch laden (66)
             if on { Task { await store.loadAll() } }
@@ -208,7 +239,8 @@ struct MainView: View {
     }
 
     /// Router für essenapp://start, essenapp://generator, essenapp://offer/<id>, essenapp://recipe/new, essenapp://recipe/<id>,
-    /// essenapp://list/<kette>.
+    /// essenapp://list/<kette>, essenapp://coupon/<id>, essenapp://review/<woche>, essenapp://achievements,
+    /// essenapp://import-recipe/<code>.
     private func open(_ url: URL) async {
         guard url.scheme == "essenapp" else { return }
         withAnimation(Theme.spring) { quickOpen = false }
@@ -237,6 +269,20 @@ struct MainView: View {
             withAnimation(Theme.spring) { tab = .einkauf }
             try? await Task.sleep(for: .milliseconds(350))
             deepList = chain
+        case "coupon":  // Ablauf-Push (38a) → Kasse
+            guard let id = Int(url.lastPathComponent) else { return }
+            store.checkoutCoupon = id
+        case "review":  // Wochenrückblick-Push So 19:00 (55)
+            let week = url.lastPathComponent
+            store.review = week.count == 8 && week.dropFirst(4).hasPrefix("-W") && week.filter(\.isNumber).count == 6 ? week : ""  // „2026-W45“
+        case "achievements":  // „Neuer Erfolg“ (54)
+            withAnimation(Theme.spring) { tab = .start }
+            try? await Task.sleep(for: .milliseconds(350))
+            deepAchievements = true
+        case "import-recipe":  // geteiltes Rezept (56)
+            let code = url.lastPathComponent
+            guard AppStore.validShareCode(code) else { store.flash("Rezept-Link ungültig"); return }
+            sharedCode = code
         default:
             break
         }

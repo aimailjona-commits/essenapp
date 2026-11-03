@@ -28,7 +28,7 @@
 	<key>NSPhotoLibraryAddUsageDescription</key>
 	<string>Zum Sichern von Rezept-Bildkarten in deinen Fotos.</string>
 	<key>NSCameraUsageDescription</key>
-	<string>Zum Fotografieren von Kühlschrank und Vorrat (Lebensmittel erkennen), für Fotos deiner eigenen Rezepte und zum Scannen von Barcodes.</string>
+	<string>Zum Fotografieren von Kühlschrank und Vorrat (Lebensmittel erkennen), für Fotos deiner eigenen Rezepte und Coupons sowie zum Scannen von Barcodes.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>Zum Auswählen von Fotos deines Kühlschranks oder deiner Rezepte.</string>
 	<!-- shortcut: HTTP zum lokalen Backend erlaubt; entfernen, sobald der VPS mit HTTPS läuft (Phase 7) -->

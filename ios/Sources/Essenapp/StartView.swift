@@ -91,6 +91,8 @@ struct StartView: View {
                     BudgetHintCard()  // Budget-Rest / über Budget (43)
                     NextWeekCard()  // nächste Woche günstiger (30)
                     StockupCard()  // Vorrat anlegen lohnt sich (31)
+                    SpendingCard()  // Ausgaben des Monats (34)
+                    ReviewCard()  // Wochenrückblick (55)
                     FavoriteDealsCard().appear(delay: 0.12)
                     FridgeCard().appear(delay: 0.14)
                     DealsTeaser().appear(delay: 0.15)

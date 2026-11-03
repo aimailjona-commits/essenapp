@@ -85,8 +85,15 @@ final class StoreReminder: NSObject, CLLocationManagerDelegate {
     /// Nur 8–21 Uhr.
     static func allowed(hour: Int) -> Bool { (8..<21).contains(hour) }
 
-    static func message(chain: String, open: Int) -> String {
-        "🛒 Du bist bei \(Labels.chain(chain)): \(open == 1 ? "1 Sache" : "\(open) Sachen") auf der Liste"
+    /// Mit Coupon (38d): „… auf der Liste · Coupon Kaffee“; nur Coupon: „Denk an deinen Payback-Coupon für Kaffee (läuft So ab)“.
+    static func message(chain: String, open: Int, coupon: CouponDTO? = nil) -> String {
+        let store = Labels.chain(chain)
+        guard open > 0 else {
+            guard let c = coupon else { return "" }
+            return "🎟 Du bist bei \(store): Denk an deinen \(c.programName.replacingOccurrences(of: " ", with: "-"))-Coupon für \(c.subject)"
+                + (c.expiryText.map { e in " (\(e))" } ?? "")
+        }
+        return "🛒 Du bist bei \(store): \(open == 1 ? "1 Sache" : "\(open) Sachen") auf der Liste" + (coupon.map { c in " · Coupon \(c.short)" } ?? "")
     }
 
     #if DEBUG
@@ -101,6 +108,13 @@ final class StoreReminder: NSObject, CLLocationManagerDelegate {
         assert(allowed(hour: 8) && allowed(hour: 20) && !allowed(hour: 21) && !allowed(hour: 7))
         assert(message(chain: "rewe", open: 4) == "🛒 Du bist bei Rewe: 4 Sachen auf der Liste")
         assert(message(chain: "lidl", open: 1) == "🛒 Du bist bei Lidl: 1 Sache auf der Liste")
+        var kaffee = Demo.coupons[0]  // Payback 10fach auf Kaffee
+        kaffee.daysLeft = 20
+        kaffee.validUntil = "2026-11-30"
+        assert(message(chain: "rewe", open: 4, coupon: kaffee) == "🛒 Du bist bei Rewe: 4 Sachen auf der Liste · Coupon Kaffee")
+        assert(message(chain: "rewe", open: 0, coupon: kaffee) == "🎟 Du bist bei Rewe: Denk an deinen Payback-Coupon für Kaffee (gültig bis 30.11.)")
+        assert(message(chain: "rewe", open: 0).isEmpty)
+        Coupons.selfTest()
     }
     #endif
 
@@ -115,11 +129,13 @@ final class StoreReminder: NSObject, CLLocationManagerDelegate {
         let background = UIApplication.shared.beginBackgroundTask(expirationHandler: nil)  // im Hintergrund geweckt: Zeit für die Abfrage
         defer { UIApplication.shared.endBackgroundTask(background) }
         let open = await Self.openItems(chain)
-        guard open > 0 else { return }
+        let coupons: [CouponDTO]? = try? await API().request("GET", "/coupons?chain=\(chain)")
+        let coupon = coupons?.first  // Server sortiert: bald ablaufender zuerst (38d)
+        guard open > 0 || coupon != nil else { return }
         last[id] = day
         UserDefaults.standard.set(last, forKey: "storeReminderLast")
         let content = UNMutableNotificationContent()
-        content.body = Self.message(chain: chain, open: open)
+        content.body = Self.message(chain: chain, open: open, coupon: coupon)
         content.sound = .default
         content.userInfo = ["url": "essenapp://list/\(chain)"]  // → Laden-Liste
         try? await UNUserNotificationCenter.current().add(UNNotificationRequest(identifier: "store-\(id)", content: content, trigger: nil))
@@ -162,7 +178,7 @@ struct StoreReminderCard: View {
                 if on && reminder.status != .authorizedAlways { ask = true } else { reminder.enabled = on }
             }))
             .font(.system(.body, weight: .semibold))
-            Text("Bis zu 20 deiner Läden (nächste zuerst), 8–21 Uhr, höchstens einmal pro Laden und Tag – nur wenn dort etwas auf der Liste steht.")
+            Text("Bis zu 20 deiner Läden (nächste zuerst), 8–21 Uhr, höchstens einmal pro Laden und Tag – nur wenn dort etwas auf der Liste steht oder ein Coupon gilt.")
                 .font(Theme.F.micro).foregroundStyle(Theme.C.text2)
             if reminder.enabled {
                 if reminder.status != .authorizedAlways {

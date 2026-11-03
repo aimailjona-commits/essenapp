@@ -39,7 +39,7 @@ struct RecipeShareCard: View {
             .card(radius: Theme.R.tile)
             Spacer(minLength: 0)
             HStack(spacing: 8) {
-                appIcon.frame(width: 22, height: 22).clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
+                AppIconMark()
                 Text("Mit Essenapp geplant").font(Theme.F.caption).foregroundStyle(Theme.C.text2)
             }
         }
@@ -66,8 +66,15 @@ struct RecipeShareCard: View {
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 
-    /// App-Icon aus dem Bundle (von xtool gesetzt), sonst Marken-Kachel.
-    @ViewBuilder private var appIcon: some View {
+}
+
+/// App-Icon aus dem Bundle (von xtool gesetzt), sonst Marken-Kachel – Fußzeile der Bildkarten (10, 55).
+struct AppIconMark: View {
+    var body: some View {
+        icon.frame(width: 22, height: 22).clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
+    }
+
+    @ViewBuilder private var icon: some View {
         let icons = Bundle.main.infoDictionary?["CFBundleIcons"] as? [String: Any]
         let files = (icons?["CFBundlePrimaryIcon"] as? [String: Any])?["CFBundleIconFiles"] as? [String]
         if let image = files?.last.flatMap({ name in UIImage(named: name) }) {
@@ -82,7 +89,30 @@ struct RecipeShareCard: View {
 /// Vorschau der Bildkarte + Teilen über das System-Sheet (WhatsApp, Instagram-Story, In Fotos sichern).
 struct ShareCardSheet: View {
     let meal: MealDTO
+
+    var body: some View {
+        ImageShareSheet(name: meal.recipe.title) {
+            var photo: UIImage?
+            if let url = mediaURL(meal.recipe.imageUrl), let loaded = try? await URLSession.shared.data(from: url) {
+                photo = UIImage(data: loaded.0)
+            }
+            return ImageShareSheet.snapshot(RecipeShareCard(meal: meal, photo: photo))
+        }
+    }
+}
+
+/// Bildkarte als Vorschau + „Teilen“ (Rezept 10, Wochenrückblick 55).
+struct ImageShareSheet: View {
+    let name: String
+    let render: @MainActor () async -> UIImage?
     @State private var image: UIImage?
+
+    /// 360×450 pt mit Faktor 3 → 1080×1350 px.
+    @MainActor static func snapshot(_ card: some View) -> UIImage? {
+        let renderer = ImageRenderer(content: card)
+        renderer.scale = 3
+        return renderer.uiImage
+    }
 
     var body: some View {
         VStack(spacing: 16) {
@@ -91,10 +121,10 @@ struct ShareCardSheet: View {
                 Image(uiImage: image).resizable().scaledToFit()
                     .clipShape(RoundedRectangle(cornerRadius: Theme.R.tile, style: .continuous))
                     .softShadow()
-                    .accessibilityLabel("Bildkarte \(meal.recipe.title)")
+                    .accessibilityLabel("Bildkarte \(name)")
                     .transition(.scale(scale: 0.95).combined(with: .opacity))
                 Spacer(minLength: 0)
-                ShareLink(item: Image(uiImage: image), preview: SharePreview(meal.recipe.title, image: Image(uiImage: image))) {
+                ShareLink(item: Image(uiImage: image), preview: SharePreview(name, image: Image(uiImage: image))) {
                     Label("Teilen", systemImage: "square.and.arrow.up")
                 }
                 .buttonStyle(PrimaryButtonStyle())
@@ -108,15 +138,5 @@ struct ShareCardSheet: View {
         .background(Theme.C.bg)
         .animation(Theme.spring, value: image)
         .task { image = await render() }
-    }
-
-    private func render() async -> UIImage? {
-        var photo: UIImage?
-        if let url = mediaURL(meal.recipe.imageUrl), let loaded = try? await URLSession.shared.data(from: url) {
-            photo = UIImage(data: loaded.0)
-        }
-        let renderer = ImageRenderer(content: RecipeShareCard(meal: meal, photo: photo))
-        renderer.scale = 3  // 360×450 pt → 1080×1350 px
-        return renderer.uiImage
     }
 }

@@ -25,6 +25,17 @@ struct WatchDTO: Codable, Identifiable, Hashable {
     var lastBought: String?  // YYYY-MM-DD
     var emptyOn: String?
     var hits: [OfferDTO]
+    var coupon: CouponBadgeDTO? = nil  // passender Drogerie-Coupon (59)
+    var lastOfferWeek: String? = nil  // „2026-W44“: zuletzt im Angebot
+    var lastOfferChain: String? = nil
+    var lastOfferPriceCents: Int? = nil
+
+    /// „zuletzt im Angebot: KW 44 bei Lidl (1,99 €)“; nil = nie gesehen.
+    var lastOfferText: String? {
+        guard let w = lastOfferWeek else { return nil }
+        return "zuletzt im Angebot: KW \(w.suffix(2))" + (lastOfferChain.map { c in " bei \(Labels.chain(c))" } ?? "")
+            + (lastOfferPriceCents.map { p in " (\(euro(p)))" } ?? "")
+    }
 
     /// „Alarm unter 2,00 €“ bzw. „unter 7,00 €/kg“; nil = kein Wunschpreis.
     var alarmText: String? {
@@ -258,6 +269,7 @@ struct WatchListView: View {
                         Text("\(euro(o.priceCents)) bei \(Labels.chain(o.chain))").font(Theme.F.micro).monospacedDigit()
                             .foregroundStyle(Theme.C.text2)
                         DealBadge(text: o.discount.map { d in "−\(d) %" } ?? "Angebot")
+                        if let c = w.coupon { CouponTag(coupon: c) }
                     }
                 }
                 Spacer(minLength: 0)
@@ -273,7 +285,7 @@ struct WatchListView: View {
     /// „Beobachtet“: Wunschpreis, Verbrauchsrhythmus.
     private func watchRow(_ w: WatchDTO) -> some View {
         let parts = [w.alarmText.map { a in "Alarm \(a)" }, w.lastsWeeks.map { n in "hält ca. \(num(n)) Wochen" },
-                     w.emptyOn.map { d in "leer ca. \(shortDate(d))" }].compactMap { s in s }
+                     w.emptyOn.map { d in "leer ca. \(shortDate(d))" }, w.lastOfferText].compactMap { s in s }
         return Button { editing = w } label: {
             HStack(spacing: 12) {
                 thumb(w, w.imageUrl)
@@ -281,7 +293,8 @@ struct WatchListView: View {
                     Text(w.brand.isEmpty ? w.label : "\(w.label) · \(w.brand)").font(.system(.subheadline, weight: .semibold))
                         .foregroundStyle(Theme.C.text1).lineLimit(1)
                     Text(parts.isEmpty ? "gerade nicht im Angebot" : parts.joined(separator: " · "))
-                        .font(Theme.F.micro).foregroundStyle(Theme.C.text2).lineLimit(2).multilineTextAlignment(.leading)
+                        .font(Theme.F.micro).foregroundStyle(Theme.C.text2).lineLimit(3).multilineTextAlignment(.leading)
+                    if let c = w.coupon { CouponTag(coupon: c) }
                 }
                 Spacer(minLength: 0)
                 Image(systemName: "chevron.right").font(.system(size: 12, weight: .bold)).foregroundStyle(Theme.C.text3)
@@ -544,6 +557,8 @@ struct BarcodeScanView: View {
     @Environment(\.openURL) private var openURL
     @State private var camera: Bool?  // nil = wird geprüft
     @State private var ean: String? = Demo.screen == "scanner" ? Demo.eanProduct.ean : nil
+    /// Coupon-Barcode (38a): Code128/EAN/QR, Treffer geht mit Typ zurück, kein Merklisten-Sheet.
+    var coupon: ((String, String) -> Void)? = nil
 
     var body: some View {
         ZStack {
@@ -551,7 +566,16 @@ struct BarcodeScanView: View {
             if store.demo {
                 HeroImage(name: "table").ignoresSafeArea().overlay(Color.black.opacity(0.35).ignoresSafeArea())
             } else if camera == true {
-                DataScanner(paused: ean != nil) { code in if ean == nil { ean = code } }.ignoresSafeArea()
+                DataScanner(paused: ean != nil, symbologies: coupon == nil ? [.ean8, .ean13, .upce] : [.code128, .ean13, .ean8, .qr],
+                            digitsOnly: coupon == nil) { code, symbology in
+                    if let coupon {
+                        coupon(code, Barcode.type(symbology))
+                        dismiss()
+                    } else if ean == nil {
+                        ean = code
+                    }
+                }
+                .ignoresSafeArea()
             } else if camera == false {
                 VStack(spacing: 12) {
                     Text("📷").font(.system(size: 44))
@@ -569,12 +593,12 @@ struct BarcodeScanView: View {
                 .accessibilityHidden(true)
             VStack {
                 HStack {
-                    Text("Barcode scannen").font(Theme.F.headline).foregroundStyle(.white)
+                    Text(coupon == nil ? "Barcode scannen" : "Coupon-Barcode scannen").font(Theme.F.headline).foregroundStyle(.white)
                     Spacer()
                     RoundIconButton(systemName: "xmark", label: "Schließen") { dismiss() }
                 }
                 Spacer()
-                Text("Strichcode in den Rahmen halten").font(Theme.F.callout).foregroundStyle(Theme.C.text1)
+                Text(coupon == nil ? "Strichcode in den Rahmen halten" : "Barcode oder QR-Code in den Rahmen halten").font(Theme.F.callout).foregroundStyle(Theme.C.text1)
                     .padding(.horizontal, 16).frame(minHeight: 40).glass(Capsule())
                     .padding(.bottom, 24)
             }
@@ -664,15 +688,18 @@ struct ScanResultSheet: View {
     }
 }
 
-/// VisionKit `DataScannerViewController` für EAN-8/EAN-13/UPC-E.
+/// VisionKit `DataScannerViewController`: Merkliste EAN-8/EAN-13/UPC-E (nur Ziffern), Coupons zusätzlich Code128/QR.
 struct DataScanner: UIViewControllerRepresentable {
     var paused: Bool
-    let found: (String) -> Void
+    var symbologies: [VNBarcodeSymbology] = [.ean8, .ean13, .upce]
+    var digitsOnly = true
+    let found: (String, VNBarcodeSymbology) -> Void
 
     func makeUIViewController(context: Context) -> DataScannerViewController {
-        let vc = DataScannerViewController(recognizedDataTypes: [.barcode(symbologies: [.ean8, .ean13, .upce])], qualityLevel: .balanced,
+        let vc = DataScannerViewController(recognizedDataTypes: [.barcode(symbologies: symbologies)], qualityLevel: .balanced,
                                            recognizesMultipleItems: false, isHighFrameRateTrackingEnabled: false, isHighlightingEnabled: true)
         vc.delegate = context.coordinator
+        context.coordinator.digitsOnly = digitsOnly
         return vc
     }
 
@@ -686,14 +713,15 @@ struct DataScanner: UIViewControllerRepresentable {
     func makeCoordinator() -> Coordinator { Coordinator(found: found) }
 
     @MainActor final class Coordinator: NSObject, DataScannerViewControllerDelegate {
-        var found: (String) -> Void
+        var found: (String, VNBarcodeSymbology) -> Void
+        var digitsOnly = true
 
-        init(found: @escaping (String) -> Void) { self.found = found }
+        init(found: @escaping (String, VNBarcodeSymbology) -> Void) { self.found = found }
 
         func dataScanner(_ dataScanner: DataScannerViewController, didAdd addedItems: [RecognizedItem], allItems: [RecognizedItem]) {
             for item in addedItems {
-                if case .barcode(let b) = item, let code = b.payloadStringValue, code.allSatisfy(\.isNumber) {
-                    found(code)
+                if case .barcode(let b) = item, let code = b.payloadStringValue, !code.isEmpty, !digitsOnly || code.allSatisfy(\.isNumber) {
+                    found(code, b.observation.symbology)
                     return
                 }
             }
