@@ -19,7 +19,7 @@ shoot() {  # $1 = Screen, $2 = Dateiname, danach weitere App-Argumente (z. B. -d
   local screen=$1 file=$2; shift 2
   xcrun simctl terminate "$udid" de.jsenf.essenapp 2>/dev/null || true
   xcrun simctl launch "$udid" de.jsenf.essenapp -demoScreen "$screen" "$@" >/dev/null
-  sleep 5
+  sleep 3
   xcrun simctl io "$udid" screenshot "$out/$file.png" >/dev/null
 }
 
