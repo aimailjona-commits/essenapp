@@ -4,7 +4,7 @@ import SwiftUI
 struct RecipesTab: View {
     @Environment(AppStore.self) private var store
     @Binding var showGenerator: Bool
-    @State private var mine = Demo.screen == "recipes"
+    @State private var mine = Demo.screen != "plan" && Demo.screen != "guests"  // v3: Tab-Wurzel = Kachel-Wand (S12), Plan über die Kachel
     @State private var filter = "alle"
     @State private var person: Int?  // „Für:“ in der Tagesansicht (48), nil = ich
     @State private var day = Demo.screen != nil ? 1 : (Calendar(identifier: .iso8601).component(.weekday, from: .now) + 5) % 7
@@ -15,22 +15,33 @@ struct RecipesTab: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 18) {
-                PillSegment(options: [(false, "Wochenplan"), (true, "Meine Rezepte")], selection: $mine)
-
                 if mine {
-                    MyRecipesList(filter: $filter)
+                    MyRecipesList(filter: $filter) { withAnimation(Theme.spring) { mine = false } }
                 } else if let plan = store.plan {
-                    HStack(alignment: .bottom) {
-                        DisplayHeader(line1: "KW \(plan.week.suffix(2))", line2: "Dein Plan")
-                        ShareButton()
-                        Button { showGenerator = true } label: {
-                            Image(systemName: "arrow.clockwise").font(.system(size: 15, weight: .bold))
-                                .frame(width: 40, height: 40).background(Theme.C.card, in: Circle())
-                                .overlay(Circle().strokeBorder(Theme.C.line, lineWidth: 0.5))
+                    HStack(alignment: .top) {
+                        DisplayHeader(line1: "Woche", line2: "KW \(plan.week.suffix(2))")
+                        HStack(spacing: 8) {
+                            ShareButton()
+                            RoundIconButton(systemName: "dice", dark: true, label: "Neuen Plan erstellen") { showGenerator = true }
                         }
-                        .buttonStyle(PressableStyle())
-                        .accessibilityLabel("Neuen Plan erstellen")
+                        .padding(.top, 4)
                     }
+                    budgetLine(plan)
+                    dayPicker(plan)
+                    let meals = plan.entries.filter { $0.day == day }
+                        .sorted { a, b in (Labels.slotOrder.firstIndex(of: a.mealType) ?? 9) < (Labels.slotOrder.firstIndex(of: b.mealType) ?? 9) }
+                    if meals.isEmpty {
+                        EmptyState(emoji: "😴", title: "Nichts geplant", text: "Für \(Labels.dayNames[day]) ist kein Gericht geplant.")
+                    }
+                    VStack(spacing: -18) {  // Karten überlappen wie Sprechblasen
+                        ForEach(Array(meals.enumerated()), id: \.element) { i, meal in
+                            DayCard(meal: meal, color: DayCard.color(day: day, index: i, mealType: meal.mealType)) { guestsFor = meal }
+                                .zIndex(Double(i))
+                                .appear(delay: Double(i) * 0.06)
+                        }
+                    }
+                    .id(day)
+                    // Ab hier noch nicht gemockt (redesign-v3.md 7, Gruppe A)
                     let eaters = store.profiles.filter { p in p.eatsOn(day: day, mealTypes: store.household?.mealTypes ?? Labels.mealTypes.map(\.0)) }
                     if !eaters.isEmpty {
                         HStack(spacing: 8) {
@@ -42,27 +53,7 @@ struct RecipesTab: View {
                     }
                     if let v = plan.variety { VarietyChip(check: v) }  // Abwechslung (12)
                     weekAverage
-                    HStack(spacing: 10) {
-                        summary("eurosign.circle.fill", Theme.C.warning, euro(plan.totalCents), "von \(euro(store.household?.budgetFoodWeekCents ?? 0))")
-                        summary("arrow.down.circle.fill", Theme.C.accent, euro(plan.savedCents), "gespart")
-                        summary("fork.knife.circle.fill", Theme.C.kcal, "\(plan.entries.count)", "Gerichte")
-                    }
                     if let l = plan.leftovers, l.planned > 0 || !l.left.isEmpty { LeftoversCard(leftovers: l) }  // Reste (19)
-                    dayPicker(plan)
-                    let meals = plan.entries.filter { $0.day == day }
-                        .sorted { a, b in (Labels.slotOrder.firstIndex(of: a.mealType) ?? 9) < (Labels.slotOrder.firstIndex(of: b.mealType) ?? 9) }
-                    if meals.isEmpty {
-                        EmptyState(emoji: "😴", title: "Nichts geplant", text: "Für \(Labels.dayNames[day]) ist kein Gericht geplant.")
-                    }
-                    ForEach(Array(meals.enumerated()), id: \.element) { i, meal in
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text((meal.mealType == "lunchbox" ? "🥡 " : "") + Labels.meal(meal.mealType).uppercased())
-                                .font(Theme.F.micro).foregroundStyle(Theme.C.text2)
-                            MealRow(meal: meal, actions: true) { guestsFor = meal }
-                        }
-                        .appear(delay: Double(i) * 0.06)
-                    }
-                    .id(day)
                     if day == store.today && !meals.isEmpty {
                         Button { noMood = true } label: { Text("😮‍💨 Keine Lust") }.buttonStyle(SecondaryButtonStyle())
                     }
@@ -94,118 +85,173 @@ struct RecipesTab: View {
         }
     }
 
+    /// „38,20 € von 60 €“ + Ersparnis-Pille, Balken (Tinte auf `surface`).
+    private func budgetLine(_ plan: PlanDTO) -> some View {
+        let budget = store.household?.budgetFoodWeekCents ?? 0
+        return VStack(spacing: 10) {
+            HStack {
+                (Text(euro(plan.totalCents)).foregroundStyle(Theme.C.text1)
+                    + Text(" von \(euro(budget))").font(.system(.headline, weight: .semibold)).foregroundStyle(Theme.C.text2))
+                    .font(.system(.headline, weight: .heavy)).monospacedDigit()
+                Spacer()
+                if plan.savedCents > 0 {
+                    Text("\(euro(plan.savedCents)) gespart").font(.system(.caption, weight: .bold)).foregroundStyle(Theme.C.onLime)
+                        .padding(.horizontal, 10).frame(height: 26).background(Theme.C.lime, in: Capsule())
+                }
+            }
+            GeometryReader { g in
+                Capsule().fill(Theme.C.surface)
+                Capsule().fill(plan.totalCents > budget ? Theme.C.danger : Theme.C.action)
+                    .frame(width: g.size.width * min(Double(plan.totalCents) / Double(max(budget, 1)), 1))
+            }
+            .frame(height: 12)
+        }
+        .accessibilityElement(children: .combine)
+    }
+
+    /// Tagesleiste v3: 7 Pillen 44×58, Punkt in der Tagesfarbe, aktiv schwarz (gleitet).
     private func dayPicker(_ plan: PlanDTO) -> some View {
-        HStack(spacing: 6) {
+        HStack(spacing: 0) {
             ForEach(0..<7, id: \.self) { d in
                 let has = plan.entries.contains { $0.day == d }
                 let on = day == d
                 Button { withAnimation(Theme.spring) { day = d } } label: {
-                    VStack(spacing: 4) {
-                        Text(Labels.days[d].uppercased()).font(Theme.F.micro)
-                        Circle().fill(has ? (on ? Theme.C.highlight : Theme.C.accent) : .clear).frame(width: 6, height: 6)
+                    VStack(spacing: 5) {
+                        Text(Labels.days[d]).font(.system(.footnote, weight: .heavy))
+                        Circle().fill(has ? Theme.C.day[d] : .clear).frame(width: 8, height: 8)
                     }
-                    .frame(maxWidth: .infinity, minHeight: 54)
+                    .frame(width: 44, height: 58)
                     .foregroundStyle(on ? Theme.C.onAction : Theme.C.text1)
                     .background {
                         if on {
-                            RoundedRectangle(cornerRadius: 18, style: .continuous).fill(Theme.C.action)
-                                .matchedGeometryEffect(id: "day", in: dayPill)
+                            Capsule().fill(Theme.C.action).matchedGeometryEffect(id: "day", in: dayPill)
                         } else {
-                            RoundedRectangle(cornerRadius: 18, style: .continuous).fill(Theme.C.card)
+                            Capsule().fill(Theme.C.card).overlay(Capsule().strokeBorder(Theme.C.line, lineWidth: 1))
                         }
                     }
                 }
                 .buttonStyle(PressableStyle())
+                .accessibilityLabel(Labels.dayNames[d])
+                .accessibilityAddTraits(on ? .isSelected : [])
+                if d < 6 { Spacer(minLength: 0) }
             }
         }
+        .padding(.vertical, 2)
         .sensoryFeedback(.selection, trigger: day)
     }
+}
 
-    private func summary(_ symbol: String, _ color: Color, _ value: String, _ label: String) -> some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Image(systemName: symbol).foregroundStyle(color)
-            Text(value).font(.system(.headline, design: .rounded, weight: .bold)).monospacedDigit().contentTransition(.numericText())
-            Text(label).font(Theme.F.micro).foregroundStyle(Theme.C.text2).lineLimit(1)
+/// Gericht als Zeile (Suche auf Start).
+struct MealRow: View {
+    let meal: MealDTO
+
+    var body: some View {
+        HStack(spacing: 14) {
+            Plate(url: mediaURL(meal.recipe.imageUrl), size: 56, seed: meal.recipe.title)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(meal.recipe.title).font(.system(.headline, weight: .bold)).lineLimit(2).foregroundStyle(Theme.C.text1)
+                Text("\(meal.recipe.prepMinutes) min · \(euro(meal.costCents))").font(.footnote).foregroundStyle(Theme.C.text2)
+            }
+            Spacer(minLength: 0)
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
         .padding(12)
         .card(radius: Theme.R.tile)
     }
 }
 
-struct MealRow: View {
+/// `DayCard` (S2): Pastell-Karte, Teller 84 links, Meta, Name in Fraunces, Info, Aktionen; Zähler = Zutaten im Angebot.
+struct DayCard: View {
     @Environment(AppStore.self) private var store
     let meal: MealDTO
-    var actions = false
-    var onGuests: (() -> Void)?  // Wochenplan: „Gäste hinzufügen“ (15)
+    let color: Color
+    var onGuests: (() -> Void)?  // „Gäste hinzufügen“ (15)
     @State private var rolling = false
-    @State private var replacing = false  // S2 „ersetzen durch eigenes Rezept“ → S19
+    @State private var replacing = false  // „ersetzen durch eigenes Rezept“ → S19
+    @State private var open = false
+
+    /// Karten eines Tages: Tagesfarbe, dann die Farben der Folgetage; Dessert/Snack weiß.
+    static func color(day: Int, index: Int, mealType: String) -> Color {
+        ["dessert", "snack"].contains(mealType) ? Theme.C.card : Theme.C.day[(day + index) % 7]
+    }
+
+    private var meta: String {
+        let slot = (meal.mealType == "lunchbox" ? "🥡 " : "") + Labels.meal(meal.mealType)
+        if meal.mealType == "lunchbox" {
+            let names = store.profiles.filter { p in meal.portions.contains { $0.memberId == p.memberId } }.map(\.name)
+            return names.isEmpty ? slot : "\(slot) · \(names.joined(separator: ", "))"
+        }
+        return "\(slot) · \(meal.recipe.prepMinutes) min"
+    }
+
+    private var info: String {
+        var parts = [euro(meal.costCents / max(Int(meal.basePortions), 1))]
+        if meal.mealType == "lunchbox" { parts.append("\(meal.recipe.prepMinutes) min") }
+        if let kcal = meal.recipe.nutrition?.kcal { parts.append("\(Int(kcal.rounded())) kcal") }
+        let rests = (meal.rests ?? []).map(\.fromDay).filter { Labels.days.indices.contains($0) }.uniqued()
+        parts += rests.map { "♻︎ Rest von \(Labels.days[$0])" }
+        return parts.joined(separator: " · ")
+    }
 
     var body: some View {
         let deals = meal.recipe.ingredients.filter { $0.offerId != nil }.count
-        VStack(alignment: .leading, spacing: 4) {
-        HStack(spacing: 14) {
-            NavigationLink { RecipeDetailView(meal: meal) } label: {
-                HStack(spacing: 14) {
-                    Plate(url: mediaURL(meal.recipe.imageUrl), size: 72, seed: meal.recipe.title)
-                        .rotationEffect(.degrees(rolling ? 360 : 0))
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text(meal.recipe.title).font(.system(.subheadline, design: .rounded, weight: .bold)).lineLimit(2)
-                            .foregroundStyle(Theme.C.text1)
-                        Text("\(meal.recipe.prepMinutes) min · \(euro(meal.costCents))").font(Theme.F.micro).foregroundStyle(Theme.C.text2)
-                        if deals > 0 { DealBadge(text: deals == 1 ? "1 Zutat im Angebot" : "\(deals) Zutaten im Angebot", style: .soft) }
-                    }
-                    Spacer(minLength: 0)
+        let white = color == Theme.C.card
+        VStack(alignment: .leading, spacing: 0) {
+                Text(meta.uppercased()).font(.system(.caption, weight: .heavy)).tracking(0.7).opacity(0.65)
+                Text(meal.recipe.title).font(Theme.F.cardTitle()).tracking(-0.5).lineLimit(3)
+                    .multilineTextAlignment(.leading).padding(.top, 4).padding(.bottom, 8)
+                    .padding(.trailing, deals > 0 ? 24 : 0)
+                Text(info).font(.system(.footnote, weight: .semibold)).opacity(0.75)
+                if meal.id != nil { actions.padding(.top, 10) }
+                MealBadges(meal: meal, onGuests: meal.id != nil ? onGuests : nil).padding(.top, 6)
+            }
+            .foregroundStyle(Theme.C.ink)
+            .frame(maxWidth: .infinity, minHeight: 96, alignment: .leading)
+            .padding(.vertical, 20).padding(.trailing, 20).padding(.leading, 116)
+            .background(alignment: .topLeading) {
+                Plate(url: mediaURL(meal.recipe.imageUrl), size: 84, seed: meal.recipe.title)
+                    .rotationEffect(.degrees(rolling ? 360 : 0))
+                    .padding(.leading, 16).padding(.top, 22)
+            }
+            .overlay(alignment: .topTrailing) {
+                if deals > 0 {
+                    Text("\(deals)").font(.system(.footnote, weight: .heavy)).foregroundStyle(.white)
+                        .frame(width: 30, height: 30).background(Theme.C.ink, in: Circle())
+                        .padding(.top, 18).padding(.trailing, 16)
+                        .accessibilityLabel("\(deals) Zutaten im Angebot")
                 }
             }
-            .buttonStyle(PressableStyle())
-            if actions && meal.id != nil {
-                Grid(horizontalSpacing: 6, verticalSpacing: 6) {
-                  GridRow {
-                    small(meal.recipe.favorite ? "heart.fill" : "heart", on: meal.recipe.favorite,
-                          label: meal.recipe.favorite ? "Aus Favoriten entfernen" : "Als Favorit merken") {
-                        Task { _ = await store.toggleFavorite(meal.recipe.id, current: meal.recipe.favorite) }
-                    }
-                    .symbolEffect(.bounce, value: meal.recipe.favorite)
-                    small("arrow.triangle.2.circlepath", on: false, label: "Durch eigenes Rezept ersetzen") { replacing = true }
-                  }
-                  GridRow {
-                    small(meal.locked ? "lock.fill" : "lock.open", on: meal.locked, label: meal.locked ? "Lösen" : "Fixieren") {
-                        Task { await store.setLocked(meal, !meal.locked) }
-                    }
-                    small("dice", on: false, label: "Neu würfeln") {
-                        withAnimation(.easeInOut(duration: 0.9).repeatForever(autoreverses: false)) { rolling = true }
-                        Task {
-                            await store.reroll(meal)
-                            withAnimation(Theme.spring) { rolling = false }
-                        }
-                    }
-                    .disabled(meal.locked || rolling)
-                    .opacity(meal.locked ? 0.35 : 1)
-                  }
-                }
-            }
-        }
-        MealBadges(meal: meal, onGuests: actions && meal.id != nil ? onGuests : nil)
-        }
-        .padding(12)
-        .card()
+            .background(color, in: RoundedRectangle(cornerRadius: Theme.R.day, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: Theme.R.day, style: .continuous).strokeBorder(Theme.C.line, lineWidth: white ? 1 : 0))
+            // Knöpfe (Aktionen, Gäste) haben Vorrang vor dem Antippen der Karte
+            .contentShape(RoundedRectangle(cornerRadius: Theme.R.day, style: .continuous))
+            .onTapGesture { open = true }
+            .accessibilityAddTraits(.isButton)
+            .navigationDestination(isPresented: $open) { RecipeDetailView(meal: meal) }
         .sheet(isPresented: $replacing) {
             PlanSlotSheet(entry: meal).presentationDetents([.medium, .large]).presentationCornerRadius(Theme.R.sheet)
         }
     }
 
-    private func small(_ symbol: String, on: Bool, label: String, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            Image(systemName: symbol).font(.system(size: 14, weight: .semibold))
-                .foregroundStyle(on ? Theme.C.onAction : Theme.C.text1)
-                .frame(width: 36, height: 36)
-                .background(on ? Theme.C.action : Theme.C.surface, in: Circle())
-                .contentTransition(.symbolEffect(.replace))
-        }
-        .buttonStyle(PressableStyle())
-        .sensoryFeedback(.impact(weight: .light), trigger: on)
-        .accessibilityLabel(label)
+    private var actions: some View {
+        ActionCluster(items: [
+            .init(symbol: meal.recipe.favorite ? "heart.fill" : "heart",
+                  label: meal.recipe.favorite ? "Aus Favoriten entfernen" : "Als Favorit merken") {
+                Task { _ = await store.toggleFavorite(meal.recipe.id, current: meal.recipe.favorite) }
+            },
+            .init(symbol: "arrow.left.arrow.right", label: "Durch eigenes Rezept ersetzen") { replacing = true },
+            .init(symbol: meal.locked ? "lock.fill" : "lock.open", label: meal.locked ? "Lösen" : "Fixieren") {
+                Task { await store.setLocked(meal, !meal.locked) }
+            },
+            .init(symbol: "dice", label: "Neu würfeln") {
+                guard !meal.locked, !rolling else { return }
+                withAnimation(.easeInOut(duration: 0.9).repeatForever(autoreverses: false)) { rolling = true }
+                Task {
+                    await store.reroll(meal)
+                    withAnimation(Theme.spring) { rolling = false }
+                }
+            },
+        ], compact: true)
+        .sensoryFeedback(.impact(weight: .light), trigger: meal.locked)
     }
 }
 

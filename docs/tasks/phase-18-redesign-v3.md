@@ -12,32 +12,32 @@ Regeln: nur Werte aus `redesign-v3.md`/Mockup. Was nicht gemockt ist, zuerst moc
 
 ## 18.2 Grundlage iOS
 
-- [ ] 👤 Download freigeben: Fraunces (variabel, inkl. Italic) + JetBrains Mono von Google Fonts / GitHub (OFL), Dateien + `OFL.txt` nach `ios/Sources/Essenapp/Resources/fonts/`
-- [ ] Spike Schriften: Registrierung per `CTFontManagerRegisterFontsForURL`, Fraunces-Achsen `SOFT/WONK/opsz/wght`, Dynamic Type; Ergebnis als E-Eintrag (variabel oder statische Schnitte)
-- [ ] `Theme.swift` auf v3-Tokens (Farben, Wochentage, Tönungen, Schriften, Radien, Schatten); alte Token-Nutzung in allen Views umgestellt, Orange-Akzent entfernt
-- [ ] Shapes: `BurstShape`, `ReceiptShape`, `CouponShape`, `FolderShape`, `ScribbleShape`, `BumpBarShape` (+ `swift test` für Punktzahl/Geometrie der Stern- und Zackenform)
-- [ ] `PaperGrain` (Skript `ios/tools/make_grain.py`, PNG als Ressource, Overlay in `MainView`)
-- [ ] `TabBar` v3 (schwarze Kapsel, gleitende weiße Pille, Limetten-Mitte, Zähler) – ersetzt Liquid Glass
-- [ ] `TotalBar` + Tab-Leiste auf Detail-Screens ausblenden
+- [x] 👤 Download freigeben (2026-11-03): Fraunces (variabel, inkl. Italic) + JetBrains Mono von Google Fonts / GitHub (OFL), Dateien + `OFL.txt` nach `ios/Sources/Essenapp/Resources/fonts/`
+- [x] Spike Schriften: feste Schnitte mit den Mockup-Achsen per `ios/tools/make_fonts.py` (fontTools), Registrierung per `CTFontManagerRegisterFontsForURL`, Dynamic Type über `relativeTo` (E89)
+- [~] `Theme.swift` auf v3-Tokens (hell fertig; `accent` = Tinte, auf Dunkel `lime`; einzelne Stellen werden mit den Screens geprüft) (Farben, Wochentage, Tönungen, Schriften, Radien, Schatten); alte Token-Nutzung in allen Views umgestellt, Orange-Akzent entfernt
+- [x] Shapes: `BurstShape`, `ReceiptShape`, `CouponShape`, `FolderShape`, `ScribbleShape`, `BumpBarShape` (geprüft per CI-Screenshot, kein Test-Target vorhanden)
+- [x] `PaperGrain` (Skript `ios/tools/make_grain.py`, PNG als Ressource, Overlay in `MainView`)
+- [x] `TabBar` v3 (schwarze Kapsel, gleitende weiße Pille, Limetten-Mitte, Zähler) – ersetzt Liquid Glass
+- [~] `TotalBar` (Baustein fertig) + Tab-Leiste auf Detail-Screens ausblenden (mit S3/S9/Liste)
 
 ## 18.3 Bausteine
 
-- [ ] Alle Bausteine aus `redesign-v3.md` Abschnitt 5 (umbauen/neu), Namen wie dort
+- [~] Alle Bausteine aus `redesign-v3.md` Abschnitt 5 (Components.swift umgebaut, neue in V3Components.swift; DayCard, OfferCard, CouponCard, RecipeHero kommen mit ihren Screens)
 - [ ] Demo-Screen `components` (Galerie wie Mockup Teil 1) in `Demo.swift`/`MainView` + `ios/tools/screenshots.sh`
 - [ ] CI-Vergleich `components` ↔ Mockup Teil 1 passt
 
 ## 18.4 Gemockte Screens (1:1, `redesign-v3.md` 6.1)
 
-- [ ] S1 Start (oberer Teil + „Diese Woche“)
-- [ ] S2 Wochenplan (Kopf, Tagesleiste, Tageskarten)
+- [~] S1 Start (oberer Teil + „Diese Woche“) – gebaut, CI-Vergleich offen
+- [~] S2 Wochenplan (Kopf, Tagesleiste, Tageskarten) – gebaut, CI-Vergleich offen
 - [ ] S3 Rezeptdetail (Kopf bis Zutaten + Summen-Leiste)
 - [ ] S18 Kochmodus
 - [ ] S4 Angebote
 - [ ] S9 Angebotsdetail (oberer Teil + Summen-Leiste)
 - [ ] S5 Einkauf (Ordner mit Logos)
 - [ ] S5 Liste (Kassenbon)
-- [ ] S12 Rezepte (Kachel-Wand)
-- [ ] Schnell-Aktionen (Fächer + Wölbung, Animation)
+- [~] S12 Rezepte (Kachel-Wand) – gebaut, CI-Vergleich offen
+- [~] Schnell-Aktionen (Fächer + Wölbung, Animation) – gebaut, CI-Vergleich offen
 - [ ] S6 Onboarding Schritt 1
 
 ## 18.5 Restliche Screens (je Gruppe: Mockup → 👤 Freigabe → Bau → CI-Vergleich)

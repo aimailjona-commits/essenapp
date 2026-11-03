@@ -141,6 +141,7 @@ extension AppStore {
 struct MyRecipesList: View {
     @Environment(AppStore.self) private var store
     @Binding var filter: String
+    var openPlan: (() -> Void)?  // v3: Kachel „Plan dieser Woche“ → S2
     @State private var query = ""
     @State private var cards: [RecipeCard]?
     @State private var deals: [RecipeCard] = []
@@ -150,8 +151,8 @@ struct MyRecipesList: View {
     @State private var importing = false  // „Link einfügen“ (S22)
     @State private var opened: Int?  // importiertes Rezept öffnen
 
-    static let filters = [("alle", "Alle"), ("favoriten", "♥ Favoriten"), ("eigene", "Eigene"), ("importiert", "Importiert"),
-                          ("im_angebot", "Im Angebot"), ("zuletzt", "Zuletzt gekocht")]
+    static let filters = [("alle", "Alle"), ("favoriten", "Favoriten"), ("im_angebot", "Im Angebot"), ("eigene", "Eigene"),
+                          ("importiert", "Importiert"), ("zuletzt", "Zuletzt gekocht")]
 
     static func matches(_ c: RecipeCard, _ filter: String) -> Bool {
         switch filter {
@@ -166,12 +167,21 @@ struct MyRecipesList: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
-            HStack(alignment: .bottom) {
-                DisplayHeader(line1: "Meine Rezepte", line2: cards.map { c in "\(c.count) gespeichert" } ?? "Gemerkt & eigene")
-                RoundIconButton(systemName: "link", label: "Rezept aus Link importieren") { importing = true }
-                RoundIconButton(systemName: "plus", dark: true, label: "Rezept anlegen") { creating = true }
+            HStack(alignment: .top) {
+                DisplayHeader(line1: "Rezepte")
+                HStack(spacing: 8) {
+                    if let cards { Text("\(cards.count)").font(.system(.subheadline, weight: .semibold)).foregroundStyle(Theme.C.text1) }
+                    Menu {
+                        Button("Rezept anlegen", systemImage: "square.and.pencil") { creating = true }
+                        Button("Aus Link importieren", systemImage: "link") { importing = true }
+                    } label: {
+                        Image(systemName: "plus").font(.system(size: 18, weight: .semibold)).foregroundStyle(Theme.C.text1)
+                            .frame(width: Theme.S.roundButton, height: Theme.S.roundButton).background(Theme.C.surface, in: Circle())
+                    }
+                    .accessibilityLabel("Rezept anlegen oder importieren")
+                }
+                .padding(.top, 4)
             }
-            SearchField(text: $query, placeholder: "Rezept oder Tag suchen")
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 8) {
                     ForEach(Self.filters, id: \.0) { f in
@@ -184,10 +194,10 @@ struct MyRecipesList: View {
             .padding(.horizontal, -Theme.pagePadding)
 
             if let cards {
-                if filter == "alle" && query.isEmpty && !deals.isEmpty { dealsSection }
-                let matching = cards.filter { c in Self.matches(c, filter) }
+                let matching = cards.filter { c in Self.matches(c, filter) && (query.isEmpty || c.title.localizedCaseInsensitiveContains(query)) }
                 let shown = filter == "zuletzt" ? matching.sorted { a, b in (a.lastCooked ?? "") > (b.lastCooked ?? "") } : matching
-                if shown.isEmpty {
+                let wall = filter == "alle" && query.isEmpty
+                if shown.isEmpty && !wall {
                     if cards.isEmpty && query.isEmpty {
                         EmptyState(emoji: "📖", title: "Noch keine Rezepte gespeichert",
                                    text: "Tippe bei einem Gericht aufs Herz oder lege dein eigenes Rezept an.",
@@ -196,15 +206,18 @@ struct MyRecipesList: View {
                         EmptyState(emoji: "🔍", title: "Nichts gefunden", text: "Für diese Auswahl gibt es noch keine Rezepte.")
                     }
                 } else {
-                    grid(shown)
+                    tileWall(shown, intro: wall ? introTiles(cards) : [])
                 }
             } else if let error {
                 ErrorState(message: error) { Task { await load() } }
             } else {
-                LazyVGrid(columns: [GridItem(.flexible(), spacing: 14), GridItem(.flexible(), spacing: 14)], spacing: 14) {
-                    ForEach(0..<4, id: \.self) { _ in SkeletonCard(height: 210) }
+                HStack(alignment: .top, spacing: 10) {
+                    VStack(spacing: 10) { SkeletonCard(height: 236); SkeletonCard(height: 150) }
+                    VStack(spacing: 10) { SkeletonCard(height: 186); SkeletonCard(height: 200) }
                 }
             }
+            // Noch nicht gemockt (redesign-v3.md 7, Gruppe B): Suche unter der Wand
+            SearchField(text: $query, placeholder: "Rezept oder Tag suchen")
         }
         .task(id: "\(query)|\(store.recipesVersion)") {
             if !query.isEmpty { try? await Task.sleep(for: .milliseconds(300)) }  // erst suchen, wenn das Tippen pausiert
@@ -225,38 +238,117 @@ struct MyRecipesList: View {
         }
     }
 
-    private var dealsSection: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text("🔥 Im Angebot diese Woche").font(Theme.F.headline)
-            Text("Lieblingsrezepte, die gerade günstig sind").font(Theme.F.caption).foregroundStyle(Theme.C.text2)
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 14) {
-                    ForEach(deals) { card in
-                        NavigationLink { SavedRecipeView(recipeId: card.id) } label: { RecipeGridCard(card: card).frame(width: 160) }
-                            .buttonStyle(PressableStyle())
-                    }
-                }
-                .padding(.horizontal, Theme.pagePadding).padding(.top, 44).padding(.bottom, 12)
+    // MARK: Kachel-Wand (S12, wie GoodNotes „My Notes“)
+
+    private enum Tile: Identifiable {
+        case plan, imported(Int), deals, recipe(RecipeCard, CGFloat, Int)
+        var id: String {
+            switch self {
+            case .plan: "plan"
+            case .imported: "imported"
+            case .deals: "deals"
+            case .recipe(let c, _, _): "r\(c.id)"
             }
-            .padding(.horizontal, -Theme.pagePadding)
         }
     }
 
-    private func grid(_ shown: [RecipeCard]) -> some View {
-        LazyVGrid(columns: [GridItem(.flexible(), spacing: 14), GridItem(.flexible(), spacing: 14)], spacing: 54) {
-            ForEach(Array(shown.enumerated()), id: \.element.id) { i, card in
-                ZStack(alignment: .topTrailing) {
-                    NavigationLink { SavedRecipeView(recipeId: card.id) } label: { RecipeGridCard(card: card) }
-                        .buttonStyle(PressableStyle())
-                        .contextMenu {
-                            Button("Diese Woche einplanen", systemImage: "calendar.badge.plus") { planning = card }
-                        }
-                    HeartButton(on: card.favorite) { toggle(card) }.scaleEffect(0.85).padding(4)
-                }
-                .appear(delay: Double(i) * 0.04)
-            }
+    /// Feste Kacheln oben: links Plan + Instagram-Sammlung, rechts (nach dem ersten Foto) Lieblingsrezepte günstig.
+    private func introTiles(_ cards: [RecipeCard]) -> [Tile] {
+        var tiles: [Tile] = []
+        if store.plan != nil, openPlan != nil { tiles.append(.plan) }
+        let imported = cards.filter { c in Self.matches(c, "importiert") }.count
+        if imported > 0 { tiles.append(.imported(imported)) }
+        if !deals.isEmpty { tiles.append(.deals) }
+        return tiles
+    }
+
+    private func tileWall(_ shown: [RecipeCard], intro: [Tile]) -> some View {
+        // Reihenfolge wie im Mockup: links Plan, Sammlung …; rechts Foto, günstig, …
+        var left: [Tile] = intro.filter { if case .deals = $0 { false } else { true } }
+        var right: [Tile] = []
+        let recipes = shown.enumerated().map { i, c in Tile.recipe(c, [186, 220, 170, 200][i % 4], i) }
+        var rest = recipes[...]
+        if let first = rest.popFirst() { right.append(first) }
+        if intro.contains(where: { if case .deals = $0 { true } else { false } }) { right.append(.deals) }
+        var leftHeight = left.reduce(CGFloat(0)) { s, t in s + height(t) }, rightHeight = right.reduce(CGFloat(0)) { s, t in s + height(t) }
+        for t in rest {
+            if leftHeight <= rightHeight { left.append(t); leftHeight += height(t) } else { right.append(t); rightHeight += height(t) }
         }
-        .padding(.top, 44)
+        return HStack(alignment: .top, spacing: 10) {
+            VStack(spacing: 10) { ForEach(left) { tile($0) } }
+            VStack(spacing: 10) { ForEach(right) { tile($0) } }
+        }
+    }
+
+    private func height(_ t: Tile) -> CGFloat {
+        switch t {
+        case .plan: 236
+        case .imported: 150
+        case .deals: 200
+        case .recipe(_, let h, _): h
+        }
+    }
+
+    @ViewBuilder private func tile(_ t: Tile) -> some View {
+        switch t {
+        case .plan:
+            Button { openPlan?() } label: { planTile }.buttonStyle(PressableStyle())
+        case .imported(let n):
+            Button { withAnimation(Theme.spring) { filter = "importiert" } } label: {
+                RTile(color: Theme.C.lav, height: 150) {
+                    Text("Aus Instagram").font(Theme.F.cardTitle(17))
+                    Text(n == 1 ? "1 Rezept" : "\(n) Rezepte").font(.footnote.weight(.medium)).foregroundStyle(Color(hex: 0x3D3566)).padding(.top, 4)
+                } corner: { Text("📲").font(.system(size: 58)).rotationEffect(.degrees(10)) }
+            }
+            .buttonStyle(PressableStyle())
+        case .deals:
+            Button { withAnimation(Theme.spring) { filter = "im_angebot" } } label: {
+                RTile(color: Theme.C.lime, height: 200) {
+                    Text(deals.count == 1 ? "1 Lieblingsrezept günstig" : "\(deals.count) Lieblings\u{AD}rezepte günstig").font(Theme.F.cardTitle(17))
+                    HStack(spacing: -16) {
+                        ForEach(deals.prefix(3)) { c in Plate(url: mediaURL(c.imageUrl), size: 48, seed: c.title) }
+                    }
+                    .padding(.top, 14)
+                    Spacer(minLength: 0)
+                    DealBadge(text: "im Angebot")  // Rabatt je Rezept liefert die API nicht
+                }
+            }
+            .buttonStyle(PressableStyle())
+        case .recipe(let card, let h, let i):
+            NavigationLink { SavedRecipeView(recipeId: card.id) } label: { RecipePhotoTile(card: card, height: h, color: Theme.C.day[i % 7]) { toggle(card) } }
+                .buttonStyle(PressableStyle())
+                .contextMenu { Button("Diese Woche einplanen", systemImage: "calendar.badge.plus") { planning = card } }
+        }
+    }
+
+    /// „Plan dieser Woche“ (Tomate): Mini-Checkliste der Gerichte, erledigt = schon vorbei.
+    private var planTile: some View {
+        let entries = (store.plan?.entries ?? []).sorted { a, b in
+            (a.day, Labels.slotOrder.firstIndex(of: a.mealType) ?? 9) < (b.day, Labels.slotOrder.firstIndex(of: b.mealType) ?? 9)
+        }
+        let mains = entries.filter { ["mittag", "abend"].contains($0.mealType) }
+        return RTile(color: Theme.C.tomato, height: 236) {
+            Text("Plan\ndieser Woche").font(Theme.F.cardTitle(17)).multilineTextAlignment(.leading)
+            VStack(alignment: .leading, spacing: 6) {
+                ForEach(Array(mains.prefix(3).enumerated()), id: \.offset) { _, m in miniRow(m.recipe.title, done: m.day < store.today) }
+                if mains.count > 3 { miniRow("+ \(mains.count - 3) weitere", done: false) }
+            }
+            .padding(.top, 14)
+        } corner: {
+            Image(systemName: "heart").font(.system(size: 16, weight: .semibold))
+                .frame(width: 36, height: 36).background(Color.black.opacity(0.08), in: Circle())
+        }
+    }
+
+    private func miniRow(_ text: String, done: Bool) -> some View {
+        HStack(spacing: 8) {
+            Circle().strokeBorder(Color.black.opacity(0.45), lineWidth: 1.6).background(Circle().fill(done ? Theme.C.ink : .clear))
+                .frame(width: 18, height: 18)
+            Text(text).font(.system(.footnote, weight: .semibold)).strikethrough(done).lineLimit(1)
+        }
+        .padding(.horizontal, 10).frame(height: 36).frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color.black.opacity(0.08), in: Capsule())
+        .opacity(done ? 0.55 : 1)
     }
 
     private func load() async {
@@ -280,30 +372,71 @@ struct MyRecipesList: View {
     }
 }
 
-/// Raster-Karte (MealCard klein): Foto, Titel, Sterne, Preis/Portion, Badges.
-struct RecipeGridCard: View {
-    let card: RecipeCard
+/// Rezept-Kachel (v3 `rtile`): farbige Fläche mit Titel oben, Inhalt, optional Element oben rechts.
+struct RTile<Content: View, Corner: View>: View {
+    let color: Color
+    let height: CGFloat
+    @ViewBuilder let content: () -> Content
+    @ViewBuilder var corner: () -> Corner
 
     var body: some View {
-        VStack(spacing: 5) {
-            Plate(url: mediaURL(card.imageUrl), size: 96, seed: card.title).padding(.top, -40)
-            Text(card.title).font(.system(.subheadline, design: .rounded, weight: .bold)).lineLimit(2)
-                .multilineTextAlignment(.center).frame(minHeight: 36).foregroundStyle(Theme.C.text1)
-            if let avg = card.avgStars {
-                StarsView(value: avg)
+        VStack(alignment: .leading, spacing: 0, content: content)
+            .foregroundStyle(Theme.C.ink)
+            .padding(16)
+            .frame(maxWidth: .infinity, minHeight: height, maxHeight: height, alignment: .topLeading)
+            .overlay(alignment: .topTrailing) { corner().padding(12) }
+            .background(color, in: RoundedRectangle(cornerRadius: Theme.R.rtile, style: .continuous))
+            .clipShape(RoundedRectangle(cornerRadius: Theme.R.rtile, style: .continuous))
+    }
+}
+
+extension RTile where Corner == EmptyView {
+    init(color: Color, height: CGFloat, @ViewBuilder content: @escaping () -> Content) {
+        self.init(color: color, height: height, content: content, corner: { EmptyView() })
+    }
+}
+
+/// Foto-Kachel: Bild randlos, Verlauf unten, Titel weiß, Herz oben rechts. Ohne Foto: Teller auf Pastell.
+struct RecipePhotoTile: View {
+    let card: RecipeCard
+    let height: CGFloat
+    var color = Theme.C.sun
+    let toggle: () -> Void
+
+    var body: some View {
+        let url = mediaURL(card.imageUrl)
+        ZStack(alignment: .bottomLeading) {
+            if url != nil {
+                RemoteImage(url: url, contentMode: .fill) { color }
+                    .frame(maxWidth: .infinity, minHeight: height, maxHeight: height).clipped()
+                LinearGradient(stops: [.init(color: .clear, location: 0.4), .init(color: .black.opacity(0.55), location: 1)],
+                               startPoint: .top, endPoint: .bottom)
             } else {
-                Text("noch nicht bewertet").font(Theme.F.micro).foregroundStyle(Theme.C.text3)
+                color
+                Plate(url: nil, size: 72, seed: card.title).frame(maxWidth: .infinity, maxHeight: .infinity).padding(.bottom, 30)
             }
-            Text("\(euro(card.costPerServingCents)) / Portion").font(Theme.F.micro).foregroundStyle(Theme.C.text2).monospacedDigit()
-            HStack(spacing: 4) {
-                if card.offerShare >= 0.4 { DealBadge(text: "im Angebot", style: .soft) }
-                if card.source == "instagram" { DealBadge(text: "Instagram", style: .ok) }
+            VStack(alignment: .leading, spacing: 2) {
+                Text(card.title).font(Theme.F.cardTitle(17)).lineLimit(2).multilineTextAlignment(.leading)
+                Text("\(card.prepMinutes) min · \(euro(card.costPerServingCents))").font(.caption)
+                    .opacity(0.85)
             }
-            .frame(minHeight: 22)
+            .foregroundStyle(url != nil ? .white : Theme.C.ink)
+            .padding(16)
         }
-        .padding(14)
-        .frame(maxWidth: .infinity)
-        .card()
+        .frame(height: height)
+        .clipShape(RoundedRectangle(cornerRadius: Theme.R.rtile, style: .continuous))
+        .overlay(alignment: .topTrailing) {
+            Button(action: toggle) {
+                Image(systemName: card.favorite ? "heart.fill" : "heart").font(.system(size: 16, weight: .semibold))
+                    .foregroundStyle(url != nil ? .white : Theme.C.ink)
+                    .frame(width: 36, height: 36)
+                    .background(url != nil ? Color.white.opacity(0.3) : Color.black.opacity(0.08), in: Circle())
+                    .frame(minWidth: 44, minHeight: 44)
+            }
+            .buttonStyle(PressableStyle())
+            .padding(6)
+            .accessibilityLabel(card.favorite ? "Aus Favoriten entfernen" : "Als Favorit merken")
+        }
     }
 }
 
