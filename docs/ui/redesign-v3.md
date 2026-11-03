@@ -146,7 +146,7 @@ Lizenzen: Fraunces und JetBrains Mono stehen unter SIL OFL 1.1 → Dateien + Liz
 | `Toast` | umbauen | Components | Kapsel 52 `ink`, Kreis 36 `lime` mit ✓, 15/700 weiß, `float`. |
 | `EmptyState` / `SkeletonCard` / `ErrorState` | umbauen | Components | Empty: `card` R30, Emoji 56, `headline`, Satz `caption`, `PrimaryButton`. Skeleton: Schimmer `surface` → `#F6F3EE`. Fehler: Pille `card` mit Text + `SecondaryButton` 40 „Erneut“. |
 | `Sheet` | umbauen | überall | `card`, R40 oben, Griff 40×5 `#D8D3C8`. |
-| `TabBar` | umbauen (ersetzt Liquid Glass, E87) | Components | Kapsel `ink` 70, Innenabstand 9, `float`. Tabs 52 Icon `#8C8A85`; aktiv: weiße Kapsel mit Icon + Name 14/800 `ink` (gleitend). Mitte: Kreis 56 `lime` mit +. Zähler (Angebote) Kapsel 18 `deal`, Rand 2 `ink`, oben rechts. |
+| `TabBar` | umbauen (ersetzt Liquid Glass, E87) | Components | Kapsel `ink` 70, Innenabstand 9, `float`. Tabs 52 Icon `#8C8A85`; aktiv: weißer Kreis 52 mit Icon `ink` (gleitend), **kein Text** (Nutzerwunsch 2026-11-03: Leiste darf sich beim Wechsel nicht verschieben). Mitte: Kreis 56 `lime` mit +. Zähler (Angebote) Kapsel 18 `deal`, Rand 2 `ink`, oben rechts. |
 | `QuickActions` (Fächer) | umbauen | ContentView | Siehe Screen „Schnell-Aktionen“ (6.1). |
 | `PaperGrain` | **neu** | Theme/Components | Kachelndes Rauschbild (180 px, fraktales Rauschen, Schwarz 9 % Alpha) mit Deckkraft 55 %, `multiply`, über jedem Screen, nicht antippbar. PNG einmal per Skript erzeugen (`ios/tools/make_grain.py`, Pillow), als Ressource. |
 | `RecipeHero` | **neu** | PlanViews/Recipes | Foto randlos 0–420, Verlauf 220–420 in die Foto-Farbe, darunter Fläche in Foto-Farbe. Knöpfe Glas dunkel. |

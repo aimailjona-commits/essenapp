@@ -131,7 +131,7 @@ svg.l{width:28px;height:28px}
 /* Tab-Bar */
 .tabbar{position:absolute;left:18px;right:18px;bottom:26px;height:70px;background:#111;border-radius:999px;display:flex;align-items:center;justify-content:space-between;padding:0 9px;box-shadow:var(--sh-float);z-index:15}
 .tab{position:relative;width:52px;height:52px;border-radius:50%;display:grid;place-items:center;color:#8C8A85}
-.tab.on{width:auto;padding:0 18px 0 14px;border-radius:999px;background:#fff;color:#111;display:flex;gap:8px;font-weight:800;font-size:14px}
+.tab.on{background:#fff;color:#111}
 .tab.plus{background:var(--lime);color:#111;width:56px;height:56px}
 .tab .count{position:absolute;top:4px;right:2px;min-width:18px;height:18px;font-size:10px;border:2px solid #111}
 .homebar{position:absolute;bottom:8px;left:50%;transform:translateX(-50%);width:134px;height:5px;border-radius:3px;background:#111;z-index:16}
@@ -428,13 +428,13 @@ svg.l{width:28px;height:28px}
   <div class="spec">
     <span class="nm">TabBar</span><h4>Schwarze schwebende Pille</h4>
     <div style="position:relative;height:80px"><div class="tabbar" style="left:0;right:0;bottom:4px">
-      <span class="tab on"><svg class="i"><use href="#home"/></svg>Start</span>
+      <span class="tab on"><svg class="i"><use href="#home"/></svg></span>
       <span class="tab"><svg class="i"><use href="#tag"/></svg><span class="count">3</span></span>
       <span class="tab plus"><svg class="i"><use href="#plus"/></svg></span>
       <span class="tab"><svg class="i"><use href="#bag"/></svg></span>
       <span class="tab"><svg class="i"><use href="#book"/></svg></span>
     </div></div>
-    <div class="d">Aktiver Tab: weiße Pille mit Name. Mitte: Limetten-Knopf öffnet Schnell-Aktionen. Zähler (Merkliste-Treffer) in <code>deal</code>. Im Dunkeln bleibt die Leiste schwarz, aktive Pille Limette.</div>
+    <div class="d">Aktiver Tab: weißer Kreis, nur Symbol (Leiste verschiebt sich nicht). Mitte: Limetten-Knopf öffnet Schnell-Aktionen. Zähler (Merkliste-Treffer) in <code>deal</code>. Im Dunkeln bleibt die Leiste schwarz, aktive Pille Limette.</div>
   </div>
 
   <div class="spec">
@@ -646,7 +646,7 @@ svg.l{width:28px;height:28px}
         <div class="wrow"><div class="plate ph ph-grill" style="width:56px;height:56px"></div><div style="flex:1"><div class="m">Mi · Abend</div><div class="n">Lachs mit Salat</div><div class="p">3,40 € · 30 min</div></div><svg class="i s t3"><use href="#chev"/></svg></div>
         <div class="wrow"><div class="eplate" style="width:56px;height:56px;font-size:30px">🍛</div><div style="flex:1"><div class="m">Do · Abend</div><div class="n">Chicken Tikka Masala</div><div class="p">2,40 € · 35 min</div></div><svg class="i s t3"><use href="#chev"/></svg></div>
       </div>
-      <div class="tabbar"><span class="tab on"><svg class="i"><use href="#home"/></svg>Start</span><span class="tab"><svg class="i"><use href="#tag"/></svg><span class="count">3</span></span><span class="tab plus"><svg class="i"><use href="#plus"/></svg></span><span class="tab"><svg class="i"><use href="#bag"/></svg></span><span class="tab"><svg class="i"><use href="#book"/></svg></span></div>
+      <div class="tabbar"><span class="tab on"><svg class="i"><use href="#home"/></svg></span><span class="tab"><svg class="i"><use href="#tag"/></svg><span class="count">3</span></span><span class="tab plus"><svg class="i"><use href="#plus"/></svg></span><span class="tab"><svg class="i"><use href="#bag"/></svg></span><span class="tab"><svg class="i"><use href="#book"/></svg></span></div>
       <div class="homebar"></div>
     </div>
     <div class="caption"><b>S1 Start</b>Oben schwarz mit der Woche als Satz (SentenceHero), unten Creme-Sheet mit den nächsten Gerichten. Darunter beim Scrollen: Budget-Karte, Lieblingsrezepte günstig, Kühlschrank scannen, Banner.</div>
@@ -668,7 +668,7 @@ svg.l{width:28px;height:28px}
           <div class="acts"><span><svg class="i"><use href="#heart"/></svg></span><span><svg class="i"><use href="#swap"/></svg></span><span><svg class="i"><use href="#lock"/></svg></span><span><svg class="i"><use href="#dice"/></svg></span></div></div>
         <div class="day" style="background:#fff;border:1px solid var(--line)"><div class="eplate" style="background:var(--tint-pink)">🍰</div><div class="m">Dessert · 10 min</div><div class="n">Quarkcreme mit Beeren</div><div class="p">0,90 € · 280 kcal</div></div>
       </div>
-      <div class="tabbar"><span class="tab"><svg class="i"><use href="#home"/></svg></span><span class="tab"><svg class="i"><use href="#tag"/></svg><span class="count">3</span></span><span class="tab plus"><svg class="i"><use href="#plus"/></svg></span><span class="tab"><svg class="i"><use href="#bag"/></svg></span><span class="tab on"><svg class="i"><use href="#book"/></svg>Rezepte</span></div>
+      <div class="tabbar"><span class="tab"><svg class="i"><use href="#home"/></svg></span><span class="tab"><svg class="i"><use href="#tag"/></svg><span class="count">3</span></span><span class="tab plus"><svg class="i"><use href="#plus"/></svg></span><span class="tab"><svg class="i"><use href="#bag"/></svg></span><span class="tab on"><svg class="i"><use href="#book"/></svg></span></div>
       <div class="homebar"></div>
     </div>
     <div class="caption"><b>S2 Wochenplan</b>Tag wählen, Gerichte als überlappende Farbkarten in der Tagesfarbe. Darunter (Scroll): Tageswerte-Ringe, Reste, Abwechslung, „Keine Lust“.</div>
@@ -749,7 +749,7 @@ svg.l{width:28px;height:28px}
           <div class="offer" style="background:var(--tint-blue)"><span class="burst tl"><span class="bt">−30<small>%</small></span></span><div class="img">🧀</div><div class="nm">Feta</div><div class="gp">Lidl · 200 g</div><div class="bot"><span class="price">1,29 €</span><span class="add on"><svg class="i s"><use href="#check"/></svg></span></div></div>
         </div>
       </div>
-      <div class="tabbar"><span class="tab"><svg class="i"><use href="#home"/></svg></span><span class="tab on"><svg class="i"><use href="#tag"/></svg>Angebote</span><span class="tab plus"><svg class="i"><use href="#plus"/></svg></span><span class="tab"><svg class="i"><use href="#bag"/></svg></span><span class="tab"><svg class="i"><use href="#book"/></svg></span></div>
+      <div class="tabbar"><span class="tab"><svg class="i"><use href="#home"/></svg></span><span class="tab on"><svg class="i"><use href="#tag"/></svg></span><span class="tab plus"><svg class="i"><use href="#plus"/></svg></span><span class="tab"><svg class="i"><use href="#bag"/></svg></span><span class="tab"><svg class="i"><use href="#book"/></svg></span></div>
       <div class="homebar"></div>
     </div>
     <div class="caption"><b>S4 Angebote</b>Ort darunter klein, Merkliste wird ein Chip statt eigenem Segment. Oben die größte Ersparnis als Limetten-Karte, darunter Raster in Kategorie-Tönung.</div>
@@ -797,7 +797,7 @@ svg.l{width:28px;height:28px}
         </div>
         <div class="row between" style="margin-top:16px;background:#111;color:#fff;border-radius:999px;height:60px;padding:0 8px 0 22px"><span style="font-weight:600">Diese Woche gespart</span><span class="row"><b style="color:var(--lime);font-size:20px">12,40 €</b><span class="rbtn sm" style="background:#2A2A2A;color:#fff"><svg class="i s"><use href="#chev"/></svg></span></span></div>
       </div>
-      <div class="tabbar"><span class="tab"><svg class="i"><use href="#home"/></svg></span><span class="tab"><svg class="i"><use href="#tag"/></svg><span class="count">3</span></span><span class="tab plus"><svg class="i"><use href="#plus"/></svg></span><span class="tab on"><svg class="i"><use href="#bag"/></svg>Einkauf</span><span class="tab"><svg class="i"><use href="#book"/></svg></span></div>
+      <div class="tabbar"><span class="tab"><svg class="i"><use href="#home"/></svg></span><span class="tab"><svg class="i"><use href="#tag"/></svg><span class="count">3</span></span><span class="tab plus"><svg class="i"><use href="#plus"/></svg></span><span class="tab on"><svg class="i"><use href="#bag"/></svg></span><span class="tab"><svg class="i"><use href="#book"/></svg></span></div>
       <div class="homebar"></div>
     </div>
     <div class="caption"><b>S5 Einkauf</b>Listen als farbige Ordner pro Laden mit Händler-Logo auf weißem Plättchen. Pille Liste | Vorrat | Coupons bleibt.</div>
@@ -851,7 +851,7 @@ svg.l{width:28px;height:28px}
           </div>
         </div>
       </div>
-      <div class="tabbar"><span class="tab"><svg class="i"><use href="#home"/></svg></span><span class="tab"><svg class="i"><use href="#tag"/></svg><span class="count">3</span></span><span class="tab plus"><svg class="i"><use href="#plus"/></svg></span><span class="tab"><svg class="i"><use href="#bag"/></svg></span><span class="tab on"><svg class="i"><use href="#book"/></svg>Rezepte</span></div>
+      <div class="tabbar"><span class="tab"><svg class="i"><use href="#home"/></svg></span><span class="tab"><svg class="i"><use href="#tag"/></svg><span class="count">3</span></span><span class="tab plus"><svg class="i"><use href="#plus"/></svg></span><span class="tab"><svg class="i"><use href="#bag"/></svg></span><span class="tab on"><svg class="i"><use href="#book"/></svg></span></div>
       <div class="homebar"></div>
     </div>
     <div class="caption"><b>S12 Rezepte</b>Kachel-Wand wie GoodNotes „My Notes“: Plan als Checkliste, Fotos, Sammlungen (Instagram, Im Angebot). Wochenplan erreicht man über die rote Kachel.</div>

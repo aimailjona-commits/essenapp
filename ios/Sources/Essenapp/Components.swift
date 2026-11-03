@@ -470,7 +470,7 @@ enum AppTab: CaseIterable {
     }
 }
 
-/// Tab-Leiste v3 (E87): schwarze Kapsel, aktiver Tab als weiße Pille mit Namen, Limetten-Knopf in der Mitte.
+/// Tab-Leiste v3 (E87): schwarze Kapsel, aktiver Tab als weißer Kreis (nur Symbol), Limetten-Knopf in der Mitte.
 /// Bei offenen Schnell-Aktionen wird sie weiß und der Knopf hebt sich als ✕ in einer Wölbung heraus.
 struct TabBar: View {
     @Binding var selected: AppTab
@@ -522,15 +522,12 @@ struct TabBar: View {
             if selected == tab { reselect() }
             withAnimation(Theme.spring) { selected = tab; quickOpen = false }
         } label: {
-            HStack(spacing: 8) {
-                Image(systemName: tab.symbol).font(.system(size: 18, weight: .semibold)).symbolEffect(.bounce, value: on)
-                if on { Text(tab.title).font(.system(.subheadline, weight: .heavy)).lineLimit(1).fixedSize() }
-            }
+            // nur Symbol (Nutzerwunsch): feste Breite, die Leiste verschiebt sich beim Wechsel nicht
+            Image(systemName: tab.symbol).font(.system(size: 18, weight: .semibold)).symbolEffect(.bounce, value: on)
             .foregroundStyle(on ? Theme.C.ink : quickOpen ? Theme.C.onInk3 : Theme.C.tabInactive)
-            .padding(.leading, on ? 14 : 0).padding(.trailing, on ? 18 : 0)
-            .frame(minWidth: Theme.S.tab, minHeight: Theme.S.tab)
+            .frame(width: Theme.S.tab, height: Theme.S.tab)
             .background {
-                if on { Capsule().fill(Theme.C.plate).matchedGeometryEffect(id: "pill", in: pill) }
+                if on { Circle().fill(Theme.C.plate).matchedGeometryEffect(id: "pill", in: pill) }
             }
             .overlay(alignment: .topTrailing) {
                 if let n = badges[tab], n > 0, !on {
