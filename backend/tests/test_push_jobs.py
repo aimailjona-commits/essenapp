@@ -41,7 +41,9 @@ def runs(db, name=None) -> list[JobRun]:
 @pytest.fixture
 def sent(monkeypatch):
     calls = []
-    monkeypatch.setattr(push, "send", lambda m, title, message, **kw: calls.append((m.id, message, kw)) or True)
+    # Wochenrückblick (So 19:00, 55) läuft in diesen Zeitfenstern mit; seine Pushes prüft test_phase13_14
+    monkeypatch.setattr(push, "send", lambda m, title, message, **kw: (
+        kw.get("thread_id") == "review" or calls.append((m.id, message, kw))) or True)
     return calls
 
 
@@ -105,7 +107,7 @@ def test_schedule_override_and_manual_run(db, imports, sent, monkeypatch):
     jobs.tick(db, datetime(2026, 11, 10, 10, 0, tzinfo=BERLIN))
     assert len(imports) == 1
     r = jobs.run(db, "coupon_expiry", at(8, "12:00"))
-    assert r.ok and r.info == "Platzhalter, wartet auf Phase 13 (38 Payback & Rewe Bonus)"
+    assert r.ok and r.info == "0 Coupons, 0 Pushes"
 
 
 # --- Ruhezeiten ---

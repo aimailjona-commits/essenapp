@@ -8,8 +8,8 @@ from fastapi.templating import Jinja2Templates
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.api import (add_item, household_list, join_household, list_item, member_item, shared_list, update_item,
-                     valid_invite)
+from app.api import (add_item, household_list, import_shared, join_household, list_item, member_item, recipe_origin,
+                     share_link, shared_list, shared_recipe, update_item, valid_invite)
 from app.core.auth import hash_token
 from app.core.db import get_db
 from app.models import Household, MealPlan, Member, ShoppingList
@@ -26,6 +26,8 @@ DAYS = ["Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag", "S
 MEALS = {"fruehstueck": "Frühstück", "mittag": "Mittag", "abend": "Abend"}
 
 templates.env.filters["euro"] = lambda cents: f"{(cents or 0) / 100:.2f} €".replace(".", ",")
+templates.env.filters["ing"] = lambda i: (f"{i['amount']:g} {'Stk' if i.get('unit') == 'stk' else i.get('unit', '')}"
+                                          .strip() if i.get("amount") else "")
 templates.env.filters["qty"] = lambda i: (f"{i.amount:g} {'Stk' if i.unit == 'stk' else i.unit}".strip()
                                           if i.amount else "")
 
@@ -170,3 +172,23 @@ def guest_toggle(share_code: str, item_id: int, request: Request, guest: str = F
     item = list_item(lst, item_id)
     update_item(db, item, ItemUpdate(checked=not item.checked), guest_name(guest))
     return list_partial(request, lst, f"/l/{lst.share_code}")
+
+
+# --- Geteiltes Rezept (56): Web-Ansicht für alle, Übernahme für Web-Mitglieder eines Haushalts ---
+
+@router.get("/r/{code}", response_class=HTMLResponse)
+def recipe_page(code: str, request: Request, imported: bool = False, member: Member | None = Depends(cookie_member),
+                db: Session = Depends(get_db)):
+    try:
+        recipe = shared_recipe(db, code)
+    except HTTPException:
+        return not_found(request, "Dieses Rezept wird nicht mehr geteilt.")
+    return page(request, "recipe.html", recipe=recipe, code=recipe.share_code, origin=recipe_origin(db, recipe),
+                member=member, imported=imported and member is not None)
+
+
+@router.post("/r/{code}/import")
+def recipe_import(code: str, request: Request, member: Member = Depends(require_member), db: Session = Depends(get_db)):
+    recipe = shared_recipe(db, code)
+    import_shared(db, recipe, member.household_id, share_link(request, recipe.share_code))
+    return RedirectResponse(f"/r/{recipe.share_code}?imported=1", 303)

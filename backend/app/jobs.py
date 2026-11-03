@@ -13,8 +13,8 @@ from sqlalchemy.orm import Session, object_session
 
 from app.core.config import settings
 from app.core.db import SessionLocal
-from app.models import Household, JobRun, MealPlan, Member, Offer, Product, PushOutbox, WatchItem
-from app.services import labels, prices, push, watch
+from app.models import Coupon, Household, JobRun, MealPlan, Member, Offer, Product, PushOutbox, WatchItem
+from app.services import bonus, labels, motivation, prices, push, watch
 from app.services.offers_import import refresh_household
 
 log = logging.getLogger(__name__)
@@ -180,8 +180,49 @@ def product_facts(db: Session, now: datetime) -> str:
     return f"{found} sichere Treffer, {len([p for p in products if p.off_checked_at])} geprüft, {len(products)} offen"
 
 
-def waiting(phase: str):
-    return lambda db, now: f"Platzhalter, wartet auf {phase}"
+def coupon_expiry(db: Session, now: datetime) -> str:
+    """Coupon läuft ab (38a): einmal Push an alle Mitglieder, sobald höchstens 2 Tage übrig sind."""
+    today, sent = now.date(), 0
+    coupons = list(db.scalars(select(Coupon).where(Coupon.expiry_notified_at.is_(None), Coupon.valid_until >= today,
+                                                   Coupon.valid_until <= today + timedelta(days=2))))
+    for c in coupons:
+        for m in db.scalars(select(Member).where(Member.household_id == c.household_id)):
+            sent += notify(m, now, "Essenapp", bonus.expiry_text(c, today), click_url=f"essenapp://coupon/{c.id}",
+                           thread_id="coupon")
+        c.expiry_notified_at = today
+    db.commit()
+    return f"{len(coupons)} Coupons, {sent} Pushes"
+
+
+def week_review(db: Session, now: datetime) -> str:
+    """Wochenrückblick (55) So 19:00: für jeden Haushalt (neu) rechnen und melden."""
+    from app.api import week_review as build  # spät: api importiert jobs nicht
+    week, sent = motivation.review_week(now.date()), 0
+    households = list(db.scalars(select(Household)))
+    for h in households:
+        build(db, h, week, rebuild=True)
+        for m in h.members:
+            sent += notify(m, now, "Essenapp", f"📖 Dein Wochenrückblick KW {prices.week_monday(week).isocalendar().week} "
+                           "ist da", click_url=f"essenapp://review/{week}", thread_id="review")
+    db.commit()
+    return f"{len(households)} Rückblicke, {sent} Pushes"
+
+
+def achievements(db: Session, now: datetime) -> str:
+    """Erfolge (54) täglich: neu Erreichtes genau einmal freischalten, Push an den Haushalt bzw. das Mitglied."""
+    new = []
+    for h in db.scalars(select(Household)).all():
+        _, rows = motivation.evaluate(db, h, now.date())
+        db.commit()
+        for a in rows:
+            _, _, emoji, title, *_ = motivation.BY_KEY[a.key]
+            for m in h.members:
+                if a.member_id in (0, m.id):
+                    notify(m, now, "Essenapp", f"{emoji} Neuer Erfolg: {title}", click_url="essenapp://achievements",
+                           thread_id="achievements")
+        new += rows
+    db.commit()
+    return f"{len(new)} neue Erfolge"
 
 
 def plan_week(now: datetime) -> int:
@@ -285,9 +326,9 @@ JOBS = {  # name: (Zeitplan oder None, Funktion(db, now) -> Info); Zeitpläne pe
     "product_facts": (None, product_facts),  # nach jedem Import (Open Food Facts, 49)
     "watch_rhythm": ("täglich 08:00", watch_rhythm),  # Verbrauchsrhythmus (58)
     "plan_prompt": (None, lambda db, now: f"{sum(send_plan_prompt(m, now) for m in prompt_members(db))} gesendet"),
-    "coupon_expiry": ("täglich 09:00", waiting("Phase 13 (38 Payback & Rewe Bonus)")),
-    "week_review": ("So 19:00", waiting("Phase 14 (55 Wochenrückblick)")),
-    "achievements": ("täglich 03:00", waiting("Phase 14 (54 Erfolge)")),
+    "coupon_expiry": ("täglich 09:00", coupon_expiry),  # 38a
+    "week_review": ("So 19:00", week_review),  # 55
+    "achievements": ("täglich 03:00", achievements),  # 54
     "reinstall_reminder": (None, reinstall_reminder),  # Termin aus reinstall_slot()
     "weekly_basics": ("Mo 06:30", weekly_basics),
 }

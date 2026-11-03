@@ -30,6 +30,9 @@ _BASE = re.compile(  # "(1 kg = 2.98 €)", "1 l = € 1.38", "12.99/kg", "EUR 2
     r"|(\d+[.,]\d+)\s*€?\s*/\s*(?:1\s*)?(?:kg|l|st)\b"
     r"|(?:kg|l)-preis\s*=?\s*(\d+[.,]\d+)", re.I)
 _BERLIN = ZoneInfo("Europe/Berlin")
+# Rewe-Bonus (39): kaufDA hat kein eigenes Feld, der Betrag steht im Deal-Text („0,20 € Bonus“, „Bonus 0,15€“,
+# „… 0,10 € Bonus in der REWE App sammeln“), Typ OTHER oder SALES_PRICE, selten in conditions[].other
+_BONUS = re.compile(r"(\d+[.,]\d{1,2})\s*€?\s*Bonus|Bonus\s*(\d+[.,]\d{1,2})\s*€", re.I)
 
 HEADERS = {"User-Agent": "Essenapp/0.1 (privat)", "Accept-Language": "de-DE"}
 SHELF_URL = "https://www.kaufda.de/api/shelf"
@@ -69,7 +72,7 @@ def _offer(chain, store_ref, source_id, title, brand, text, price_cents, regular
         "regular_price_cents": regular_cents if regular_cents and regular_cents > price_cents else None,
         "amount": amount, "unit": unit, "base_price_cents": base, "ean": "",
         "valid_from": valid_from, "valid_to": valid_to, "image_url": (image_url or "")[:500],
-        "ingredient_id": None, "raw": raw,
+        "ingredient_id": None, "raw": raw, "bonus_cents": None,
     }
 
 
@@ -101,6 +104,20 @@ def _pick(deals: list[dict], *types: str) -> int | None:
     return None
 
 
+def bonus_cents(deals: list[dict], name: str, names: list[str]) -> int | None:
+    """Rewe-Bonus eines Produkts: Deals mit seinem Namen, sonst Deals ohne den Namen eines anderen Produkts."""
+    others = [n for n in names if n and n != name]
+    for d in deals:
+        texts = [d.get("description") or "", *((c or {}).get("other") or "" for c in d.get("conditions") or [])]
+        mine = (d.get("description") or "").startswith(name) if name else False
+        if not mine and any(t.startswith(o) for t in texts for o in others):
+            continue
+        for t in texts:
+            if m := _BONUS.search(t):
+                return euro_to_cents(m.group(1) or m.group(2))
+    return None
+
+
 def parse_pages(data: dict, chain: str, store_ref: str = "") -> list[dict]:
     """Brochure-/pages-Antwort -> Offer-Dicts (ein Dict pro Produkt)."""
     out = []
@@ -114,6 +131,7 @@ def parse_pages(data: dict, chain: str, store_ref: str = "") -> list[dict]:
             if valid_from > valid_to:
                 continue  # kommt in den Quelldaten vor (Lidl), Zeitraum unklar
             deals = c.get("deals") or []
+            names = [(p.get("name") or "").strip() for p in c.get("products") or []]
             for i, p in enumerate(c.get("products") or []):
                 name = (p.get("name") or "").strip()
                 # Mehrere Produkte je Angebot: Deals über ihre Beschreibung dem Produkt zuordnen.
@@ -130,7 +148,7 @@ def parse_pages(data: dict, chain: str, store_ref: str = "") -> list[dict]:
                     _pick(own, "REGULAR_PRICE", "RECOMMENDED_RETAIL_PRICE"), base_text,
                     valid_from, valid_to,
                     images[0]["url"] if images else c.get("image"), c,
-                ))
+                ) | {"bonus_cents": bonus_cents(deals, name, names) if chain == "rewe" else None})
     return out
 
 

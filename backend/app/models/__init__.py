@@ -217,6 +217,7 @@ class Offer(Base):
     valid_from: Mapped[date]
     valid_to: Mapped[date]
     image_url: Mapped[str] = mapped_column(String(500), default="")
+    bonus_cents: Mapped[int | None]  # Rewe-Bonus-Guthaben je Packung (39), aus dem Prospekttext
     ingredient_id: Mapped[int | None] = mapped_column(ForeignKey("ingredient.id"))
     product_id: Mapped[int | None] = mapped_column(ForeignKey("product.id"), index=True)  # Preisverlauf (28)
     raw: Mapped[dict] = mapped_column(JSON, default=dict)
@@ -244,6 +245,7 @@ class Recipe(Base):
     image_url: Mapped[str] = mapped_column(String(500), default="")
     # KI-Bild je Schritt (9): "/media/steps/<id>/<n>.jpg" oder "" = noch keins; Länge kann < steps sein
     step_images: Mapped[list[str]] = mapped_column(JSON, default=list, server_default="[]")
+    share_code: Mapped[str | None] = mapped_column(String(16), unique=True)  # Link /r/<code> (56)
     created_at: Mapped[datetime] = mapped_column(server_default=func.now())
 
 
@@ -461,3 +463,90 @@ class WatchHit(Base):
     offer_id: Mapped[int]  # kein FK: alte Angebote dürfen gelöscht werden
     week: Mapped[str] = mapped_column(String(8))
     notified_at: Mapped[datetime | None]
+
+
+class Coupon(Base):
+    """Coupon-Wallet (38a, 59): Payback/Rewe/dm/Rossmann-Coupon aus Foto, Barcode oder Eingabe – keine Logins (A7)."""
+    __tablename__ = "coupon"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    household_id: Mapped[int] = mapped_column(ForeignKey("household.id"), index=True)
+    program: Mapped[str] = mapped_column(String(12), default="sonstige")  # payback | rewe_bonus | dm | rossmann | sonstige
+    partner: Mapped[str] = mapped_column(String(50), default="")  # Anzeigename, z.B. „dm“, „Aral“
+    chain: Mapped[str] = mapped_column(String(30), default="")  # Laden der App, "" = keiner (z.B. Aral)
+    product: Mapped[str] = mapped_column(String(100), default="")  # Produkt/Marke, "" = ganzer Einkauf bzw. Kategorie
+    category: Mapped[str] = mapped_column(String(30), default="")  # Angebots-Kategorie, "" = keine
+    benefit: Mapped[str] = mapped_column(String(100), default="")  # „10fach Punkte“, „0,50 € Bonus“
+    multiplier: Mapped[int | None]  # 10 = 10fach Punkte
+    bonus_cents: Mapped[int | None]  # fester Vorteil in Cent (Bonus/Rabatt)
+    percent: Mapped[int | None]  # Rabatt in %
+    min_spend_cents: Mapped[int | None]
+    valid_until: Mapped[date | None]
+    code: Mapped[str] = mapped_column(String(200), default="")  # Barcode-Inhalt
+    code_type: Mapped[str] = mapped_column(String(10), default="")  # code128 | ean13 | qr | ""
+    source: Mapped[str] = mapped_column(String(10), default="manuell")  # foto | barcode | manuell
+    expiry_notified_at: Mapped[date | None]  # Ablauf-Push gesendet
+    created_by: Mapped[int | None] = mapped_column(ForeignKey("member.id"))
+    created_at: Mapped[datetime] = mapped_column(server_default=func.now())
+
+
+class BonusEntry(Base):
+    """Payback-Punkte bzw. Rewe-Bonus-Guthaben (38b): Kontostand = Summe delta. kind plus = „Heute bekommen“ (zählt als
+    Ersparnis), minus = eingelöst, set = Korrektur auf einen Wert."""
+    __tablename__ = "bonus_entry"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    household_id: Mapped[int] = mapped_column(ForeignKey("household.id"), index=True)
+    program: Mapped[str] = mapped_column(String(12))  # payback (°P) | rewe_bonus (Cent)
+    kind: Mapped[str] = mapped_column(String(5))  # plus | minus | set
+    delta: Mapped[int]
+    note: Mapped[str] = mapped_column(String(100), default="")
+    member_id: Mapped[int | None] = mapped_column(ForeignKey("member.id"))
+    created_at: Mapped[datetime] = mapped_column(default=datetime.now)
+
+
+class Purchase(Base):
+    """Abgehakter Artikel mit Preis (34, A10): bleibt, auch wenn der Listeneintrag später verschwindet."""
+    __tablename__ = "purchase"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    household_id: Mapped[int] = mapped_column(ForeignKey("household.id"), index=True)
+    item_id: Mapped[int | None] = mapped_column(index=True)  # kein FK: Listeneinträge dürfen gelöscht werden
+    name: Mapped[str] = mapped_column(String(100))
+    amount: Mapped[float | None]
+    unit: Mapped[str] = mapped_column(String(10), default="")
+    chain: Mapped[str] = mapped_column(String(30), default="")
+    category: Mapped[str] = mapped_column(String(30), default="sonstiges")
+    offer_id: Mapped[int | None]
+    price_cents: Mapped[int]  # ganze Packungen: Angebotspreis, sonst Normalpreis-Schätzung
+    saved_cents: Mapped[int] = mapped_column(default=0)  # Streichpreis − Angebotspreis
+    estimated: Mapped[bool] = mapped_column(default=False)  # „geschätzt“
+    verdict: Mapped[str | None] = mapped_column(String(15))  # Urteil des Angebots beim Kauf (Bestpreis-Jäger, 54)
+    source: Mapped[str] = mapped_column(String(10), default="manual")  # wie shopping_item.source (stockup → 54)
+    bought_by: Mapped[str] = mapped_column(String(50), default="")
+    bought_at: Mapped[datetime] = mapped_column(default=datetime.now, index=True)
+
+
+class Achievement(Base):
+    """Freigeschaltete Medaille (54), genau einmal je Haushalt/Mitglied und Schlüssel. member_id 0 = Haushalt."""
+    __tablename__ = "achievement"
+    __table_args__ = (UniqueConstraint("household_id", "member_id", "key"),)
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    household_id: Mapped[int] = mapped_column(ForeignKey("household.id"), index=True)
+    member_id: Mapped[int] = mapped_column(default=0)
+    key: Mapped[str] = mapped_column(String(30))
+    unlocked_at: Mapped[datetime] = mapped_column(default=datetime.now)
+    seen_at: Mapped[datetime | None]  # Vollbild-Moment gezeigt
+
+
+class WeekReview(Base):
+    """Wochenrückblick (55) als Schnappschuss fürs Archiv."""
+    __tablename__ = "week_review"
+    __table_args__ = (UniqueConstraint("household_id", "week"),)
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    household_id: Mapped[int] = mapped_column(ForeignKey("household.id"), index=True)
+    week: Mapped[str] = mapped_column(String(8))  # "2026-W45"
+    data: Mapped[dict] = mapped_column(JSON, default=dict)
+    created_at: Mapped[datetime] = mapped_column(default=datetime.now)

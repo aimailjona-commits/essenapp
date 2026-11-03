@@ -136,6 +136,7 @@ class OfferOut(BaseModel):
     label_sources: list[str] = []  # „Prospekttext“, „Open Food Facts (ODbL)“ (Erklärung im Detail)
     off_code: str = ""  # Open-Food-Facts-Barcode des sicheren Treffers → world.openfoodfacts.org/product/<code>
     monthly: bool = False  # dm/Rossmann-Monatsaktion (59)
+    bonus_cents: int | None = None  # Rewe-Bonus-Aktion (39): Badge „🎁 0,50 € Bonus“, Filter ?bonus=true
 
 
 class NutritionOut(BaseModel):
@@ -283,7 +284,7 @@ class PlanOptions(BaseModel):
 class CostEntry(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
-    kind: str  # import | scan | cook_now | step_image
+    kind: str  # import | scan | cook_now | step_image | no_mood | substitute | budget | coupon
     model: str
     cost_cents: float
     info: str
@@ -351,6 +352,14 @@ class ItemUpdate(BaseModel):
     next_week: bool | None = None  # „Auf nächste Woche schieben“ (30) bzw. zurück
 
 
+class CouponBadge(BaseModel):
+    """Coupon-Badge am Listenartikel/Merklisten-Eintrag (38c, 59): „🎟 10fach“ → Coupon antippen = Kassen-Vollbild."""
+    id: int
+    text: str
+    program: str
+    partner: str
+
+
 class ItemOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
@@ -365,6 +374,7 @@ class ItemOut(BaseModel):
     checked_by: str
     source: str  # plan | manual | basics | stockup (Badge „Vorratskauf“) | rhythm („bald leer“, 58)
     defer_week: str | None = None  # ISO-Woche der Gruppe „Nächste Woche“ (30)
+    coupon: CouponBadge | None = None  # passender aktiver Coupon (38c/59)
 
     @computed_field
     @property
@@ -927,6 +937,7 @@ class WatchOut(BaseModel):
     last_bought: date | None
     empty_on: date | None  # last_bought + lasts_weeks
     hits: list[OfferOut]  # aktuelle Treffer (erfüllen den Alarm), günstigste zuerst → „Diese Woche günstig“
+    coupon: CouponBadge | None = None  # passender Drogerie-Coupon (59)
 
 
 class EanProductOut(BaseModel):
@@ -988,3 +999,252 @@ class AddEntryIn(BaseModel):
 
 class RerollIn(BaseModel):
     max_cost_cents: int | None = Field(None, ge=0)  # Kostengrenze (43, „günstigere Alternative“)
+
+
+# --- Payback & Rewe Bonus (38), Drogerie-Coupons (59) ---
+
+Program = Literal["payback", "rewe_bonus", "dm", "rossmann", "sonstige"]
+CouponCategory = Literal["", "fleisch_fisch", "obst_gemuese", "kuehlung", "vorrat", "getraenke", "drogerie", "haushalt",
+                         "sonstiges"]
+CodeType = Literal["", "code128", "ean13", "ean8", "qr"]
+
+
+class CouponFields(BaseModel):
+    partner: str = Field("", max_length=50)  # „dm“, „REWE“, „Aral“
+    program: Program = "sonstige"
+    chain: str = Field("", max_length=30)  # Laden der App; "" = keiner (beim Foto aus partner abgeleitet)
+    product: str = Field("", max_length=100)  # Produkt/Marke, "" = ganzer Einkauf bzw. Kategorie
+    category: CouponCategory = ""
+    benefit: str = Field("", max_length=100)  # „10fach Punkte“, „0,50 € Bonus“, „20 % Rabatt“
+    multiplier: int | None = Field(None, ge=1, le=100)
+    bonus_cents: int | None = Field(None, ge=1, le=100000)
+    percent: int | None = Field(None, ge=1, le=100)
+    min_spend_cents: int | None = Field(None, ge=1)
+    valid_until: date | None = None
+
+
+class CouponIn(CouponFields):
+    code: str = Field("", max_length=200)  # Barcode-Inhalt (VisionKit)
+    code_type: CodeType = ""
+    source: Literal["foto", "barcode", "manuell"] = "manuell"
+
+
+class CouponUpdate(BaseModel):
+    """Nur genannte Felder; multiplier/bonus_cents/percent/min_spend_cents/valid_until dürfen null werden."""
+    partner: str | None = Field(None, max_length=50)
+    program: Program | None = None
+    chain: str | None = Field(None, max_length=30)
+    product: str | None = Field(None, max_length=100)
+    category: CouponCategory | None = None
+    benefit: str | None = Field(None, max_length=100)
+    multiplier: int | None = Field(None, ge=1, le=100)
+    bonus_cents: int | None = Field(None, ge=1, le=100000)
+    percent: int | None = Field(None, ge=1, le=100)
+    min_spend_cents: int | None = Field(None, ge=1)
+    valid_until: date | None = None
+    code: str | None = Field(None, max_length=200)
+    code_type: CodeType | None = None
+
+
+class CouponOut(CouponIn):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    badge: str  # „🎟 10fach“
+    expired: bool  # → grau unter „Abgelaufen“
+    days_left: int | None  # bis valid_until, null = unbegrenzt
+    created_at: datetime
+
+
+class CouponScanOut(CouponFields):
+    """Gelesene Felder (nicht gespeichert) → Prüfen → POST /coupons (source foto)."""
+    cost_cents: float
+
+
+class BonusAccountOut(BaseModel):
+    """Karte „Payback: 1.240 °P (≈ 12,40 €)“ bzw. „Rewe Bonus: 8,50 €“ (38b)."""
+    program: Literal["payback", "rewe_bonus"]
+    name: str
+    unit: Literal["punkte", "cent"]
+    balance: int  # °P bzw. Cent
+    value_cents: int  # Payback: 1 °P ≈ 1 ct
+    earned_month_cents: int  # diesen Monat gutgeschrieben (Ersparnis „Bonus“)
+
+
+class BonusIn(BaseModel):
+    """Plus/Minus-Sheet: delta (+60 °P „Heute bekommen“, −500 eingelöst) oder set (Kontostand korrigieren)."""
+    delta: int | None = Field(None, ge=-10_000_000, le=10_000_000)
+    set: int | None = Field(None, ge=0, le=10_000_000)
+    note: str = Field("", max_length=100)
+
+    @model_validator(mode="after")
+    def _one(self):
+        if (self.delta is None) == (self.set is None) or self.delta == 0:
+            raise ValueError("genau eins von delta (≠ 0) oder set angeben")
+        return self
+
+
+# --- Monats-Dashboard (34) ---
+
+class PurchaseOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    name: str
+    amount: float | None
+    unit: str
+    chain: str
+    category: str
+    price_cents: int
+    saved_cents: int
+    estimated: bool  # „geschätzt“ (Normalpreis-Schätzung)
+    bought_at: datetime  # Zeitpunkt des Abhakens
+    bought_by: str
+
+
+class WeekSum(BaseModel):
+    week: str  # "2026-W45"
+    total_cents: int
+
+
+class ChainSum(BaseModel):
+    chain: str  # "" = ohne Laden
+    total_cents: int
+
+
+class CategorySum(BaseModel):
+    category: str
+    total_cents: int
+
+
+class SpendingOut(BaseModel):
+    month: str  # "2026-11"
+    total_cents: int
+    estimated_cents: int  # davon geschätzt
+    budget_cents: int  # (Lebensmittel- + Drogerie-Wochenbudget) × Tage / 7 (Ring)
+    saved_cents: int  # Angebote
+    bonus_cents: int  # Bonus (38b, gutgeschrieben)
+    weeks: list[WeekSum]  # Balken pro Woche (alle Wochen des Monats)
+    stores: list[ChainSum]  # Torte pro Laden
+    categories: list[CategorySum]  # Torte pro Kategorie
+    top: list[PurchaseOut]  # Top 5 teuerste
+    prev_total_cents: int
+    change_pct: float | None  # gegenüber Vormonat, null ohne Vormonat
+    items: list[PurchaseOut]  # alle Käufe des Monats, neueste zuerst
+
+
+# --- Erfolge (54) ---
+
+class AchievementOut(BaseModel):
+    key: str  # z.B. gespart_50, budget_4, protein_7
+    group: Literal["sparen", "gesundheit"]
+    emoji: str
+    title: str
+    target: int
+    progress: float  # gedeckelt auf target (Fortschrittsring)
+    unit: Literal["cent", "wochen", "angebote", "tipps", "tage", "pflanzen"]
+    unlocked_at: datetime | None  # null = gesperrt (grau)
+    new: bool  # freigeschaltet, Vollbild-Moment noch nicht gezeigt → danach POST /achievements/seen
+
+
+class SeenIn(BaseModel):
+    keys: list[Annotated[str, Field(max_length=30)]] = Field(min_length=1, max_length=50)
+
+
+# --- Wochenrückblick (55) ---
+
+class ReviewFavorite(BaseModel):
+    recipe_id: int
+    title: str
+    image_url: str
+    stars: int
+
+
+class ReviewCooking(BaseModel):
+    cooked: int  # „Gekocht ★“ in der Woche
+    planned: int  # Gerichte im Plan der Woche
+    favorite: ReviewFavorite | None  # beste Bewertung
+
+
+class ReviewMoney(BaseModel):
+    spent_cents: int
+    estimated_cents: int
+    saved_cents: int
+    bonus_cents: int
+    budget_cents: int
+    budget_ok: bool
+
+
+class ReviewHealth(BaseModel):
+    member_id: int
+    name: str
+    emoji: str
+    avg_kcal: int
+    kcal_goal: int
+    avg_protein: int
+    protein_goal: int
+    plants: int  # verschiedene Pflanzen der Woche
+
+
+class ReviewPantry(BaseModel):
+    rests_used: int  # frische Reste in Folgegerichten verplant (19)
+    rests_left: int  # übrig gebliebene frische Reste
+    thrown_away: int | None  # null = wird nicht erfasst
+
+
+class ReviewAchievement(AchievementOut):
+    member_id: int  # 0 = Haushalt
+
+
+class ReviewDeal(BaseModel):
+    offer_id: int
+    title: str
+    chain: str
+    image_url: str
+    price_cents: int
+    regular_price_cents: int
+    saving_pct: int
+
+
+class WeekReviewOut(BaseModel):
+    """Story-Seiten: 1 cooking, 2 money, 3 health, 4 pantry, 5 achievements, 6 next_week (+ „Plan erstellen“)."""
+    week: str
+    kw: int
+    start: date
+    end: date
+    created_at: datetime
+    cooking: ReviewCooking
+    money: ReviewMoney
+    health: list[ReviewHealth]
+    pantry: ReviewPantry
+    achievements: list[ReviewAchievement]
+    next_week: list[ReviewDeal]
+
+
+class ReviewSummary(BaseModel):
+    week: str
+    kw: int
+    created_at: datetime
+    spent_cents: int
+    cooked: int
+
+
+# --- Rezepte zwischen Haushalten teilen (56) ---
+
+class RecipeShareOut(BaseModel):
+    code: str
+    url: str  # https://<server>/r/<code> (Web-Ansicht für alle)
+    app_url: str  # essenapp://import-recipe/<code>
+
+
+class SharedRecipeOut(BaseModel):
+    """Vorschau ohne Login (App nach Deep-Link): übernehmen mit POST /shared-recipes/{code}/import."""
+    code: str
+    title: str
+    description: str
+    image_url: str
+    servings: int
+    prep_minutes: int
+    ingredients: list[dict]
+    steps: list[str]
+    from_household: str  # „Familie Müller“ → Quelle „von Familie Müller“

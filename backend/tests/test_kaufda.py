@@ -5,11 +5,12 @@ from sqlalchemy import func, select
 
 from app.models import Offer
 from app.services.importer import upsert_offers
-from app.sources.kaufda import category_of, parse_pages, parse_search, parse_shelf, pick_brochures
+from app.sources.kaufda import bonus_cents, category_of, parse_pages, parse_search, parse_shelf, pick_brochures
 
 FIX = Path(__file__).parent / "fixtures" / "sources" / "kaufda"
 FIELDS = {"chain", "store_ref", "source_id", "title", "brand", "category", "price_cents", "regular_price_cents",
-          "amount", "unit", "base_price_cents", "ean", "valid_from", "valid_to", "image_url", "ingredient_id", "raw"}
+          "amount", "unit", "base_price_cents", "ean", "valid_from", "valid_to", "image_url", "ingredient_id", "raw",
+          "bonus_cents"}
 
 
 def load(name):
@@ -41,6 +42,31 @@ def test_pages_rewe():
     alpro = next(o for o in offers if o["title"] == "Soja Dessert")
     assert (alpro["price_cents"], alpro["amount"], alpro["unit"], alpro["base_price_cents"]) == (149, 500, "g", 298)
     assert str(alpro["valid_from"]) == "2026-11-02" and str(alpro["valid_to"]) == "2026-11-07"
+
+
+def test_rewe_bonus_from_deal_text():
+    """39: kaufDA hat kein Bonus-Feld; Betrag aus dem Deal-Text (Fixture vom 02.11.2026)."""
+    offers = parse_pages(load("brochure_pages_rewe_ceb30b11.json"), "rewe", "1763159")
+    bonus = {o["title"]: o["bonus_cents"] for o in offers if o["bonus_cents"]}
+    assert bonus["Pizza Tradizionale Salame Romano"] == 20 and bonus["Die Ofenfrische Vier Käse"] == 20
+    assert bonus["Sahnepudding oder Vollmilchpudding"] == 50 and bonus["Les Sauces Hollandaise"] == 10
+    assert len(bonus) == 14 and next(o for o in offers if o["title"] == "Soja Dessert")["bonus_cents"] is None
+    lidl = parse_pages(load("brochure_pages_lidl.json"), "lidl", "5741")
+    assert all(o["bonus_cents"] is None for o in lidl)
+
+
+def test_bonus_cents_variants():
+    deals = [{"type": "SALES_PRICE", "description": "Goldbären"}, {"type": "OTHER", "description": "0,10 € Bonus"},
+             {"type": "SALES_PRICE", "description": "Color-Rado"}]
+    assert bonus_cents(deals, "Goldbären", ["Goldbären", "Color-Rado"]) == 10
+    two = [{"description": "Pizza Salame\n0,20 € Bonus"}, {"description": "Vier Käse-\n0,30 € Bonus"}]
+    assert bonus_cents(two, "Vier Käse", ["Pizza Salame", "Vier Käse"]) == 30
+    assert bonus_cents([{"description": "Bonus 0,15€"}], "X", ["X"]) == 15
+    assert bonus_cents([{"description": "Diesen Artikel zum Aktionspreis kaufen, 0,20 € Bonus in der REWE App "
+                                        "sammeln 0,20€"}], "X", ["X"]) == 20
+    assert bonus_cents([{"description": "", "conditions": [{"other": "0.20 € Bonus"}]}], "X", ["X"]) == 20
+    assert bonus_cents([{"description": "0,10 €Vegane Mühlen Schnitzel0,20 € Bonus"}], "Schnitzel", ["Schnitzel"]) == 20
+    assert bonus_cents([{"description": "Je"}], "X", ["X"]) is None
 
 
 def test_pages_regional_chain_keeps_its_store():

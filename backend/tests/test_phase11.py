@@ -390,9 +390,10 @@ def test_lunchbox_slots_for_member_days(client, auth, db, monkeypatch):
     monkeypatch.setattr(jobs.push, "send", lambda m, title, message, **kw: sent.append((message, kw)) or True)
     monday = date.fromisocalendar(*map(int, plan["week"].split("-W")), 1)
     jobs.tick(db, datetime.combine(monday - timedelta(days=1), datetime.min.time(), BERLIN).replace(hour=19, minute=59))
-    assert sent == []
+    lunch = [m for m, _ in sent if "Lunchbox" in m]  # So 19:00 läuft auch der Wochenrückblick (55)
+    assert lunch == []
     jobs.tick(db, datetime.combine(monday - timedelta(days=1), datetime.min.time(), BERLIN).replace(hour=20))
-    assert sent and sent[0][0] == "🥡 Lunchbox für morgen vorbereiten: G0lunchbox"
+    assert [m for m, _ in sent if "Lunchbox" in m] == ["🥡 Lunchbox für morgen vorbereiten: G0lunchbox"]
 
 
 # --- 25 Feiertage & Saison ---

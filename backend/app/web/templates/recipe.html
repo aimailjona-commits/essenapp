@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}{{ recipe.title }} – Essenapp{% endblock %}
+{% block content %}
+{% if recipe.image_url %}<img class="hero" src="{{ recipe.image_url }}" alt="">{% endif %}
+<h1>{{ recipe.title }}<span>von {{ origin }}</span></h1>
+{% if recipe.description %}<p>{{ recipe.description }}</p>{% endif %}
+<p class="muted">⏱ {{ recipe.prep_minutes }} min · 🍽 {{ recipe.servings }} Portionen</p>
+
+{% if imported %}
+<div class="card">✓ Liegt jetzt in den Rezepten von {{ member.household.name }}.</div>
+{% elif member %}
+<form method="post" action="/r/{{ code }}/import"><button class="btn" type="submit">In meine Rezepte übernehmen</button></form>
+{% else %}
+<a class="btn" href="essenapp://import-recipe/{{ code }}">In meine Rezepte übernehmen</a>
+<p class="muted center">Öffnet die Essenapp. Ohne App: erst den Einladungslink deines Haushalts öffnen, dann diesen Link.</p>
+{% endif %}
+
+<h2>Zutaten</h2>
+<div class="card">
+  <ul class="plain">
+  {% for i in recipe.ingredients %}<li><span>{{ i.name }}</span><span class="muted">{{ i | ing }}</span></li>{% endfor %}
+  </ul>
+</div>
+{% if recipe.steps %}
+<h2>Schritte</h2>
+<div class="card"><ol>{% for s in recipe.steps %}<li>{{ s }}</li>{% endfor %}</ol></div>
+{% endif %}
+<p class="muted center">Mit Essenapp geplant</p>
+{% endblock %}

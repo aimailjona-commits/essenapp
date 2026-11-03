@@ -11,15 +11,17 @@ from types import SimpleNamespace
 import httpx
 from fastapi import APIRouter, Body, Depends, File, Form, HTTPException, Query, Request, Response, UploadFile
 from fastapi import Path as Path_
+from fastapi.encoders import jsonable_encoder
 from sqlalchemy import or_, select
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, object_session
 
 from app.core.auth import current_member, new_token
 from app.core.config import settings
 from app.core.db import get_db
-from app.models import (AiCost, Household, HouseholdStore, Invite, MealPlan, MealPlanEntry, Member, MemberProfile,
-                        MemberToken, Offer, PairingCode, PantryItem, PricePoint, Product, PushDevice, Rating, Recipe,
-                        RecipeFavorite, ShoppingItem, ShoppingList, WatchItem, WeeklyBasic)
+from app.models import (Achievement, AiCost, BonusEntry, Coupon, Household, HouseholdStore, Invite, MealPlan,
+                        MealPlanEntry, Member, MemberProfile, MemberToken, Offer, PairingCode, PantryItem, PricePoint,
+                        Product, PushDevice, Rating, Recipe, RecipeFavorite, ShoppingItem, ShoppingList, WatchItem,
+                        WeekReview, WeeklyBasic)
 from app.schemas import (ConsumeIn, CookIdeaOut, DeviceIn, EntryUpdate, FavoriteOut, HouseholdCreate,
                          HouseholdCreated, HouseholdOut, HouseholdSettings, ImportIn, InviteOut, ItemCreate, ItemOut,
                          ItemPatchOut, ItemUpdate, JoinIn, ListCreate, ListOut, ListSummary, MemberOut,
@@ -31,10 +33,12 @@ from app.schemas import (ConsumeIn, CookIdeaOut, DeviceIn, EntryUpdate, Favorite
                          EntryLeftover, GeneratorOut, GuestsIn, NoMoodIn, PostponeIn, SpecialsOut, SubstituteIn,
                          SubstitutesOut, WeeklyBasicIn, WeeklyBasicOut, WeeklyBasicUpdate, AddEntryIn, AssignIn,
                          BudgetIdeaOut, BudgetOut, EanProductOut, NextWeekDealOut, NextWeekIn, RerollIn,
-                         StockupOut, StoreComboOut, WatchIn, WatchOut, WatchUpdate)
-from app.services import (food_map, labels, nearby_stores, nutrition, offers_import, pantry_ai, planner, prices, push,
-                          recipe_images, recipe_import, recipes, seasons, stockup, store_split, substitutes, variety,
-                          watch)
+                         StockupOut, StoreComboOut, WatchIn, WatchOut, WatchUpdate, AchievementOut, BonusAccountOut,
+                         BonusIn, CouponIn, CouponOut, CouponScanOut, CouponUpdate, RecipeShareOut, ReviewSummary,
+                         SeenIn, SharedRecipeOut, SpendingOut, WeekReviewOut)
+from app.services import (bonus, food_map, labels, motivation, nearby_stores, nutrition, offers_import, pantry_ai,
+                          planner, prices, push, recipe_images, recipe_import, recipes, seasons, spending, stockup,
+                          store_split, substitutes, variety, watch)
 from app.services.matching import Matcher
 from app.services.normalize import base_unit, cents, ingredient_key
 from app.services.pricing import PANTRY_WORDS, Stock
@@ -125,14 +129,14 @@ def offer_rows(db: Session, offers: list[Offer]) -> list[dict]:
 @router.get("/offers", response_model=list[OfferOut])
 def list_offers(chain: str | None = None, category: str | None = None, q: str | None = None,
                 week: str = Query("this", pattern="^(this|next)$"), real: bool = False, bio: bool = False,
-                vegan: bool = False, nutri_ab: bool = False, monthly: bool = False,
+                vegan: bool = False, nutri_ab: bool = False, monthly: bool = False, bonus: bool = False,
                 member: Member = Depends(current_member), db: Session = Depends(get_db)):
     """Angebote dieser Woche (heute gültig) bzw. week=next: Vorschau der nächsten Woche (30). Filter: real = „Nur echte
     Angebote“ (Urteil nicht kein_echtes, 28), bio/vegan/nutri_ab (Nutri-Score A/B, 49), monthly = dm/Rossmann-
-    Monatsaktionen (59)."""
+    Monatsaktionen (59), bonus = Rewe-Bonus-Aktionen (39)."""
     offers = (next_week_offers if week == "next" else household_offers)(db, member.household, chain)
     offers = [o for o in offers if (not category or o.category == category) and (not q or q.lower() in o.title.lower())
-              and (not monthly or is_monthly(o))]
+              and (not monthly or is_monthly(o)) and (not bonus or o.bonus_cents)]
     rows = offer_rows(db, offers)
     db.commit()  # Preispunkte für Angebote ohne Produkt (vor dem Preisverlauf importiert)
     return [r for r in rows if (not real or r["verdict"] != "kein_echtes") and (not bio or r["bio"])
@@ -344,6 +348,8 @@ def plan_extra(db: Session, household: Household, prefs, slots: list[tuple[int, 
     picked = planner.select_offers(list(offers))
     ids = {o.product_id for o in picked if o.product_id}
     good = set(db.scalars(select(Product.id).where(Product.id.in_(ids), Product.nutri_score.in_(("a", "b"))))) if ids else set()
+    if deals := list(dict.fromkeys(f"{o.title} ({o.badge})" for o in picked if getattr(o, "badge", "")))[:25]:
+        lines.append("Coupon/Bonus (Effektivpreis schon eingerechnet, Gerichte damit bevorzugen): " + ", ".join(deals))
     if names := list(dict.fromkeys(o.title for o in picked if o.product_id in good))[:25]:
         lines.append(f"Nutri-Score A/B (bei Ziel „{prefs.nutrition_goal}“ bei ähnlichem Preis bevorzugen): "
                      + ", ".join(names))
@@ -390,7 +396,7 @@ def create_plan(options: PlanOptions | None = None, member: Member = Depends(cur
     rules = variety.rules_of(household.variety)
     memory = recipes.planner_memory(db, household.id, repeat_weeks=rules["repeat_weeks"])
     monday = next_monday() if opts.get("next_week") else None
-    offers = household_offers(db, household, single, monday)
+    offers = effective_offers(db, household, household_offers(db, household, single, monday))
     if single:
         name = watch.CHAIN_NAMES.get(single, single)
         hint = (hint + "\n" if hint else "") + (f"Einkauf komplett bei {name}: nur dessen Angebote; Zutaten ohne "
@@ -458,8 +464,13 @@ def plan_offers(db: Session, household: Household, plan: MealPlan | None) -> lis
     """Angebote, mit denen ein Plan rechnet: nur der Laden im Ein-Laden-Modus (41), Stichtag Montag beim Plan für
     nächste Woche (30)."""
     opts = ((plan.params or {}).get("options") or {}) if plan else {}
-    return household_offers(db, household, opts.get("single_store"),
-                            plan_monday(plan) if opts.get("next_week") else None)
+    return effective_offers(db, household, household_offers(db, household, opts.get("single_store"),
+                                                            plan_monday(plan) if opts.get("next_week") else None))
+
+
+def effective_offers(db: Session, household: Household, offers: list[Offer]) -> list[Offer]:
+    """Effektivpreise (38c/39): Rewe-Bonus und aktive Coupons wirken für Planner/Pricing wie Rabatt."""
+    return bonus.apply(offers, bonus.active(db, household.id))
 
 
 def _entry(plan: MealPlan, entry_id: int) -> MealPlanEntry:
@@ -756,7 +767,22 @@ def share_url(request: Request, lst: ShoppingList) -> str | None:
 
 
 def list_out(request: Request, lst: ShoppingList) -> dict:
-    return {"id": lst.id, "name": lst.name, "kind": lst.kind, "share_url": share_url(request, lst), "items": lst.items}
+    return {"id": lst.id, "name": lst.name, "kind": lst.kind, "share_url": share_url(request, lst),
+            "items": with_coupons(object_session(lst), lst.household_id, lst.items)}
+
+
+def coupon_badge(c: Coupon | None) -> dict | None:
+    return {"id": c.id, "text": bonus.badge(c), "program": c.program, "partner": c.partner} if c else None
+
+
+def with_coupons(db: Session, household_id: int | None, items: list[ShoppingItem]) -> list[ShoppingItem]:
+    """Setzt item.coupon (Badge „🎟 10fach“) für Artikel mit passendem aktivem Coupon (38c/59)."""
+    coupons = bonus.active(db, household_id) if household_id else []
+    ids = {i.offer_id for i in items if i.offer_id}
+    offers = {o.id: o for o in db.scalars(select(Offer).where(Offer.id.in_(ids)))} if coupons and ids else {}
+    for i in items:
+        i.coupon = coupon_badge(bonus.item_coupon(coupons, i.name, i.chain, offers.get(i.offer_id))) if coupons else None
+    return items
 
 
 def add_item(db: Session, lst: ShoppingList, body: ItemCreate, by: str) -> ShoppingItem:
@@ -773,14 +799,19 @@ def update_item(db: Session, item: ShoppingItem, body: ItemUpdate, by: str) -> S
         changes.pop("name", None)
     if (later := changes.pop("next_week", None)) is not None:
         item.defer_week = prices.iso_week(next_monday()) if later else None
+    toggled = changes.get("checked") is not None and changes["checked"] != item.checked
+    household_id = db.get(ShoppingList, item.list_id).household_id
     if changes.get("checked") is None:
         changes.pop("checked", None)
     else:
         item.checked_by = by if changes["checked"] else ""
         if changes["checked"]:  # Verbrauchsrhythmus (58): „zuletzt gekauft“
-            watch.mark_bought(db, db.get(ShoppingList, item.list_id).household_id, item.name, date.today())
+            watch.mark_bought(db, household_id, item.name, date.today())
     for key, value in changes.items():
         setattr(item, key, value)
+    if toggled and household_id:  # Monats-Dashboard (34): Preis + Zeitpunkt des Abhakens festhalten
+        db.flush()
+        spending.checked(db, household_id, item, by)
     db.commit()
     return item
 
@@ -917,7 +948,7 @@ def delete_list(list_id: int, member: Member = Depends(current_member), db: Sess
 @router.post("/lists/{list_id}/items", response_model=ItemOut, status_code=201)
 def create_item(list_id: int, body: ItemCreate, member: Member = Depends(current_member),
                 db: Session = Depends(get_db)):
-    return add_item(db, member_list(db, member, list_id), body, member.name)
+    return with_coupons(db, member.household_id, [add_item(db, member_list(db, member, list_id), body, member.name)])[0]
 
 
 def member_item(db: Session, member: Member, item_id: int) -> ShoppingItem:
@@ -938,6 +969,7 @@ def pantry_suggest(db: Session, item: ShoppingItem) -> bool:
 @router.patch("/items/{item_id}", response_model=ItemPatchOut)
 def patch_item(item_id: int, body: ItemUpdate, member: Member = Depends(current_member), db: Session = Depends(get_db)):
     item = update_item(db, member_item(db, member, item_id), body, member.name)
+    with_coupons(db, member.household_id, [item])
     return {**ItemOut.model_validate(item).model_dump(), "pantry_suggest": bool(body.checked) and pantry_suggest(db, item)}
 
 
@@ -1925,18 +1957,21 @@ def member_watch(db: Session, member: Member, watch_id: int) -> WatchItem:
     return item
 
 
-def watch_out(item: WatchItem, hits: list[dict]) -> dict:
+def watch_out(item: WatchItem, hits: list[dict], coupon: Coupon | None = None) -> dict:
     return {c.key: getattr(item, c.key) for c in WatchItem.__table__.columns} | {
         "lasts_weeks_suggestion": watch.lasts_suggestion(item.label, item.category),
-        "empty_on": watch.empty_on(item), "hits": hits}
+        "empty_on": watch.empty_on(item), "hits": hits, "coupon": coupon_badge(coupon)}
 
 
 def watch_list(db: Session, member: Member, items: list[WatchItem]) -> list[dict]:
     offers = household_offers(db, member.household)
     found = {i.id: watch.matches(i, offers) for i in items}
     rows = {r["id"]: r for r in offer_rows(db, list({o.id: o for os in found.values() for o in os}.values()))}
+    coupons = bonus.active(db, member.household_id)
     db.commit()
-    return [watch_out(i, [rows[o.id] for o in found[i.id]]) for i in items]
+    return [watch_out(i, [rows[o.id] for o in found[i.id]], coupons and bonus.item_coupon(
+        coupons, f"{i.label} {i.brand}", i.chains[0] if len(i.chains) == 1 else "",
+        found[i.id][0] if found[i.id] else None)) for i in items]
 
 
 @router.get("/watch", response_model=list[WatchOut])
@@ -2090,3 +2125,271 @@ def add_entry(body: AddEntryIn, member: Member = Depends(current_member), db: Se
     db.commit()
     food_map.map_later([i["name"] for i in recipe.ingredients])
     return plan_out(db, plan)
+
+
+# --- Payback & Rewe Bonus (38), Drogerie-Coupons (59) ---
+
+def coupon_out(c: Coupon) -> dict:
+    left = bonus.days_left(c)
+    return {k.key: getattr(c, k.key) for k in Coupon.__table__.columns} | {
+        "badge": bonus.badge(c), "expired": left is not None and left < 0, "days_left": left}
+
+
+def member_coupon(db: Session, member: Member, coupon_id: int) -> Coupon:
+    c = db.get(Coupon, coupon_id)
+    if c is None or c.household_id != member.household_id:
+        raise HTTPException(404, "Coupon nicht gefunden")
+    return c
+
+
+@router.post("/coupons/scan", response_model=CouponScanOut)
+def coupon_scan(file: UploadFile = File(...), member: Member = Depends(current_member), db: Session = Depends(get_db)):
+    """Coupon-Foto (38a): 1 JPEG ≤ 5 MB → Haiku liest Partner, Produkt/Kategorie, Vorteil, Mindestumsatz, Gültig-bis.
+    Speichert nichts; den Barcode liest die App selbst (VisionKit)."""
+    image = file.file.read(MAX_SCAN_BYTES + 1)
+    if len(image) > MAX_SCAN_BYTES or not image.startswith(b"\xff\xd8\xff"):
+        raise HTTPException(422, "Foto muss ein JPEG bis 5 MB sein")
+    try:
+        read, usage = bonus.scan(image)
+    except RuntimeError as e:
+        raise HTTPException(502, str(e))
+    planner.log_cost(db, member.household_id, "coupon", usage["cost_cents"], usage["model"],
+                     f"{read['partner']} {read['benefit']}")
+    db.commit()
+    return read | {"cost_cents": usage["cost_cents"]}
+
+
+@router.get("/coupons", response_model=list[CouponOut])
+def list_coupons(chain: str | None = Query(None, max_length=30), active: bool = False,
+                 member: Member = Depends(current_member), db: Session = Depends(get_db)):
+    """Wallet: gültige zuerst (bald ablaufende oben), dann abgelaufene (grau). chain = Coupon-Leiste im Laden (38d,
+    nur gültige Coupons dieses Ladens), active = nur gültige."""
+    rows = [coupon_out(c) for c in db.scalars(select(Coupon).where(Coupon.household_id == member.household_id))]
+    if chain is not None:
+        rows = [r for r in rows if r["chain"] == chain and not r["expired"]]
+    if active:
+        rows = [r for r in rows if not r["expired"]]
+    return sorted(rows, key=lambda r: (r["expired"], r["days_left"] is None, r["days_left"] or 0, r["id"]))
+
+
+@router.post("/coupons", response_model=CouponOut, status_code=201)
+def create_coupon(body: CouponIn, member: Member = Depends(current_member), db: Session = Depends(get_db)):
+    """Coupon speichern (Foto geprüft, Barcode oder manuell). Ohne chain wird der Laden aus partner abgeleitet."""
+    c = Coupon(household_id=member.household_id, created_by=member.id, **body.model_dump())
+    c.chain = c.chain or bonus.chain_of(c.partner)
+    db.add(c)
+    db.commit()
+    return coupon_out(c)
+
+
+@router.patch("/coupons/{coupon_id}", response_model=CouponOut)
+def patch_coupon(coupon_id: int, body: CouponUpdate, member: Member = Depends(current_member),
+                 db: Session = Depends(get_db)):
+    c = member_coupon(db, member, coupon_id)
+    nullable = ("multiplier", "bonus_cents", "percent", "min_spend_cents", "valid_until")
+    for key, value in body.model_dump(exclude_unset=True).items():
+        if value is not None or key in nullable:
+            setattr(c, key, value)
+    if "valid_until" in body.model_fields_set:
+        c.expiry_notified_at = None  # neues Datum → neuer Ablauf-Push
+    db.commit()
+    return coupon_out(c)
+
+
+@router.delete("/coupons/{coupon_id}", status_code=204)
+def delete_coupon(coupon_id: int, member: Member = Depends(current_member), db: Session = Depends(get_db)):
+    db.delete(member_coupon(db, member, coupon_id))
+    db.commit()
+    return Response(status_code=204)
+
+
+@router.get("/bonus", response_model=list[BonusAccountOut])
+def bonus_accounts(member: Member = Depends(current_member), db: Session = Depends(get_db)):
+    """Karten „Payback: 1.240 °P (≈ 12,40 €)“ und „Rewe Bonus: 8,50 €“ (38b), Werte manuell gepflegt."""
+    return bonus.accounts(db, member.household_id)
+
+
+@router.post("/bonus/{program}", response_model=BonusAccountOut)
+def bonus_update(body: BonusIn, program: str = Path_(pattern="^(payback|rewe_bonus)$"),
+                 member: Member = Depends(current_member), db: Session = Depends(get_db)):
+    """Plus/Minus-Sheet: delta > 0 = „Heute bekommen: +60 °P“ (zählt als Ersparnis „Bonus“), delta < 0 = eingelöst,
+    set = Kontostand korrigieren (zählt nicht als Ersparnis). Payback in °P, Rewe Bonus in Cent."""
+    balance = next(a["balance"] for a in bonus.accounts(db, member.household_id) if a["program"] == program)
+    if body.set is not None:
+        kind, delta = "set", body.set - balance
+    else:
+        kind, delta = ("plus" if body.delta > 0 else "minus"), body.delta
+    if balance + delta < 0:
+        raise HTTPException(422, "Kontostand darf nicht negativ werden")
+    db.add(BonusEntry(household_id=member.household_id, program=program, kind=kind, delta=delta, note=body.note,
+                      member_id=member.id))
+    db.commit()
+    return next(a for a in bonus.accounts(db, member.household_id) if a["program"] == program)
+
+
+# --- Monats-Dashboard (34) ---
+
+MONTH = Query(None, pattern=r"^\d{4}-(0[1-9]|1[0-2])$")
+
+
+@router.get("/spending", response_model=SpendingOut)
+def get_spending(month: str | None = MONTH, member: Member = Depends(current_member), db: Session = Depends(get_db)):
+    """Ausgaben eines Monats (Standard: aktueller) = abgehakte Artikel zum Zeitpunkt des Abhakens (A10)."""
+    return spending.dashboard(db, member.household, month or date.today().strftime("%Y-%m"))
+
+
+@router.get("/spending/export")
+def export_spending(month: str | None = MONTH, member: Member = Depends(current_member), db: Session = Depends(get_db)):
+    """CSV zum Teilen (Semikolon, Dezimalkomma)."""
+    month = month or date.today().strftime("%Y-%m")
+    rows = spending.purchases(db, member.household_id, *spending.month_range(month))
+    return Response(spending.to_csv(rows), media_type="text/csv; charset=utf-8",
+                    headers={"Content-Disposition": f'attachment; filename="ausgaben-{month}.csv"'})
+
+
+# --- Erfolge (54) ---
+
+@router.get("/achievements", response_model=list[AchievementOut])
+def get_achievements(member: Member = Depends(current_member), db: Session = Depends(get_db)):
+    """Profil › Erfolge: Sparen (Haushalt) + Gesundheit des Mitglieds; neu Erreichtes wird hier sofort (genau einmal)
+    freigeschaltet, new = Vollbild-Moment zeigen, danach POST /achievements/seen."""
+    out, _ = motivation.for_member(db, member.household, member)
+    db.commit()
+    return out
+
+
+@router.post("/achievements/seen", status_code=204)
+def achievements_seen(body: SeenIn, member: Member = Depends(current_member), db: Session = Depends(get_db)):
+    for a in db.scalars(select(Achievement).where(Achievement.household_id == member.household_id,
+                                                  Achievement.member_id.in_((0, member.id)),
+                                                  Achievement.key.in_(body.keys), Achievement.seen_at.is_(None))):
+        a.seen_at = datetime.now()
+    db.commit()
+    return Response(status_code=204)
+
+
+# --- Wochenrückblick (55) ---
+
+def week_review(db: Session, household: Household, week: str, rebuild: bool = False) -> WeekReview:
+    """Rückblick anlegen (bzw. mit rebuild neu rechnen); „Nächste Woche günstig“ = Angebote ab dem Folgemontag."""
+    row = db.scalar(select(WeekReview).where(WeekReview.household_id == household.id, WeekReview.week == week))
+    if row is None or rebuild:
+        motivation.evaluate(db, household)  # neue Erfolge gehören auf Seite 5
+        after = prices.week_monday(week) + timedelta(days=7)
+        data = motivation.build_review(db, household, week, household_offers(db, household, on=after))
+        if row is None:
+            row = WeekReview(household_id=household.id, week=week)
+            db.add(row)
+        row.data = jsonable_encoder(data)
+        db.commit()
+    return row
+
+
+def review_out(row: WeekReview) -> dict:
+    return row.data | {"created_at": row.created_at}
+
+
+@router.get("/reviews", response_model=list[ReviewSummary])
+def list_reviews(member: Member = Depends(current_member), db: Session = Depends(get_db)):
+    """Archiv aller Rückblicke, neueste zuerst."""
+    rows = db.scalars(select(WeekReview).where(WeekReview.household_id == member.household_id)
+                      .order_by(WeekReview.week.desc()))
+    return [{"week": r.week, "kw": r.data["kw"], "created_at": r.created_at, "spent_cents": r.data["money"]["spent_cents"],
+             "cooked": r.data["cooking"]["cooked"]} for r in rows]
+
+
+@router.get("/reviews/current", response_model=WeekReviewOut)
+def current_review(member: Member = Depends(current_member), db: Session = Depends(get_db)):
+    """Beim ersten Öffnen ab Sonntag die laufende Woche, Mo–Sa die vorige (sonst Job So 19:00)."""
+    return review_out(week_review(db, member.household, motivation.review_week(date.today())))
+
+
+@router.get("/reviews/{week}", response_model=WeekReviewOut)
+def get_review(week: str = Path_(pattern=r"^\d{4}-W\d{2}$"), member: Member = Depends(current_member),
+               db: Session = Depends(get_db)):
+    row = db.scalar(select(WeekReview).where(WeekReview.household_id == member.household_id, WeekReview.week == week))
+    if row is None:
+        raise HTTPException(404, "Kein Rückblick für diese Woche")
+    return review_out(row)
+
+
+# --- Rezepte zwischen Haushalten teilen (56) ---
+
+def shared_recipe(db: Session, code: str) -> Recipe:
+    recipe = db.scalar(select(Recipe).where(Recipe.share_code == code[:16]))
+    if recipe is None:
+        raise HTTPException(404, "Rezept-Link ungültig")
+    return recipe
+
+
+def recipe_origin(db: Session, recipe: Recipe) -> str:
+    h = db.get(Household, recipe.household_id) if recipe.household_id else None
+    return h.name if h else "Essenapp"
+
+
+def import_shared(db: Session, recipe: Recipe, household_id: int, url: str) -> tuple[Recipe, bool]:
+    """Kopie im eigenen Haushalt mit Quelle „von <Haushalt>“ (source shared); Foto und Schritt-Bilder werden
+    mitkopiert. Schon übernommen oder eigenes Rezept → (vorhandenes, False)."""
+    if recipe.household_id == household_id:
+        return recipe, False
+    existing = db.scalar(select(Recipe).where(Recipe.household_id == household_id, Recipe.source == "shared",
+                                              Recipe.source_url == url).limit(1))
+    if existing:
+        return existing, False
+    skip = ("id", "created_at", "household_id", "share_code", "source", "source_url", "source_author", "image_url",
+            "step_images")
+    copy = Recipe(**{c.key: getattr(recipe, c.key) for c in Recipe.__table__.columns if c.key not in skip},
+                  household_id=household_id, source="shared", source_url=url[:500],
+                  source_author=recipe_origin(db, recipe)[:100], image_url=recipe.image_url)
+    db.add(copy)
+    db.flush()
+    if recipe.image_url.startswith(f"/media/recipes/{recipe.id}.jpg") and (
+            src := MEDIA / "recipes" / f"{recipe.id}.jpg").exists():
+        store_jpeg(copy, src.read_bytes())
+    steps = MEDIA / "steps" / str(recipe.id)
+    if any(recipe.step_images or []) and steps.exists():
+        shutil.copytree(steps, MEDIA / "steps" / str(copy.id), dirs_exist_ok=True)
+        copy.step_images = [i.replace(f"/steps/{recipe.id}/", f"/steps/{copy.id}/") for i in recipe.step_images]
+    db.commit()
+    food_map.map_later([i["name"] for i in copy.ingredients])
+    return copy, True
+
+
+def share_link(request: Request, code: str) -> str:
+    return f"{base_url(request)}/r/{code}"
+
+
+@router.post("/recipes/{recipe_id}/share", response_model=RecipeShareOut)
+def share_recipe(recipe_id: int, request: Request, member: Member = Depends(current_member),
+                 db: Session = Depends(get_db)):
+    """Rezept › Teilen › „Als Link“: /r/<code> (Web-Ansicht für alle) + Deep-Link essenapp://import-recipe/<code>.
+    Ein Rezept behält seinen Code."""
+    recipe = household_recipe(db, member, recipe_id)
+    if not recipe.share_code:
+        taken = True
+        while taken:
+            recipe.share_code = new_code()
+            taken = db.scalar(select(Recipe.id).where(Recipe.share_code == recipe.share_code, Recipe.id != recipe.id))
+        db.commit()
+    return {"code": recipe.share_code, "url": share_link(request, recipe.share_code),
+            "app_url": f"essenapp://import-recipe/{recipe.share_code}"}
+
+
+@router.get("/shared-recipes/{code}", response_model=SharedRecipeOut)
+def get_shared_recipe(code: str, db: Session = Depends(get_db)):
+    """Vorschau ohne Login (App nach essenapp://import-recipe/<code>)."""
+    r = shared_recipe(db, code)
+    return {"code": r.share_code, "title": r.title, "description": r.description, "image_url": r.image_url,
+            "servings": r.servings, "prep_minutes": r.prep_minutes, "ingredients": r.ingredients, "steps": r.steps,
+            "from_household": recipe_origin(db, r)}
+
+
+@router.post("/shared-recipes/{code}/import", response_model=RecipeDetail, status_code=201)
+def import_shared_recipe(code: str, request: Request, response: Response, member: Member = Depends(current_member),
+                         db: Session = Depends(get_db)):
+    """„In meine Rezepte übernehmen“: Kopie (201) bzw. schon vorhanden (200)."""
+    recipe = shared_recipe(db, code)
+    copy, created = import_shared(db, recipe, member.household_id, share_link(request, recipe.share_code))
+    if not created:
+        response.status_code = 200
+    return recipe_detail(db, member, copy)
