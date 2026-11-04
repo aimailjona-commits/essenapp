@@ -433,3 +433,38 @@ Ohne Vorlage im Mockup entschieden (Nutzer schläft, E84/E85); Werte nur aus `Th
 - **Sperrbildschirm** (Grund `card`): Kürzel des Ladens auf `Theme.storeColor` (36 pt, wie `StoreLogo` ohne Bild, „Überall“: 🧺 auf `surface`), Name (`headline`), rechts „5 von 12“ (gerundet, fett); Fortschrittsbalken `accent`; die nächsten 3 offenen Artikel: ○ (`accent`) + Name (`callout`) + Menge (`caption`, `text2`) – antippen hakt ab. Nach 2 h: „Einkauf vorbei? In der App beenden.“
 - **Dynamic Island:** kompakt links Kürzel (22 pt), rechts „5/12“ (`accent`); minimal Zahl der offenen Artikel; ausgeklappt Kürzel + Name links, „5 von 12“ rechts, darunter die 3 Artikel mit Abhak-Knopf (weiße Schrift).
 - Endet von selbst, wenn alles abgehakt ist (bleibt kurz mit Endstand stehen) oder nach 2 h. Antippen → `essenapp://list/<kette>`.
+
+## Phase 20 – Woche per Swipe, Gewohnheiten (S41–S46)
+
+Vorlage: [`mockups/swipe-v1.html`](mockups/swipe-v1.html) (Entwurf, Optik nach v8; **wartet auf Freigabe**). Entscheidungen E97.
+
+### S41 Stapel (Vollbild aus „Woche planen“ auf S1/S2; läuft ein Deck, geht es dort weiter)
+- Kopf: Zurück, rechts „swipen mit“ + Köpfe der Mitglieder, die gerade dabei sind. Titel „Woche 46“.
+- Fortschritt als Pillen je Mahlzeitart: aktiv schwarz mit Balken „Abend 3/7“, fertig grün „Frühstück ✓“, sonst Umriss. Antippen wechselt den Stapel.
+- Karte (Radius 40, Pastell-Kreis oben): Teller, oben links Herkunft („KI-Idee“, „Dein Rezept ★ 4,8“, „♥ Immer dabei“ schwarz), oben rechts Preis pro Portion groß, unten Titel (Serif), Kochzeit, „n im Angebot“, Laden. Frühstück/Snack: Zähler „An wie vielen Tagen? − 5× +“.
+- Gesten: rechts → Stempel „DIESE WOCHE“ (grün), links → „NICHT“, oben → „MAG ICH NICHT“ (rosa) + Sheet „Was magst du daran nicht?“ (Zutaten mag ich nicht › Zutat wählen · Schmeckt mir einfach nicht · Keine Lust · Sonstiges › Text). Schwelle 110 pt, Haptik beim Überschreiten.
+- Knöpfe unten: Rückgängig (klein), ✗ „Nicht“, 👎 „Mag ich nicht“, ✓ „Diese Woche“ (schwarz), Würfel „Überrasch mich“ (klein, Hinweis darunter). VoiceOver: drei benannte Aktionen auf der Karte.
+- **Zustände:** Laden → Skelett-Karte; Stapel knapp → lädt im Hintergrund nach; leer → „Stapel lädt nach … Neue Ideen aus den Angeboten“; Fehler → `ErrorState` mit „Nochmal“.
+
+### S42 Match (Vollbild über S41)
+- Hintergrund `blue` mit großem hellen Kreis, „IHR BEIDE WOLLT“ / „Match!“ (Serif 52), Teller 250 pt, Köpfe links/rechts unten am Teller, Titel, „Preis · Zeit · Angebote“, schwarzer Knopf „Weiter swipen“, Satz „Matches kommen zuerst in den Plan“. Erscheint bei der Person, die als Letzte zustimmt; andere bekommen ein Banner.
+
+### S43 Auswahl (nach „Fertig“; gesperrt, bis jede Art genug hat)
+- „Alle Stapel voll“ / „Eure Woche“, drei große Zahlen: Gerichte, Matches (rosa), geschätzte Kosten.
+- Je Mahlzeitart eine Zeile mit Tellern (64 pt) + Name, „♥ MATCH“ bzw. „5×“; „RESERVE · n mehr gemocht als Plätze“.
+- Unten `PrimaryButton` „Verteilen“ (Mischen-Symbol), darunter Umriss-Knopf „Selbst eintragen“.
+
+### S44 Woche verteilen
+- „So sieht's aus“ / „Halten und ziehen zum Tauschen“, rechts oben „Neu mischen“.
+- Tage als Zeilen (Mo … So, Serif) mit Slots: Teller 38 pt, Titel, Mahlzeit-Etikett, Hinweis („Fisch früh in der Woche“, „♻︎ Rest von Di“, „♥ Match“), Griff rechts. Beim Ziehen: Ziel-Slot gestrichelt `blue1` „↓ … hier ablegen“, Original blass.
+- Unten Frühstücks-Zusammenfassung + Wochensumme, `PrimaryButton` „Plan übernehmen“ → Fortschritt wie beim Plan-Erstellen. „Selbst eintragen“ = dieselbe Woche leer, Auswahl als Leiste unten.
+
+### S45 Angebote „Für dich“ (Abschnitt oben in S4)
+- Nur mit Gewohnheiten. Zeilen wie die übrigen Angebote, darunter Etikett `blue1`: „Statt Milch“, „Immer dabei · Frühstück“, „Esse ich gern“; rechts „alle n ›“. Angebote der „statt“-Seite (z. B. Vollmilch) blass mit „du nimmst Hafermilch“, ans Ende ihrer Kategorie.
+
+### S46 Onboarding „Deine Gewohnheiten“ (Schritt nach Ernährung/Allergien, auch in Einstellungen › Vorlieben)
+- Titel „Deine Gewohnheiten“, Satz „Was du immer so machst. Geht auch später in den Einstellungen.“, Illustration rechts oben.
+- „STATT … NEHME ICH …“: Regelzeilen („~~Milch~~ → Hafermilch ✕“), Vorschlags-Chips, „＋ eigene“ (gestrichelt).
+- „IMMER DABEI“: Zeilen Mahlzeit-Etikett + Name + Tage („Mo–Fr“, „täglich“), „＋ Gewohnheit“.
+- „ESSE ICH GERN“: Chips (an = schwarz), „＋“.
+- Unten „Überspringen“ und runder ✓-Knopf.

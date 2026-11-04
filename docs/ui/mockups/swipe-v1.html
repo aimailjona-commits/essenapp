@@ -1,0 +1,525 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Swipe-Planen v1</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Inter+Tight:wght@500;600&family=Manrope:wght@500;600;700;800&display=swap" rel="stylesheet">
+<style>
+/* Phase 20 – Woche per Swipe, Gewohnheiten, „Für dich“. Optik nach dem Entwurf v8 „Tinte & Bogen“ (redesign-v8.html). */
+:root{--bg:#F3EEE4;--card:#FBF8F2;--ink:#151515;--ink2:#7C776D;--ink3:#B9B3A7;--line:#DCD5C7;--blue:#AFC4F2;--blue1:#DCE5F8;--blue3:#7C9BE6;--sage:#CFE3D2;--sage3:#5E9A6A;--rose:#F2CFC8;--rose3:#C9574A;--sand:#E7DCC5;--deal:#E0603F;--page:#E2DCD0}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:"Manrope",-apple-system,system-ui,sans-serif;font-weight:600;background:var(--page);color:var(--ink);-webkit-font-smoothing:antialiased}
+svg.i{width:24px;height:24px;flex:none;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.row{display:flex;align-items:center;gap:8px}.between{justify-content:space-between}
+.head{max-width:1360px;margin:0 auto;padding:48px 24px 8px}
+.head h1{font-family:"DM Serif Display",serif;font-weight:400;font-size:46px;line-height:1.05}
+.head p{color:#5b574f;margin-top:12px;max-width:880px;line-height:1.6;font-size:15px}
+.open{margin-top:16px;background:#fff;border-radius:20px;padding:16px 20px;max-width:880px;font-size:14px;line-height:1.65}
+.open b{display:block;margin-bottom:4px}
+.screens{display:flex;flex-wrap:wrap;gap:48px 36px;justify-content:center;padding:28px 16px 80px;max-width:1500px;margin:0 auto}
+.screen{width:390px;max-width:100%}
+.caption{margin-top:18px;font-size:13px;color:#55524b;line-height:1.55}
+.caption b{display:block;color:var(--ink);font-family:"DM Serif Display",serif;font-weight:400;font-size:19px;margin-bottom:2px}
+.phone{position:relative;width:390px;max-width:100%;height:844px;background:var(--bg);border-radius:54px;overflow:hidden;box-shadow:0 30px 60px rgba(40,30,20,.14);touch-action:none}
+.sb{position:absolute;top:0;left:0;right:0;height:52px;display:flex;align-items:center;justify-content:space-between;padding:8px 34px 0;font-weight:800;font-size:16px;z-index:30}
+.sb .island{position:absolute;left:50%;top:11px;transform:translateX(-50%);width:122px;height:35px;background:#000;border-radius:20px}
+.sb svg{width:68px;height:14px}
+.scr{position:absolute;inset:0;padding:62px 24px 40px}
+.homebar{position:absolute;bottom:8px;left:50%;transform:translateX(-50%);width:134px;height:5px;border-radius:3px;background:var(--ink);z-index:40}
+.small{font-size:15px;color:var(--ink2);font-weight:600}
+.lbl{font-size:11px;font-weight:800;letter-spacing:.08em;color:var(--ink2)}
+.t1{font-family:"DM Serif Display",serif;font-size:34px;line-height:1.1}
+.t2{font-family:"DM Serif Display",serif;font-size:24px;line-height:1.12}
+.circle{border-radius:50%;background:var(--ink);color:#fff;display:grid;place-items:center;flex:none;font-weight:700}
+.chip{display:inline-flex;align-items:center;gap:6px;height:36px;padding:0 14px;border-radius:999px;font-weight:700;font-size:14px;color:var(--ink2);flex:none;box-shadow:inset 0 0 0 1.5px var(--line);background:transparent}
+.chip.on{background:var(--ink);color:#fff;box-shadow:none}
+.chip.add{color:var(--ink);box-shadow:none;border:1.5px dashed var(--ink)}
+.chips{display:flex;gap:8px;flex-wrap:wrap}
+.deal{display:inline-flex;align-items:center;height:22px;padding:0 8px;border-radius:999px;background:var(--deal);color:#fff;font-weight:800;font-size:11px}
+.plate{border-radius:50%;background-size:cover;background-position:center;flex:none;box-shadow:0 0 0 6px var(--card),0 14px 30px rgba(40,30,20,.16)}
+.blob{position:absolute;border-radius:50%}
+.num{font-family:"Inter Tight",sans-serif;font-weight:600;letter-spacing:-.05em;line-height:.92}
+.btn{display:flex;align-items:center;justify-content:center;gap:8px;height:58px;border-radius:999px;background:var(--ink);color:#fff;font-weight:800;font-size:16px}
+.btn.ghost{background:transparent;color:var(--ink);box-shadow:inset 0 0 0 1.5px var(--ink)}
+.av{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;font-size:12px;font-weight:800;color:var(--ink);box-shadow:0 0 0 2.5px var(--bg)}
+.av+.av{margin-left:-8px}
+/* Fortschritt je Mahlzeitart */
+.prog{display:flex;gap:8px;overflow:hidden}
+.pg{flex:none;height:34px;padding:0 12px;border-radius:999px;display:flex;align-items:center;gap:6px;font-size:13px;font-weight:800;box-shadow:inset 0 0 0 1.5px var(--line);color:var(--ink2)}
+.pg.on{background:var(--ink);color:#fff;box-shadow:none}
+.pg.done{background:var(--sage);color:var(--ink);box-shadow:none}
+.pg .bar{width:28px;height:4px;border-radius:2px;background:rgba(255,255,255,.3);overflow:hidden}
+.pg .bar i{display:block;height:100%;background:#fff}
+/* Karte */
+.deck{position:absolute;left:24px;right:24px;top:204px;height:462px}
+.card{position:absolute;inset:0;border-radius:40px;background:var(--card);overflow:hidden;box-shadow:0 18px 40px rgba(40,30,20,.12);transition:transform .35s cubic-bezier(.2,.8,.2,1),opacity .35s;will-change:transform;user-select:none;cursor:grab}
+.card.back1{transform:translateY(14px) scale(.95);opacity:.85}
+.card.back2{transform:translateY(28px) scale(.9);opacity:.5}
+.card.drag{transition:none;cursor:grabbing}
+.card .bl{position:absolute;left:-60px;top:-90px;width:420px;height:420px;border-radius:50%}
+.card .pl{position:absolute;left:50%;top:44px;width:230px;height:230px;margin-left:-115px}
+.card .info{position:absolute;left:26px;right:26px;bottom:24px}
+.card .t2{font-size:28px}
+.card .meta{display:flex;gap:14px;margin-top:10px;font-size:13px;color:var(--ink2);font-weight:700}
+.card .meta span{display:flex;align-items:center;gap:4px}
+.card .meta svg{width:16px;height:16px}
+.card .src{position:absolute;left:22px;top:22px;display:flex;gap:6px;z-index:2}
+.tag{display:inline-flex;align-items:center;gap:5px;height:26px;padding:0 10px;border-radius:999px;background:var(--card);font-size:12px;font-weight:800}
+.tag.ink{background:var(--ink);color:#fff}
+.price{position:absolute;right:22px;top:22px;text-align:right;z-index:2}
+.price .num{font-size:30px}
+.price .small{font-size:11px}
+/* Stempel */
+.stamp{position:absolute;top:40px;white-space:nowrap;padding:6px 14px;border-radius:14px;font-weight:800;font-size:20px;letter-spacing:.04em;border:3px solid;opacity:0;z-index:3;background:rgba(251,248,242,.85)}
+.stamp.yes{left:24px;color:var(--sage3);transform:rotate(-12deg)}
+.stamp.no{right:24px;color:var(--ink2);transform:rotate(12deg)}
+.stamp.nope{left:50%;top:auto;bottom:150px;transform:translateX(-50%);color:var(--rose3)}
+/* Knöpfe */
+.acts{position:absolute;left:0;right:0;top:688px;display:flex;justify-content:center;align-items:center;gap:22px}
+.act{border-radius:50%;display:grid;place-items:center;cursor:pointer;background:var(--card);box-shadow:0 8px 20px rgba(40,30,20,.12);border:none;color:var(--ink)}
+.act.big{width:72px;height:72px}.act.mid{width:58px;height:58px}.act.sm{width:44px;height:44px;box-shadow:none;background:transparent;color:var(--ink2)}
+.act.yes{background:var(--ink);color:#fff}
+.act svg{width:28px;height:28px}
+.act-l{display:block;white-space:nowrap;text-align:center;font-size:11px;font-weight:800;color:var(--ink2);margin-top:6px}
+/* Sheet */
+.dim{position:absolute;inset:0;background:rgba(21,21,21,.35);z-index:25}
+.sheet{position:absolute;left:0;right:0;bottom:0;background:var(--card);border-radius:36px 36px 0 0;padding:14px 24px 44px;z-index:26}
+.grab{width:40px;height:5px;border-radius:3px;background:var(--line);margin:0 auto 16px}
+.opt{display:flex;align-items:center;gap:14px;height:64px;border-top:1.5px solid var(--line);font-size:16px;font-weight:700}
+.opt .c{width:44px;height:44px;border-radius:50%;display:grid;place-items:center;flex:none}
+.opt small{display:block;font-size:12px;color:var(--ink2);font-weight:600}
+.opt .go{margin-left:auto;color:var(--ink3)}
+/* Woche */
+.wk{position:absolute;left:24px;right:24px}
+.wd{display:grid;grid-template-columns:44px 1fr;gap:10px;padding:9px 0;border-top:1.5px solid var(--line)}
+.wd .d{font-family:"DM Serif Display",serif;font-size:19px;padding-top:4px}
+.slot{display:flex;align-items:center;gap:10px;height:44px}
+.slot .pl{width:38px;height:38px;box-shadow:0 0 0 3px var(--card)}
+.slot b{font-size:14px;flex:1;line-height:1.15}
+.slot small{display:block;font-size:11px;color:var(--ink2);font-weight:700}
+.slot .h{color:var(--ink3);font-size:18px;letter-spacing:-2px}
+.slot.empty{border:1.5px dashed var(--ink3);border-radius:22px;padding:0 12px;color:var(--ink3);font-size:13px}
+.slot.drop{border-color:var(--blue3);background:var(--blue1);color:var(--ink)}
+.mt{display:inline-flex;height:18px;padding:0 7px;border-radius:999px;font-size:10px;font-weight:800;align-items:center;background:var(--sand);color:var(--ink)}
+.res{display:flex;gap:10px;overflow:hidden}
+.rc{flex:none;width:96px;text-align:center;font-size:12px;font-weight:700;line-height:1.2}
+.rc .pl{width:64px;height:64px;margin:0 auto 6px;box-shadow:0 0 0 4px var(--card)}
+.match{font-size:10px;font-weight:800;color:var(--rose3)}
+/* Formular-Zeilen */
+.sec{margin-top:22px}
+.sec .lbl{margin-bottom:10px;display:block}
+.rule{display:flex;align-items:center;gap:10px;height:52px;border-top:1.5px solid var(--line);font-size:15px;font-weight:700}
+.rule .x{margin-left:auto;color:var(--ink3)}
+.rule s{color:var(--ink3);text-decoration-thickness:1.5px}
+.offer{display:flex;align-items:center;gap:12px;height:76px;border-top:1.5px solid var(--line)}
+.offer .pl{width:52px;height:52px;box-shadow:none;background:var(--blue1);display:grid;place-items:center}
+.offer .pl img{width:44px}
+.offer .nm{flex:1;font-size:15px;font-weight:700;line-height:1.2}
+.offer .nm small{display:block;font-size:12px;color:var(--ink2);font-weight:600;margin-top:2px}
+.offer .pr{text-align:right}
+.offer .pr .num{font-size:22px}
+.offer .pr s{display:block;font-size:11px;color:var(--ink3)}
+.why{display:inline-flex;height:20px;padding:0 8px;border-radius:999px;background:var(--blue1);color:var(--ink);font-size:10px;font-weight:800;align-items:center;margin-top:4px}
+.faded{opacity:.42}
+.ph-bowl{background-image:url(../../../ios/Sources/Essenapp/Resources/hero/bowl.jpg)}
+.ph-grill{background-image:url(../../../ios/Sources/Essenapp/Resources/hero/grill.jpg)}
+.ph-pasta{background-image:url(../../../ios/Sources/Essenapp/Resources/hero/pasta.jpg)}
+.ph-table{background-image:url(../../../ios/Sources/Essenapp/Resources/hero/table.jpg)}
+.ph-market{background-image:url(../../../ios/Sources/Essenapp/Resources/hero/market.jpg)}
+.ph-chef{background-image:url(../../../ios/Sources/Essenapp/Resources/hero/chef.jpg)}
+@keyframes pop{0%{transform:scale(.6);opacity:0}60%{transform:scale(1.08);opacity:1}100%{transform:scale(1)}}
+.popin{animation:pop .6s cubic-bezier(.2,.8,.2,1) both}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute">
+  <symbol id="i-back" viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18" stroke-width="2.4"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.5 9.5 17 19 7" stroke-width="2.6"/></symbol>
+  <symbol id="i-down" viewBox="0 0 24 24"><path transform="matrix(1 0 0 -1 0 24)" d="M7 10.5V20H4.5v-9.5zM7 11l3.6-7c1.8 0 2.6 1.3 2.2 3l-.6 2.6h5.2a2 2 0 0 1 2 2.4l-1.3 6.2a2.4 2.4 0 0 1-2.4 1.8H7"/></symbol>
+  <symbol id="i-undo" viewBox="0 0 24 24"><path d="M9 7 4.5 11.5 9 16"/><path d="M4.5 11.5H15a4.5 4.5 0 0 1 0 9h-3"/></symbol>
+  <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M12 7v5l3 2"/></symbol>
+  <symbol id="i-tag" viewBox="0 0 24 24"><path d="M20.5 12.6 12.8 20.3a1.7 1.7 0 0 1-2.4 0L3.7 13.6V3.7h9.9l6.9 6.5a1.7 1.7 0 0 1 0 2.4z"/><circle cx="8.3" cy="8.3" r="1.3"/></symbol>
+  <symbol id="i-dice" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="4"/><circle cx="9" cy="9" r="1.1" fill="currentColor"/><circle cx="15" cy="15" r="1.1" fill="currentColor"/><circle cx="15" cy="9" r="1.1" fill="currentColor"/><circle cx="9" cy="15" r="1.1" fill="currentColor"/></symbol>
+  <symbol id="i-heart" viewBox="0 0 24 24"><path d="M12 20s-7.5-4.6-7.5-10A4.3 4.3 0 0 1 12 7.4 4.3 4.3 0 0 1 19.5 10c0 5.4-7.5 10-7.5 10z"/></symbol>
+  <symbol id="i-chev" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="i-shuffle" viewBox="0 0 24 24"><path d="M4 7h3.5c4.5 0 4.5 10 9 10H20M17 14l3 3-3 3M4 17h3.5c1.4 0 2.3-.9 3-2.2M13.5 9.2c.7-1.3 1.6-2.2 3-2.2H20M17 4l3 3-3 3"/></symbol>
+  <symbol id="i-grip" viewBox="0 0 24 24"><circle cx="9" cy="7" r="1.2" fill="currentColor"/><circle cx="15" cy="7" r="1.2" fill="currentColor"/><circle cx="9" cy="12" r="1.2" fill="currentColor"/><circle cx="15" cy="12" r="1.2" fill="currentColor"/><circle cx="9" cy="17" r="1.2" fill="currentColor"/><circle cx="15" cy="17" r="1.2" fill="currentColor"/></symbol>
+  <symbol id="i-recycle" viewBox="0 0 24 24"><path d="M7.5 9.5 10 5.2a2 2 0 0 1 3.5 0l1.6 2.8M16.5 13l2.3 4a2 2 0 0 1-1.7 3H14M9.5 20H6.9a2 2 0 0 1-1.7-3l1.3-2.2"/><path d="M13 7.8h2.5V5.3M14.2 22.3 12 20l2.2-2.3M5 12.3l1.5 2.3 2.4-1.3"/></symbol>
+  <symbol id="status" viewBox="0 0 68 14"><g fill="currentColor" stroke="none"><rect x="0" y="9" width="3" height="5" rx="1"/><rect x="5" y="6" width="3" height="8" rx="1"/><rect x="10" y="3" width="3" height="11" rx="1"/><rect x="15" y="0" width="3" height="14" rx="1"/><path d="M30 4.5a10 10 0 0 1 12 0l-1.6 1.8a7.5 7.5 0 0 0-8.8 0zM32.6 7.6a6 6 0 0 1 6.8 0L36 12z"/><rect x="45" y="1" width="20" height="12" rx="3.5" fill="none" stroke="currentColor" stroke-width="1.4"/><rect x="47" y="3" width="16" height="8" rx="2"/><rect x="66" y="5" width="2" height="4" rx="1"/></g></symbol>
+</svg>
+
+<header class="head">
+  <h1>Woche per Swipe planen</h1>
+  <p><b>Phase 20 (E97).</b> Statt einer fertigen KI-Woche wischt ihr durch Gerichte aus den aktuellen Angeboten.
+  Rechts = diese Woche, links = diesmal nicht, nach oben = „Mag ich nicht“ mit Grund. Mögen alle im Haushalt dasselbe,
+  gibt es ein Match. Danach verteilt die App die Gerichte auf die Woche, oder ihr zieht sie selbst auf die Tage.
+  Dazu neu: der Onboarding-Schritt „Deine Gewohnheiten“ und der Bereich „Für dich“ bei den Angeboten.
+  Die Optik folgt dem Entwurf v8 „Tinte &amp; Bogen“ und ändert sich mit dem Redesign. Hier geht es um Ablauf und Inhalte.
+  <b>Der Stapel im ersten Bildschirm lässt sich wischen</b> (Maus oder Finger, oder mit den Knöpfen).</p>
+  <div class="open"><b>Bitte entscheiden</b>
+    1. Passt der Ablauf: Stapel → Match → Woche verteilen → Plan übernehmen?<br>
+    2. Fortschritt oben als Pillen je Mahlzeitart (wie hier) – oder nur eine Zahl „12 von 21“?<br>
+    3. „Mag ich nicht“: als Knopf in der Mitte (wie hier) – oder kleiner, damit ✗ und ✓ mehr Gewicht haben?<br>
+    4. Wochenübersicht: erst die Auswahl mit „Verteilen“ (Bild 5), dann die Woche (Bild 6) – oder direkt die verteilte Woche?
+  </div>
+</header>
+
+<div class="screens">
+
+  <!-- 1 Stapel (interaktiv) -->
+  <div class="screen"><div class="phone" id="deckPhone">
+    <div class="sb"><b>9:41</b><span class="island"></span><svg><use href="#status"/></svg></div>
+    <div class="scr">
+      <div class="row between">
+        <span class="circle" style="width:44px;height:44px;background:transparent;color:var(--ink);box-shadow:inset 0 0 0 1.5px var(--line)"><svg class="i"><use href="#i-back"/></svg></span>
+        <div class="row" style="gap:10px">
+          <span class="small" style="font-size:12px;font-weight:700">swipen mit</span>
+          <div class="row" style="gap:0"><span class="av" style="background:var(--blue)">J</span><span class="av" style="background:var(--rose)">S</span></div>
+        </div>
+      </div>
+      <div class="t1" style="margin-top:12px;font-size:30px">Woche 46</div>
+      <div class="prog" style="margin-top:12px">
+        <span class="pg on">Abend <b id="cnt">3</b>/7 <span class="bar"><i id="bar" style="width:43%"></i></span></span>
+        <span class="pg">Mittag 1/5</span>
+        <span class="pg done">Frühstück ✓</span>
+      </div>
+    </div>
+    <div class="deck" id="deck"></div>
+    <div class="acts">
+      <div><button class="act sm" id="bUndo" aria-label="Rückgängig"><svg class="i" style="width:22px"><use href="#i-undo"/></svg></button></div>
+      <div><button class="act big" id="bNo" aria-label="Diesmal nicht"><svg class="i"><use href="#i-x"/></svg></button><span class="act-l">Nicht</span></div>
+      <div><button class="act mid" id="bNope" aria-label="Mag ich nicht" style="color:var(--rose3)"><svg class="i" style="width:24px"><use href="#i-down"/></svg></button><span class="act-l">Mag ich nicht</span></div>
+      <div><button class="act big yes" id="bYes" aria-label="Diese Woche"><svg class="i"><use href="#i-check"/></svg></button><span class="act-l">Diese Woche</span></div>
+      <div><button class="act sm" aria-label="Überrasch mich"><svg class="i" style="width:22px"><use href="#i-dice"/></svg></button></div>
+    </div>
+    <div style="position:absolute;left:0;right:0;top:790px;text-align:center" class="small"><span style="font-size:12px">Würfel = „Überrasch mich“: KI plant den Rest</span></div>
+    <div id="sheetHost"></div>
+    <div id="matchHost"></div>
+    <div class="homebar"></div></div>
+    <div class="caption"><b>S41 Stapel</b>Je Mahlzeitart ein Stapel. Die Pillen oben zeigen den Fortschritt und wechseln die Art. Eine fertige Art wird grün.
+    Karte: Teller, Titel, Preis pro Portion, Kochzeit, Zutaten im Angebot, Laden. Oben links die Herkunft: „KI-Idee“ oder „Dein Rezept“.
+    Rechts = diese Woche, links = diesmal nicht, oben = „Mag ich nicht“. Rückgängig nimmt die letzte Karte zurück.
+    Oben rechts steht, wer gerade mitswipt. Wird der Stapel knapp (weniger als 5 Karten), lädt er im Hintergrund nach. VoiceOver bekommt drei Aktionen auf der Karte.</div></div>
+
+  <!-- 2 Geste rechts -->
+  <div class="screen"><div class="phone">
+    <div class="sb"><b>9:41</b><span class="island"></span><svg><use href="#status"/></svg></div>
+    <div class="scr">
+      <div class="row between"><span class="circle" style="width:44px;height:44px;background:transparent;color:var(--ink);box-shadow:inset 0 0 0 1.5px var(--line)"><svg class="i"><use href="#i-back"/></svg></span>
+        <div class="row" style="gap:0"><span class="av" style="background:var(--blue)">J</span><span class="av" style="background:var(--rose)">S</span></div></div>
+      <div class="t1" style="margin-top:12px;font-size:30px">Woche 46</div>
+      <div class="prog" style="margin-top:12px"><span class="pg">Abend 7/7</span><span class="pg">Mittag 1/5</span><span class="pg on">Frühstück 3/7 <span class="bar"><i style="width:43%"></i></span></span></div>
+    </div>
+    <div class="deck">
+      <div class="card back1"><div class="bl" style="background:var(--sand)"></div></div>
+      <div class="card" style="transform:translateX(70px) rotate(9deg)">
+        <div class="bl" style="background:var(--sage)"></div>
+        <div class="src"><span class="tag ink">♥ Immer dabei</span></div>
+        <div class="price"><div class="num">0,90 €</div><div class="small">pro Portion</div></div>
+        <div class="stamp yes" style="opacity:1">DIESE WOCHE</div>
+        <div class="plate pl ph-bowl"></div>
+        <div class="info">
+          <div class="t2">Müsli mit Hafermilch &amp; Beeren</div>
+          <div class="meta"><span><svg class="i"><use href="#i-clock"/></svg>5 min</span><span><svg class="i"><use href="#i-tag"/></svg>2 im Angebot</span><span>Lidl</span></div>
+          <div class="row between" style="margin-top:14px;height:44px;border-top:1.5px solid var(--line)">
+            <span style="font-size:14px;font-weight:700">An wie vielen Tagen?</span>
+            <div class="row" style="gap:14px"><span class="circle" style="width:32px;height:32px;background:var(--bg);color:var(--ink)">−</span><b class="num" style="font-size:24px">5×</b><span class="circle" style="width:32px;height:32px">+</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="acts">
+      <div><button class="act big"><svg class="i"><use href="#i-x"/></svg></button><span class="act-l">Nicht</span></div>
+      <div><button class="act mid" style="color:var(--rose3)"><svg class="i" style="width:24px"><use href="#i-down"/></svg></button><span class="act-l">Mag ich nicht</span></div>
+      <div><button class="act big yes"><svg class="i"><use href="#i-check"/></svg></button><span class="act-l">Diese Woche</span></div>
+    </div>
+    <div class="homebar"></div></div>
+    <div class="caption"><b>Frühstück: einmal mögen, mehrmals essen</b>Bei Frühstück und Snack hat die Karte einen Zähler („5×“). Ein gemochtes Gericht füllt damit mehrere Tage.
+    Gewohnheiten aus dem Onboarding („Immer dabei“) liegen als erste Karte im Stapel und sind schon gemocht. Hier hängt die Karte beim Wischen nach rechts, der Stempel „Diese Woche“ ist zu sehen.</div></div>
+
+  <!-- 3 Mag ich nicht -->
+  <div class="screen"><div class="phone">
+    <div class="sb"><b>9:41</b><span class="island"></span><svg><use href="#status"/></svg></div>
+    <div class="scr"><div class="t1" style="margin-top:56px;font-size:30px">Woche 46</div></div>
+    <div class="deck">
+      <div class="card" style="transform:translateY(-70px) scale(.96)">
+        <div class="bl" style="background:var(--rose)"></div>
+        <div class="src"><span class="tag">KI-Idee</span></div>
+        <div class="price"><div class="num">2,40 €</div><div class="small">pro Portion</div></div>
+        <div class="stamp nope" style="opacity:1;bottom:170px">MAG ICH NICHT</div>
+        <div class="plate pl ph-grill"></div>
+        <div class="info"><div class="t2">Leber mit Zwiebeln &amp; Kartoffelpüree</div></div>
+      </div>
+    </div>
+    <div class="dim"></div>
+    <div class="sheet">
+      <div class="grab"></div>
+      <div class="t2">Was magst du daran nicht?</div>
+      <div class="small" style="font-size:13px;margin:4px 0 14px">Damit wir besser vorschlagen. Du findest es später unter „Ausgeblendet“.</div>
+      <div class="opt"><span class="c" style="background:var(--sand)">🧅</span><div>Zutaten mag ich nicht<small>Zutat wählen, kommt nie mehr in Pläne</small></div><svg class="i go"><use href="#i-chev"/></svg></div>
+      <div class="opt"><span class="c" style="background:var(--rose)">😖</span><div>Schmeckt mir einfach nicht<small>Dieses Gericht nie wieder</small></div></div>
+      <div class="opt"><span class="c" style="background:var(--blue1)">😴</span><div>Keine Lust<small>Nur diese Woche nicht</small></div></div>
+      <div class="opt"><span class="c" style="background:var(--bg)">✏️</span><div>Sonstiges …<small>Kurz sagen, was nicht passt</small></div><svg class="i go"><use href="#i-chev"/></svg></div>
+    </div>
+    <div class="homebar"></div></div>
+    <div class="caption"><b>Mag ich nicht – mit Grund</b>Nach oben wischen oder 👎 öffnet die Gründe. Es ist derselbe Dialog wie im Rezeptdetail (seit 04.11. eingebaut).
+    „Zutaten“ zeigt als Nächstes die Zutaten der Karte zum Antippen, z. B. Leber. „Sonstiges“ öffnet ein Textfeld.
+    Sagt eine Person im Haushalt „Mag ich nicht“, ist die Karte für alle raus. Bei „Keine Lust“ gilt das nur diese Woche.</div></div>
+
+  <!-- 4 Match -->
+  <div class="screen"><div class="phone" style="background:var(--blue)">
+    <div class="sb"><b>9:41</b><span class="island"></span><svg><use href="#status"/></svg></div>
+    <div class="blob" style="left:-120px;top:120px;width:630px;height:630px;background:var(--blue1)"></div>
+    <div class="scr" style="text-align:center">
+      <div class="lbl" style="margin-top:70px;color:var(--ink)">IHR BEIDE WOLLT</div>
+      <div class="t1" style="font-size:52px;margin-top:6px">Match!</div>
+      <div style="position:relative;height:300px;margin-top:22px">
+        <div class="plate ph-pasta popin" style="position:absolute;left:50%;top:10px;width:250px;height:250px;margin-left:-125px"></div>
+        <span class="av popin" style="position:absolute;left:44px;top:200px;width:64px;height:64px;font-size:24px;background:var(--card);box-shadow:0 0 0 5px var(--blue1)">J</span>
+        <span class="av popin" style="position:absolute;right:44px;top:200px;width:64px;height:64px;font-size:24px;background:var(--rose);box-shadow:0 0 0 5px var(--blue1);margin:0">S</span>
+      </div>
+      <div class="t2" style="font-size:30px;margin-top:8px">Spaghetti mit Tomaten-Linsen-Sauce</div>
+      <div class="small" style="margin-top:8px">1,70 € p. P. · 25 min · 3 Zutaten im Angebot</div>
+    </div>
+    <div style="position:absolute;left:24px;right:24px;bottom:56px">
+      <div class="btn">Weiter swipen</div>
+      <div class="small" style="text-align:center;margin-top:14px;font-size:13px">Matches kommen zuerst in den Plan</div>
+    </div>
+    <div class="homebar"></div></div>
+    <div class="caption"><b>S42 Match</b>Ein Match gibt es, wenn alle, die die Karte gesehen haben, sie mögen. Mitglieder, die noch nicht geswipt haben, zählen nicht mit.
+    Der Bildschirm kommt bei der Person, die als Letzte zustimmt. Die anderen bekommen ein kleines Banner. Leichte Haptik, Teller und Köpfe springen herein.</div></div>
+
+  <!-- 5 Auswahl -->
+  <div class="screen"><div class="phone">
+    <div class="sb"><b>9:41</b><span class="island"></span><svg><use href="#status"/></svg></div>
+    <div class="blob" style="right:-170px;top:-140px;width:380px;height:380px;background:var(--sage)"></div>
+    <div class="scr">
+      <span class="circle" style="width:44px;height:44px;background:transparent;color:var(--ink);box-shadow:inset 0 0 0 1.5px var(--line)"><svg class="i"><use href="#i-back"/></svg></span>
+      <div class="small" style="margin-top:14px">Alle Stapel voll</div>
+      <div class="t1">Eure Woche</div>
+      <div class="row" style="gap:26px;margin-top:16px">
+        <div><div class="num" style="font-size:40px">19</div><div class="lbl">GERICHTE</div></div>
+        <div><div class="num" style="font-size:40px">4</div><div class="lbl" style="color:var(--rose3)">MATCHES</div></div>
+        <div><div class="num" style="font-size:40px">58 €</div><div class="lbl">GESCHÄTZT</div></div>
+      </div>
+      <div class="lbl" style="margin-top:26px;display:block">ABEND · 7</div>
+      <div class="res" style="margin-top:12px">
+        <div class="rc"><div class="plate pl ph-pasta"></div>Spaghetti Linsen<div class="match">♥ MATCH</div></div>
+        <div class="rc"><div class="plate pl ph-bowl"></div>Bowl mit Lachs<div class="match">♥ MATCH</div></div>
+        <div class="rc"><div class="plate pl ph-grill"></div>Hähnchen-Pfanne</div>
+        <div class="rc"><div class="plate pl ph-table"></div>Ofengemüse</div>
+      </div>
+      <div class="lbl" style="margin-top:18px;display:block">MITTAG · 5 &nbsp;·&nbsp; FRÜHSTÜCK · 7</div>
+      <div class="res" style="margin-top:12px">
+        <div class="rc"><div class="plate pl ph-market"></div>Linsensuppe</div>
+        <div class="rc"><div class="plate pl ph-chef"></div>Quiche</div>
+        <div class="rc"><div class="plate pl ph-bowl"></div>Müsli<div class="match" style="color:var(--ink2)">5×</div></div>
+        <div class="rc"><div class="plate pl ph-table"></div>Rührei<div class="match" style="color:var(--ink2)">2×</div></div>
+      </div>
+      <div class="lbl" style="margin-top:18px;display:block">RESERVE · 3 &nbsp;<span style="font-weight:600;letter-spacing:0">mehr gemocht als Plätze</span></div>
+    </div>
+    <div style="position:absolute;left:24px;right:24px;bottom:50px">
+      <div class="btn"><svg class="i"><use href="#i-shuffle"/></svg>Verteilen</div>
+      <div class="btn ghost" style="margin-top:10px">Selbst eintragen</div>
+    </div>
+    <div class="homebar"></div></div>
+    <div class="caption"><b>S43 Auswahl</b>Erscheint, sobald jede Mahlzeitart genug Gerichte hat. Vorher ist „Fertig“ gesperrt und der Stapel lädt nach (E97, kein Auffüllen durch die KI).
+    Matches stehen vorne. Wurden mehr Gerichte gemocht als es Plätze gibt, landen die übrigen in der Reserve. Jedes Mitglied kann hier weitermachen.</div></div>
+
+  <!-- 6 Woche verteilt -->
+  <div class="screen"><div class="phone">
+    <div class="sb"><b>9:41</b><span class="island"></span><svg><use href="#status"/></svg></div>
+    <div class="scr" style="padding-bottom:0">
+      <div class="row between"><span class="circle" style="width:44px;height:44px;background:transparent;color:var(--ink);box-shadow:inset 0 0 0 1.5px var(--line)"><svg class="i"><use href="#i-back"/></svg></span>
+        <span class="row" style="font-size:14px;font-weight:800"><svg class="i" style="width:20px"><use href="#i-shuffle"/></svg>Neu mischen</span></div>
+      <div class="t1" style="margin-top:12px;font-size:30px">So sieht's aus</div>
+      <div class="small" style="font-size:13px;margin-top:4px">Halten und ziehen zum Tauschen</div>
+    </div>
+    <div class="wk" style="top:182px">
+      <div class="wd"><div class="d">Mo</div><div>
+        <div class="slot"><span class="plate pl ph-bowl"></span><b>Bowl mit Lachs<small><span class="mt">Abend</span> &nbsp;Fisch früh in der Woche</small></b><svg class="i h"><use href="#i-grip"/></svg></div></div></div>
+      <div class="wd"><div class="d">Di</div><div>
+        <div class="slot"><span class="plate pl ph-market"></span><b>Linsensuppe<small><span class="mt">Mittag</span></small></b><svg class="i h"><use href="#i-grip"/></svg></div>
+        <div class="slot"><span class="plate pl ph-grill"></span><b>Hähnchen-Pfanne<small><span class="mt">Abend</span></small></b><svg class="i h"><use href="#i-grip"/></svg></div></div></div>
+      <div class="wd"><div class="d">Mi</div><div>
+        <div class="slot"><span class="plate pl ph-table"></span><b>Wraps mit Hähnchen<small><span class="mt">Mittag</span> &nbsp;♻︎ Rest von Di</small></b><svg class="i h"><use href="#i-grip"/></svg></div>
+        <div class="slot drop">↓ Spaghetti Linsen hier ablegen</div></div></div>
+      <div class="wd"><div class="d">Do</div><div>
+        <div class="slot" style="opacity:.35"><span class="plate pl ph-pasta"></span><b>Spaghetti Linsen<small><span class="mt">Abend</span> ♥ Match</small></b></div></div></div>
+      <div class="wd"><div class="d">Fr</div><div>
+        <div class="slot"><span class="plate pl ph-chef"></span><b>Quiche<small><span class="mt">Abend</span></small></b><svg class="i h"><use href="#i-grip"/></svg></div></div></div>
+      <div class="wd" style="border-bottom:1.5px solid var(--line)"><div class="d">Sa</div><div class="small" style="font-size:13px;padding-top:12px">+ 2 Gerichte · So 2 Gerichte</div></div>
+    </div>
+    <div style="position:absolute;left:24px;right:24px;bottom:50px">
+      <div class="row between" style="margin-bottom:12px"><span class="small" style="font-size:13px">Frühstück: Müsli Mo–Fr, Rührei Sa+So</span><b class="num" style="font-size:22px">58,40 €</b></div>
+      <div class="btn">Plan übernehmen</div>
+    </div>
+    <div class="homebar"></div></div>
+    <div class="caption"><b>S44 Woche verteilen</b>„Verteilen“ rechnet der Code ohne KI: Fisch und Fleisch kommen an den Anfang der Woche, Reste werden am Folgetag verbraucht, die Abwechslungsregeln gelten.
+    Bei Gleichstand entscheidet der Zufall, „Neu mischen“ verteilt neu. Ziehen tauscht Gerichte (hier landet Spaghetti auf Mittwoch). Selbst gesetzte Tage bleiben beim Neu-Mischen fest.
+    „Plan übernehmen“ schreibt die vollständigen Rezepte für die KI-Ideen, parallel mit Fortschritt wie heute. Danach kommen Einkaufsliste und Reste. „Selbst eintragen“ zeigt dieselbe Woche leer, mit der Auswahl als Leiste unten.</div></div>
+
+  <!-- 7 Gewohnheiten -->
+  <div class="screen"><div class="phone">
+    <div class="sb"><b>9:41</b><span class="island"></span><svg><use href="#status"/></svg></div>
+    <div class="blob" style="left:210px;top:-150px;width:330px;height:330px;background:var(--blue1)"></div>
+    <img src="ill-v7/cookbook.webp" alt="" style="position:absolute;right:10px;top:58px;width:130px">
+    <div class="scr">
+      <div class="row" style="gap:7px;margin-top:4px"><i style="width:22px;height:5px;border-radius:3px;background:var(--ink)"></i><i style="width:22px;height:5px;border-radius:3px;background:var(--ink)"></i><i style="width:22px;height:5px;border-radius:3px;background:var(--ink)"></i><i style="width:22px;height:5px;border-radius:3px;background:var(--line)"></i></div>
+      <div class="t1" style="margin-top:20px;max-width:230px">Deine Gewohn&shy;heiten</div>
+      <div class="small" style="font-size:13px;margin-top:6px;max-width:220px">Was du immer so machst. Geht auch später in den Einstellungen.</div>
+
+      <div class="sec"><span class="lbl">STATT … NEHME ICH …</span>
+        <div class="rule"><s>Milch</s> → Hafermilch <span class="x">✕</span></div>
+        <div class="chips" style="margin-top:10px"><span class="chip">Vollkorn statt Weißmehl</span><span class="chip">laktosefrei</span><span class="chip">Skyr statt Joghurt</span><span class="chip add">＋ eigene</span></div>
+      </div>
+      <div class="sec"><span class="lbl">IMMER DABEI</span>
+        <div class="rule"><span class="mt">Frühstück</span>Müsli mit Hafermilch <span class="small" style="font-size:12px;margin-left:auto">Mo–Fr</span></div>
+        <div class="rule"><span class="mt">Snack</span>Apfel <span class="small" style="font-size:12px;margin-left:auto">täglich</span></div>
+        <div class="chips" style="margin-top:10px"><span class="chip add">＋ Gewohnheit</span></div>
+      </div>
+      <div class="sec"><span class="lbl">ESSE ICH GERN</span>
+        <div class="chips"><span class="chip on">Lachs</span><span class="chip on">Curry</span><span class="chip on">Ofengemüse</span><span class="chip">Pasta</span><span class="chip">Bowls</span><span class="chip">Suppen</span><span class="chip add">＋</span></div>
+      </div>
+    </div>
+    <div style="position:absolute;left:24px;right:24px;bottom:50px" class="row between">
+      <span style="font-weight:700;color:var(--ink2)">Überspringen</span>
+      <span class="circle" style="width:64px;height:64px"><svg class="i"><use href="#i-check"/></svg></span>
+    </div>
+    <div class="homebar"></div></div>
+    <div class="caption"><b>S46 Onboarding: Deine Gewohnheiten</b>Neuer Schritt nach Ernährung und Allergien, man kann ihn überspringen. Drei Bereiche:
+    <b style="display:inline;font:inherit;font-weight:800;color:var(--ink)">Statt</b>-Regeln: der Planer tauscht immer, die Angebote richten sich danach.
+    <b style="display:inline;font:inherit;font-weight:800;color:var(--ink)">Immer dabei</b> je Mahlzeit und Tage: wird ohne KI eingeplant und kommt automatisch auf die Einkaufsliste.
+    <b style="display:inline;font:inherit;font-weight:800;color:var(--ink)">Esse ich gern</b>: solche Karten kommen im Stapel nach vorn. Gilt je Person.</div></div>
+
+  <!-- 8 Für dich -->
+  <div class="screen"><div class="phone">
+    <div class="sb"><b>9:41</b><span class="island"></span><svg><use href="#status"/></svg></div>
+    <div class="blob" style="left:-150px;top:-170px;width:360px;height:360px;background:var(--blue)"></div>
+    <div class="scr">
+      <div class="small" style="margin-top:6px">Woche 46 · 312 Angebote</div>
+      <div class="t1">Angebote</div>
+      <div class="row between" style="margin-top:22px"><span class="t2">Für dich</span><span class="small" style="font-size:13px">alle 6 ›</span></div>
+      <div style="margin-top:6px">
+        <div class="offer"><span class="plate pl"><img src="ill-v7/bag.webp" alt=""></span><div class="nm">Hafermilch Barista 1 l<small>Lidl</small><span class="why">Statt Milch</span></div><div class="pr"><span class="deal">−25 %</span><div class="num">1,49 €</div><s>1,99 €</s></div></div>
+        <div class="offer"><span class="plate pl" style="background:var(--sage)"><img src="ill-v7/basil.webp" alt=""></span><div class="nm">Knusper-Müsli 750 g<small>Rewe</small><span class="why">Immer dabei · Frühstück</span></div><div class="pr"><span class="deal">−30 %</span><div class="num">2,29 €</div><s>3,29 €</s></div></div>
+        <div class="offer"><span class="plate pl" style="background:var(--rose)"><img src="ill-v7/pot.webp" alt=""></span><div class="nm">Lachsfilet 250 g<small>Aldi Süd</small><span class="why">Esse ich gern</span></div><div class="pr"><span class="deal">−20 %</span><div class="num">3,99 €</div><s>4,99 €</s></div></div>
+      </div>
+      <div class="t2" style="margin-top:22px">Molkerei</div>
+      <div style="margin-top:6px">
+        <div class="offer"><span class="plate pl" style="background:var(--sand)"><img src="ill-v7/tomato.webp" alt=""></span><div class="nm">Skyr Natur 450 g<small>Edeka</small></div><div class="pr"><div class="num">1,29 €</div></div></div>
+        <div class="offer faded"><span class="plate pl" style="background:var(--sand)"><img src="ill-v7/garlic.webp" alt=""></span><div class="nm">Frische Vollmilch 1 l<small>Rewe · du nimmst Hafermilch</small></div><div class="pr"><div class="num">0,99 €</div></div></div>
+      </div>
+    </div>
+    <div class="homebar"></div></div>
+    <div class="caption"><b>S45 Angebote: Für dich</b>Oben stehen Angebote zu deinen Gewohnheiten. Ein kleines Etikett sagt, warum: „Statt Milch“, „Immer dabei“, „Esse ich gern“.
+    Angebote, die du durch eine Statt-Regel ersetzt (hier Vollmilch), sind blass und rutschen in ihrer Kategorie ans Ende. Ohne Gewohnheiten gibt es den Bereich nicht.</div></div>
+
+</div>
+
+<script>
+// Stapel zum Ausprobieren: ziehen oder Knöpfe; oben = „Mag ich nicht“ mit Grund-Sheet
+const CARDS = [
+  {t: 'Spaghetti mit Tomaten-Linsen-Sauce', p: '1,70 €', min: 25, d: 3, s: 'Lidl', ph: 'ph-pasta', bl: 'var(--blue1)', src: 'KI-Idee', match: true},
+  {t: 'Ofen-Lachs mit Kartoffeln & Brokkoli', p: '3,10 €', min: 35, d: 2, s: 'Aldi Süd', ph: 'ph-bowl', bl: 'var(--sage)', src: 'Dein Rezept ★ 4,8'},
+  {t: 'Hähnchen-Gemüse-Pfanne mit Reis', p: '2,20 €', min: 25, d: 4, s: 'Rewe', ph: 'ph-grill', bl: 'var(--sand)', src: 'KI-Idee'},
+  {t: 'Leber mit Zwiebeln & Püree', p: '2,40 €', min: 30, d: 1, s: 'Edeka', ph: 'ph-chef', bl: 'var(--rose)', src: 'KI-Idee'},
+  {t: 'Ofengemüse mit Feta', p: '1,90 €', min: 40, d: 3, s: 'Lidl', ph: 'ph-table', bl: 'var(--blue1)', src: 'KI-Idee'},
+];
+let idx = 0, liked = 3, history = [];
+const deck = document.getElementById('deck'), phone = document.getElementById('deckPhone');
+const cardHTML = c => `<div class="bl" style="background:${c.bl}"></div>
+  <div class="src"><span class="tag${c.src.startsWith('Dein') ? ' ink' : ''}">${c.src}</span></div>
+  <div class="price"><div class="num">${c.p}</div><div class="small">pro Portion</div></div>
+  <div class="stamp yes">DIESE WOCHE</div><div class="stamp no">NICHT</div><div class="stamp nope">MAG ICH NICHT</div>
+  <div class="plate pl ${c.ph}"></div>
+  <div class="info"><div class="t2">${c.t}</div>
+  <div class="meta"><span><svg class="i"><use href="#i-clock"/></svg>${c.min} min</span><span><svg class="i"><use href="#i-tag"/></svg>${c.d} im Angebot</span><span>${c.s}</span></div></div>`;
+function render() {
+  deck.innerHTML = '';
+  for (let k = Math.min(idx + 2, CARDS.length - 1); k >= idx; k--) {
+    const el = document.createElement('div');
+    el.className = 'card' + (k === idx + 1 ? ' back1' : k === idx + 2 ? ' back2' : '');
+    el.innerHTML = cardHTML(CARDS[k]);
+    if (k === idx) drag(el);
+    deck.appendChild(el);
+  }
+  if (idx >= CARDS.length) deck.innerHTML = `<div class="card" style="display:grid;place-items:center;text-align:center;padding:40px;cursor:default"><div><div class="t2">Stapel lädt nach …</div><div class="small" style="margin-top:8px">Neue Ideen aus den Angeboten</div><div class="btn ghost" style="margin-top:20px;cursor:pointer" onclick="idx=0;render()">Nochmal von vorn</div></div></div>`;
+  document.getElementById('cnt').textContent = liked;
+  document.getElementById('bar').style.width = Math.min(liked / 7 * 100, 100) + '%';
+}
+function stamps(el, dx, dy) {
+  el.querySelector('.yes').style.opacity = Math.max(0, Math.min(1, dx / 90));
+  el.querySelector('.no').style.opacity = Math.max(0, Math.min(1, -dx / 90));
+  el.querySelector('.nope').style.opacity = Math.max(0, Math.min(1, -dy / 90 - Math.abs(dx) / 120));
+}
+function fly(dir) {
+  const el = deck.querySelector('.card:last-child');
+  if (!el || idx >= CARDS.length) return;
+  if (dir === 'up') { el.style.transform = 'translateY(-70px) scale(.96)'; stamps(el, 0, -120); sheet(); return; }
+  stamps(el, dir === 'right' ? 120 : -120, 0);
+  el.style.transform = `translateX(${dir === 'right' ? 520 : -520}px) rotate(${dir === 'right' ? 24 : -24}deg)`;
+  el.style.opacity = 0;
+  history.push(dir);
+  const c = CARDS[idx];
+  if (dir === 'right') liked++;
+  setTimeout(() => { idx++; render(); if (dir === 'right' && c.match) match(c); }, 300);
+}
+function drag(el) {
+  let x0, y0, dx = 0, dy = 0, on = false;
+  el.addEventListener('pointerdown', e => { on = true; x0 = e.clientX; y0 = e.clientY; el.classList.add('drag'); el.setPointerCapture(e.pointerId); });
+  el.addEventListener('pointermove', e => {
+    if (!on) return;
+    dx = e.clientX - x0; dy = e.clientY - y0;
+    el.style.transform = `translate(${dx}px,${dy}px) rotate(${dx / 18}deg)`;
+    stamps(el, dx, dy);
+  });
+  el.addEventListener('pointerup', () => {
+    on = false; el.classList.remove('drag');
+    if (dx > 110) fly('right'); else if (dx < -110) fly('left'); else if (dy < -110) fly('up');
+    else { el.style.transform = ''; stamps(el, 0, 0); }
+    dx = dy = 0;
+  });
+}
+function sheet() {
+  const host = document.getElementById('sheetHost');
+  const close = (next) => {
+    host.innerHTML = '';
+    if (next) { history.push('up'); idx++; render(); } else render();
+  };
+  host.innerHTML = `<div class="dim"></div><div class="sheet"><div class="grab"></div>
+    <div class="t2">Was magst du daran nicht?</div>
+    <div class="small" style="font-size:13px;margin:4px 0 14px">Du findest es später unter „Ausgeblendet“.</div>
+    <div class="opt" data-r="1"><span class="c" style="background:var(--sand)">🧅</span><div>Zutaten mag ich nicht<small>Zutat wählen</small></div></div>
+    <div class="opt" data-r="1"><span class="c" style="background:var(--rose)">😖</span><div>Schmeckt mir einfach nicht<small>Nie wieder</small></div></div>
+    <div class="opt" data-r="1"><span class="c" style="background:var(--blue1)">😴</span><div>Keine Lust<small>Nur diese Woche</small></div></div>
+    <div class="opt" data-r="1"><span class="c" style="background:var(--bg)">✏️</span><div>Sonstiges …</div></div>
+    <div class="btn ghost" data-r="0" style="margin-top:12px">Abbrechen</div></div>`;
+  host.querySelectorAll('[data-r]').forEach(b => b.style.cursor = 'pointer');
+  host.querySelectorAll('[data-r]').forEach(b => b.onclick = () => close(b.dataset.r === '1'));
+  host.querySelector('.dim').onclick = () => close(false);
+}
+function match(c) {
+  const host = document.getElementById('matchHost');
+  host.innerHTML = `<div style="position:absolute;inset:0;background:var(--blue);z-index:27;text-align:center;padding:120px 24px 0">
+    <div class="lbl" style="color:var(--ink)">IHR BEIDE WOLLT</div><div class="t1 popin" style="font-size:52px">Match!</div>
+    <div class="plate ${c.ph} popin" style="width:220px;height:220px;margin:26px auto 0"></div>
+    <div class="t2" style="margin-top:22px">${c.t}</div>
+    <div class="btn" style="position:absolute;left:24px;right:24px;bottom:56px;cursor:pointer">Weiter swipen</div></div>`;
+  host.querySelector('.btn').onclick = () => host.innerHTML = '';
+}
+document.getElementById('bYes').onclick = () => fly('right');
+document.getElementById('bNo').onclick = () => fly('left');
+document.getElementById('bNope').onclick = () => fly('up');
+document.getElementById('bUndo').onclick = () => {
+  if (!history.length) return;
+  if (history.pop() === 'right') liked--;
+  idx--; render();
+};
+render();
+</script>
+</body>
+</html>

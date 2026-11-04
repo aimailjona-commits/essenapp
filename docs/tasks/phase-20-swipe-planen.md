@@ -39,8 +39,8 @@ entsteht erst für die gewählten Gerichte, parallel.
 
 ## 20.0 Mockup + Spezifikation
 
-- [ ] Screens in `docs/ui/screens.md`: S30 Stapel, S31 Match, S32 Wochenübersicht/Verteilen (inkl. Laden, Leer, Fehler, „Stapel lädt nach“), Onboarding „Deine Gewohnheiten“, Angebote „Für dich“
-- [ ] HTML-Mockup `docs/ui/mockups/swipe-*.html`: Karte, Gesten-Feedback (Stempel „Diese Woche“ / „Nicht“ / „Nie“), Fortschritt je Mahlzeitart, Match, Verteilen per Ziehen
+- [x] Screens in `docs/ui/screens.md`: S41 Stapel, S42 Match, S43 Auswahl, S44 Woche verteilen (inkl. Laden, Leer, Fehler, „Stapel lädt nach“), Onboarding „Deine Gewohnheiten“, Angebote „Für dich“ (S45, S46)
+- [x] HTML-Mockup [`docs/ui/mockups/swipe-v1.html`](../ui/mockups/swipe-v1.html): Karte, Gesten-Feedback (Stempel „Diese Woche“ / „Nicht“ / „Mag ich nicht“), Fortschritt je Mahlzeitart, Match, Verteilen per Ziehen
 - [ ] 👤 Mockup freigeben
 
 ## 20.1 Backend: Kartenstapel
@@ -64,9 +64,9 @@ entsteht erst für die gewählten Gerichte, parallel.
 
 ## 20.3 iOS
 
-- [ ] Stapel-Screen S30: Karten-Geste (rechts/links/oben, Schwelle + Haptik), Knöpfe ✗ / ★-nie / ✓, Rückgängig, Fortschritt je Art, Art wechseln, „Überrasch mich“
-- [ ] Match S31: Animation + „Weiter swipen“
-- [ ] Wochenübersicht S32: Verteilen, Ziehen auf Tage, Reserve, „Plan übernehmen“ → Fortschritt wie heute (Abfrage `GET /plans/job`)
+- [ ] Stapel-Screen S41: Karten-Geste (rechts/links/oben, Schwelle + Haptik), Knöpfe ✗ / 👎 Mag ich nicht / ✓, Rückgängig, Fortschritt je Art, Art wechseln, „Überrasch mich“
+- [ ] Match S42: Animation + „Weiter swipen“
+- [ ] Auswahl S43 + Woche S44: Verteilen, Ziehen auf Tage, Reserve, „Plan übernehmen“ → Fortschritt wie heute (Abfrage `GET /plans/job`)
 - [ ] Einstieg: „Woche planen“ auf Start/Plan führt zum Stapel; läuft ein Deck, geht es dort weiter
 - [ ] VoiceOver: Aktionen „Diese Woche“, „Nicht“, „Nie wieder“ ohne Geste
 - [ ] Demo-Fälle in `Demo.swift` + `ios/tools/screenshots.sh` (`swipe`, `match`, `verteilen`)
