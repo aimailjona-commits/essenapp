@@ -1,11 +1,11 @@
-"""Feste Schnitte aus den variablen Schriften (Redesign v3, docs/ui/redesign-v3.md Abschnitt 3).
+"""Feste Schnitte aus den variablen Schriften (Redesign v8, docs/ui/redesign-v8.md Abschnitt 2).
 
-SwiftUI kann Fraunces-Achsen (SOFT, WONK, opsz) nicht setzen, ohne Dynamic Type zu verlieren.
-Darum werden die gebrauchten Achsen-Werte hier einmal als statische TTFs erzeugt.
+SwiftUI kann Gewichts-Achsen variabler Schriften nicht zuverlässig mit Dynamic Type setzen,
+darum werden die gebrauchten Gewichte hier einmal als statische TTFs erzeugt.
 
 Aufruf: uv run --no-project --with fonttools python ios/tools/make_fonts.py <quellordner> ios/Sources/Essenapp/Resources/fonts
-Quellen (OFL, google/fonts): Fraunces[SOFT,WONK,opsz,wght].ttf als Fraunces-Roman.ttf,
-Fraunces-Italic[...].ttf als Fraunces-Italic.ttf, JetBrainsMono[wght].ttf als JetBrainsMono.ttf.
+Quellen (OFL, google/fonts): Manrope[wght].ttf als Manrope.ttf, InterTight[wght].ttf als InterTight.ttf.
+DM Serif Display ist statisch und wird unverändert kopiert (DMSerifDisplay-Regular.ttf).
 """
 import sys
 from pathlib import Path
@@ -15,14 +15,12 @@ from fontTools.varLib.instancer import instantiateVariableFont
 
 # PostScript-Name: (Quelle, Achsen)
 INSTANCES = {
-    "FrauncesV3-Display": ("Fraunces-Roman.ttf", {"wght": 800, "opsz": 144, "SOFT": 100, "WONK": 1}),  # DisplayHeader
-    "FrauncesV3-Title": ("Fraunces-Roman.ttf", {"wght": 800, "opsz": 28, "SOFT": 100, "WONK": 1}),  # Karten-Titel
-    "FrauncesV3-Bold": ("Fraunces-Roman.ttf", {"wght": 700, "opsz": 72, "SOFT": 100, "WONK": 0}),  # Satz, hervorgehoben
-    "FrauncesV3-Black": ("Fraunces-Roman.ttf", {"wght": 900, "opsz": 20, "SOFT": 0, "WONK": 0}),  # Preis-Stern
-    "FrauncesV3-Italic": ("Fraunces-Italic.ttf", {"wght": 400, "opsz": 144, "SOFT": 100, "WONK": 1}),  # DisplayHeader Zeile 2
-    "FrauncesV3-TextItalic": ("Fraunces-Italic.ttf", {"wght": 400, "opsz": 72, "SOFT": 100, "WONK": 0}),  # Satz
-    "JetBrainsMonoV3-Medium": ("JetBrainsMono.ttf", {"wght": 500}),
-    "JetBrainsMonoV3-Bold": ("JetBrainsMono.ttf", {"wght": 700}),
+    "ManropeV8-Medium": ("Manrope.ttf", {"wght": 500}),
+    "ManropeV8-SemiBold": ("Manrope.ttf", {"wght": 600}),  # Grundtext
+    "ManropeV8-Bold": ("Manrope.ttf", {"wght": 700}),
+    "ManropeV8-ExtraBold": ("Manrope.ttf", {"wght": 800}),  # Labels, Knöpfe
+    "InterTightV8-Medium": ("InterTight.ttf", {"wght": 500}),
+    "InterTightV8-SemiBold": ("InterTight.ttf", {"wght": 600}),  # große Zahlen
 }
 
 

@@ -4,13 +4,18 @@ import SwiftUI
 struct RecipesTab: View {
     @Environment(AppStore.self) private var store
     @Binding var planWeek: Bool  // Woche per Swipe (20)
-    @State private var mine = Demo.screen != "plan" && Demo.screen != "guests"  // v3: Tab-Wurzel = Kachel-Wand (S12), Plan über die Kachel
+    @State private var mine: Bool  // v8: eigener Tab „Woche“ (Plan) und „Rezepte“ (S12)
     @State private var filter = "alle"
     @State private var person: Int?  // „Für:“ in der Tagesansicht (48), nil = ich
     @State private var day = Demo.screen != nil ? 1 : (Calendar(identifier: .iso8601).component(.weekday, from: .now) + 5) % 7
     @State private var noMood = false  // „Keine Lust“ (16)
     @State private var guestsFor: MealDTO? = Demo.screen == "guests" ? Demo.plan.entries[3] : nil  // „Gäste hinzufügen“ (15)
     @Namespace private var dayPill
+
+    init(planWeek: Binding<Bool>, week: Bool = false) {
+        _planWeek = planWeek
+        _mine = State(initialValue: !week)
+    }
 
     var body: some View {
         ScrollView {

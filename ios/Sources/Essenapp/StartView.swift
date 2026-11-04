@@ -5,6 +5,7 @@ struct StartView: View {
     @Environment(AppStore.self) private var store
     @Binding var showGenerator: Bool
     @Binding var planWeek: Bool  // Woche per Swipe (20)
+    @Binding var quickOpen: Bool  // Schnell-Aktionen hinter dem „+“ im Kopf (v8)
     @State private var search = ""
     @State private var banner: SpecialDTO?  // Feiertag/Saison in ≤ 14 Tagen (25)
     @State private var noMood = false  // „Keine Lust“ (16)

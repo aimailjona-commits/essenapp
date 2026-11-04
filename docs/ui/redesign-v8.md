@@ -91,7 +91,7 @@ Einmal bauen in `V8Components.swift`, überall nutzen. Alte v3-Bausteine (`V3Com
 | `Ill(_ name:)` | `img.ill` | Illustration aus `Resources/ill/` |
 | `Plate(url/image, size)` | `.plate` | Gericht-Kreis |
 | `StatNumber(label:value:unit:mute:)` | `.stat` + `.num` | große Zahl mit Haarlinie |
-| `ItemRow` | `.irow` | Kreis + Name + Rest |
+| `IRow` | `.irow` | Kreis + Name + Rest |
 | `OfferRow` | `.offer` | mit Lasche rechts |
 | `CheckCircle` | `.ck` | |
 | `PrimaryButton(style: .ink/.blue)` / `OutlineButton` | `.btn` / `.btn2` | |

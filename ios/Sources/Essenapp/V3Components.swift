@@ -384,19 +384,6 @@ struct FolderCard: View {
     }
 }
 
-/// Feines Papierkorn über allem (multiply, nicht antippbar). Kachel aus Resources/grain.png.
-struct PaperGrain: View {
-    private static let tile: UIImage? = Bundle.module.url(forResource: "grain", withExtension: "png")
-        .flatMap { UIImage(contentsOfFile: $0.path) }
-
-    var body: some View {
-        if let tile = Self.tile {
-            Image(uiImage: tile).resizable(resizingMode: .tile)
-                .blendMode(.multiply).opacity(0.55)
-                .ignoresSafeArea().allowsHitTesting(false).accessibilityHidden(true)
-        }
-    }
-}
 
 // MARK: Tages-Satz (S1)
 

@@ -2,85 +2,84 @@ import CoreText
 import SwiftUI
 import UIKit
 
-/// Alle Werte aus docs/ui/redesign-v3.md (v3 „Küchen-Pinnwand“, E87). Views nutzen nur diese Tokens.
+/// Alle Werte aus docs/ui/redesign-v8.md (v8 „Tinte & Bogen“, E98). Views nutzen nur diese Tokens.
+/// App ist fest hell, bis das Dunkel-Mockup v8 freigegeben ist (Phase 21.2).
 enum Theme {
-    /// Dynamische Farben: erster Wert hell, zweiter dunkel (v3, Mockup Teil 3, freigegeben 2026-11-03; Feature 68).
     enum C {
-        static let bg = Color(0xF4F1EA, 0x121110)
-        static let surface = Color(0xE9E5DC, 0x2A2825)
-        static let card = Color(0xFFFFFF, 0x1D1C1A)
-        static let cardTop = card  // Alias für ältere Stellen
-        static let line = Color(light: UIColor.black.withAlphaComponent(0.07), dark: UIColor.white.withAlphaComponent(0.09))
-        static let text1 = Color(0x111111, 0xF4F1EA)
-        static let text2 = Color(0x7A766E, 0xA09B92)
-        static let text3 = Color(0xB3AEA4, 0x6B675F)
-        static let action = Color(0x111111, 0xF4F1EA)  // dunkel: Creme-Pille mit Tinten-Schrift
-        static let onAction = Color(0xFFFFFF, 0x111111)
-        static let lime = Color(hex: 0xDCEDA0)  // Aktionsfarbe „los“ (Mittel-Knopf, AccentButton, abgehakt, Fortschritt auf Dunkel)
-        static let onLime = Color(hex: 0x111111)
-        /// v3: Auswahl/Fortschritt auf hellem Grund = Tinte (Orange entfällt); auf dunklem Grund `lime` nehmen.
-        static let accent = Color(0x111111, 0xF4F1EA)
-        static let accentSoft = Color(0xDCEDA0, 0x2E3320)  // dunkel: Limetten-Tönung, Schrift darauf bleibt lesbar  // weiche Hervorhebung (gewählte Person, „gespart“-Pille)
-        static let accentDeep = Color(0x111111, 0xDCEDA0)  // Schrift auf accentSoft
-        static let highlight = lime
-        static let deal = Color(0xE8694A, 0xF07A5C)
-        static let star = Color(hex: 0xE8B33A)
-        static let chipBorder = Color(0xCFC9BD, 0x3A3733)
-        static let chipText = Color(0x8A857B, 0xA09B92)  // inaktive Chips
-        static let starEmpty = Color(0xDDD7CB, 0x3A3733)
-        static let paper = Color(hex: 0xFFFDF7)  // Kassenbon bleibt auch dunkel Papier
-        static let success = Color(0x1FA35C, 0x34C77B)
-        static let successSoft = Color(0xDFF5E8, 0x12301F)
-        static let warning = Color(hex: 0xF7B731)
-        static let danger = Color(0xE5483B, 0xFF6B5E)
-        static let tabInactive = Color(hex: 0x8C8A85)
-        static let kcal = Color(hex: 0xFF8A3D)
-        static let protein = Color(hex: 0xFF5A5F)
-        static let carbs = Color(hex: 0x3DBE6B)
-        static let fat = Color(hex: 0xF7B731)
-        // Nährwert-Tönungen (NutrientStat/-Tile)
-        static let kcalTint = Color(0xFFE7D6, 0x3A2621)
-        static let proteinTint = Color(0xFFE0E1, 0x3A2230)
-        static let carbsTint = Color(0xE4F5D9, 0x22301F)
-        static let fatTint = Color(0xFFF1C9, 0x38301C)
-        static let violet = Color(hex: 0xD5CDF0)  // Schnell-Aktion „Rezept anlegen“ (= Mi)
-        // Pastell je Wochentag Mo…So (DayCard, Ordner, Kacheln); Schrift darauf immer text1
-        static let tomato = Color(hex: 0xF2B9A8), sun = Color(hex: 0xF3DC9E), lav = Color(hex: 0xD5CDF0), sky = Color(hex: 0xBCD0F2)
-        static let mint = Color(hex: 0xC3E3CF), orange = Color(hex: 0xF2CBA6), pink = Color(hex: 0xF0CADA)
-        static let day: [Color] = [tomato, sun, lav, sky, mint, orange, pink]
-        static let startSheet = Color(0xF4F1EA, 0x1D1C1A)  // Start: Sheet unter dem Tinten-Kopf (dunkel = card)
-        static let bar = Color(0x111111, 0x000000)  // Tab-/Summen-Leiste (dunkel: Schwarz mit Kante)
-        static let barEdge = Color(light: .clear, dark: UIColor.white.withAlphaComponent(0.08))
-        static let tabActive = Color(0xFFFFFF, 0xDCEDA0)  // aktiver Tab: weiß, dunkel Limette
-        // Dunkle Flächen (Start-Kopf, Kochmodus, Menü) – in beiden Modi gleich
-        static let ink = Color(hex: 0x111111)
-        static let inkSheet = Color(hex: 0x161616)
+        // v8-Grundfarben (redesign-v8.md Abschnitt 2)
+        static let bg = Color(hex: 0xF3EEE4)
+        static let card = Color(hex: 0xFBF8F2)
+        static let ink = Color(hex: 0x151515)
+        static let ink2 = Color(hex: 0x7C776D)
+        static let ink3 = Color(hex: 0xB9B3A7)
+        static let line = Color(hex: 0xDCD5C7)
+        static let blue = Color(hex: 0xAFC4F2)
+        static let blue1 = Color(hex: 0xDCE5F8)
+        static let blue3 = Color(hex: 0x7C9BE6)
+        static let sage = Color(hex: 0xCFE3D2)
+        static let rose = Color(hex: 0xF2CFC8)
+        static let sand = Color(hex: 0xE7DCC5)
+        static let warn = Color(hex: 0xF6E2B8)
+        static let deal = Color(hex: 0xE0603F)
+        static let navBar = Color.white  // Nav-Leiste mit Mulde
+        static let onInk = Color.white
+        static let scrim = ink.opacity(0.32)
+
+        // Ältere Token-Namen, auf v8 abgebildet (fallen weg, sobald alle Screens umgebaut sind)
+        static let surface = card
+        static let cardTop = card
+        static let text1 = ink, text2 = ink2, text3 = ink3
+        static let action = ink
+        static let onAction = onInk
+        static let lime = blue  // „los“-Farbe → Pastellblau
+        static let onLime = ink
+        static let accent = ink
+        static let accentSoft = blue1
+        static let accentDeep = ink
+        static let highlight = blue
+        static let star = ink
+        static let chipBorder = line
+        static let chipText = ink2
+        static let starEmpty = line
+        static let paper = card
+        static let success = Color(hex: 0x3F8F5A)
+        static let successSoft = sage
+        static let warning = Color(hex: 0xD9A23A)
+        static let danger = deal
+        static let tabInactive = ink3
+        static let kcal = ink, protein = ink, carbs = ink, fat = ink
+        static let kcalTint = rose, proteinTint = blue1, carbsTint = sage, fatTint = sand
+        static let violet = blue1
+        static let tomato = rose, sun = sand, lav = blue1, sky = blue, mint = sage, orange = warn, pink = rose
+        static let day: [Color] = [blue1, sage, rose, sand, blue1, sage, rose]
+        static let startSheet = bg
+        static let bar = navBar
+        static let barEdge = Color.clear
+        static let tabActive = blue
+        static let inkSheet = ink
         static let inkRaised = Color(hex: 0x2A2A2A)
         static let inkChip = Color(hex: 0x222222)
         static let inkChipLine = Color(hex: 0x333333)
-        static let onInk2 = Color(hex: 0x77736B)  // grauer Text auf Tinte
-        static let onInk3 = Color(hex: 0x9A978F)  // Labels auf Tinte
-        static let recipeFallback = Color(hex: 0x5C4038)  // Rezept-Kopf ohne Foto-Farbe
-        static let onPhoto2 = Color(hex: 0xE3CFC5)
-        // Flächen, die in beiden Modi dunkel bzw. hinter Fotos liegen
-        static let imageBg = Color(0xF7F7F7, 0x2A2A2D)  // Produktbild-Fläche (Angebotskarte)
-        static let heroDark = ink  // dunkler Kopf (Start, Angebotsdetail)
-        static let scrim = Color(light: UIColor.black.withAlphaComponent(0.25), dark: UIColor.black.withAlphaComponent(0.55))
-        static let shimmer = Color(light: UIColor(hex: 0xF6F3EE), dark: UIColor.white.withAlphaComponent(0.12))
-        static let photoDim = Color(light: .clear, dark: UIColor.black.withAlphaComponent(0.12))  // Fotos im Dunkeln leicht abdunkeln
-        static let plate = Color.white  // Logos und Teller bleiben auf weißem Plättchen (auch dunkel)
-        // Blüten-Diagramm (ShareBloom): Blätter in Kartenfarben, „Sonstiges“ `bloomOther`
-        static let bloom: [Color] = day
-        static let bloomOther = Color(hex: 0xC9C3B6)
+        static let onInk2 = ink3
+        static let onInk3 = ink3
+        static let recipeFallback = blue1
+        static let onPhoto2 = card
+        static let imageBg = card
+        static let heroDark = ink
+        static let shimmer = card
+        static let photoDim = Color.clear
+        static let plate = Color.white  // Logos und Teller auf weißem Kreis
+        static let bloom: [Color] = [blue, sage, rose, sand, blue1, warn, blue3]
+        static let bloomOther = line
         static let listTints: [Color] = day
-        // Nutri-Score A–E in den Originalfarben (49), in beiden Modi gleich; Buchstabe weiß, auf C dunkel (`onBright`)
+        // Nutri-Score A–E in den Originalfarben (49); Buchstabe weiß, auf C dunkel (`onBright`)
         static let nutri: [String: Color] = ["A": Color(hex: 0x038141), "B": Color(hex: 0x85BB2F), "C": Color(hex: 0xFECB02),
                                              "D": Color(hex: 0xEE8100), "E": Color(hex: 0xE63E11)]
-        static let onBright = Color(hex: 0x111111)
-        // Kochmodus (S18): immer dunkler Grund, weiße Schrift
-        static let cookBg = ink
-        static let cookText2 = Color(hex: 0xC9C5BD)
-        static let cookSurface = inkRaised
+        static let onBright = ink
+        // Kochmodus (S18 v8): heller Grund wie alle Screens
+        static let cookBg = bg
+        static let cookText2 = ink2
+        static let cookSurface = card
     }
 
     /// Farbe + Tönung + Emoji pro Kategorie (Angebote, Liste).
@@ -92,86 +91,155 @@ enum Theme {
 
     static func hue(category: String) -> Hue {
         switch category {
-        case "obst_gemuese": Hue(color: Color(hex: 0x3DBE6B), tint: Color(0xE4F5D9, 0x22301F), emoji: "🥦")
-        case "fleisch_fisch": Hue(color: Color(hex: 0xFF6B4A), tint: Color(0xFFE3DB, 0x3A2621), emoji: "🥩")
-        case "kuehlung": Hue(color: Color(hex: 0x3E9BFF), tint: Color(0xDFE9FF, 0x1F2838), emoji: "🧀")
-        case "vorrat": Hue(color: Color(hex: 0xF7B731), tint: Color(0xFFF1C9, 0x38301C), emoji: "🥫")
-        case "getraenke": Hue(color: Color(hex: 0x22B5C9), tint: Color(0xE9E5DC, 0x2A2825), emoji: "🥤")
-        case "drogerie": Hue(color: Color(hex: 0x8E7CFF), tint: Color(0xECE6FF, 0x2A2638), emoji: "🧴")
-        case "haushalt": Hue(color: Color(hex: 0xFF5DA2), tint: Color(0xFFE4EF, 0x3A2230), emoji: "🧽")
-        default: Hue(color: Color(hex: 0x8A8F98), tint: Color(0xE9E5DC, 0x2A2825), emoji: "🛒")
+        case "obst_gemuese": Hue(color: C.ink, tint: C.sage, emoji: "🥦")
+        case "fleisch_fisch": Hue(color: C.ink, tint: C.rose, emoji: "🥩")
+        case "kuehlung": Hue(color: C.ink, tint: C.blue1, emoji: "🧀")
+        case "vorrat": Hue(color: C.ink, tint: C.sand, emoji: "🥫")
+        case "getraenke": Hue(color: C.ink, tint: C.blue1, emoji: "🥤")
+        case "drogerie": Hue(color: C.ink, tint: C.blue, emoji: "🧴")
+        case "haushalt": Hue(color: C.ink, tint: C.rose, emoji: "🧽")
+        default: Hue(color: C.ink, tint: C.card, emoji: "🛒")
         }
     }
 
-    /// Ordner-/Punktfarbe pro Laden aus der v3-Palette (keine Markenfarben, E18/E87).
+    /// Formfarbe pro Laden aus der v8-Palette (keine Markenfarben, E18/E87).
     static func storeColor(_ chain: String) -> Color { Color(hex: storeHex(chain)) }
 
     /// Als Zahl für die Live-Aktivität (37), die `Color` nicht speichern kann.
     static func storeHex(_ chain: String) -> UInt32 {
-        let fixed: [String: UInt32] = ["lidl": 0xF3DC9E, "rewe": 0xF2B9A8, "dm": 0xD5CDF0, "": 0xC3E3CF]
+        let fixed: [String: UInt32] = ["lidl": 0xE7DCC5, "rewe": 0xF2CFC8, "dm": 0xDCE5F8, "": 0xCFE3D2]
         if let hex = fixed[chain] { return hex }
-        let palette: [UInt32] = [0xBCD0F2, 0xF2CBA6, 0xF0CADA, 0xC3E3CF]
+        let palette: [UInt32] = [0xAFC4F2, 0xF6E2B8, 0xF2CFC8, 0xCFE3D2]
         let rest = Labels.chains.map(\.key).filter { fixed[$0] == nil }
         return palette[(rest.firstIndex(of: chain) ?? 0) % palette.count]
     }
 
-    /// Schriften (redesign-v3.md Abschnitt 3). Fraunces/JetBrains Mono als feste Schnitte (ios/tools/make_fonts.py),
-    /// Größen wachsen mit Dynamic Type über `relativeTo`. SF Pro über Textstile (nächster Stil zur v3-Größe).
+    /// Schriften (redesign-v8.md Abschnitt 2): DM Serif Display (Titel), Manrope (Text), Inter Tight (große Zahlen).
+    /// Feste Schnitte (ios/tools/make_fonts.py), Größen wachsen mit Dynamic Type über `relativeTo`.
     enum F {
-        static let display = Font.custom("FrauncesV3-Display", size: 46, relativeTo: .largeTitle)
-        static func display(_ size: CGFloat) -> Font { .custom("FrauncesV3-Display", size: size, relativeTo: .largeTitle) }
-        static func displayItalic(_ size: CGFloat = 46) -> Font { .custom("FrauncesV3-Italic", size: size, relativeTo: .largeTitle) }
-        static func cardTitle(_ size: CGFloat = 21) -> Font { .custom("FrauncesV3-Title", size: size, relativeTo: .title2) }
-        static let sentence = Font.custom("FrauncesV3-TextItalic", size: 27, relativeTo: .title)
-        static let sentenceBold = Font.custom("FrauncesV3-Bold", size: 27, relativeTo: .title)
-        static func burst(_ size: CGFloat) -> Font { .custom("FrauncesV3-Black", size: size, relativeTo: .headline) }
-        static func mono(_ size: CGFloat = 13) -> Font { .custom("JetBrainsMonoV3-Medium", size: size, relativeTo: .footnote) }
-        static func monoBold(_ size: CGFloat = 13) -> Font { .custom("JetBrainsMonoV3-Bold", size: size, relativeTo: .footnote) }
+        enum W { case medium, semibold, bold, extrabold }
+
+        static func serif(_ size: CGFloat, relativeTo style: Font.TextStyle = .title) -> Font {
+            .custom("DMSerifDisplay-Regular", size: size, relativeTo: style)
+        }
+
+        static func text(_ size: CGFloat, _ weight: W = .semibold, relativeTo style: Font.TextStyle = .body) -> Font {
+            let name = switch weight {
+            case .medium: "ManropeV8-Medium"
+            case .semibold: "ManropeV8-SemiBold"
+            case .bold: "ManropeV8-Bold"
+            case .extrabold: "ManropeV8-ExtraBold"
+            }
+            return .custom(name, size: size, relativeTo: style)
+        }
+
+        static func num(_ size: CGFloat, medium: Bool = false, relativeTo style: Font.TextStyle = .largeTitle) -> Font {
+            .custom(medium ? "InterTightV8-Medium" : "InterTightV8-SemiBold", size: size, relativeTo: style)
+        }
+
+        /// Laufweite der großen Zahlen (−0.05 em).
+        static func numTracking(_ size: CGFloat) -> CGFloat { -0.05 * size }
+
+        // v8-Stufen aus dem Mockup-CSS
+        static let t1 = serif(34, relativeTo: .largeTitle)  // .t1
+        static let t2 = serif(24, relativeTo: .title)  // .t2
+        static let rowName = serif(19, relativeTo: .title3)  // .irow .nm
+        static let small = text(15, .semibold, relativeTo: .subheadline)  // .small
+        static let lbl = text(11, .extrabold, relativeTo: .caption2)  // .lbl (+0.08 em)
+        static let sec2 = text(13, .extrabold, relativeTo: .footnote)  // .sec2 (+0.06 em)
+        static let button = text(16, .extrabold, relativeTo: .headline)  // .btn
+        static let button2 = text(15, .extrabold, relativeTo: .headline)  // .btn2
+        static let chip = text(14, .bold, relativeTo: .subheadline)  // .chip
+        static let pill = text(13, .bold, relativeTo: .footnote)  // .pill
+        static let deal = text(11, .extrabold, relativeTo: .caption2)  // .deal
+        static let soft = text(12, .extrabold, relativeTo: .caption)  // .soft
+        static let toast = text(14, .bold, relativeTo: .subheadline)  // .toast
+
+        // Ältere Namen, auf v8 abgebildet
+        static let display = serif(46, relativeTo: .largeTitle)
+        static func display(_ size: CGFloat) -> Font { serif(size, relativeTo: .largeTitle) }
+        static func displayItalic(_ size: CGFloat = 46) -> Font { serif(size, relativeTo: .largeTitle) }
+        static func cardTitle(_ size: CGFloat = 21) -> Font { serif(size, relativeTo: .title2) }
+        static let sentence = serif(27)
+        static let sentenceBold = serif(27)
+        static func burst(_ size: CGFloat) -> Font { num(size, relativeTo: .headline) }
+        static func mono(_ size: CGFloat = 13) -> Font { text(size, .bold, relativeTo: .footnote) }
+        static func monoBold(_ size: CGFloat = 13) -> Font { text(size, .extrabold, relativeTo: .footnote) }
         static let displayLight = displayItalic()
-        static let hero = display(52)
-        static let section = Font.system(.title2, weight: .heavy)  // 22/800 „Diese Woche“
-        static let title = Font.system(.title2, weight: .black)  // Angebot 24/900
-        static let titleLarge = Font.system(.largeTitle, weight: .black)  // Rezept-Kopf 34/900
-        static let headline = Font.system(.headline, weight: .bold)
-        static let body = Font.body
-        static let callout = Font.system(.subheadline, weight: .bold)
-        static let caption = Font.system(.footnote, weight: .medium)
-        static let micro = Font.system(.caption2, weight: .heavy)
-        static let price = Font.system(.callout, weight: .heavy).monospacedDigit()
-        static let priceLarge = Font.system(.title3, weight: .heavy).monospacedDigit()
-        static let cookTitle = Font.system(.title, weight: .black)  // „Schritt 2“ 30/900
-        static let cookStep = Font.system(.title3, weight: .regular)  // 19 / 1.45
-        static let cookBody = Font.system(.title3, weight: .semibold)
-        static let cookTimer = Font.system(.title3, design: .rounded, weight: .bold)
+        static let hero = serif(46, relativeTo: .largeTitle)
+        static let section = t2
+        static let title = t2
+        static let titleLarge = t1
+        static let headline = text(17, .extrabold, relativeTo: .headline)
+        static let body = text(16, .semibold, relativeTo: .body)
+        static let callout = text(15, .bold, relativeTo: .subheadline)
+        static let caption = text(13, .semibold, relativeTo: .footnote)
+        static let micro = lbl
+        static let price = num(17, relativeTo: .callout)
+        static let priceLarge = num(22, relativeTo: .title3)
+        static let cookTitle = serif(30, relativeTo: .title)
+        static let cookStep = text(19, .semibold, relativeTo: .title3)
+        static let cookBody = text(19, .bold, relativeTo: .title3)
+        static let cookTimer = num(22, relativeTo: .title3)
     }
 
+    /// Radien: v8 nutzt fast nur Kapseln und Kreise; Sheet oben 36.
     enum R {
-        static let chip: CGFloat = 16
-        static let tile: CGFloat = 22
-        static let offer: CGFloat = 26
-        static let rtile: CGFloat = 28
-        static let card: CGFloat = 30
-        static let day: CGFloat = 34
-        static let sheet: CGFloat = 40
+        static let chip: CGFloat = 999
+        static let tile: CGFloat = 24
+        static let offer: CGFloat = 56  // Lasche links
+        static let rtile: CGFloat = 24
+        static let card: CGFloat = 24
+        static let day: CGFloat = 24
+        static let sheet: CGFloat = 36
+        static let skeleton: CGFloat = 12
     }
 
-    /// Feste Größen (redesign-v3.md Abschnitt 4)
+    /// Feste Größen (redesign-v8.md Abschnitt 2)
     enum S {
-        static let roundButton: CGFloat = 46
-        static let roundButtonSmall: CGFloat = 38
+        static let hair: CGFloat = 1.5
         static let button: CGFloat = 56
-        static let chip: CGFloat = 42
-        static let search: CGFloat = 54
-        static let tabBar: CGFloat = 70
-        static let tab: CGFloat = 52
-        static let plus: CGFloat = 56
+        static let button2: CGFloat = 52
+        static let field: CGFloat = 52
+        static let chip: CGFloat = 36
+        static let pill: CGFloat = 30
+        static let dealPill: CGFloat = 22
+        static let softPill: CGFloat = 24
+        static let segment: CGFloat = 34
+        static let close: CGFloat = 40
+        static let check: CGFloat = 26
+        static let row: CGFloat = 60
+        static let rowCircle: CGFloat = 48
+        static let rowImage: CGFloat = 40
+        static let offerRow: CGFloat = 138
+        static let offerTab = CGSize(width: 150, height: 112)
+        static let switchSize = CGSize(width: 50, height: 30)
+        static let stepper: CGFloat = 40
+        static let stepperKnob: CGFloat = 30
+        static let grip = CGSize(width: 40, height: 5)
+        static let plateRing: CGFloat = 6
+        static let bar: CGFloat = 8
+        static let icon: CGFloat = 24
+        static let iconStroke: CGFloat = 1.8
+        static let nav: CGFloat = 120
+        static let navT: CGFloat = 34  // Leisten-Oberkante
+        static let navR: CGFloat = 38  // Mulden-Radius
+        static let navActive: CGFloat = 58
+        static let navTap: CGFloat = 44
+        // Ältere Namen
+        static let roundButton: CGFloat = 46
+        static let roundButtonSmall: CGFloat = 40
+        static let search: CGFloat = 52
+        static let tabBar: CGFloat = 120
+        static let tab: CGFloat = 44
+        static let plus: CGFloat = 44
         static let totalBar: CGFloat = 72
         static let barSide: CGFloat = 18
         static let barBottom: CGFloat = 26
     }
 
-    static let pagePadding: CGFloat = 20
-    static let ctaAboveTabBar: CGFloat = 110  // fester Button auf Detailseiten sitzt über der Tab-Leiste
+    static let pagePadding: CGFloat = 24
+    static let ctaAboveTabBar: CGFloat = 120  // fester Button auf Detailseiten sitzt über der Tab-Leiste
     static let spring = Animation.spring(response: 0.38, dampingFraction: 0.78)
 }
 
@@ -204,18 +272,18 @@ extension UIColor {
 }
 
 extension View {
-    /// Schatten v3: `soft` y 10 / Blur 28 / 8 %, `float` y 18 / Blur 40 / 22 %.
-    func softShadow() -> some View { shadow(color: Color(hex: 0x111111).opacity(0.08), radius: 14, y: 10) }
-    func floatShadow() -> some View { shadow(color: Color(hex: 0x111111).opacity(0.22), radius: 20, y: 18) }
-    /// Teller/Foto-Sticker: y 12 / Blur 24 / 18 %.
-    func plateShadow() -> some View { shadow(color: .black.opacity(0.18), radius: 12, y: 12) }
+    /// Schatten v8: kaum genutzt; `soft` wie die Nav (y 6 / Blur 14 / 7 %), `float` wie das Telefon im Mockup.
+    func softShadow() -> some View { shadow(color: Color(hex: 0x281E14).opacity(0.07), radius: 7, y: 6) }
+    func floatShadow() -> some View { shadow(color: Color(hex: 0x281E14).opacity(0.14), radius: 30, y: 30) }
+    /// Teller (`.plate`): y 14 / Blur 30 / 16 %.
+    func plateShadow() -> some View { shadow(color: Color(hex: 0x281E14).opacity(0.16), radius: 15, y: 14) }
 
-    /// Karte v3: `card` mit Haarlinie, ohne Schatten, Radius 30.
+    /// Fläche mit Haarlinie (nur noch für Übergänge; v8 baut Zeilen statt Karten).
     func card(radius: CGFloat = Theme.R.card, fill: Color = Theme.C.card) -> some View {
         background(
             RoundedRectangle(cornerRadius: radius, style: .continuous)
                 .fill(fill)
-                .strokeBorder(Theme.C.line, lineWidth: 1)
+                .strokeBorder(Theme.C.line, lineWidth: Theme.S.hair)
         )
     }
 

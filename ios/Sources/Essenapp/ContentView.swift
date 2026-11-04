@@ -20,7 +20,7 @@ struct ContentView: View {
     }
 
     var body: some View {
-        ZStack(alignment: .top) {
+        ZStack(alignment: .bottom) {
             Group {
                 if store.isOnboarded {
                     MainView().transition(.opacity)
@@ -43,15 +43,16 @@ struct ContentView: View {
                     withAnimation(Theme.spring) { store.toast = nil; store.toastAction = nil }
                     run?()
                 }
-                .padding(.horizontal, 16).padding(.top, 8).zIndex(1)
+                .padding(.horizontal, 16).padding(.bottom, 96).zIndex(1)  // `.toast`: 130 über unten
             }
         }
         .environment(store)
         .environment(store.api)
         .environment(\.locale, .de)  // 24-h-Uhrzeiten, Komma – auch wenn das iPhone auf Englisch steht
-        .onChange(of: Demo.appearance ?? appearance, initial: true) { _, mode in Self.apply(mode) }
+        .onChange(of: Demo.appearance ?? appearance, initial: true) { _, _ in Self.apply("light") }  // v8 fest hell bis Phase 21.2
         .foregroundStyle(Theme.C.text1)
-        .tint(Theme.C.accentDeep)
+        .tint(Theme.C.ink)
+        .font(Theme.F.body)
     }
 
     /// Erscheinungsbild für alle Fenster (auch Sheets, Menüs, Alerts). Über das Fenster statt `preferredColorScheme`,
@@ -101,7 +102,8 @@ struct MainView: View {
     private static var demoTab: AppTab {
         switch Demo.screen {
         case "offers", "offer", "stores", "watch", "scanner", "nextweek", "offerstock": .angebote
-        case "plan", "recipe", "cooking", "sharecard", "recipes", "myrecipe", "recipeform", "imported", "importlink", "guests": .rezepte
+        case "plan", "guests": .woche
+        case "recipe", "cooking", "sharecard", "recipes", "myrecipe", "recipeform", "imported", "importlink": .rezepte
         case "shopping", "list", "pantry", "fridgecam", "fridgereview", "cooknow", "offline", "voiceadd", "wallet", "bonus", "coupon": .einkauf
         default: .start
         }
@@ -113,7 +115,8 @@ struct MainView: View {
 
     @ViewBuilder private var tabContent: some View {
         switch tab {
-        case .start: StartView(showGenerator: $showGenerator, planWeek: $planWeek)
+        case .start: StartView(showGenerator: $showGenerator, planWeek: $planWeek, quickOpen: $quickOpen)
+        case .woche: RecipesTab(planWeek: $planWeek, week: true)
         case .angebote: OffersView()
         case .einkauf: ShoppingView()
         case .rezepte: RecipesTab(planWeek: $planWeek)
@@ -199,11 +202,11 @@ struct MainView: View {
                 .transition(.opacity)
             }
 
-            if !Self.modalDemo.contains(Demo.screen ?? ""), store.tabBarHiders == 0 || quickOpen {
-                TabBar(selected: $tab, quickOpen: $quickOpen, badges: [.angebote: store.watchHits]) { resetToken += 1 }
+            if !Self.modalDemo.contains(Demo.screen ?? ""), store.tabBarHiders == 0, !quickOpen {
+                NotchTabBar(selected: $tab, badges: [.angebote: store.watchHits]) { resetToken += 1 }
+                    .ignoresSafeArea(edges: .bottom)
+                    .transition(.move(edge: .bottom))
             }
-
-            PaperGrain()  // feines Papierkorn über allem (v3)
             if !store.newAchievements.isEmpty { UnlockOverlay().zIndex(2) }  // Vollbild-Moment (54)
         }
         .sheet(isPresented: Binding(get: { store.scanning }, set: { on in store.scanning = on })) {

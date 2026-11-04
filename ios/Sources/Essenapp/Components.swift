@@ -415,7 +415,7 @@ struct SkeletonCard: View {
     }
 }
 
-/// Kurze Bestätigung (v3): schwarze Kapsel, Limetten-Kreis mit Symbol, optional Aktions-Knopf („In den Vorrat“).
+/// Kurze Bestätigung (`.toast` v8): Tinten-Kapsel 14/700, optional Aktions-Knopf („In den Vorrat“).
 struct Toast: View {
     let text: String
     var symbol = "checkmark"
@@ -424,128 +424,49 @@ struct Toast: View {
 
     var body: some View {
         HStack(spacing: 10) {
-            Image(systemName: symbol.replacingOccurrences(of: ".circle.fill", with: ""))
-                .font(.system(size: 15, weight: .bold)).foregroundStyle(Theme.C.onLime)
-                .frame(width: 36, height: 36).background(Theme.C.lime, in: Circle())
             Text(text).lineLimit(2)
             if let actionTitle {
                 Button(actionTitle, action: action)
-                    .font(.system(.subheadline, weight: .bold))
-                    .foregroundStyle(Theme.C.action)
-                    .padding(.horizontal, 14).frame(minHeight: 40)
-                    .background(Theme.C.onAction, in: Capsule())
+                    .font(Theme.F.toast)
+                    .foregroundStyle(Theme.C.ink)
+                    .padding(.horizontal, 14).frame(minHeight: 36)
+                    .background(Theme.C.blue, in: Capsule())
                     .buttonStyle(PressableStyle())
             }
         }
-        .font(.system(.subheadline, weight: .bold))
-        .foregroundStyle(Theme.C.onAction)
-        .padding(.leading, 8).padding(.trailing, actionTitle == nil ? 20 : 6)
-        .frame(minHeight: 52)
-        .background(Theme.C.action, in: Capsule())
-        .floatShadow()
-        .transition(.move(edge: .top).combined(with: .opacity))
+        .font(Theme.F.toast)
+        .foregroundStyle(Theme.C.onInk)
+        .padding(.leading, 18).padding(.trailing, actionTitle == nil ? 18 : 6)
+        .padding(.vertical, actionTitle == nil ? 12 : 6)
+        .background(Theme.C.ink, in: Capsule())
+        .transition(.move(edge: .bottom).combined(with: .opacity))
     }
 }
 
 // MARK: Tab-Bar
 
+/// Tabs der Nav v8 (Mockup: Start, Woche, Angebote, Einkauf, Rezepte).
 enum AppTab: CaseIterable {
-    case start, angebote, einkauf, rezepte
+    case start, woche, angebote, einkauf, rezepte
 
     var title: String {
         switch self {
         case .start: "Start"
+        case .woche: "Woche"
         case .angebote: "Angebote"
         case .einkauf: "Einkauf"
         case .rezepte: "Rezepte"
         }
     }
 
-    var symbol: String {
+    var icon: Icon8 {
         switch self {
-        case .start: "house"
-        case .angebote: "tag"
-        case .einkauf: "bag"
-        case .rezepte: "book.closed"
+        case .start: .home
+        case .woche: .cal
+        case .angebote: .tag
+        case .einkauf: .bag
+        case .rezepte: .book
         }
-    }
-}
-
-/// Tab-Leiste v3 (E87): schwarze Kapsel, aktiver Tab als weißer Kreis (nur Symbol), Limetten-Knopf in der Mitte.
-/// Bei offenen Schnell-Aktionen wird sie weiß und der Knopf hebt sich als ✕ in einer Wölbung heraus.
-struct TabBar: View {
-    @Binding var selected: AppTab
-    @Binding var quickOpen: Bool
-    var badges: [AppTab: Int] = [:]  // z. B. Merklisten-Treffer am Angebote-Tab (27)
-    var reselect: () -> Void = {}
-    @Namespace private var pill
-
-    var body: some View {
-        HStack(spacing: 0) {
-            item(.start); Spacer(minLength: 0)
-            item(.angebote); Spacer(minLength: 0)
-            plusButton; Spacer(minLength: 0)
-            item(.einkauf); Spacer(minLength: 0)
-            item(.rezepte)
-        }
-        .padding(.horizontal, 9)
-        .frame(height: Theme.S.tabBar)
-        .background(quickOpen ? Theme.C.plate : Theme.C.bar, in: Capsule())
-        .overlay(Capsule().strokeBorder(quickOpen ? .clear : Theme.C.barEdge, lineWidth: 1))
-        .shadow(color: .black.opacity(quickOpen ? 0.4 : 0.22), radius: 20, y: 18)
-        .padding(.horizontal, Theme.S.barSide)
-        .sensoryFeedback(.selection, trigger: selected)
-        .sensoryFeedback(.impact(weight: .medium), trigger: quickOpen)
-    }
-
-    private var plusButton: some View {
-        Button { withAnimation(Theme.spring) { quickOpen.toggle() } } label: {
-            ZStack {
-                if quickOpen {
-                    Circle().fill(Theme.C.plate).frame(width: 92, height: 92)  // Wölbung
-                    Image(systemName: "xmark").font(.system(size: 20, weight: .bold)).foregroundStyle(.white)
-                        .frame(width: 64, height: 64).background(Theme.C.ink, in: Circle())
-                } else {
-                    Image(systemName: "plus").font(.system(size: 22, weight: .bold)).foregroundStyle(Theme.C.onLime)
-                        .frame(width: Theme.S.plus, height: Theme.S.plus).background(Theme.C.lime, in: Circle())
-                }
-            }
-            .offset(y: quickOpen ? -14 : 0)
-            .frame(width: Theme.S.plus, height: Theme.S.plus)
-            .contentShape(Circle())
-        }
-        .buttonStyle(PressableStyle())
-        .accessibilityLabel(quickOpen ? "Schnell-Aktionen schließen" : "Schnell-Aktionen")
-    }
-
-    private func item(_ tab: AppTab) -> some View {
-        let on = selected == tab && !quickOpen
-        return Button {
-            if selected == tab { reselect() }
-            withAnimation(Theme.spring) { selected = tab; quickOpen = false }
-        } label: {
-            // nur Symbol (Nutzerwunsch): feste Breite, die Leiste verschiebt sich beim Wechsel nicht
-            Image(systemName: tab.symbol).font(.system(size: 18, weight: .semibold)).symbolEffect(.bounce, value: on)
-            .foregroundStyle(on ? Theme.C.ink : quickOpen ? Theme.C.onInk3 : Theme.C.tabInactive)
-            .frame(width: Theme.S.tab, height: Theme.S.tab)
-            .background {
-                if on { Circle().fill(Theme.C.tabActive).matchedGeometryEffect(id: "pill", in: pill) }
-            }
-            .overlay(alignment: .topTrailing) {
-                if let n = badges[tab], n > 0, !on {
-                    Text("\(n)").font(.system(size: 10, weight: .heavy)).foregroundStyle(.white)
-                        .padding(.horizontal, 4).frame(minWidth: 18, minHeight: 18)
-                        .background(Theme.C.deal, in: Capsule())
-                        .overlay(Capsule().strokeBorder(Theme.C.bar, lineWidth: 2))
-                        .offset(x: -2, y: 4)
-                        .transition(.scale.combined(with: .opacity))
-                }
-            }
-            .contentShape(Capsule())
-        }
-        .buttonStyle(PressableStyle())
-        .accessibilityLabel(badges[tab].map { n in n > 0 ? "\(tab.title), \(n) Treffer" : tab.title } ?? tab.title)
-        .accessibilityAddTraits(selected == tab ? .isSelected : [])
     }
 }
 
