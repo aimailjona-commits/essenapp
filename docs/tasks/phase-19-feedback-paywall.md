@@ -96,15 +96,16 @@ Status: **aktiv** (2026-11-04). UI ohne Mockup-Freigabe direkt mit v3-Bausteinen
 
 ## 19.8 Paywall (nach Entscheidung 0)
 
-- [ ] Spike: StoreKit 2 mit xtool bauen, Sandbox-Kauf auf dem iPhone; Upload zu TestFlight über den macOS-Runner (GitHub Actions)
+- [ ] Spike: StoreKit 2 mit xtool bauen, Sandbox-Kauf auf dem iPhone; Upload zu TestFlight über den macOS-Runner (GitHub Actions) – baut mit xtool ✓; Sandbox-Kauf wartet auf das Produkt in App Store Connect
 - [ ] App-Store-Connect: Abo-Produkte anlegen 👤 (Bankdaten, Steuer, Verträge macht der Nutzer)
-- [ ] Abo gilt **je Haushalt**, Prüfung serverseitig (App Store Server API / signierte Transaktionen) → alle Mitglieder + Web-PWA freigeschaltet, kein Rauswerfen (R11)
-- [ ] Paywall immer schließbar; Freemium-Grenzen klar, Preis groß, „Abo jederzeit in den iOS-Einstellungen kündbar“ (R9)
-- [ ] Testphase: eigene Push-Erinnerung 2 Tage vor Ende mit Preis und Kündigen-Link (R10)
-- [ ] Bewertungs-Abfrage nur über `SKStoreReviewController`, höchstens nach einem Erfolgsmoment (z. B. 3. gekochtes Gericht), nie im Onboarding (R12)
-- [ ] App-Store-Text: „Kostenlos laden, Plus-Abo optional“ statt „kostenlos“
-- [ ] KI-Kosten je Haushalt (`ai_cost`) gegen Abo-Preis prüfen, Grenzen für Gratis-Nutzer festlegen
-- [ ] Mockup Paywall + Abo-Verwaltung → 👤 Freigabe → Bau
+- [x] Abo gilt **je Haushalt**, Prüfung serverseitig (App Store Server API / signierte Transaktionen) → alle Mitglieder + Web-PWA freigeschaltet, kein Rauswerfen (R11) – E95
+- [x] Paywall immer schließbar; Freemium-Grenzen klar, Preis groß, „Abo jederzeit in den iOS-Einstellungen kündbar“ (R9) – öffnet bei 402 und aus Einstellungen › Kochpilot Pro
+- [x] Testphase: eigene Push-Erinnerung 2 Tage vor Ende mit Preis und Kündigen-Link (R10) – Job `trial_reminder`
+- [x] Bewertungs-Abfrage nur über `SKStoreReviewController`, höchstens nach einem Erfolgsmoment (z. B. 3. gekochtes Gericht), nie im Onboarding (R12) – SwiftUI `requestReview` nach dem 3. Gericht mit ≥ 4 ★
+- [ ] App-Store-Text: „Kostenlos laden, Plus-Abo optional“ statt „kostenlos“ – Vorschlag: „Kostenlos laden. Kochpilot Pro für 3 €/Monat oder gratis mit Werbung – für den ganzen Haushalt, jederzeit kündbar.“ (kommt mit dem Store-Eintrag)
+- [x] KI-Kosten je Haushalt (`ai_cost`) gegen Abo-Preis prüfen, Grenzen für Gratis-Nutzer festlegen – E95; Grenzen = Vorschlag C, 👤 bestätigen oder ändern (`pro.FEATURES`)
+- [x] ~~Mockup Paywall + Abo-Verwaltung → 👤 Freigabe → Bau~~ entfällt (E91)
+- [ ] Werbung in der App: Google-Mobile-Ads-SDK (SwiftPM) mit xtool + Einwilligung (UMP), Belohnungsvideo mit `user_id` = Haushalt; Server-Seite fertig (`GET /pro/admob`) – 👤 AdMob-Konto + Anzeigenblock-ID
 
 ## 19.9 Melden & Qualität
 

@@ -21,6 +21,10 @@ import UIKit
 /// Erscheinungsbild (68): zusätzlich `-demoAppearance dark|light` (überschreibt die Einstellung).
 enum Demo {
     static let screen: String? = arg("-demoScreen")
+    static let pro = ProDTO(paywall: true, pro: false, adCredits: 0, freePlansLeft: 0, price: "3 € im Monat", features: [
+        "plan": "Mehr als ein KI-Plan pro Woche", "reroll_direction": "Neu würfeln mit Richtung oder Wunsch",
+        "scan": "Kühlschrank-Foto", "import": "Rezepte aus Instagram und Webseiten", "step_images": "Bilder zu jedem Kochschritt",
+        "no_mood": "„Keine Lust“-Vorschläge", "substitutes": "Ersatzzutaten", "price_alert": "Preisalarme"])
     static let appearance: String? = arg("-demoAppearance")
 
     private static func arg(_ name: String) -> String? {

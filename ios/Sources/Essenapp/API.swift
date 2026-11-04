@@ -103,6 +103,7 @@ enum APIError: LocalizedError {
         case .noServer: "Keine Server-Adresse eingestellt."
         case .queued: "Offline – wird später übertragen."
         case .http(401): "Nicht angemeldet."
+        case .http(402): "Das gehört zu Kochpilot Pro."
         case .http(let code): "Server-Fehler (\(code))."
         }
     }
@@ -112,6 +113,7 @@ enum APIError: LocalizedError {
 final class API {
     /// Server der App-Store-Version (19.7); leer = Entwicklung, Adresse im Willkommens-Screen eingeben.
     static let defaultServer = ""
+    var paywall: String? = Demo.screen == "paywall" ? "Pro: Kühlschrank-Foto" : nil  // gesetzt = Paywall zeigen (Meldung der 402-Antwort, leer = aus den Einstellungen)
     var baseURL: String = UserDefaults.standard.string(forKey: "backendURL") ?? API.defaultServer {
         didSet { UserDefaults.standard.set(baseURL, forKey: "backendURL") }
     }
@@ -304,8 +306,15 @@ final class API {
         }
         setReachable(true)
         let code = (response as? HTTPURLResponse)?.statusCode ?? 0
-        guard (200..<300).contains(code) else { throw APIError.http(code) }
+        guard (200..<300).contains(code) else { throw failure(code, data) }
         return data
+    }
+
+    /// 402 = Pro-Funktion (19.8): Paywall mit der Meldung des Servers öffnen.
+    private func failure(_ code: Int, _ data: Data) -> APIError {
+        struct Detail: Decodable { var detail: String }
+        if code == 402 { paywall = (try? JSONDecoder().decode(Detail.self, from: data))?.detail ?? "" }
+        return .http(code)
     }
 
     /// Multipart-Upload (Kühlschrank-Fotos „files“, Coupon-Foto „file“): JPEGs + Formularfelder; `progress` 0–1 beim Senden.
@@ -329,7 +338,7 @@ final class API {
         if let token { req.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization") }
         let (data, response) = try await URLSession.shared.upload(for: req, from: body, delegate: UploadProgress(report: progress))
         let code = (response as? HTTPURLResponse)?.statusCode ?? 0
-        guard (200..<300).contains(code) else { throw APIError.http(code) }
+        guard (200..<300).contains(code) else { throw failure(code, data) }
         return try decoder.decode(T.self, from: data)
     }
 }
@@ -660,6 +669,8 @@ final class AppStore {
         didSet { if !demo, plan?.entries.map(\.recipe.id) != oldValue?.entries.map(\.recipe.id) { WidgetCenter.shared.reloadAllTimelines() } }
     }
     var error: String?
+    var pro: ProDTO? = Demo.screen == nil ? nil : Demo.pro  // 19.8
+    var askReview = false  // 19.8 (R12): nach dem 3. gut bewerteten Gericht einmal fragen
     var generating = false
     var toast: String?
     var toastAction: (title: String, run: () -> Void)?
@@ -771,6 +782,7 @@ final class AppStore {
         async let lists: () = loadLists()
         async let profiles: () = loadProfiles()
         async let pantry: ()? = try? loadPantry()
+        async let proState: () = loadPro()
         async let next: [OfferDTO]? = try? api.request("GET", "/offers?week=next")
         async let current: PlanDTO? = try? api.request("GET", "/plans/current")
         do {
@@ -779,7 +791,7 @@ final class AppStore {
             (household, offers) = try await (h, o)
             nextOffers = await next ?? nextOffers
             plan = await current
-            _ = await (watch, lists, profiles, pantry)
+            _ = await (watch, lists, profiles, pantry, proState)
             error = nil
             await loadNutrition()
             await loadAchievements()  // schaltet Neues frei → Vollbild-Moment

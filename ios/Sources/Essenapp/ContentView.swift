@@ -1,4 +1,5 @@
 import EssenappShareUI
+import StoreKit
 import SwiftUI
 
 struct ContentView: View {
@@ -89,6 +90,7 @@ struct MainView: View {
     @State private var deepRecipe: Int?  // Rezept aus dem Lunchbox-Push (24)
     @State private var tab = MainView.demoTab
     @State private var resetToken = 0  // erneutes Tippen auf den aktiven Tab → zurück zum Anfang
+    @Environment(\.requestReview) private var requestReview
     @State private var quickOpen = Demo.screen == "quick"
     @State private var showGenerator = ["generator", "generating", "singlestore"].contains(Demo.screen ?? "")
     @State private var showRecipeForm = false  // Schnell-Aktion „Rezept anlegen“ (S17)
@@ -230,6 +232,13 @@ struct MainView: View {
             }
         }
         .task { await store.loadAll() }
+        .task { if !store.demo { await ProStore.listen(store: store) } }  // Verlängerungen, Käufe auf anderen Geräten
+        .sheet(isPresented: Binding(get: { store.api.paywall != nil }, set: { on in if !on { store.api.paywall = nil } })) {
+            PaywallSheet(reason: store.api.paywall ?? "").presentationDetents([.large]).presentationCornerRadius(Theme.R.sheet)
+        }
+        .onChange(of: store.askReview) { _, ask in
+            if ask { requestReview(); store.askReview = false }
+        }
         .onChange(of: store.api.online) { _, on in  // Netz zurück → Warteschlange senden und frisch laden (66)
             if on { Task { await store.loadAll() } }
         }

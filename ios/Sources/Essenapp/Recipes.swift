@@ -94,6 +94,11 @@ extension AppStore {
         do {
             if !demo { try await api.send("POST", "/recipes/\(id)/rate", body: Body(stars: stars, again: again, note: note)) }
             recipesVersion += 1
+            if stars >= 4 {  // Bewertungsabfrage nur nach einem Erfolgsmoment, nie im Onboarding (R12)
+                let good = UserDefaults.standard.integer(forKey: "goodCooks") + 1
+                UserDefaults.standard.set(good, forKey: "goodCooks")
+                askReview = good == 3
+            }
             return true
         } catch {
             flash("Bewertung nicht gespeichert: \(error.localizedDescription)")

@@ -224,6 +224,15 @@ struct SettingsView: View {
                 }
 
                 if let h = store.household {
+                    if let p = store.pro, p.paywall {  // 19.8: Pro-Stand und Paywall (ohne PAYWALL am Server ausgeblendet)
+                        group("KOCHPILOT PRO") {
+                            Button { store.api.paywall = "" } label: {
+                                row("sparkles", Theme.C.accent, p.pro ? "Pro ist aktiv" : "Pro holen",
+                                    p.pro ? "für alle im Haushalt · kündbar in den iOS-Einstellungen"
+                                        : "\(p.price) · \(p.freePlansLeft) Gratis-Plan diese Woche übrig")
+                            }
+                        }
+                    }
                     group("EINKAUFEN") {
                         NavigationLink { StoreMapView() } label: {
                             row("mappin.and.ellipse", Theme.C.accent, "Läden & Umkreis",
