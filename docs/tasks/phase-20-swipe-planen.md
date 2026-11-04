@@ -1,7 +1,7 @@
 # Phase 20 – Woche per Swipe planen
 
 Stand: 2026-11-04 · Quelle: Nutzerwunsch („Gerichte nicht direkt schreiben lassen, sondern wie bei Tinder durchswipen“).
-Status: **geplant** – startet mit dem Mockup (20.0), gebaut wird erst nach Freigabe (E97).
+Status: **aktiv** – Mockup freigegeben 2026-11-04, Backend (20.1/20.2) gebaut, iOS (20.3) als Nächstes.
 
 ## Idee
 
@@ -41,26 +41,26 @@ entsteht erst für die gewählten Gerichte, parallel.
 
 - [x] Screens in `docs/ui/screens.md`: S41 Stapel, S42 Match, S43 Auswahl, S44 Woche verteilen (inkl. Laden, Leer, Fehler, „Stapel lädt nach“), Onboarding „Deine Gewohnheiten“, Angebote „Für dich“ (S45, S46)
 - [x] HTML-Mockup [`docs/ui/mockups/swipe-v1.html`](../ui/mockups/swipe-v1.html): Karte, Gesten-Feedback (Stempel „Diese Woche“ / „Nicht“ / „Mag ich nicht“), Fortschritt je Mahlzeitart, Match, Verteilen per Ziehen
-- [ ] 👤 Mockup freigeben
+- [x] 👤 Mockup freigeben (2026-11-04: „Passt so, Pillen behalten“)
 
 ## 20.1 Backend: Kartenstapel
 
-- [ ] Tabellen `swipe_deck` (Haushalt, Woche, Stand offen/fertig), `swipe_card` (Deck, Mahlzeitart, Quelle ki/rezept, `recipe_id` bzw. Entwurf JSON, Reihenfolge), `swipe_vote` (Karte, Mitglied, ja/nein/nie, Zeit); Migration
-- [ ] KI-Karten: neues schlankes Schema `CardDraft` (Titel, Beschreibung, Küche, Zeit, Beilage, Protein, `image_query`, Haupt-Angebote mit Menge) → Kosten je Portion schätzt der Code aus den Angeboten; Haiku ohne Denkphase, mehrere Arten parallel
-- [ ] Eigene Rezepte mischen: Favoriten / ≥ 4 ★ / nicht in den letzten Wochen, nach Angebotsanteil sortiert; nie: Nie-Liste, Allergien/Ernährung (`forbid`)
-- [ ] Stapelgröße je Art = 2 × Plätze, Nachladen bei < 5 offenen Karten (eigener Hintergrund-Job wie E94); keine Titel-Dubletten im Deck
-- [ ] Fotos für Karten im Hintergrund (`_fill_image`), Karte erscheint sofort mit Teller-Platzhalter
-- [ ] API: `POST /swipe` (Deck der Woche anlegen/holen), `GET /swipe` (Karten, die dieses Mitglied noch nicht entschieden hat + Fortschritt + Matches), `POST /swipe/cards/{id}/vote`, `POST /swipe/undo`, `POST /swipe/more/{meal_type}`
-- [ ] Gewählt = ≥ 1 „ja“ und kein „nie“; Rang = Match (alle Abstimmenden ja) > Anzahl ja > Preis
-- [ ] Pro (E95): ein Deck zählt wie ein KI-Plan; Nachladen kostet nichts extra
-- [ ] Tests: Abstimmung mehrerer Mitglieder, Match, „nie“ blendet aus, Fortschritt, Nachladen, Dubletten
+- [x] Tabellen `swipe_deck` (Haushalt, Woche, Stand offen/fertig), `swipe_card` (Deck, Mahlzeitart, Quelle ki/rezept, `recipe_id` bzw. Entwurf JSON, Reihenfolge), `swipe_vote` (Karte, Mitglied, ja/nein/nie, Zeit); Migration
+- [x] KI-Karten: neues schlankes Schema `CardDraft` (Titel, Beschreibung, Küche, Zeit, Beilage, Protein, `image_query`, Haupt-Angebote mit Menge) → Kosten je Portion schätzt der Code aus den Angeboten; Haiku ohne Denkphase, mehrere Arten parallel
+- [x] Eigene Rezepte mischen: Favoriten / ≥ 4 ★ / nicht in den letzten Wochen, nach Angebotsanteil sortiert; nie: Nie-Liste, Allergien/Ernährung (`forbid`)
+- [x] Stapelgröße je Art = 2 × Plätze, Nachladen bei < 5 offenen Karten (eigener Hintergrund-Job wie E94); keine Titel-Dubletten im Deck; KI in parallelen Paketen à 3 mit Schwerpunkt (live 10–12 Karten in 5,0 s)
+- [x] Fotos für Karten im Hintergrund (`_fill_image`), Karte erscheint sofort mit Teller-Platzhalter
+- [x] API: `POST /swipe` (Deck der Woche anlegen/holen), `GET /swipe` (Karten, die dieses Mitglied noch nicht entschieden hat + Fortschritt + Matches), `POST /swipe/cards/{id}/vote`, `POST /swipe/undo`, `POST /swipe/more/{meal_type}`
+- [x] Gewählt = ≥ 1 „ja“ und kein „nie“; Rang = Match (alle Abstimmenden ja) > Anzahl ja > Preis
+- [x] Pro (E95): ein Deck zählt wie ein KI-Plan; Nachladen kostet nichts extra
+- [x] Tests: Abstimmung mehrerer Mitglieder, Match, „nie“ blendet aus, Fortschritt, Nachladen, Dubletten
 
 ## 20.2 Backend: Verteilen + Plan erzeugen
 
-- [ ] `distribute(chosen, slots, rules)` im Code: Haltbarkeit (`shelf_days`), Abwechslung (`variety.check`), Reste-Ketten, Zufall bei Gleichstand; Test mit festem Seed
-- [ ] `POST /swipe/finish` mit Zuordnung `{Karte: (Tag, Art)}` (selbst eingetragen) oder leer (= verteilen) → Plan-Job (E94): KI-Karten → volle Rezepte (Prompt mit dem Kartentitel, parallel je Karte bzw. Tagesblock), eigene Rezepte direkt; dann `price`, Reste, Einkaufsliste wie `create_plan`
-- [ ] Reste-Badges und Budgetwarnung (S7) wie beim KI-Plan
-- [ ] Tests: Verteilung hält Regeln, selbst eingetragene Tage bleiben, Plan + Liste entstehen
+- [x] `distribute(chosen, slots, rules)` im Code: Haltbarkeit (`shelf_days`), Abwechslung (`variety.check`), Reste-Ketten, Zufall bei Gleichstand; Test mit festem Seed
+- [x] `POST /swipe/finish` mit Zuordnung `{Karte: (Tag, Art)}` (selbst eingetragen) oder leer (= verteilen) → Plan-Job (E94): KI-Karten → volle Rezepte (Prompt mit dem Kartentitel, parallel je Karte bzw. Tagesblock), eigene Rezepte direkt; dann `price`, Reste, Einkaufsliste wie `create_plan`
+- [x] Reste-Badges und Budgetwarnung (S7) wie beim KI-Plan
+- [x] Tests: Verteilung hält Regeln, selbst eingetragene Tage bleiben, Plan + Liste entstehen
 
 ## 20.3 iOS
 
@@ -87,10 +87,10 @@ und Freitext-Wünsche. Neu:
 - [ ] Einkaufsliste: `staples` für die Woche automatisch drauf (Menge aus Tagen × Portion), mit Angebot, wenn vorhanden
 - [ ] Tests: Regeln/Staples/Likes im Prompt, Staples belegen Slots ohne KI, „Für dich“-Auswahl
 
-## Offene Punkte (vor dem Bau klären)
+## Offene Punkte (geklärt 2026-11-04, Vorschläge angenommen)
 
-- [ ] Wer darf „Fertig“ drücken: jedes Mitglied oder nur, wer das Deck gestartet hat? (Vorschlag: jedes Mitglied)
-- [ ] `staples`/`likes` je Haushalt oder je Person? (Vorschlag: je Person, Planer fasst zusammen; Hafermilch gilt dann nur für die Portion dieser Person – oder für alle, wenn nur einer im Haushalt)
+- [x] Wer darf „Fertig“ drücken: jedes Mitglied oder nur, wer das Deck gestartet hat? (Vorschlag: jedes Mitglied)
+- [x] `staples`/`likes` je Haushalt oder je Person? (Vorschlag: je Person, Planer fasst zusammen; Hafermilch gilt dann nur für die Portion dieser Person – oder für alle, wenn nur einer im Haushalt)
 
 ## DoD
 

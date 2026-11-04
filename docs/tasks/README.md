@@ -24,7 +24,7 @@
 | 17 | [Umzug auf IONOS-VPS](phase-17-vps.md) | Vorbereitung läuft – wartet auf 👤 IONOS-VPS + Domain |
 | 18 | [Redesign v3 „Küchen-Pinnwand“](phase-18-redesign-v3.md) | ruht (E91) – Design ändert sich noch, Bau nach [`docs/ui/redesign-v3.md`](../ui/redesign-v3.md) |
 | 19 | [Nutzerwünsche, Rezensions-Lehren, Paywall](phase-19-feedback-paywall.md) | **aktiv** – Entscheidungen E90/E91 |
-| 20 | [Woche per Swipe planen](phase-20-swipe-planen.md) | geplant (E97) – zuerst Mockup |
+| 20 | [Woche per Swipe planen](phase-20-swipe-planen.md) | **aktiv** (E97) – Mockup frei, Backend gebaut, iOS läuft |
 
 ## Wartet auf dich 👤
 
@@ -42,7 +42,6 @@
 | App Store Connect: Abo `de.jsenf.essenapp.pro.monthly` (3 €/Monat, optional Testphase) anlegen; In-App-Purchase-Key (`.p8`) nach `backend/secrets/`, Key-ID + Issuer-ID nennen | Paywall | 19.8 |
 | Domain des VPS nennen (kommt als feste Server-Adresse in die App) | Onboarding | 19.7 |
 | AdMob-Konto + Anzeigenblock (Belohnungsvideo) | Werbung statt Abo | 19.8 |
-| Swipe-Mockup freigeben; offene Punkte (Frühstück mehrfach, Lunchbox-Stapel, wer drückt „Fertig“) | Swipe-Planen | 20 |
 | Gratis/Pro-Aufteilung (Vorschlag C) bestätigen oder ändern; Apple-Erinnerungen-Export gewünscht? Wo kam „Joghurt als Cherrygold-Käse“? | Entscheidungen | 19 |
 
 ## Regeln
