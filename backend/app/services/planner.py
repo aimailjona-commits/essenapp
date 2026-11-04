@@ -14,7 +14,7 @@ from pydantic import BaseModel, ConfigDict
 from app.core.config import settings
 from app.models import AiCost, Household, MemberProfile, Offer, PantryItem
 from app.services import recipe_images, variety
-from app.services.matching import fits
+from app.services.matching import fits, is_a
 from app.services.normalize import cents
 from app.services.pricing import Pack, Stock, cost_line, pack_amount, shelf_days
 
@@ -91,6 +91,14 @@ Regeln:
 - „verwende Rest …“: diese Zutat mit gleichem Namen, gleicher offer_id und mindestens dieser Menge einplanen (Rest ganz
   aufbrauchen, Mengen der anderen Zutaten anpassen).
 - Plane genau die genannten Mahlzeiten, nicht mehr und nicht weniger."""
+
+
+# Richtung beim Neu-Würfeln (19.3) → Zusatz im Auftrag
+DIRECTIONS = {"schneller": "Höchstens 20 Minuten Kochzeit, wenige Schritte.",
+              "guenstiger": "Deutlich günstiger als das alte Gericht: Angebote, einfache Zutaten.",
+              "ohne_fleisch": "Vegetarisch, ohne Fleisch und Fisch.",
+              "leichter": "Leichter und kalorienärmer, viel Gemüse.",
+              "anders": "Ganz andere Küche und Hauptzutat als das alte Gericht."}
 
 
 @dataclass
@@ -175,6 +183,8 @@ def build_prompt(household: Household, offers: list[Offer], slots: list[tuple[in
         f"Ernährung: {household.diet}",
         f"Allergien: {', '.join(household.allergies) or 'keine'}",
         f"Mag nicht: {', '.join(household.excluded_ingredients) or '-'}",
+        *([f"Immer ersetzen: {', '.join(f'{r['instead']} → {r['use']}' for r in household.product_rules)}"]
+          if getattr(household, "product_rules", None) else []),
         f"Küchen: {', '.join(household.cuisines) or 'gemischt'}",
         f"Ziel: {household.nutrition_goal}",
         f"Max. Kochzeit: {household.max_cook_minutes} min",
@@ -224,6 +234,22 @@ def ask_claude(content: list[dict]) -> tuple[PlanDraft, dict]:
     if response.stop_reason != "end_turn" or response.parsed_output is None:
         raise RuntimeError(f"Plan nicht erzeugt (stop_reason={response.stop_reason})")
     return response.parsed_output, usage
+
+
+def apply_rules(meals: list[PlannedMeal], rules: list[dict]) -> None:
+    """Produkt-Regeln im Code durchsetzen (19.2): „Vollmilch“ wird bei „Hafermilch statt Milch“ zu Hafermilch, ohne
+    Angebot (passt nicht mehr) – auch wenn die KI die Regel übersieht."""
+    for m in meals:
+        for ing in m.ingredients:
+            rule = next((r for r in rules or () if is_a(ing.name, r["instead"]) and not is_a(ing.name, r["use"])), None)
+            if rule:
+                ing.name, ing.offer_id = rule["use"], None
+
+
+def violations(meals: list[PlannedMeal], forbid: Callable[[str], bool] | None) -> list[str]:
+    """„Gericht (Zutat)“ für Gerichte, die eine Allergie, die Ernährungsform oder eine Abneigung verletzen (19.2)."""
+    return [f"{m.title} ({bad})" for m in meals if forbid
+            for bad in [next((i.name for i in m.ingredients if forbid(i.name)), None)] if bad]
 
 
 def slot_key(day: int, meal_type: str) -> str:
@@ -322,8 +348,10 @@ def make_plan(household: Household, offers: list[Offer], slots: list[tuple[int, 
               wishes: str = "", ask: Callable[[list[dict]], tuple[PlanDraft, dict]] | None = None,
               max_repairs: int = 1, portions: dict | None = None, pantry: list[PantryItem] = (),
               never: list[str] = (), recent: list[str] = (), rules: dict | None = None, fish_ok: bool = True,
-              extra: list[str] = (), guests: dict | None = None, stock: list[PantryItem] | None = None) -> PricedPlan:
-    """rules (12) = Abwechslungsregeln → nach dem Planen Prüfung im Code und ein zweiter Durchgang nur für die
+              extra: list[str] = (), guests: dict | None = None, stock: list[PantryItem] | None = None,
+              forbid: Callable[[str], bool] | None = None) -> PricedPlan:
+    """forbid(Zutat) = verletzt Allergie/Ernährung/Abneigung → Gericht wird wie ein Nie-Gericht ersetzt (19.2).
+    rules (12) = Abwechslungsregeln → nach dem Planen Prüfung im Code und ein zweiter Durchgang nur für die
     betroffenen Slots, der zugleich frische Reste (19) in Folgegerichte legt. stock = Vorrat + Wochen-Basics (23)
     für die Kosten (Standard: pantry)."""
     ask = ask or ask_claude
@@ -342,8 +370,10 @@ def make_plan(household: Household, offers: list[Offer], slots: list[tuple[int, 
         draft, call_usage = ask(prompt(slots, note))
         usage = add_usage(usage, call_usage)
         draft.meals = [m for m in draft.meals if (m.day, m.meal_type) in set(slots)]
+        apply_rules(draft.meals, getattr(household, "product_rules", None))
         planned = price(draft, offers_by_id, stock)
-        banned = banned_meals(draft, [*never, *recent])
+        bad = violations(draft.meals, forbid)
+        banned = banned_meals(draft, [*never, *recent]) + bad
         key = (len(banned), planned.total_cents)  # erst Regeln, dann Preis
         if best is None or key < best_key:
             best, best_key = planned, key
@@ -354,20 +384,26 @@ def make_plan(household: Household, offers: list[Offer], slots: list[tuple[int, 
         if over:
             note += (f" Er kostet {planned.total_cents} ct, das Budget ist {household.budget_food_week_cents} ct. "
                      "Ersetze die teuersten Gerichte durch günstigere mit mehr Angeboten.")
-        if banned:
+        if banned := [b for b in banned if b not in bad]:
             note += (f" Ersetze {', '.join(banned)} – steht auf der Nie-Liste bzw. gab es in den letzten "
                      f"{repeat_weeks} Wochen.")
+        if bad:
+            note += f" Ersetze {', '.join(bad)} – die Zutat verletzt Allergie, Ernährungsform oder „Mag nicht“."
     if rules is not None:
         best, usage = second_pass(best, usage, household, offers_by_id, slots, stock, rules, fish_ok, recent, never,
-                                  lambda todo, note: ask(prompt(todo, note)))
+                                  lambda todo, note: ask(prompt(todo, note)), forbid)
+    if bad := violations(best.draft.meals, forbid):  # harte Regel: lieber Fehler als Allergen im Plan
+        raise RuntimeError(f"Kein Plan ohne ausgeschlossene Zutaten gefunden ({', '.join(bad)}), bitte erneut versuchen")
     best.usage = usage
     return best  # Budget evtl. nicht erreicht: günstigster Entwurf, Nutzer entscheidet (S7 „Trotzdem übernehmen“)
 
 
-def score(planned: PricedPlan, budget: int, rules: dict, fish_ok: bool, recent, never) -> tuple[int, int]:
-    """(Regelverstöße inkl. Budget/Nie-Liste, übrige frische Reste) – kleiner ist besser."""
+def score(planned: PricedPlan, budget: int, rules: dict, fish_ok: bool, recent, never,
+          forbid: Callable[[str], bool] | None = None) -> tuple[int, int]:
+    """(Regelverstöße inkl. Budget/Nie-Liste/verbotener Zutaten, übrige frische Reste) – kleiner ist besser."""
     c = variety.check(dishes(planned.draft.meals), rules, fish_ok, recent)
-    return (len(c.fixes) + len(banned_meals(planned.draft, list(never))) + (planned.total_cents > budget),
+    return (len(c.fixes) + len(banned_meals(planned.draft, list(never))) + (planned.total_cents > budget)
+            + 10 * len(violations(planned.draft.meals, forbid)),
             len(planned.rests.get("left", [])))
 
 
@@ -417,7 +453,8 @@ def rest_targets(planned: PricedPlan, slots: list[tuple[int, str]], fixes: dict,
 
 def second_pass(best: PricedPlan, usage: dict, household, offers_by_id: dict, slots: list[tuple[int, str]],
                 stock: list, rules: dict, fish_ok: bool, recent, never,
-                ask: Callable[[list[tuple[int, str]], str], tuple[PlanDraft, dict]]) -> tuple[PricedPlan, dict]:
+                ask: Callable[[list[tuple[int, str]], str], tuple[PlanDraft, dict]],
+                forbid: Callable[[str], bool] | None = None) -> tuple[PricedPlan, dict]:
     """Planner-Durchgang 2: Regelverstöße (12/23/24) und frische Reste (19) in EINER Runde nur für die betroffenen
     Slots; übernommen, wenn das Ergebnis nicht schlechter ist."""
     c = variety.check(dishes(best.draft.meals), rules, fish_ok, recent)
@@ -447,10 +484,12 @@ def second_pass(best: PricedPlan, usage: dict, household, offers_by_id: dict, sl
         return best, usage
     usage = add_usage(usage, call_usage)
     new = {(m.day, m.meal_type): m for m in draft.meals if (m.day, m.meal_type) in todo}
+    apply_rules(list(new.values()), getattr(household, "product_rules", None))
     merged = PlanDraft(meals=[new.get((m.day, m.meal_type), m) for m in best.draft.meals])
     candidate = price(merged, offers_by_id, stock)
     budget = household.budget_food_week_cents
-    old, now = score(best, budget, rules, fish_ok, recent, never), score(candidate, budget, rules, fish_ok, recent, never)
+    old = score(best, budget, rules, fish_ok, recent, never, forbid)
+    now = score(candidate, budget, rules, fish_ok, recent, never, forbid)
     logger.info("Zweiter Durchgang: %d Slots, (Verstöße, Reste) %s → %s, %s; offen: %s", len(todo), old, now,
                 "übernommen" if now <= old else "verworfen",
                 variety.check(dishes(candidate.draft.meals), rules, fish_ok, recent).issues)
@@ -469,21 +508,36 @@ def reroll_meal(household: Household, offers: list[Offer], slot: tuple[int, str]
                 wishes: str = "", portions: dict | None = None, pantry: list[PantryItem] = (),
                 favorites: list[str] = (), never: list[str] = (), recent: list[str] = (), extra: list[str] = (),
                 guests: dict | None = None, repeat_weeks: int = 3,
-                max_cost_cents: int | None = None) -> tuple[PlannedMeal, dict]:
+                max_cost_cents: int | None = None, direction: str = "", wish: str = "",
+                forbid: Callable[[str], bool] | None = None,
+                ask: Callable[[list[dict]], tuple[PlanDraft, dict]] | None = None) -> tuple[PlannedMeal, dict]:
     """Genau ein neues Gericht für einen Platz im Plan; avoid[0] ist das alte Gericht, danach die übrigen der Woche.
-    max_cost_cents: günstigere Alternative mit Kostengrenze (43)."""
+    max_cost_cents: günstigere Alternative mit Kostengrenze (43). direction/wish: Richtung beim Neu-Würfeln (19.3).
+    Verletzt das Gericht Allergie/Ernährung/Abneigung (forbid), einmal neu, dann Fehler."""
+    ask = ask or ask_claude
     note = (f"Plane genau EIN neues Gericht, anders als: {avoid[0]} und andere Gerichte der Woche "
             f"({', '.join(avoid[1:]) or '-'}).")
     if max_cost_cents is not None:
         note += (f" Es darf höchstens {max_cost_cents} ct kosten (Zutaten anteilig): günstige Angebote, "
                  "einfache Zutaten.")
-    draft, usage = ask_claude(build_prompt(household, offers, [slot], favorites=favorites, wishes=wishes, note=note,
-                                           portions=portions, pantry=pantry, never=never, recent=recent, extra=extra,
-                                           guests=guests, repeat_weeks=repeat_weeks))
-    meal = next((m for m in draft.meals if (m.day, m.meal_type) == slot), None)
-    if meal is None:
-        raise RuntimeError("Kein neues Gericht erzeugt")
-    return meal, usage
+    if direction in DIRECTIONS:
+        note += f" {DIRECTIONS[direction]}"
+    if wish.strip():
+        note += f" Wunsch für dieses Gericht: {wish.strip()[:200]}"
+    usage: dict = {}
+    for _ in range(2):
+        draft, call_usage = ask(build_prompt(household, offers, [slot], favorites=favorites, wishes=wishes, note=note,
+                                             portions=portions, pantry=pantry, never=never, recent=recent,
+                                             extra=extra, guests=guests, repeat_weeks=repeat_weeks))
+        usage = add_usage(usage, call_usage)
+        meal = next((m for m in draft.meals if (m.day, m.meal_type) == slot), None)
+        if meal is None:
+            raise RuntimeError("Kein neues Gericht erzeugt")
+        apply_rules([meal], getattr(household, "product_rules", None))
+        if not (bad := violations([meal], forbid)):
+            return meal, usage
+        note += f" Nicht {bad[0]} – die Zutat verletzt Allergie, Ernährungsform oder „Mag nicht“."
+    raise RuntimeError("Kein passendes Gericht ohne ausgeschlossene Zutaten gefunden, bitte erneut versuchen")
 
 
 def week_slots(household: Household, lunchbox_days: set[int] = frozenset(),

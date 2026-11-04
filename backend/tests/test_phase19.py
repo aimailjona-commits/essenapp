@@ -58,3 +58,31 @@ def test_classify_unknown_asks_once_per_title_and_reuses_known(db):
     got = {(o.title, o.category, o.subcategory) for o in db.query(Offer)}
     assert ("Rama", "kuehlung", "molkerei") in got and ("Doppelzimmer", "nonfood", "nonfood") in got
     assert ("Yakult", "kuehlung", "joghurt") in got
+
+
+def test_rules_and_forbidden_ingredients():
+    from app.services.matching import is_a
+    from app.services.substitutes import forbidden
+    assert is_a("Vollmilch", "Milch") and is_a("Rinderhackfleisch", "Hackfleisch") and is_a("Saure Sahne", "Sahne")
+    assert not is_a("Buttermilch", "Milch") and not is_a("Reis", "Ei") and not is_a("Milchreis", "Milch")
+    assert forbidden("Champignons braun", [], dislikes=["Champignons"]) and not forbidden("Basmatireis", [], dislikes=["Ei"])
+    meals = [meal(0, "Porridge", [ing("Vollmilch", 300, unit="ml", offer_id=3), ing("Buttermilch", 100, unit="ml")])]
+    planner.apply_rules(meals, [{"instead": "Milch", "use": "Hafermilch"}])
+    assert [(i.name, i.offer_id) for i in meals[0].ingredients] == [("Hafermilch", None), ("Buttermilch", None)]
+
+
+def test_make_plan_replaces_meals_with_forbidden_ingredients():
+    from types import SimpleNamespace
+    h = SimpleNamespace(persons=2, diet="alles", allergies=["Erdnüsse"], excluded_ingredients=[], cuisines=[],
+                        nutrition_goal="ausgewogen", max_cook_minutes=30, budget_food_week_cents=10000,
+                        product_rules=[], plan_days=[0], meal_types=["abend"])
+    drafts = iter([planner.PlanDraft(meals=[meal(0, "Satay", [ing("Erdnussbutter", 50)], "abend")]),
+                   planner.PlanDraft(meals=[meal(0, "Curry", [ing("Kichererbsen", 400)], "abend")])])
+    notes = []
+
+    def ask(prompt):
+        notes.append(prompt[-1]["text"])
+        return next(drafts), {}
+    from app.services.substitutes import forbidden
+    p = planner.make_plan(h, [], [(0, "abend")], [], ask=ask, forbid=lambda n: forbidden(n, h.allergies))
+    assert p.draft.meals[0].title == "Curry" and "Satay (Erdnussbutter)" in notes[1]

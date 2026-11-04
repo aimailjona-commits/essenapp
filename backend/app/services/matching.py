@@ -48,6 +48,16 @@ def fits(name: str, offer: Offer) -> bool:
     return not mine or not theirs or mine == theirs or any({mine, theirs} <= s for s in SIBLINGS)
 
 
+def is_a(name: str, base: str) -> bool:
+    """Zutat ist eine Sorte von base: „Vollmilch“ ist Milch, „Buttermilch“ nicht (NOT_A), „Saure Sahne“ ist Sahne."""
+    w, b = words(name), words(base)
+    if not w or not b or any(c in name.lower() for c in NOT_A.get(base.lower().strip(), ())):
+        return False
+    if len(b) == 1:  # ganzes Wort oder Wortende eines Kompositums („Rinderhackfleisch“), nie Wortmitte („Reis“ ≠ Ei)
+        return any(x == b[0] or (len(b[0]) >= 3 and x.endswith(b[0])) for x in w)
+    return any(w[i:i + len(b)] == b for i in range(len(w) - len(b) + 1))
+
+
 def stem(word: str) -> str:
     for suffix in ("en", "n", "e", "s"):
         if word.endswith(suffix) and len(word) - len(suffix) >= 4:

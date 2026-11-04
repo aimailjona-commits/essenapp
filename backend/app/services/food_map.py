@@ -53,10 +53,14 @@ TRANSLATE = """Übersetze deutsche Zutatennamen in eine englische Suchanfrage f�
 2–4 Wörter, Grundzutat in roher/unverarbeiteter Form, wenn üblich (z.B. "Hähnchenbrust" → "chicken breast raw",
 "Passierte Tomaten" → "tomato puree canned"). grams_per_piece: typisches Gewicht eines Stücks in g (essbarer Teil),
 wenn die Zutat auch stückweise verwendet wird, sonst null. Für jeden Namen genau ein Eintrag, name unverändert.
+Fertigprodukte so, wie man sie kauft: Tortillas/Wraps/Brot/Brötchen = fertiges Backwerk (nicht Mehl oder
+Backmischung); Bohnen, Kichererbsen, Mais ohne „getrocknet“ = aus der Dose, gekocht ("beans black canned drained");
+Brühe = trinkfertig; Wurst, Schinken, Käse = verzehrfertig.
 
 """
 CHOOSE = """Wähle für jede deutsche Zutat den passenden USDA-Eintrag aus ihren Kandidaten (id|Beschreibung).
-Roh/unverarbeitet bevorzugen, außer die Zutat ist verarbeitet (Dose, gekocht, Pulver …). food_id null, wenn keiner
+Roh/unverarbeitet bevorzugen, außer die Zutat ist verarbeitet (Dose, gekocht, Pulver …) oder ein Fertigprodukt
+(Tortilla, Brot = Backwerk, nie Mehl/Backmischung; Bohnen/Kichererbsen ohne „getrocknet“ = gekocht/Dose). food_id null, wenn keiner
 passt. confidence: hoch, mittel oder niedrig. Für jede Zutat genau ein Eintrag, name unverändert.
 
 """

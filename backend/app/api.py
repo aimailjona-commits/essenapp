@@ -3,6 +3,7 @@ import secrets
 import shutil
 import threading
 import time
+from collections.abc import Callable
 from concurrent.futures import ThreadPoolExecutor, wait
 from datetime import date, datetime, timedelta
 from pathlib import Path
@@ -300,6 +301,11 @@ def _prefs(household: Household, options: dict) -> SimpleNamespace:
     return SimpleNamespace(**(values | {k: v for k, v in options.items() if k != "wishes"}))
 
 
+def forbid_of(prefs) -> Callable[[str], bool]:
+    """Harte Regel nach der KI (19.2): Zutat verletzt Allergie, Ernährungsform oder „Mag nicht“."""
+    return lambda name: substitutes.forbidden(name, prefs.allergies, prefs.diet, prefs.excluded_ingredients)
+
+
 def _profiles(household: Household) -> list[MemberProfile]:
     """Ab zwei Mitgliedern mit mindestens einem Profil zählen die Profile (fehlende = Vorschlag)."""
     members = household.members
@@ -407,7 +413,7 @@ def create_plan(options: PlanOptions | None = None, member: Member = Depends(cur
                                    pantry=household_pantry(db, household.id), never=memory["never"],
                                    recent=memory["recent"], rules=rules, fish_ok=fish_ok(prefs),
                                    extra=plan_extra(db, household, prefs, slots, hint, offers), guests=guests,
-                                   stock=plan_stock(db, household.id))
+                                   stock=plan_stock(db, household.id), forbid=forbid_of(prefs))
     except RuntimeError as e:
         raise HTTPException(502, str(e))
     planner.add_images(priced)  # erst freie Fotos, dann KI (E13/E41)
@@ -520,7 +526,9 @@ def reroll_entry(entry_id: int, body: RerollIn | None = None, member: Member = D
                                                                 days=len({e.day for e in plan.entries
                                                                           if e.meal_type in variety.MAIN})),
                                                guests={slot: entry.guests}, repeat_weeks=rules["repeat_weeks"],
-                                               max_cost_cents=body.max_cost_cents if body else None, **memory)
+                                               max_cost_cents=body.max_cost_cents if body else None,
+                                               direction=body.direction or "" if body else "",
+                                               wish=body.wish if body else "", forbid=forbid_of(prefs), **memory)
     except RuntimeError as e:
         raise HTTPException(502, str(e))
     entry.recipe = _recipe(household, meal, recipe_images.find_image(meal.image_query or meal.title))
@@ -1649,7 +1657,9 @@ def plan_nutrition(member: Member = Depends(current_member), db: Session = Depen
     """Pro Tag und Mitglied: Summe der Gerichte, bei denen es mitisst (Portion × Faktor), plus Ziele aus dem Profil."""
     plan, members = _current(db, member.household_id), member.household.members
     profiles = {m.id: m.profile or new_profile(m) for m in members}
-    maps = food_map.load(db, [i["name"] for e in plan.entries for i in e.recipe.ingredients])
+    names = [i["name"] for e in plan.entries for i in e.recipe.ingredients]
+    maps = food_map.load(db, names)
+    food_map.map_later([n for n in names if ingredient_key(n) not in maps])  # z.B. nach Neu-Zuordnung (19.2)
     days = sorted({e.day for e in plan.entries})
     sums = {(m.id, d): [nutrition.Nutrients(), True] for m in members for d in days}
     for e in plan.entries:

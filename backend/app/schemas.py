@@ -46,6 +46,12 @@ class VarietyUpdate(BaseModel):
     no_same_cuisine_row: bool | None = None
 
 
+class ProductRule(BaseModel):
+    """„Immer use statt instead“ (19.2), z.B. Hafermilch statt Milch."""
+    instead: str = Field(min_length=1, max_length=60)
+    use: str = Field(min_length=1, max_length=60)
+
+
 class HouseholdSettings(BaseModel):
     name: str | None = None
     plz: str | None = Field(None, pattern=r"^\d{5}$")
@@ -53,6 +59,7 @@ class HouseholdSettings(BaseModel):
     diet: str | None = None
     allergies: list[str] | None = None
     excluded_ingredients: list[str] | None = None
+    product_rules: list[ProductRule] | None = Field(None, max_length=30)
     cuisines: list[str] | None = None
     meal_types: list[str] | None = None
     plan_days: list[int] | None = None
@@ -79,6 +86,7 @@ class HouseholdOut(BaseModel):
     diet: str
     allergies: list[str]
     excluded_ingredients: list[str]
+    product_rules: list[ProductRule]
     cuisines: list[str]
     meal_types: list[str]
     plan_days: list[int]
@@ -1003,6 +1011,8 @@ class AddEntryIn(BaseModel):
 
 class RerollIn(BaseModel):
     max_cost_cents: int | None = Field(None, ge=0)  # Kostengrenze (43, „günstigere Alternative“)
+    direction: Literal["schneller", "guenstiger", "ohne_fleisch", "leichter", "anders"] | None = None  # 19.3
+    wish: str = Field("", max_length=200)  # eigener Wunsch („mit Reis“)
 
 
 # --- Payback & Rewe Bonus (38), Drogerie-Coupons (59) ---

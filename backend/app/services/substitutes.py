@@ -7,7 +7,7 @@ from typing import Literal
 from pydantic import BaseModel
 
 from app.services import food_map
-from app.services.matching import words
+from app.services.matching import is_a, words
 from app.services.normalize import ingredient_key
 from app.services.recipes import SPOON_G
 
@@ -256,7 +256,7 @@ def forbidden(name: str, allergies: list[str], diet: str = "alles", dislikes: li
     if d == "vegan" and (any(_hit(w, ALLERGENS["ei"]) or w == "honig" for w in words_) or any(
             _hit(w, ALLERGENS["milch"]) and not any(w.startswith(p) for p in PLANT) for w in words_)):
         return True
-    return any(ingredient_key(x) and ingredient_key(x) in ingredient_key(name) for x in dislikes)
+    return any(is_a(name, x) for x in dislikes if x.strip())
 
 
 def lookup(name: str) -> tuple[str, list] | None:

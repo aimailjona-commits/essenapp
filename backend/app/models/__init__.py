@@ -26,6 +26,7 @@ class Household(Base):
     diet: Mapped[str] = mapped_column(String(30), default="alles")
     allergies: Mapped[list[str]] = mapped_column(JSON, default=list)
     excluded_ingredients: Mapped[list[str]] = mapped_column(JSON, default=list)
+    product_rules: Mapped[list[dict]] = mapped_column(JSON, default=list)  # [{instead, use}] „Hafermilch statt Milch“ (19.2)
     cuisines: Mapped[list[str]] = mapped_column(JSON, default=list)
     meal_types: Mapped[list[str]] = mapped_column(JSON, default=lambda: ["mittag", "abend"])
     plan_days: Mapped[list[int]] = mapped_column(JSON, default=lambda: [0, 1, 2, 3, 4, 5, 6])

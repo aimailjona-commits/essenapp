@@ -37,7 +37,7 @@ def test_dish_per_portion_pieces_spoons_and_composition():
     assert nutrition.dish(ings, MAPS, portions=4, scale=2)[0] == nut  # scale × doppelte Portionen
     assert nutrition.dish(ings + [{"name": "Safran", "amount": 1, "unit": "g"}], MAPS, 2) == (None, None)  # läuft noch
     assert nutrition.dish([{"name": "Zwiebel", "amount": 1, "unit": "stk"}],
-                          {"zwiebel": mapping(food(4, 40, 1, 9, 0))}, 1) == (None, None)  # Stückgewicht fehlt
+                          {"zwiebel": mapping(food(4, 40, 1, 9, 0))}, 1)[0]["kcal"] == 40  # Stückgewicht fehlt: 100 g
 
 
 def fdc_zip(path):

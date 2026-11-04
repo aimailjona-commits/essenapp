@@ -37,6 +37,9 @@ def per_serving(items: list[Nutrients], servings: int) -> Nutrients:
     return total.scaled(1 / servings)
 
 
+PIECE_FALLBACK_G = 100
+
+
 def grams(amount: float, unit: str, grams_per_piece: float | None) -> float | None:
     """Gewicht in g (ml ≈ g, Löffelmaße geschätzt); None = Stück ohne bekanntes Gewicht."""
     if unit in SPOON_G:
@@ -59,9 +62,8 @@ def dish(ingredients: list[dict], maps: dict, portions: float, scale: float = 1)
         if hit is None:
             return None, None
         m, food = hit
-        g = grams((ing.get("amount") or 0) * scale, ing.get("unit", ""), m.grams_per_piece)
-        if g is None:
-            return None, None
+        # shortcut: Stück ohne bekanntes Gewicht zählt 100 g, statt den ganzen Tag leer zu lassen (19.2)
+        g = grams((ing.get("amount") or 0) * scale, ing.get("unit", ""), m.grams_per_piece or PIECE_FALLBACK_G)
         if food is not None:
             total += per_100(food).scaled(g / 100)
         parts.append((ing["name"], g))
