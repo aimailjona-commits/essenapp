@@ -109,9 +109,9 @@ Status: **aktiv** (2026-11-04). UI ohne Mockup-Freigabe direkt mit v3-Bausteinen
 
 ## 19.9 Melden & Qualität
 
-- [ ] „Fehler melden“ am Gericht/Rezept (Zutat fehlt, Menge falsch, Angebot falsch, Schritt unklar) → Tabelle im Backend + Übersicht für den Entwickler
-- [ ] Gemeldete Angebots-Fehlzuordnungen fließen in die Testliste von 19.1
-- [ ] 1-Stern-/„Nie“-Rezepte bleiben unter „Ausgeblendet“ auffindbar und wiederherstellbar (R15)
+- [x] „Fehler melden“ am Gericht/Rezept (Zutat fehlt, Menge falsch, Angebot falsch, Schritt unklar) → Tabelle im Backend + Übersicht für den Entwickler – E96
+- [x] Gemeldete Angebots-Fehlzuordnungen fließen in die Testliste von 19.1 – `app.reports` druckt sie als `fits`-Asserts
+- [x] 1-Stern-/„Nie“-Rezepte bleiben unter „Ausgeblendet“ auffindbar und wiederherstellbar (R15)
 
 ## DoD
 

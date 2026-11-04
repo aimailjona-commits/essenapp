@@ -280,6 +280,8 @@ struct DayCard: View {
 
 /// S3 Rezeptdetail – Plan-Gericht oder gespeichertes Rezept (`meal.id == nil`, siehe `SavedRecipeView`).
 struct RecipeDetailView: View {
+    static let reportKinds = [("zutat_fehlt", "Zutat fehlt"), ("menge_falsch", "Menge falsch"), ("angebot_falsch", "Falsches Angebot"),
+                              ("schritt_unklar", "Schritt unklar"), ("sonstiges", "Etwas anderes")]
     @Environment(AppStore.self) private var store
     @Environment(\.dismiss) private var dismiss
     private let given: MealDTO
@@ -297,6 +299,9 @@ struct RecipeDetailView: View {
     @State private var rateAfterCooking = false
     @State private var shareCard = Demo.screen == "sharecard"
     @State private var shareLink = false  // „Als Link teilen“ (56)
+    @State private var reportKind: String?  // „Fehler melden“ (19.9): gewählte Art, dann Notiz
+    @State private var reportNote = ""
+    @State private var reporting = false
     @State private var info: RecipeDTO?  // GET /recipes/{id}: Bewertungen, Favorit, Nährwerte, falls im Plan noch null
     @State private var favorite: Bool?
     @State private var planIt = false
@@ -402,6 +407,16 @@ struct RecipeDetailView: View {
                     }
                     stepsCard
                     if let ratings = details.ratings, !ratings.isEmpty { ratingsCard(ratings) }
+                    HStack {  // 19.9: Nie-Liste zurücknehmen (R15), Fehler melden (R13)
+                        if details.hidden == true {
+                            Button("Wieder vorschlagen", systemImage: "arrow.uturn.backward") {
+                                Task { if let r = await store.unhide(recipe.id) { info = r } }
+                            }
+                        }
+                        Spacer()
+                        Button("Fehler melden", systemImage: "exclamationmark.bubble") { reporting = true }
+                    }
+                    .font(Theme.F.caption).foregroundStyle(Theme.C.text2).frame(minHeight: 44)
                 }
                 .padding(.horizontal, Theme.pagePadding)
                 .padding(.top, 24)
@@ -410,6 +425,18 @@ struct RecipeDetailView: View {
         }
         .ignoresSafeArea(edges: .top)
         .background(heroColor.ignoresSafeArea())
+        .confirmationDialog("Was stimmt nicht?", isPresented: $reporting, titleVisibility: .visible) {
+            ForEach(Self.reportKinds, id: \.0) { kind, label in Button(label) { reportKind = kind } }
+        }
+        .alert("Fehler melden", isPresented: Binding(get: { reportKind != nil }, set: { if !$0 { reportKind = nil } })) {
+            TextField("Was genau? (optional)", text: $reportNote)
+            Button("Senden") {
+                let kind = reportKind ?? "sonstiges", note = reportNote
+                reportNote = ""
+                Task { await store.report(recipe.id, kind: kind, note: note) }
+            }
+            Button("Abbrechen", role: .cancel) { reportNote = "" }
+        }
         .overlay(alignment: .top) {
             HStack(spacing: 10) {
                 RoundIconButton(systemName: "chevron.left", fill: .clear, label: "Zurück") { dismiss() }.glassDark()

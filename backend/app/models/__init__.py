@@ -257,6 +257,23 @@ class Recipe(Base):
     # KI-Bild je Schritt (9): "/media/steps/<id>/<n>.jpg" oder "" = noch keins; Länge kann < steps sein
     step_images: Mapped[list[str]] = mapped_column(JSON, default=list, server_default="[]")
     share_code: Mapped[str | None] = mapped_column(String(16), unique=True)  # Link /r/<code> (56)
+    # „Wieder vorschlagen“ (19.9, R15): trotz „Nie“/≤ 2 ★ wieder im Plan; neue schlechte Bewertung setzt zurück
+    unhidden: Mapped[bool] = mapped_column(default=False, server_default=false())
+    created_at: Mapped[datetime] = mapped_column(server_default=func.now())
+
+
+class Report(Base):
+    """„Fehler melden“ am Gericht (19.9); Übersicht: ./dev.sh python -m app.reports"""
+    __tablename__ = "report"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    household_id: Mapped[int] = mapped_column(ForeignKey("household.id"), index=True)
+    member_id: Mapped[int | None] = mapped_column(ForeignKey("member.id"))
+    recipe_id: Mapped[int | None] = mapped_column(ForeignKey("recipe.id"))
+    kind: Mapped[str] = mapped_column(String(20))  # zutat_fehlt | menge_falsch | angebot_falsch | schritt_unklar | sonstiges
+    ingredient: Mapped[str] = mapped_column(String(100), default="")
+    offer_title: Mapped[str] = mapped_column(String(200), default="")  # bei angebot_falsch: welches Angebot verknüpft war
+    note: Mapped[str] = mapped_column(String(500), default="")
     created_at: Mapped[datetime] = mapped_column(server_default=func.now())
 
 

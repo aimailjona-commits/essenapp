@@ -648,6 +648,14 @@ class RecipeCard(BaseModel):
     last_cooked: datetime | None
     cost_per_serving_cents: int  # live aus aktuellen Angeboten
     offer_share: float  # Anteil der Kosten aus aktuellen Angeboten 0–1, Badge ab 0,4
+    hidden: bool = False  # auf der Nie-Liste (19.9)
+
+
+class ReportIn(BaseModel):
+    """„Fehler melden“ am Gericht (19.9)."""
+    kind: Literal["zutat_fehlt", "menge_falsch", "angebot_falsch", "schritt_unklar", "sonstiges"]
+    ingredient: str = Field("", max_length=100)  # betroffene Zutat (optional)
+    note: str = Field("", max_length=500)
 
 
 class RatingIn(BaseModel):
@@ -673,6 +681,7 @@ class RecipeDetail(RecipeOut):
     cost_per_serving_cents: int
     offer_share: float
     ratings: list[RatingOut]
+    hidden: bool = False  # auf der Nie-Liste (19.9) → „Wieder vorschlagen“
 
 
 class CostLineOut(BaseModel):

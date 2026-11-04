@@ -136,6 +136,11 @@ def is_disliked(stats: Stats | None) -> bool:
     return stats is not None and (stats.again == "nie" or (stats.avg_stars is not None and stats.avg_stars <= 2))
 
 
+def hidden(r: Recipe, stats: dict[int, Stats]) -> bool:
+    """Auf der Nie-Liste: „Nie“ oder ≤ 2 ★, außer „Wieder vorschlagen“ (19.9)."""
+    return not r.unhidden and is_disliked(stats.get(r.id))
+
+
 def recent_titles(db: Session, household_id: int, today: date | None = None, repeat_weeks: int = REPEAT_WEEKS,
                   exclude_plan: int | None = None) -> list[str]:
     """Gerichte der Vorwochen: gleiches Gericht frühestens nach repeat_weeks Wochen (12, Standard 3).
@@ -156,8 +161,8 @@ def planner_memory(db: Session, household_id: int, today: date | None = None,
     stats = rating_stats(db, [r.id for r in recipes])
     favs = favorite_ids(db, household_id)
     recent = recent_titles(db, household_id, today, repeat_weeks)
-    never = [r.title for r in recipes if is_disliked(stats.get(r.id))]
-    liked = [r for r in recipes if not is_disliked(stats.get(r.id)) and r.title not in recent
+    never = [r.title for r in recipes if hidden(r, stats)]
+    liked = [r for r in recipes if not hidden(r, stats) and r.title not in recent
              and (r.id in favs or (stats.get(r.id) and (stats[r.id].avg_stars or 0) >= 4))]
     liked.sort(key=lambda r: (-(stats[r.id].avg_stars if r.id in stats else 0), r.id not in favs, -r.id))
     favorites = [f"{r.title} ({', '.join(i['name'] for i in r.ingredients)})" for r in liked[:TOP_FAVORITES]]

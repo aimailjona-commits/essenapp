@@ -20,7 +20,7 @@ from sqlalchemy.orm import Session, object_session
 from app.core.auth import current_member, new_token
 from app.core.config import settings
 from app.core.db import get_db
-from app.models import (Achievement, AdReward, AiCost, BonusEntry, Coupon, Household, HouseholdStore, Invite, MealPlan,
+from app.models import (Achievement, AdReward, Report, AiCost, BonusEntry, Coupon, Household, HouseholdStore, Invite, MealPlan,
                         JobRun, MealPlanEntry, Member, MemberProfile, MemberToken, Offer, PairingCode, PantryItem, PricePoint,
                         Product, PushDevice, Rating, Recipe, RecipeFavorite, ShoppingItem, ShoppingList, WatchItem,
                         WeekReview, WeeklyBasic)
@@ -29,7 +29,7 @@ from app.schemas import (ConsumeIn, CookIdeaOut, DeviceIn, EntryUpdate, Favorite
                          ItemPatchOut, ItemUpdate, JoinIn, ListCreate, ListOut, ListSummary, MemberOut,
                          MemberProfileOut, NearbyStoreOut, OfferHistoryOut, OfferNutritionOut, OfferOut,
                          PairedTokenOut, PairIn, PairingCodeOut, PairOut, PantryIn, PantryOut, PantryUpdate,
-                         PlanJobOut, PlanNutritionOut, ProOut, AppleIn, PlanOptions, PlanOut, ProfileOut, ProfileUpdate, PushSettings,
+                         PlanJobOut, PlanNutritionOut, ProOut, AppleIn, ReportIn, PlanOptions, PlanOut, ProfileOut, ProfileUpdate, PushSettings,
                          PushSettingsUpdate, RatingIn, RatingOut, RecipeCard, RecipeCostOut, RecipeDetail, RecipeIn,
                          RecipeOut, RecipePatch, ReplaceIn, ScanOut, ShareOut, StepImagesOut, UsageOut,
                          EntryLeftover, GeneratorOut, GuestsIn, NoMoodIn, PostponeIn, SpecialsOut, SubstituteIn,
@@ -1498,7 +1498,7 @@ def consume(body: ConsumeIn, member: Member = Depends(current_member), db: Sessi
 MEDIA = Path(__file__).resolve().parents[1] / "media"  # backend/media, ausgeliefert unter /media (main.py)
 MAX_IMAGE = 2 * 1024 * 1024
 IMPORTED = ("instagram", "web", "shared")
-FILTERS = ("alle", "favoriten", "eigene", "importiert", "im_angebot", "zuletzt")
+FILTERS = ("alle", "favoriten", "eigene", "importiert", "im_angebot", "zuletzt", "ausgeblendet")
 
 
 def household_recipe(db: Session, member: Member, recipe_id: int) -> Recipe:
@@ -1569,7 +1569,8 @@ def cards(db: Session, member: Member, items: list[Recipe]) -> list[dict]:
                     "meal_type": r.meal_type, "prep_minutes": r.prep_minutes, "servings": r.servings,
                     "source": r.source, "source_author": r.source_author, "favorite": r.id in favs,
                     "avg_stars": st.avg_stars if st else None, "last_cooked": st.last_cooked if st else None,
-                    "cost_per_serving_cents": cents(total / r.servings), "offer_share": share})
+                    "cost_per_serving_cents": cents(total / r.servings), "offer_share": share,
+                    "hidden": recipes.hidden(r, stats)})
     return out
 
 
@@ -1587,6 +1588,8 @@ def list_recipes(filter: str = Query("alle", pattern="^(" + "|".join(FILTERS) + 
     items = {"favoriten": [r for r in items if r.id in favs], "eigene": [r for r in items if r.source == "user"],
              "importiert": [r for r in items if r.source in IMPORTED]}.get(filter, items)
     out = cards(db, member, items)
+    if filter == "ausgeblendet":  # Nie-Liste (19.9, R15): auffindbar und mit „Wieder vorschlagen“ zurückholbar
+        out = [c for c in out if c["hidden"]]
     if filter == "im_angebot":
         out = [c for c in out if c["offer_share"] >= recipes.OFFER_BADGE]
     if filter == "zuletzt":
@@ -1600,7 +1603,7 @@ def recipe_deals(member: Member = Depends(current_member), db: Session = Depends
     items = recipes.household_recipes(db, member.household_id)
     stats = recipes.rating_stats(db, [r.id for r in items])
     favs = recipes.favorite_ids(db, member.household_id)
-    liked = [r for r in items if not recipes.is_disliked(stats.get(r.id))
+    liked = [r for r in items if not recipes.hidden(r, stats)
              and (r.id in favs or (r.id in stats and (stats[r.id].avg_stars or 0) >= 4))]
     return sorted((c for c in cards(db, member, liked) if c["offer_share"] >= recipes.OFFER_BADGE),
                   key=lambda c: -c["offer_share"])
@@ -1618,7 +1621,7 @@ def recipe_detail(db: Session, member: Member, recipe: Recipe) -> dict:
     names = dict(db.execute(select(Member.id, Member.name).where(Member.household_id == member.household_id)).all())
     ratings = db.scalars(select(Rating).where(Rating.recipe_id == recipe.id).order_by(Rating.cooked_at.desc()))
     return recipe_out(db, recipe, card["favorite"]) | {k: card[k] for k in (
-        "avg_stars", "last_cooked", "cost_per_serving_cents", "offer_share")} | {
+        "avg_stars", "last_cooked", "cost_per_serving_cents", "offer_share", "hidden")} | {
         "ratings": [{"id": r.id, "member_id": r.member_id, "member_name": names.get(r.member_id, ""), "stars": r.stars,
                      "again": r.again, "note": r.note, "cooked_at": r.cooked_at} for r in ratings]}
 
@@ -1779,9 +1782,37 @@ def rate_recipe(recipe_id: int, body: RatingIn, member: Member = Depends(current
     rating = Rating(recipe_id=recipe.id, member_id=member.id, stars=body.stars, again=body.again, note=body.note,
                     cooked_at=body.cooked_at or datetime.now())
     db.add(rating)
+    if body.again == "nie" or body.stars <= 2:
+        recipe.unhidden = False  # neue schlechte Bewertung gilt wieder
     db.commit()
     return {"id": rating.id, "member_id": member.id, "member_name": member.name, "stars": rating.stars,
             "again": rating.again, "note": rating.note, "cooked_at": rating.cooked_at}
+
+
+@router.post("/recipes/{recipe_id}/unhide", response_model=RecipeDetail)
+def unhide_recipe(recipe_id: int, member: Member = Depends(current_member), db: Session = Depends(get_db)):
+    """„Wieder vorschlagen“ (19.9, R15): Rezept von der Nie-Liste nehmen; Bewertungen bleiben."""
+    recipe = household_recipe(db, member, recipe_id)
+    recipe.unhidden = True
+    db.commit()
+    return recipe_detail(db, member, recipe)
+
+
+@router.post("/recipes/{recipe_id}/report", status_code=201)
+def report_recipe(recipe_id: int, body: ReportIn, member: Member = Depends(current_member),
+                  db: Session = Depends(get_db)):
+    """„Fehler melden“ (19.9): Zutat fehlt, Menge falsch, Angebot falsch, Schritt unklar. Bei angebot_falsch wird das
+    verknüpfte Angebot der Zutat mitgespeichert (Testfälle für die Zuordnung, 19.1)."""
+    recipe = household_recipe(db, member, recipe_id)
+    offer_title = ""
+    if body.kind == "angebot_falsch" and body.ingredient:
+        ing = next((i for i in recipe.ingredients if i["name"] == body.ingredient), None)
+        if ing and ing.get("offer_id") and (o := db.get(Offer, ing["offer_id"])):
+            offer_title = o.title[:200]
+    db.add(Report(household_id=member.household_id, member_id=member.id, recipe_id=recipe.id, kind=body.kind,
+                  ingredient=body.ingredient, offer_title=offer_title, note=body.note))
+    db.commit()
+    return {"ok": True}
 
 
 def dish_of(e: MealPlanEntry) -> variety.Dish:

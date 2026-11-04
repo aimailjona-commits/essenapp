@@ -465,6 +465,7 @@ struct RecipeDTO: Codable, Identifiable, Hashable {
     var costPerServingCents: Int? = nil
     var offerShare: Double? = nil
     var ratings: [RatingDTO]? = nil
+    var hidden: Bool? = nil  // auf der Nie-Liste (19.9) → „Wieder vorschlagen“
 }
 
 /// Pro Portion (1 Portion = Esser mit 2000 kcal/Tag); pro Person × Portionsfaktor.
@@ -508,6 +509,7 @@ struct RecipeCard: Codable, Hashable, Identifiable {
     var lastCooked: String?
     var costPerServingCents: Int
     var offerShare: Double  // Badge „im Angebot“ ab 0,4
+    var hidden: Bool? = nil  // auf der Nie-Liste (19.9)
 }
 
 /// = backend PlanNutritionOut (Tagesringe, Wochenschnitt).

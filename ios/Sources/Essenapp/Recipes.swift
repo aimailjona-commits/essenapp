@@ -106,6 +106,30 @@ extension AppStore {
         }
     }
 
+    /// „Wieder vorschlagen“ (19.9): Rezept von der Nie-Liste nehmen, Bewertungen bleiben.
+    func unhide(_ id: Int) async -> RecipeDTO? {
+        do {
+            let r: RecipeDTO = try await api.request("POST", "/recipes/\(id)/unhide")
+            recipesVersion += 1
+            flash("Wird wieder vorgeschlagen")
+            return r
+        } catch {
+            flash("Nicht gespeichert: \(error.localizedDescription)")
+            return nil
+        }
+    }
+
+    /// „Fehler melden“ (19.9): landet in der Übersicht des Entwicklers.
+    func report(_ id: Int, kind: String, ingredient: String = "", note: String) async {
+        struct Body: Encodable { var kind: String; var ingredient: String; var note: String }
+        do {
+            if !demo { try await api.send("POST", "/recipes/\(id)/report", body: Body(kind: kind, ingredient: ingredient, note: note)) }
+            flash("Danke, ist gemeldet")
+        } catch {
+            flash("Nicht gemeldet: \(error.localizedDescription)")
+        }
+    }
+
     /// „Diese Woche einplanen“: Rezept ersetzt das Gericht im Slot (ohne KI).
     func replace(_ entry: MealDTO, with recipeId: Int) async -> Bool {
         guard let id = entry.id else { return false }
@@ -157,7 +181,7 @@ struct MyRecipesList: View {
     @State private var opened: Int?  // importiertes Rezept öffnen
 
     static let filters = [("alle", "Alle"), ("favoriten", "Favoriten"), ("im_angebot", "Im Angebot"), ("eigene", "Eigene"),
-                          ("importiert", "Importiert"), ("zuletzt", "Zuletzt gekocht")]
+                          ("importiert", "Importiert"), ("zuletzt", "Zuletzt gekocht"), ("ausgeblendet", "Ausgeblendet")]
 
     static func matches(_ c: RecipeCard, _ filter: String) -> Bool {
         switch filter {
@@ -166,6 +190,7 @@ struct MyRecipesList: View {
         case "importiert": ["instagram", "web", "shared"].contains(c.source)
         case "im_angebot": c.offerShare >= 0.4
         case "zuletzt": c.lastCooked != nil
+        case "ausgeblendet": c.hidden == true  // „Nie“/≤ 2 ★ (19.9, R15)
         default: true
         }
     }

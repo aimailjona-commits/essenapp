@@ -205,3 +205,31 @@ def test_repair_replans_only_the_bad_meal():
     p = planner.make_plan(h, [], [(0, "abend"), (1, "abend")], [], ask=ask, forbid=lambda n: forbidden(n, h.allergies))
     assert [m.title for m in p.draft.meals] == ["Curry", "Suppe"]
     assert "NUR diese Mahlzeiten" in notes[1] and "Di abend: Suppe" in notes[1]
+
+
+def test_never_recipes_are_findable_and_can_be_unhidden(client, auth, db):
+    rid = client.post("/recipes", headers=auth, json={"title": "Leberkäse", "servings": 2, "prep_minutes": 10,
+                                                      "meal_type": "abend",
+                                                      "ingredients": [{"name": "Leberkäse", "amount": 400, "unit": "g"}]}).json()["id"]
+    client.post(f"/recipes/{rid}/rate", headers=auth, json={"stars": 1, "again": "nie"})
+    hidden = client.get("/recipes?filter=ausgeblendet", headers=auth).json()
+    assert [c["title"] for c in hidden] == ["Leberkäse"] and hidden[0]["hidden"]
+    from app.services import recipes
+    hid = client.get("/household", headers=auth).json()["id"]
+    assert recipes.planner_memory(db, hid)["never"] == ["Leberkäse"]
+    assert client.post(f"/recipes/{rid}/unhide", headers=auth).json()["hidden"] is False
+    assert recipes.planner_memory(db, hid)["never"] == [] and client.get("/recipes?filter=ausgeblendet", headers=auth).json() == []
+    client.post(f"/recipes/{rid}/rate", headers=auth, json={"stars": 2, "again": "irgendwann"})  # wieder schlecht
+    assert recipes.planner_memory(db, hid)["never"] == ["Leberkäse"]
+
+
+def test_report_keeps_linked_offer_for_wrong_offer(client, auth, db, monkeypatch):
+    from app.models import Report
+    from tests.test_planner import test_plan_endpoint
+    test_plan_endpoint(client, auth, db, monkeypatch)  # Curry mit Hähnchen-Angebot
+    rid = client.get("/plans/current", headers=auth).json()["entries"][0]["recipe"]["id"]
+    r = client.post(f"/recipes/{rid}/report", headers=auth,
+                    json={"kind": "angebot_falsch", "ingredient": "Hähnchen", "note": "war Käse"})
+    assert r.status_code == 201
+    assert [(x.kind, x.offer_title, x.note) for x in db.query(Report)] == [("angebot_falsch", "Hähnchen", "war Käse")]
+    assert client.post(f"/recipes/{rid}/report", headers=auth, json={"kind": "quatsch"}).status_code == 422
