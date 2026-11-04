@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Essenapp Skizzenbuch v4</title>
+<title>Essenapp Pastell v4</title>
 <link href="https://fonts.googleapis.com/css2?family=Young+Serif&family=Caveat:wght@500;700&family=Nunito:wght@500;600;700;800;900&display=swap" rel="stylesheet">
 <style>
 /* Redesign v4 „Skizzenbuch“ – Entwurf. Alles von Hand gezeichnet wirkend: Tintenlinien + weiche Farbflecken. */
@@ -128,6 +128,28 @@ svg.i .ln{stroke-width:2;filter:url(#roughS)}
 .tile .nm{font-family:"Young Serif",serif;font-size:17px;line-height:1.15}
 .tile .q{display:inline-block;margin-top:6px;background:#fff;border-radius:999px;padding:2px 10px;font-size:12px;font-weight:800}
 .ruled{background:repeating-linear-gradient(#fff 0 43px,#D9E3F7 43px 45px);}
+
+/* ===== v4.1 „clean pastell“: Kanten, Knöpfe, Leisten sauber; Skizze nur bei Illustrationen, Doodles, Notizen ===== */
+.blob{filter:none}
+.card{filter:none;border-radius:26px;box-shadow:0 10px 30px rgba(28,27,25,.07)}
+.card::before,.sk::before,.btn.o::before,.rbtn::before,.chip::before,.search::before,.tabbar::before{display:none}
+.btn.o{filter:none;box-shadow:0 8px 22px rgba(28,27,25,.08)}
+.rbtn{box-shadow:0 4px 14px rgba(28,27,25,.08)}
+.rbtn.k{box-shadow:none}
+.chip{box-shadow:inset 0 0 0 1.5px #E6DFD1}.chip.on{box-shadow:none}
+.search{filter:none;border-radius:999px;box-shadow:0 8px 24px rgba(28,27,25,.07)}
+.tabbar{filter:none;box-shadow:0 14px 34px rgba(28,27,25,.13)}
+.plate::after{filter:none;border:4px solid #fff;inset:-4px;box-shadow:0 8px 18px rgba(28,27,25,.14)}
+svg.i .ln{filter:none;stroke-width:1.7}
+.strike svg{display:none}.strike{text-decoration:line-through;text-decoration-thickness:2px}
+.ruled{background:#fff}
+/* Icon-Stil wie Vorlage: saubere Linie über versetztem Pastell-Kreis */
+.ico{position:relative;display:inline-grid;place-items:center;width:52px;height:52px;flex:none}
+.ico::before{content:"";position:absolute;width:34px;height:34px;border-radius:50%;background:var(--dot,var(--blue));left:5px;top:13px}
+.ico svg.i{position:relative;width:30px;height:30px}
+.tab .dot{position:absolute;width:32px;height:32px;border-radius:50%;background:var(--blue);left:6px;top:13px}
+.cbox{width:24px;height:24px;border-radius:8px;border:2px solid #CFC8BB;flex:none;display:grid;place-items:center}
+.cbox.on{background:var(--green);border-color:var(--green)}
 </style>
 </head>
 <body>
@@ -204,18 +226,18 @@ svg.i .ln{stroke-width:2;filter:url(#roughS)}
   <symbol id="d-bang" viewBox="0 0 20 40"><path class="ln" d="M10 4l-1 22"/><circle cx="9" cy="34" r="2.5" class="lnf"/></symbol>
 
   <!-- UI-Symbole (Strich, leicht zittrig) -->
-  <symbol id="i-home" viewBox="0 0 24 24"><path class="ln" d="M3.5 11 12 4l8.5 7M6 9.5V20h12V9.5M10 20v-5h4v5"/></symbol>
-  <symbol id="i-tag" viewBox="0 0 24 24"><path class="ln" d="M20.5 13 13 20.5a1.8 1.8 0 0 1-2.6 0L3.5 13.6V3.5h10.1L20.5 10.4a1.8 1.8 0 0 1 0 2.6z"/><circle class="ln" cx="8" cy="8" r="1.5"/></symbol>
-  <symbol id="i-bag" viewBox="0 0 24 24"><path class="ln" d="M5 8h14l-1 13H6zM9 8V6.5a3 3 0 0 1 6 0V8"/></symbol>
-  <symbol id="i-book" viewBox="0 0 24 24"><path class="ln" d="M4 5.5C7 4 10 4 12 6c2-2 5-2 8-.5V19c-3-1.5-6-1.5-8 .5-2-2-5-2-8-.5zM12 6v13"/></symbol>
+  <symbol id="i-home" viewBox="0 0 24 24"><path class="ln" d="M3.5 11.5 12 4.5l8.5 7M6 10v10h12V10"/><path class="ln" d="M10.2 20v-3.2c0-2.3 3.6-2.3 3.6 0V20"/></symbol>
+  <symbol id="i-tag" viewBox="0 0 24 24"><path class="ln" d="M20.5 12.6 12.8 20.3a1.7 1.7 0 0 1-2.4 0L3.7 13.6V3.7h9.9l6.9 6.5a1.7 1.7 0 0 1 0 2.4z"/><path class="ln" d="M8.4 8.2c-2.6-2.4-5.8.4-3.6 2.2"/></symbol>
+  <symbol id="i-bag" viewBox="0 0 24 24"><path class="ln" d="M5 8.5h14L17.6 20H6.4z"/><path class="ln" d="M9 8.5C9 3.6 15 3.6 15 8.5"/><path class="ln" d="M8.8 14c.8-1.2 1.6 1.2 2.4 0s1.6 1.2 2.4 0 1.6 1.2 2.2 0"/></symbol>
+  <symbol id="i-book" viewBox="0 0 24 24"><path class="ln" d="M3.8 5.6C6.8 4.3 9.8 4.4 12 6.4c2.2-2 5.2-2.1 8.2-.8v13.2c-3-1.3-6-1.2-8.2.8-2.2-2-5.2-2.1-8.2-.8z"/><path class="ln" d="M6.3 9.4c.8-.6 1.6.6 2.4 0M6.3 12.6c.8-.6 1.6.6 2.4 0M15.2 9.4c.8-.6 1.6.6 2.4 0"/></symbol>
   <symbol id="i-plus" viewBox="0 0 24 24"><path class="ln" d="M12 5v14M5 12h14" style="stroke-width:2.6"/></symbol>
-  <symbol id="i-search" viewBox="0 0 24 24"><circle class="ln" cx="11" cy="11" r="6.5"/><path class="ln" d="m16 16 4 4"/></symbol>
-  <symbol id="i-heart" viewBox="0 0 24 24"><path class="ln" d="M12 20s-7.5-4.6-7.5-10.2A4.2 4.2 0 0 1 12 7.3a4.2 4.2 0 0 1 7.5 2.5C19.5 15.4 12 20 12 20z"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24"><circle class="ln" cx="10.6" cy="10.6" r="6.2"/><path class="ln" d="m15.3 15.3 4.4 4.4"/></symbol>
+  <symbol id="i-heart" viewBox="0 0 24 24"><path class="ln" d="M12 19.6S4.6 15 4.6 9.6A3.9 3.9 0 0 1 12 7.6a3.9 3.9 0 0 1 7.4 2C19.4 15 12 19.6 12 19.6z"/></symbol>
   <symbol id="i-back" viewBox="0 0 24 24"><path class="ln" d="M15 5l-7 7 7 7"/></symbol>
   <symbol id="i-more" viewBox="0 0 24 24"><path class="ln" d="M5 12h.1M12 12h.1M19 12h.1" style="stroke-width:3.4"/></symbol>
   <symbol id="i-share" viewBox="0 0 24 24"><path class="ln" d="M12 3v12M8 7l4-4 4 4M5 13v6h14v-6"/></symbol>
   <symbol id="i-clock" viewBox="0 0 24 24"><circle class="ln" cx="12" cy="12" r="8.5"/><path class="ln" d="M12 7v5l3 2"/></symbol>
-  <symbol id="i-mic" viewBox="0 0 24 24"><rect class="ln" x="9" y="3" width="6" height="11" rx="3"/><path class="ln" d="M5 11a7 7 0 0 0 14 0M12 18v3"/></symbol>
+  <symbol id="i-mic" viewBox="0 0 24 24"><rect class="ln" x="9" y="3.5" width="6" height="10.5" rx="3"/><path class="ln" d="M5.6 11a6.4 6.4 0 0 0 12.8 0M12 17.4v3"/></symbol>
   <symbol id="i-arrow" viewBox="0 0 24 24"><path class="ln" d="M4 12h15M13 6l6 6-6 6"/></symbol>
   <symbol id="i-dice" viewBox="0 0 24 24"><rect class="ln" x="4" y="4" width="16" height="16" rx="4"/><path class="ln" d="M9 9h.1M15 15h.1M15 9h.1M9 15h.1" style="stroke-width:3"/></symbol>
   <symbol id="i-lock" viewBox="0 0 24 24"><rect class="ln" x="5" y="11" width="14" height="10" rx="2.5"/><path class="ln" d="M8 11V7a4 4 0 0 1 8 0v4"/></symbol>
@@ -224,16 +246,17 @@ svg.i .ln{stroke-width:2;filter:url(#roughS)}
   <symbol id="i-scan" viewBox="0 0 24 24"><path class="ln" d="M4 8V4h4M16 4h4v4M20 16v4h-4M8 20H4v-4M7 12h10"/></symbol>
   <symbol id="i-play" viewBox="0 0 24 24"><path class="ln" d="M8 5v14l11-7z"/></symbol>
   <symbol id="i-user" viewBox="0 0 24 24"><circle class="ln" cx="12" cy="8" r="4"/><path class="ln" d="M4 21a8 8 0 0 1 16 0"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path class="ln" d="M5 12.5 9.5 17 19 7" style="stroke-width:2.6"/></symbol>
   <symbol id="i-x" viewBox="0 0 24 24"><path class="ln" d="M6 6l12 12M18 6 6 18" style="stroke-width:2.6"/></symbol>
   <symbol id="status" viewBox="0 0 68 14"><g fill="currentColor"><rect x="0" y="9" width="3" height="5" rx="1"/><rect x="5" y="6" width="3" height="8" rx="1"/><rect x="10" y="3" width="3" height="11" rx="1"/><rect x="15" y="0" width="3" height="14" rx="1"/><path d="M30 4.5a10 10 0 0 1 12 0l-1.6 1.8a7.5 7.5 0 0 0-8.8 0zM32.6 7.6a6 6 0 0 1 6.8 0L36 12z"/><rect x="45" y="1" width="20" height="12" rx="3.5" fill="none" stroke="currentColor" stroke-width="1.4"/><rect x="47" y="3" width="16" height="8" rx="2"/><rect x="66" y="5" width="2" height="4" rx="1"/></g></symbol>
 </svg>
 
 <header class="head">
-  <h1>Essenapp v4 – <span class="hand">„Skizzenbuch“</span></h1>
-  <p>Ein komplett neues Gesicht: <b>alles sieht aus wie mit Filzstift gezeichnet</b> – leicht zittrige Tintenlinien, dahinter weiche Farbflecken wie Wasserfarbe (deine blauen Icons), <b>Doodles</b> (Sterne, Funken, Pfeile, Kringel), <b>handgeschriebene Notizen</b> („spart 12 €!“) und <b>eigene Illustrationen</b> für Zutaten, Leer-Zustände und den Einstieg. Karten haben eine gezeichnete Kante und einen kleinen harten Schatten (wie ein ausgeschnittener Zettel). Schrift: eine freundliche Serif für Überschriften, runde Grotesk für alles andere, Handschrift für Randnotizen. Ziel: <b>wie vom netten Nachbarn gemacht</b>.</p>
+  <h1>Essenapp v4 – <span class="hand">„Pastell &amp; Skizze“</span></h1>
+  <p><b>Grundlook clean und pastell</b> wie in deinen Vorlagen: große weiche Farbflächen, runde Karten mit sanftem Schatten, viel Luft, keine Kanten. <b>Gezeichnet wirken nur einzelne Elemente:</b> die Illustrationen (Zutaten, Nachbar, Leer-Zustände), ein paar Doodles und kurze handgeschriebene Notizen („spart 12 €!“). <b>Icons</b> sind saubere Linien mit kleinem Kringel auf einem versetzten Pastell-Kreis – genau wie deine Icon-Vorlage.</p>
   <div class="nav"><a href="#bausteine">1 · Bausteine</a><a class="o" href="#screens">2 · Gesamt-Mockup</a></div>
   <div class="open"><b>Bitte entscheiden</b>
-    1. Passt die Richtung? Mehr oder weniger „gekritzelt“ (Linien zittriger / ruhiger)?<br>
+    1. Passt die Mischung: clean pastell + einzelne gezeichnete Elemente?<br>
     2. Fotos der Gerichte bleiben (mit gezeichnetem Teller-Rand) – oder sollen auch Gerichte gezeichnet sein?<br>
     3. Hauptfarbe der Flecken: Kornblumen-Blau (wie deine Icons) – oder lieber Grün/Gelb?<br>
     4. Die v3-Version bleibt in der App, bis du v4 freigibst. Danach Playbook + Umbau wie bei v3.
@@ -243,7 +266,7 @@ svg.i .ln{stroke-width:2;filter:url(#roughS)}
 <!-- ================= 1 BAUSTEINE ================= -->
 <section class="sec" id="bausteine">
   <h2>1 · Bausteine</h2>
-  <p>Illustrationen, Symbole, Doodles und Bedienelemente – alles aus Linie + Fleck.</p>
+  <p>Clean: Karten, Knöpfe, Leisten, Icons. Gezeichnet: Illustrationen, Doodles, Notizen.</p>
 </section>
 <div class="board">
   <div class="spec wide">
@@ -266,22 +289,25 @@ svg.i .ln{stroke-width:2;filter:url(#roughS)}
       <svg class="ill" width="96" height="120" style="color:var(--blue)"><use href="#il-neighbor"/></svg>
       <svg class="ill" width="160" height="96" style="color:var(--green)"><use href="#il-relax"/></svg>
     </div>
-    <div class="d">Jede Zutat-Kategorie bekommt eine Zeichnung (statt Emoji). Der Fleck ist leicht ausgefranst wie Wasserfarbe, die Linie zittert minimal. In der App als Vektor (SwiftUI-Shapes) – nichts wird geladen.</div>
+    <div class="d">Jede Zutat-Kategorie bekommt eine Zeichnung (statt Emoji). Die Fläche dahinter ist glatt und pastell, nur die Linie wirkt leicht von Hand gezeichnet – das ist eines der wenigen „Skizzen“-Elemente. In der App als Vektor (SwiftUI-Shapes) – nichts wird geladen.</div>
   </div>
 
   <div class="spec">
-    <span class="nm">Symbole</span><h4>Gezeichnete Icons</h4>
+    <span class="nm">Symbole</span><h4>Saubere Linien-Icons</h4>
     <div class="demo">
       <svg class="i"><use href="#i-home"/></svg><svg class="i"><use href="#i-tag"/></svg><svg class="i"><use href="#i-bag"/></svg><svg class="i"><use href="#i-book"/></svg>
       <svg class="i"><use href="#i-search"/></svg><svg class="i"><use href="#i-heart"/></svg><svg class="i"><use href="#i-clock"/></svg><svg class="i"><use href="#i-mic"/></svg>
       <svg class="i"><use href="#i-dice"/></svg><svg class="i"><use href="#i-lock"/></svg><svg class="i"><use href="#i-swap"/></svg><svg class="i"><use href="#i-share"/></svg>
     </div>
     <div class="demo">
-      <span class="blobwrap" style="width:56px;height:56px"><svg class="bg" style="color:var(--blue)"><use href="#blobB"/></svg><svg class="i" style="position:relative;width:28px;height:28px"><use href="#i-home"/></svg></span>
-      <span class="blobwrap" style="width:56px;height:56px"><svg class="bg" style="color:var(--blue)"><use href="#blobC"/></svg><svg class="i" style="position:relative;width:28px;height:28px"><use href="#i-heart"/></svg></span>
-      <span class="blobwrap" style="width:56px;height:56px"><svg class="bg" style="color:var(--blue)"><use href="#blobA"/></svg><svg class="i" style="position:relative;width:28px;height:28px"><use href="#i-mic"/></svg></span>
+      <span class="ico"><svg class="i"><use href="#i-home"/></svg></span>
+      <span class="ico" style="--dot:var(--pink)"><svg class="i"><use href="#i-heart"/></svg></span>
+      <span class="ico" style="--dot:var(--green)"><svg class="i"><use href="#i-bag"/></svg></span>
+      <span class="ico" style="--dot:var(--yellow)"><svg class="i"><use href="#i-tag"/></svg></span>
+      <span class="ico" style="--dot:var(--lav)"><svg class="i"><use href="#i-book"/></svg></span>
+      <span class="ico"><svg class="i"><use href="#i-mic"/></svg></span>
     </div>
-    <div class="d">Aktiv / hervorgehoben = blauer Fleck dahinter (wie deine Icon-Vorlage).</div>
+    <div class="d">Wie deine Vorlage: eine saubere, gleichmäßige Linie mit kleinem Kringel, dahinter ein glatter Pastell-Kreis, leicht nach unten links versetzt. Kein Zittern.</div>
   </div>
 
   <div class="spec">
@@ -295,7 +321,7 @@ svg.i .ln{stroke-width:2;filter:url(#roughS)}
   </div>
 
   <div class="spec">
-    <span class="nm">Farben</span><h4>Papier, Tinte, Wasserfarbe</h4>
+    <span class="nm">Farben</span><h4>Papier, Tinte, Pastell</h4>
     <div class="demo" style="gap:10px">
       <span style="width:58px;height:58px;border-radius:16px;background:var(--paper);border:2px solid var(--ink)"></span>
       <span style="width:58px;height:58px;border-radius:16px;background:var(--ink)"></span>
@@ -318,28 +344,28 @@ svg.i .ln{stroke-width:2;filter:url(#roughS)}
   </div>
 
   <div class="spec">
-    <span class="nm">Knöpfe · Chips · Suche</span><h4>Gezeichnete Kanten, harter Schatten</h4>
+    <span class="nm">Knöpfe · Chips · Suche</span><h4>Weich und rund</h4>
     <div class="demo"><span class="btn k">Plan erstellen</span><span class="btn o">Keine Lust</span><span class="bigplay">Los</span></div>
     <div class="chips"><span class="chip on">Alle <span class="n">128</span></span><span class="chip">Obst <span class="n">24</span></span><span class="chip">Merkliste <span class="n">3</span></span></div>
     <div class="search">Was suchst du? <svg class="i"><use href="#i-search"/></svg></div>
   </div>
 
   <div class="spec">
-    <span class="nm">Karte · Preis-Sticker · Abhaken</span><h4>Zettel-Bausteine</h4>
+    <span class="nm">Karte · Preis-Sticker · Abhaken</span><h4>Karte, Kringel, Häkchen</h4>
     <div class="card" style="padding:16px;display:flex;gap:14px;align-items:center">
       <div class="plate ph-pasta" style="width:64px;height:64px"></div>
       <div style="flex:1"><div class="serif" style="font-size:19px">Spaghetti Pomodoro</div><div class="sub">25 min · 2,10 €</div></div>
       <span class="pricetag" style="color:var(--deal)">−30%<svg viewBox="0 0 120 50" preserveAspectRatio="none"><use href="#d-circle"/></svg></span>
     </div>
-    <div class="row" style="gap:12px"><svg class="check"><use href="#d-check"/></svg><span style="font-weight:800">Tomaten</span>
+    <div class="row" style="gap:12px"><span class="cbox"></span><span style="font-weight:800">Tomaten</span>
       <svg class="check" style="margin-left:18px"><use href="#d-checked"/></svg><span class="strike" style="color:var(--ink3);font-weight:800">Basilikum<svg viewBox="0 0 100 14" preserveAspectRatio="none"><use href="#d-strike"/></svg></span></div>
-    <div class="d">Abgehakt = rotes Häkchen + mit Stift durchgestrichen.</div>
+    <div class="d">Abgehakt = grünes Kästchen, durchgestrichen. Der Rabatt-Kringel ist eines der wenigen gezeichneten Elemente.</div>
   </div>
 
   <div class="spec">
-    <span class="nm">Tab-Leiste</span><h4>Nur Symbole, aktiv mit Fleck</h4>
+    <span class="nm">Tab-Leiste</span><h4>Nur Symbole, aktiv mit Pastell-Kreis</h4>
     <div style="position:relative;height:84px"><div class="tabbar" style="left:0;right:0;bottom:6px">
-      <span class="tab"><svg class="spot" viewBox="0 0 120 120"><use href="#blobB"/></svg><svg class="i"><use href="#i-home"/></svg></span>
+      <span class="tab"><span class="dot"></span><svg class="i"><use href="#i-home"/></svg></span>
       <span class="tab"><svg class="i"><use href="#i-tag"/></svg><span class="cnt">3</span></span>
       <span class="tab plus"><svg class="i"><use href="#i-plus"/></svg></span>
       <span class="tab"><svg class="i"><use href="#i-bag"/></svg></span>
@@ -410,7 +436,7 @@ svg.i .ln{stroke-width:2;filter:url(#roughS)}
           <span class="note red" style="font-size:24px;transform:rotate(-6deg)">−12,40 €<br>gespart!</span>
         </div>
       </div>
-      <div class="tabbar"><span class="tab"><svg class="spot" viewBox="0 0 120 120"><use href="#blobB"/></svg><svg class="i"><use href="#i-home"/></svg></span><span class="tab"><svg class="i"><use href="#i-tag"/></svg><span class="cnt">3</span></span><span class="tab plus"><svg class="i"><use href="#i-plus"/></svg></span><span class="tab"><svg class="i"><use href="#i-bag"/></svg></span><span class="tab"><svg class="i"><use href="#i-book"/></svg></span></div>
+      <div class="tabbar"><span class="tab"><span class="dot"></span><svg class="i"><use href="#i-home"/></svg></span><span class="tab"><svg class="i"><use href="#i-tag"/></svg><span class="cnt">3</span></span><span class="tab plus"><svg class="i"><use href="#i-plus"/></svg></span><span class="tab"><svg class="i"><use href="#i-bag"/></svg></span><span class="tab"><svg class="i"><use href="#i-book"/></svg></span></div>
       <div class="homebar"></div>
     </div>
     <div class="caption"><b>S1 Start</b>Freundliche Frage als Titel, unterstrichen wie von Hand. Heute als blaue Zettel-Karte, Woche als kleine Karten, Budget in Gelb mit handgeschriebener Ersparnis.</div>
@@ -441,7 +467,7 @@ svg.i .ln{stroke-width:2;filter:url(#roughS)}
         <svg width="80" height="50" style="position:absolute;right:24px;top:640px;transform:scaleX(-1)"><use href="#d-arrow"/></svg>
         <span class="note" style="position:absolute;right:40px;top:690px;font-size:20px;color:var(--ink2)">würfeln = neues Gericht</span>
       </div>
-      <div class="tabbar"><span class="tab"><svg class="i"><use href="#i-home"/></svg></span><span class="tab"><svg class="i"><use href="#i-tag"/></svg><span class="cnt">3</span></span><span class="tab plus"><svg class="i"><use href="#i-plus"/></svg></span><span class="tab"><svg class="i"><use href="#i-bag"/></svg></span><span class="tab"><svg class="spot" viewBox="0 0 120 120"><use href="#blobC"/></svg><svg class="i"><use href="#i-book"/></svg></span></div>
+      <div class="tabbar"><span class="tab"><svg class="i"><use href="#i-home"/></svg></span><span class="tab"><svg class="i"><use href="#i-tag"/></svg><span class="cnt">3</span></span><span class="tab plus"><svg class="i"><use href="#i-plus"/></svg></span><span class="tab"><svg class="i"><use href="#i-bag"/></svg></span><span class="tab"><span class="dot"></span><svg class="i"><use href="#i-book"/></svg></span></div>
       <div class="homebar"></div>
     </div>
     <div class="caption"><b>S2 Wochenplan</b>Tage als Serif-Buchstaben, der gewählte Tag mit Farbfleck. Gerichte als Zettel-Karten, Hinweise in Handschrift.</div>
@@ -522,7 +548,7 @@ svg.i .ln{stroke-width:2;filter:url(#roughS)}
           <div class="card" style="padding:12px;background:var(--lav)"><svg class="ill" width="110" height="96" style="color:#fff;display:block;margin:0 auto"><use href="#il-cheese"/></svg><div class="serif" style="font-size:17px">Gouda</div><div class="sub" style="font-size:12px;color:var(--ink)">Lidl · 400 g</div></div>
         </div>
       </div>
-      <div class="tabbar"><span class="tab"><svg class="i"><use href="#i-home"/></svg></span><span class="tab"><svg class="spot" viewBox="0 0 120 120"><use href="#blobA"/></svg><svg class="i"><use href="#i-tag"/></svg></span><span class="tab plus"><svg class="i"><use href="#i-plus"/></svg></span><span class="tab"><svg class="i"><use href="#i-bag"/></svg></span><span class="tab"><svg class="i"><use href="#i-book"/></svg></span></div>
+      <div class="tabbar"><span class="tab"><svg class="i"><use href="#i-home"/></svg></span><span class="tab"><span class="dot"></span><svg class="i"><use href="#i-tag"/></svg></span><span class="tab plus"><svg class="i"><use href="#i-plus"/></svg></span><span class="tab"><svg class="i"><use href="#i-bag"/></svg></span><span class="tab"><svg class="i"><use href="#i-book"/></svg></span></div>
       <div class="homebar"></div>
     </div>
     <div class="caption"><b>S4 Angebote</b>Suchfeld mit Versatz-Schatten (Humaaans), bunte Produkt-Karten mit gezeichnetem Produkt (Produktfoto, wenn vorhanden), Rabatt mit Stift eingekreist, „Knaller!“ als Randnotiz.</div>
@@ -561,16 +587,16 @@ svg.i .ln{stroke-width:2;filter:url(#roughS)}
           <span class="chip"><img src="https://upload.wikimedia.org/wikipedia/commons/thumb/2/2c/Dm-drogerie-Logo.svg/250px-Dm-drogerie-Logo.svg.png" height="16" alt="dm"> dm <span class="n">1</span></span>
         </div>
         <div class="card ruled" style="margin-top:12px;padding:6px 18px 10px;border-radius:18px">
-          <div class="row" style="height:45px;gap:12px"><svg class="check"><use href="#d-check"/></svg><span style="font-weight:800;font-size:17px">Basmatireis</span><span class="sub" style="font-size:13px">1 kg</span><span class="deal" style="margin-left:auto">−25%</span></div>
-          <div class="row" style="height:45px;gap:12px"><svg class="check"><use href="#d-check"/></svg><span style="font-weight:800;font-size:17px">Hähnchenbrust</span><span class="sub" style="font-size:13px">400 g</span><span style="margin-left:auto;font-weight:900">3,99 €</span></div>
-          <div class="row" style="height:45px;gap:12px"><svg class="check"><use href="#d-check"/></svg><span style="font-weight:800;font-size:17px">Kaffee</span><span class="sub" style="font-size:13px">500 g</span></div>
-          <div class="row" style="height:45px;gap:12px"><svg class="check"><use href="#d-checked"/></svg><span class="strike" style="font-weight:800;font-size:17px;color:var(--ink3)">Basilikum<svg viewBox="0 0 100 14" preserveAspectRatio="none"><use href="#d-strike"/></svg></span></div>
+          <div class="row" style="height:45px;gap:12px"><span class="cbox"></span><span style="font-weight:800;font-size:17px">Basmatireis</span><span class="sub" style="font-size:13px">1 kg</span><span class="deal" style="margin-left:auto">−25%</span></div>
+          <div class="row" style="height:45px;gap:12px"><span class="cbox"></span><span style="font-weight:800;font-size:17px">Hähnchenbrust</span><span class="sub" style="font-size:13px">400 g</span><span style="margin-left:auto;font-weight:900">3,99 €</span></div>
+          <div class="row" style="height:45px;gap:12px"><span class="cbox"></span><span style="font-weight:800;font-size:17px">Kaffee</span><span class="sub" style="font-size:13px">500 g</span></div>
+          <div class="row" style="height:45px;gap:12px"><span class="cbox on"><svg class="i" style="width:16px;height:16px"><use href="#i-check"/></svg></span><span class="strike" style="font-weight:800;font-size:17px;color:var(--ink3)">Basilikum<svg viewBox="0 0 100 14" preserveAspectRatio="none"><use href="#d-strike"/></svg></span></div>
           <div class="row" style="height:45px;gap:12px;color:var(--ink3)"><svg class="i"><use href="#i-plus"/></svg><span class="hand" style="font-size:22px">noch was? …</span><svg class="i" style="margin-left:auto"><use href="#i-mic"/></svg></div>
         </div>
         <div class="row" style="margin-top:14px;gap:10px"><span class="note red" style="font-size:24px">−2,50 € gespart</span><svg width="40" height="40"><use href="#d-star"/></svg><span style="margin-left:auto;font-weight:900;font-size:18px">5,48 €</span></div>
         <span class="btn k full" style="margin-top:14px">Einkauf starten <svg class="i" style="color:#fff"><use href="#i-bag"/></svg></span>
       </div>
-      <div class="tabbar"><span class="tab"><svg class="i"><use href="#i-home"/></svg></span><span class="tab"><svg class="i"><use href="#i-tag"/></svg><span class="cnt">3</span></span><span class="tab plus"><svg class="i"><use href="#i-plus"/></svg></span><span class="tab"><svg class="spot" viewBox="0 0 120 120"><use href="#blobB"/></svg><svg class="i"><use href="#i-bag"/></svg></span><span class="tab"><svg class="i"><use href="#i-book"/></svg></span></div>
+      <div class="tabbar"><span class="tab"><svg class="i"><use href="#i-home"/></svg></span><span class="tab"><svg class="i"><use href="#i-tag"/></svg><span class="cnt">3</span></span><span class="tab plus"><svg class="i"><use href="#i-plus"/></svg></span><span class="tab"><span class="dot"></span><svg class="i"><use href="#i-bag"/></svg></span><span class="tab"><svg class="i"><use href="#i-book"/></svg></span></div>
       <div class="homebar"></div>
     </div>
     <div class="caption"><b>S5 Einkauf</b>Läden als Chips mit echtem Logo, die Liste ist ein linierter Notizzettel: gezeichnete Kästchen, rotes Häkchen, mit Stift durchgestrichen. Neues per „noch was? …“ oder Mikro.</div>
@@ -602,7 +628,7 @@ svg.i .ln{stroke-width:2;filter:url(#roughS)}
           </div>
         </div>
       </div>
-      <div class="tabbar"><span class="tab"><svg class="i"><use href="#i-home"/></svg></span><span class="tab"><svg class="i"><use href="#i-tag"/></svg><span class="cnt">3</span></span><span class="tab plus"><svg class="i"><use href="#i-plus"/></svg></span><span class="tab"><svg class="i"><use href="#i-bag"/></svg></span><span class="tab"><svg class="spot" viewBox="0 0 120 120"><use href="#blobC"/></svg><svg class="i"><use href="#i-book"/></svg></span></div>
+      <div class="tabbar"><span class="tab"><svg class="i"><use href="#i-home"/></svg></span><span class="tab"><svg class="i"><use href="#i-tag"/></svg><span class="cnt">3</span></span><span class="tab plus"><svg class="i"><use href="#i-plus"/></svg></span><span class="tab"><svg class="i"><use href="#i-bag"/></svg></span><span class="tab"><span class="dot"></span><svg class="i"><use href="#i-book"/></svg></span></div>
       <div class="homebar"></div>
     </div>
     <div class="caption"><b>S12 Rezepte</b>Galerie wie Humaaans: bunte Karten mit Zeichnung oder Foto, Titel darunter, Herz daneben.</div>
@@ -640,7 +666,7 @@ svg.i .ln{stroke-width:2;filter:url(#roughS)}
         <div class="note" style="text-align:center;font-size:26px;color:var(--ink2);margin-top:6px">kein Stress – das machen wir zusammen</div>
         <div style="text-align:center;margin-top:24px"><span class="btn k">Plan erstellen</span></div>
       </div>
-      <div class="tabbar"><span class="tab"><svg class="i"><use href="#i-home"/></svg></span><span class="tab"><svg class="i"><use href="#i-tag"/></svg></span><span class="tab plus"><svg class="i"><use href="#i-plus"/></svg></span><span class="tab"><svg class="i"><use href="#i-bag"/></svg></span><span class="tab"><svg class="spot" viewBox="0 0 120 120"><use href="#blobC"/></svg><svg class="i"><use href="#i-book"/></svg></span></div>
+      <div class="tabbar"><span class="tab"><svg class="i"><use href="#i-home"/></svg></span><span class="tab"><svg class="i"><use href="#i-tag"/></svg></span><span class="tab plus"><svg class="i"><use href="#i-plus"/></svg></span><span class="tab"><svg class="i"><use href="#i-bag"/></svg></span><span class="tab"><span class="dot"></span><svg class="i"><use href="#i-book"/></svg></span></div>
       <div class="homebar"></div>
     </div>
     <div class="caption"><b>Leer-Zustand</b>Jeder leere Screen bekommt eine kleine Szene und einen freundlichen Satz in Handschrift.</div>
