@@ -64,6 +64,7 @@ def test_deck_mixes_in_own_favorites(client, auth, db, monkeypatch):
     cards = client.post("/swipe", headers=auth).json()["cards"]
     assert sorted(n for _, n, _ in asked) == [2, 3] and len(cards) == 6  # 2 × 3 Plätze, eins das eigene Rezept
     assert cards[1]["title"] == "Omas Gulasch" and cards[1]["source"] == "rezept" and cards[1]["recipe_id"] == fav.id
+    assert cards[1]["ingredients"] == ["Rindfleisch"] and cards[0]["ingredients"] == ["Linsen"]  # „Zutaten mag ich nicht“
 
 
 def test_deck_need_progress_and_cards(deck):

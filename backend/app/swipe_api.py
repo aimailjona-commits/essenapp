@@ -70,7 +70,7 @@ def card_out(t: swipe.Tally) -> dict:
     return {**{k: getattr(t.card, k) for k in ("id", "meal_type", "source", "recipe_id", "title", "description",
                                                  "cuisine", "prep_minutes", "image_url", "cost_cents", "deals",
                                                  "chain")},
-            "match": t.match, "yes": t.yes, "days": t.days}
+            "match": t.match, "yes": t.yes, "days": t.days, "ingredients": [i["name"] for i in t.card.ingredients or []]}
 
 
 def deck_out(db: Session, deck: SwipeDeck, member: Member) -> dict:
@@ -179,7 +179,8 @@ def fill_deck(db: Session, deck: SwipeDeck, meal_types: list[str],
     for m in want:
         drafts = []
         for c in results[m][0].cards:  # Pakete laufen getrennt: ähnliche Titel nur einmal
-            if not any(planner.similar(c.title, t) for t in [*seen, *(d.title for d in drafts)])                     and not any(forbid(i.name) for i in c.ingredients):
+            if not any(planner.similar(c.title, t) for t in [*seen, *(d.title for d in drafts)]) \
+                    and not any(forbid(i.name) for i in c.ingredients):
                 drafts.append(c)
         mine = list(own.get(m, []))
         for k in range(len(drafts) + len(mine)):
@@ -192,7 +193,7 @@ def fill_deck(db: Session, deck: SwipeDeck, meal_types: list[str],
                                             title=r.title[:200], description=(r.description or "")[:500],
                                             cuisine=(r.cuisine or "")[:50], prep_minutes=r.prep_minutes or 0, side=side,
                                             protein=protein, image_url=r.image_url or "", cost_cents=cost, deals=deals,
-                                            chain=chain, ingredients=[]))
+                                            chain=chain, ingredients=r.ingredients))
                 continue
             d = drafts.pop(0)
             ings = [i.model_dump() for i in d.ingredients]

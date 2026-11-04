@@ -18,6 +18,7 @@ import UIKit
 /// nach Foto), spending (Monats-Dashboard). Phase 14: achievements (Erfolge), unlock (Vollbild-Moment), review (Wochenrückblick),
 /// reviews (Archiv), recipelink (Rezept als Link teilen), sharedrecipe (geteiltes Rezept übernehmen).
 /// Phase 16: widgetsetup (Widget einrichten S38), widget (Widget „Heute“ S39), liveactivity (Live-Aktivität S40).
+/// Phase 20: swipe (Stapel S41), match (S42), auswahl (S43), verteilen (S44).
 /// Erscheinungsbild (68): zusätzlich `-demoAppearance dark|light` (überschreibt die Einstellung).
 enum Demo {
     static let screen: String? = arg("-demoScreen")
@@ -415,5 +416,54 @@ enum Demo {
         ListItemDTO(id: id, name: name, amount: amount, unit: unit, chain: chain, offerId: offer, checked: checked,
                     addedBy: added, checkedBy: by, source: source, deferWeek: next ? "2026-W46" : nil, nextWeek: next, coupon: coupon,
                     packAmount: pack, packs: pack.map { Int((amount ?? 0) / $0 + 0.999) })
+    }
+}
+
+// MARK: Woche per Swipe (20)
+
+extension Demo {
+    /// Stapel: Frühstück fertig, Mittag 1/5, Abend 3/5; in „auswahl“/„verteilen“ alle Arten voll.
+    static let swipe: SwipeDTO = {
+        let full = ["auswahl", "verteilen"].contains(screen ?? "")
+        func c(_ id: Int, _ m: String, _ t: String, _ p: String, _ cost: Int, _ min: Int, _ deals: Int, _ chain: String,
+               own: Bool = false, match: Bool = false, days: Int = 1) -> SwipeCardDTO {
+            SwipeCardDTO(id: id, mealType: m, source: own ? "rezept" : "ki", recipeId: own ? id : nil, title: t, description: "",
+                         cuisine: "", prepMinutes: min, imageUrl: photo(p), costCents: cost, deals: deals, chain: chain,
+                         match: match, yes: match ? 2 : 1, days: days, ingredients: ["Linsen", "Tomaten", "Zwiebeln"])
+        }
+        let open = [c(11, "abend", "Spaghetti mit Tomaten-Linsen-Sauce", "pasta", 170, 25, 3, "lidl"),
+                    c(12, "abend", "Hähnchen-Pfanne mit Paprika", "grill", 240, 20, 2, "rewe"),
+                    c(13, "abend", "Ofengemüse mit Feta", "table", 190, 35, 2, "aldi_sued", own: true),
+                    c(21, "mittag", "Linsensuppe mit Brot", "market", 120, 30, 2, "lidl")]
+        var chosen = [c(1, "fruehstueck", "Müsli mit Hafermilch & Beeren", "bowl", 90, 5, 2, "lidl", days: 5),
+                      c(31, "abend", "Bowl mit Lachs", "bowl", 320, 20, 2, "rewe", match: true),
+                      c(32, "abend", "Quiche mit Lauch", "chef", 210, 45, 1, "lidl"),
+                      c(33, "abend", "Wraps mit Hähnchen", "table", 230, 15, 2, "rewe"),
+                      c(41, "mittag", "Gemüse-Curry", "pasta", 160, 25, 2, "aldi_sued")]
+        if full {
+            chosen.insert(c(11, "abend", "Spaghetti mit Tomaten-Linsen-Sauce", "pasta", 170, 25, 3, "lidl", match: true), at: 1)
+            chosen += [c(12, "abend", "Hähnchen-Pfanne mit Paprika", "grill", 240, 20, 2, "rewe"),
+                       c(13, "abend", "Ofengemüse mit Feta", "table", 190, 35, 2, "aldi_sued", own: true),
+                       c(42, "mittag", "Linsensuppe mit Brot", "market", 120, 30, 2, "lidl"),
+                       c(43, "mittag", "Couscous-Salat", "bowl", 150, 15, 1, "lidl"),
+                       c(44, "mittag", "Kartoffel-Lauch-Suppe", "market", 110, 30, 2, "rewe"),
+                       c(45, "mittag", "Nudelsalat mit Pesto", "pasta", 140, 20, 1, "aldi_sued")]
+        }
+        let types = ["fruehstueck", "mittag", "abend"]
+        return SwipeDTO(id: 1, state: "offen", loading: false, error: "", need: Dictionary(uniqueKeysWithValues: types.map { ($0, 5) }),
+                        have: full ? ["fruehstueck": 5, "mittag": 5, "abend": 5] : ["fruehstueck": 5, "mittag": 1, "abend": 3],
+                        ready: full, cards: full ? [] : open, chosen: chosen, members: ["Jona", "Sam"],
+                        slots: (0..<5).flatMap { d in types.map { SlotCardDTO(day: d, mealType: $0, cardId: 0) } })
+    }()
+
+    /// Verteilen ohne Server: je Art die Auswahl der Reihe nach (Frühstück/Snack über ihre Tage).
+    static func swipeAssign(_ deck: SwipeDTO) -> [SwipeSlot: Int] {
+        var out: [SwipeSlot: Int] = [:]
+        for m in deck.types {
+            let pool = (deck.split.picked[m] ?? []).flatMap { c in Array(repeating: c.id, count: SwipeDTO.repeats.contains(m) ? c.days : 1) }
+            let slots = deck.slots.filter { $0.mealType == m }.map { SwipeSlot(day: $0.day, mealType: m) }.sorted { $0.day < $1.day }
+            for (s, id) in zip(slots, pool) { out[s] = id }
+        }
+        return out
     }
 }

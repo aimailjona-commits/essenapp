@@ -815,13 +815,19 @@ final class AppStore {
     }
 
     func generatePlan(_ options: PlanOptions? = nil) async {
+        await runPlanJob { try await self.api.request("POST", "/plans/job", body: options) }
+    }
+
+    struct PlanJob: Decodable { var state: String; var error: String }
+
+    /// Plan-Job starten und abwarten: KI-Plan und „Plan übernehmen“ aus dem Swipe-Stapel (20).
+    func runPlanJob(_ start: () async throws -> PlanJob) async {
         generating = true
         defer { generating = false }
-        struct Job: Decodable { var state: String; var error: String }
         do {
             let had = plan != nil
             // 19.6: Server plant im Hintergrund (bis ~2 min); kurze Abfragen statt einer langen Anfrage
-            var job: Job = try await api.request("POST", "/plans/job", body: options)
+            var job = try await start()
             for _ in 0..<240 where job.state == "running" {
                 try await Task.sleep(for: .seconds(2))
                 job = try await api.request("GET", "/plans/job", cache: false)

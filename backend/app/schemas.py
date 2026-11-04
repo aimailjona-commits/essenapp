@@ -1327,6 +1327,7 @@ class SwipeCardOut(BaseModel):
     match: bool = False  # nur in chosen
     yes: int = 0
     days: int = 1  # Frühstück/Snack: so viele Tage
+    ingredients: list[str] = []  # Hauptzutaten (für „Zutaten mag ich nicht“)
 
 
 class SlotCard(BaseModel):

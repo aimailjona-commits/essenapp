@@ -3,7 +3,7 @@ import SwiftUI
 /// Tab „Rezepte“: S2 Wochenplan + S12 Meine Rezepte.
 struct RecipesTab: View {
     @Environment(AppStore.self) private var store
-    @Binding var showGenerator: Bool
+    @Binding var planWeek: Bool  // Woche per Swipe (20)
     @State private var mine = Demo.screen != "plan" && Demo.screen != "guests"  // v3: Tab-Wurzel = Kachel-Wand (S12), Plan über die Kachel
     @State private var filter = "alle"
     @State private var person: Int?  // „Für:“ in der Tagesansicht (48), nil = ich
@@ -22,7 +22,7 @@ struct RecipesTab: View {
                         DisplayHeader(line1: "Woche", line2: "KW \(plan.week.suffix(2))")
                         HStack(spacing: 8) {
                             ShareButton()
-                            RoundIconButton(systemName: "dice", dark: true, label: "Neuen Plan erstellen") { showGenerator = true }
+                            RoundIconButton(systemName: "dice", dark: true, label: "Woche planen") { planWeek = true }
                         }
                         .padding(.top, 4)
                     }
@@ -60,7 +60,7 @@ struct RecipesTab: View {
                     DayNutritionCard(day: day, person: $person)  // Tageswerte unten (S2)
                 } else {
                     EmptyState(emoji: "📅", title: "Noch kein Wochenplan", text: "Erstelle deinen ersten Plan.",
-                               buttonTitle: "Plan erstellen") { showGenerator = true }
+                               buttonTitle: "Woche planen") { planWeek = true }
                 }
             }
             .padding(.horizontal, Theme.pagePadding)
@@ -416,7 +416,8 @@ struct RecipeDetailView: View {
         .ignoresSafeArea(edges: .top)
         .background(heroColor.ignoresSafeArea())
         .modifier(RerollDialog(meal: meal, isPresented: $choosing, onReplace: { replacingDish = true }, roll: reroll))
-        .modifier(DislikeDialog(meal: meal, isPresented: $disliking, roll: meal.id == nil || meal.locked ? nil : { reroll(nil, "") }))
+        .modifier(DislikeDialog(meal: meal, isPresented: $disliking, roll: meal.id == nil || meal.locked ? nil : { reroll(nil, "") },
+                                  store: store))
         .onChange(of: recipe.id) {  // gewürfelt oder ersetzt: Daten des alten Rezepts verwerfen
             info = nil; favorite = nil; stepImages = nil; imagesSettled = false
         }
@@ -1094,49 +1095,69 @@ struct RerollDialog: ViewModifier {
                 Button("Würfeln") { roll(nil, wish) }
                 Button("Abbrechen", role: .cancel) {}
             }
-            .modifier(DislikeDialog(meal: meal, isPresented: $disliking, roll: meal.locked ? nil : { roll(nil, "") }))
+            .modifier(DislikeDialog(meal: meal, isPresented: $disliking, roll: meal.locked ? nil : { roll(nil, "") }, store: store))
     }
 }
 
 /// „Mag ich nicht“ mit Grund: Zutat → „Mag nicht“-Liste (19.2), schmeckt nicht/Sonstiges → Nie-Liste (Bewertung „nie“,
 /// E96), keine Lust → nur diese Woche. Im Plan wird danach neu gewürfelt (`roll`), sonst bleibt es beim Merken.
+enum DislikeReason {
+    case ingredient(String), taste, other(String)
+
+    var note: String {
+        switch self {
+        case .ingredient(let name): name
+        case .taste: "schmeckt nicht"
+        case .other(let text): text.isEmpty ? "sonstiges" : text
+        }
+    }
+}
+
+/// „Mag ich nicht“ mit Grund: Rezeptdetail und Würfel-Dialog (19.2), Swipe-Stapel (20).
 struct DislikeDialog: ViewModifier {
-    @Environment(AppStore.self) private var store
-    let meal: MealDTO
+    let ingredients: [String]
     @Binding var isPresented: Bool
-    let roll: (() -> Void)?
+    let noMood: (() -> Void)?  // „Keine Lust (nur diese Woche)“
+    let choose: (DislikeReason) -> Void
     @State private var picking = false
     @State private var other = false
     @State private var note = ""
-
-    private var ingredients: [String] { meal.recipe.ingredients.filter { $0.inPantry != true }.map(\.name).uniqued() }
 
     func body(content: Content) -> some View {
         content
             .confirmationDialog("Was magst du daran nicht?", isPresented: $isPresented, titleVisibility: .visible) {
                 if !ingredients.isEmpty { Button("Zutaten mag ich nicht") { picking = true } }
-                Button("Schmeckt mir einfach nicht") { never("schmeckt nicht") }
-                if let roll { Button("Keine Lust (nur diese Woche)", action: roll) }
+                Button("Schmeckt mir einfach nicht") { choose(.taste) }
+                if let noMood { Button("Keine Lust (nur diese Woche)", action: noMood) }
                 Button("Sonstiges …") { note = ""; other = true }
                 Button("Abbrechen", role: .cancel) {}
             }
             .confirmationDialog("Welche Zutat?", isPresented: $picking, titleVisibility: .visible) {
                 ForEach(ingredients, id: \.self) { name in
-                    Button(name) { Task { await store.dislike(name); roll?() } }
+                    Button(name) { choose(.ingredient(name)) }
                 }
                 Button("Abbrechen", role: .cancel) {}
             }
             .alert("Was passt dir nicht?", isPresented: $other) {
                 TextField("z. B. zu scharf, zu aufwendig", text: $note)
-                Button("Nie wieder vorschlagen") { never(note.isEmpty ? "sonstiges" : note) }
+                Button("Nie wieder vorschlagen") { choose(.other(note)) }
                 Button("Abbrechen", role: .cancel) {}
             }
     }
+}
 
-    private func never(_ reason: String) {
-        Task {
-            if await store.rate(meal.recipe.id, stars: 1, again: "nie", note: "Mag ich nicht: \(reason)") {
-                if let roll { roll() } else { store.flash("Kommt nicht mehr in deine Pläne") }
+extension DislikeDialog {
+    /// Plan-Gericht: Zutat → Abneigungen, sonst Nie-Liste; danach ggf. neu würfeln.
+    init(meal: MealDTO, isPresented: Binding<Bool>, roll: (() -> Void)?, store: AppStore) {
+        self.init(ingredients: meal.recipe.ingredients.filter { $0.inPantry != true }.map(\.name).uniqued(),
+                  isPresented: isPresented, noMood: roll) { reason in
+            Task {
+                if case .ingredient(let name) = reason {
+                    await store.dislike(name)
+                    roll?()
+                } else if await store.rate(meal.recipe.id, stars: 1, again: "nie", note: "Mag ich nicht: \(reason.note)") {
+                    if let roll { roll() } else { store.flash("Kommt nicht mehr in deine Pläne") }
+                }
             }
         }
     }

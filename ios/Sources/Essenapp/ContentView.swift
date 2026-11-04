@@ -92,7 +92,8 @@ struct MainView: View {
     @State private var resetToken = 0  // erneutes Tippen auf den aktiven Tab → zurück zum Anfang
     @Environment(\.requestReview) private var requestReview
     @State private var quickOpen = Demo.screen == "quick"
-    @State private var showGenerator = ["generator", "generating", "singlestore"].contains(Demo.screen ?? "")
+    @State private var showGenerator = ["generator", "generating", "singlestore"].contains(Demo.screen ?? "")  // „Überrasch mich“
+    @State private var planWeek = ["swipe", "match", "auswahl", "verteilen"].contains(Demo.screen ?? "")  // Swipe-Stapel (20)
     @State private var showRecipeForm = false  // Schnell-Aktion „Rezept anlegen“ (S17)
     @State private var deepAchievements = false  // Push „Neuer Erfolg“ (54)
     @State private var sharedCode: String? = Demo.screen == "sharedrecipe" ? Demo.sharedRecipe.code : nil  // essenapp://import-recipe/<code> (56)
@@ -112,10 +113,10 @@ struct MainView: View {
 
     @ViewBuilder private var tabContent: some View {
         switch tab {
-        case .start: StartView(showGenerator: $showGenerator)
+        case .start: StartView(showGenerator: $showGenerator, planWeek: $planWeek)
         case .angebote: OffersView()
         case .einkauf: ShoppingView()
-        case .rezepte: RecipesTab(showGenerator: $showGenerator)
+        case .rezepte: RecipesTab(planWeek: $planWeek)
         }
     }
 
@@ -188,7 +189,7 @@ struct MainView: View {
                 QuickActions(name: store.profile?.name ?? "") { action in
                     withAnimation(Theme.spring) { quickOpen = false }
                     switch action {
-                    case .plan: showGenerator = true
+                    case .plan: planWeek = true
                     case .list: tab = .einkauf
                     case .barcode: store.barcode = true
                     case .recipe: showRecipeForm = true
@@ -210,13 +211,14 @@ struct MainView: View {
         }
         .fullScreenCover(isPresented: Binding(get: { store.barcode }, set: { on in store.barcode = on })) { BarcodeScanView() }
         .sheet(isPresented: $showGenerator) { PlanGeneratorSheet().presentationDetents([.large]) }
+        .fullScreenCover(isPresented: $planWeek) { SwipeView() }
         .sheet(isPresented: $showRecipeForm) { RecipeFormSheet().presentationDetents([.large]).presentationCornerRadius(Theme.R.sheet) }
         .fullScreenCover(isPresented: Binding(get: { store.checkoutCoupon != nil }, set: { on in if !on { store.checkoutCoupon = nil } })) {
             if let id = store.checkoutCoupon { CouponCheckoutView(id: id) }
         }
         .fullScreenCover(isPresented: Binding(get: { store.review != nil }, set: { on in if !on { store.review = nil } })) {
             ReviewStoryView(week: store.review ?? "") {
-                Task { try? await Task.sleep(for: .milliseconds(600)); showGenerator = true }  // erst nach dem Schließen der Story
+                Task { try? await Task.sleep(for: .milliseconds(600)); planWeek = true }  // erst nach dem Schließen der Story
             }
         }
         .sheet(isPresented: Binding(get: { sharedCode != nil }, set: { on in if !on { sharedCode = nil } })) {
@@ -264,7 +266,7 @@ struct MainView: View {
         case "start":
             withAnimation(Theme.spring) { tab = .start }
         case "generator":
-            showGenerator = true
+            planWeek = true
         case "recipe" where url.lastPathComponent == "new":
             showRecipeForm = true
         case "recipe":  // Lunchbox-Push „für morgen vorbereiten“ (24)

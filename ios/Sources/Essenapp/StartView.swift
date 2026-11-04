@@ -4,6 +4,7 @@ import SwiftUI
 struct StartView: View {
     @Environment(AppStore.self) private var store
     @Binding var showGenerator: Bool
+    @Binding var planWeek: Bool  // Woche per Swipe (20)
     @State private var search = ""
     @State private var banner: SpecialDTO?  // Feiertag/Saison in ≤ 14 Tagen (25)
     @State private var noMood = false  // „Keine Lust“ (16)
@@ -168,7 +169,7 @@ struct StartView: View {
         } else {
             EmptyState(emoji: "🥘", title: "Noch kein Wochenplan",
                        text: "Wir planen deine Woche mit den aktuellen Angeboten deiner Läden.",
-                       buttonTitle: "Plan erstellen") { showGenerator = true }
+                       buttonTitle: "Woche planen") { planWeek = true }
         }
     }
 
