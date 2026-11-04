@@ -1,10 +1,9 @@
 """Phase 20 – Woche per Swipe (E97): Stapel, Abstimmung im Haushalt, Verteilen, Plan aus der Auswahl."""
 import re
-from datetime import date, timedelta
 
 import pytest
 
-from app.models import Household, Offer, Recipe, SwipeCard
+from app.models import Household, Recipe, SwipeCard
 from app.services import planner, recipes, swipe, variety
 from app.services.planner import CardDraft, CardIngredient, CardSet, PlanDraft
 from tests.test_planner import ing, meal
@@ -18,14 +17,20 @@ def card(title, protein="vegetarisch", side="andere", ings=(("Linsen", 80),)):
                      ingredients=[CardIngredient(name=n, amount=a, unit="g", offer_id=None) for n, a in ings])
 
 
+DISHES = ("Curry Gulasch Lasagne Risotto Paella Chili Ramen Tacos Quiche Frikadellen Rouladen Schnitzel Pfannkuchen "
+          "Porridge Omelett Bowl Wraps Falafel Moussaka Shakshuka Dal Pho Burger Gnocchi Flammkuchen Rösti Couscous "
+          "Bulgur Muffins Smoothie Crêpes Waffeln Sushi Enchiladas Polenta Eintopf Spätzle Maultaschen Knödel").split()
+
+
 def fake_cards(asked: list):
+    names = iter(DISHES)  # verschiedene Titel (ähnliche fasst der Stapel zusammen)
+
     def ask(prompt):
         text = prompt[-1]["text"]
         m = re.search(r"meal_type=(\w+)", text).group(1)
         n = int(re.search(r"Schlage (\d+)", text).group(1))
         asked.append((m, n, text))
-        k = len(asked)
-        return CardSet(cards=[card(f"{m} {k}-{i}", protein="fisch" if i == 0 else "vegetarisch") for i in range(n)]), \
+        return CardSet(cards=[card(next(names), protein="fisch" if i == 0 else "vegetarisch") for i in range(n)]), \
             {"model": "claude-haiku-5-5", "cost_cents": 0.1, "output_tokens": 100}
     return ask
 
@@ -57,14 +62,15 @@ def test_deck_mixes_in_own_favorites(client, auth, db, monkeypatch):
     asked = []
     monkeypatch.setattr(planner, "ask_cards", fake_cards(asked))
     cards = client.post("/swipe", headers=auth).json()["cards"]
-    assert asked[0][1] == 5 and len(cards) == 6  # 2 × 3 Plätze, eins davon das eigene Rezept
+    assert sorted(n for _, n, _ in asked) == [2, 3] and len(cards) == 6  # 2 × 3 Plätze, eins das eigene Rezept
     assert cards[1]["title"] == "Omas Gulasch" and cards[1]["source"] == "rezept" and cards[1]["recipe_id"] == fav.id
 
 
 def test_deck_need_progress_and_cards(deck):
     body, asked = deck
     assert body["need"] == {"fruehstueck": 3, "abend": 3}
-    assert {m for m, _, _ in asked} == {"fruehstueck", "abend"} and all(n == 6 for _, n, _ in asked)
+    assert sorted((m, n) for m, n, _ in asked) == [("abend", 3)] * 2 + [("fruehstueck", 3)] * 2  # Pakete à 3
+    assert len({re.search(r"Schwerpunkt: ([^(]+)", t).group(1) for m, _, t in asked if m == "abend"}) == 2
     assert "Angebote dieser Woche" not in asked[0][2] and "Zu planende Mahlzeiten" not in asked[0][2]
     assert len(body["cards"]) == 12 and body["cards"][0]["meal_type"] == "fruehstueck"
     assert body["have"] == {"fruehstueck": 0, "abend": 0} and not body["ready"] and not body["loading"]
@@ -107,7 +113,7 @@ def test_breakfast_days_fill_progress_ready_and_refill(client, auth, db, deck):
     assert r["ready"]
     for c in [c for c in body["cards"] if c["meal_type"] == "abend"][3:5]:
         client.post(f"/swipe/cards/{c['id']}/vote", headers=auth, json={"vote": "nein"})
-    assert len(asked) == 3  # bei 4 offenen Abend-Karten nachgeladen, danach (genug gewählt) nicht mehr
+    assert len(asked) == 6  # bei 4 offenen Abend-Karten nachgeladen (2 Pakete), danach (genug gewählt) nicht mehr
     before = len(client.get("/swipe", headers=auth).json()["cards"])
     assert len(client.post("/swipe/undo", headers=auth).json()["cards"]) == before + 1
 
@@ -117,8 +123,8 @@ def test_refill_when_type_runs_low(client, auth, db, deck):
     abend = [c for c in body["cards"] if c["meal_type"] == "abend"]
     for c in abend[:2]:
         client.post(f"/swipe/cards/{c['id']}/vote", headers=auth, json={"vote": "nein"})
-    assert [m for m, _, _ in asked[2:]] == ["abend"]  # 4 offen < 5 → nachladen
-    assert "abend 2-0" in asked[2][2]  # keine Dubletten im Stapel
+    assert [m for m, _, _ in asked[4:]] == ["abend", "abend"]  # 4 offen < 5 → nachladen
+    assert abend[0]["title"] in asked[4][2]  # keine Dubletten im Stapel
     assert len(client.get("/swipe", headers=auth).json()["cards"]) == 16
 
 

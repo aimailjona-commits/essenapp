@@ -1,6 +1,7 @@
 """Woche per Swipe (Phase 20, E97): Kartenstapel je Mahlzeitart, Abstimmung im Haushalt, Verteilen, Plan aus der
 Auswahl. Karten-Erzeugung und Plan laufen im Hintergrund (Muster E94)."""
 import logging
+import math
 import time
 from collections import Counter
 from concurrent.futures import ThreadPoolExecutor
@@ -26,6 +27,12 @@ MAX_BATCH = 10  # … höchstens so viele Karten je Mahlzeitart und Aufruf
 REPEAT_BATCH = 6  # Frühstück/Snack: ein Gericht deckt mehrere Tage
 REFILL_AT = 5  # weniger offene Karten einer Art → nachladen
 OWN_SHARE = 3  # jede dritte Karte ein eigenes Rezept (Favorit, ≥ 4 ★), solange vorhanden
+PART = 3  # Karten je KI-Aufruf
+FOCUS = {"abend": ["Fleisch oder Geflügel", "vegetarisch", "Fisch oder Hülsenfrüchte", "international (asiatisch, "
+                   "orientalisch, mexikanisch)"],
+         "fruehstueck": ["herzhaft", "süß", "schnell zum Mitnehmen"],
+         "snack": ["proteinreich", "Obst oder Gemüse", "selbst gebacken"]}
+FOCUS["mittag"] = FOCUS["lunchbox"] = FOCUS["abend"]
 
 
 def week_slots(db: Session, household: Household) -> tuple[object, list[tuple[int, str]], dict]:
@@ -147,25 +154,33 @@ def fill_deck(db: Session, deck: SwipeDeck, meal_types: list[str],
             own.setdefault(m, []).append(r)
     own = {m: rs[:max(want[m] // OWN_SHARE, 1 if rs else 0)] for m, rs in own.items()}
 
-    def ask_type(m: str):
-        n = want[m] - len(own.get(m, []))
-        if n <= 0:
-            return planner.CardSet(cards=[]), {}
-        note = (f"Schlage {n} verschiedene Gerichte für {planner.MEAL_TYPES.get(m, m)} (meal_type={m}) vor. "
-                f"Nicht: {', '.join(seen) or '-'}.")
+    def ask_part(job: tuple[str, int, int]):
+        m, n, k = job
+        focus = FOCUS.get(m, FOCUS["abend"])[k % len(FOCUS.get(m, FOCUS["abend"]))]
+        note = (f"Schlage {n} verschiedene Gerichte für {planner.MEAL_TYPES.get(m, m)} (meal_type={m}) vor, "
+                f"Schwerpunkt: {focus} (nur wenn es zur Ernährungsform passt). Nicht: {', '.join(seen) or '-'}.")
         return ask(planner.build_prompt(prefs, offers, [], favorites=[], note=note, pantry=pantry,
                                         never=memory["never"], recent=memory["recent"], extra=extra,
                                         repeat_weeks=rules["repeat_weeks"]))
 
-    with ThreadPoolExecutor(max_workers=max(len(want), 1)) as pool:
-        results = dict(zip(want, pool.map(ask_type, want)))
+    # kleine Pakete parallel: erste Karten nach ~5 s statt ~12 s; je Paket ein anderer Schwerpunkt (Abwechslung)
+    jobs = [(m, min(PART, n - k * PART), k) for m in want for n in [want[m] - len(own.get(m, []))]
+            for k in range(math.ceil(max(n, 0) / PART))]
+    with ThreadPoolExecutor(max_workers=max(len(jobs), 1)) as pool:
+        parts = list(pool.map(ask_part, jobs))
+    results = {m: (planner.CardSet(cards=[]), {}) for m in want}
+    for (m, _, _), (cs, u) in zip(jobs, parts):
+        results[m] = (planner.CardSet(cards=[*results[m][0].cards, *cs.cards]), planner.add_usage(results[m][1], u))
     names = [i.name for cs, _ in results.values() for c in cs.cards for i in c.ingredients]
     names += [i["name"] for rs in own.values() for r in rs for i in r.ingredients]
     pricer = api.pricer(db, offers, names)
     position = max((c.position for c in deck.cards), default=0)
     images = []
     for m in want:
-        drafts = [c for c in results[m][0].cards if c.title not in seen and not any(forbid(i.name) for i in c.ingredients)]
+        drafts = []
+        for c in results[m][0].cards:  # Pakete laufen getrennt: ähnliche Titel nur einmal
+            if not any(planner.similar(c.title, t) for t in [*seen, *(d.title for d in drafts)])                     and not any(forbid(i.name) for i in c.ingredients):
+                drafts.append(c)
         mine = list(own.get(m, []))
         for k in range(len(drafts) + len(mine)):
             position += 1
