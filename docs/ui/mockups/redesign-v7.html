@@ -1,0 +1,290 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Essenapp Tinte v7</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Manrope:wght@500;600;700;800&display=swap" rel="stylesheet">
+<style>
+/* v7 „Tinte & Creme“: Illustrationen per fal (Nano Banana 2) in ill-v7/, Creme wie der Illustrations-Grund, Serif-Titel, Pastellblau. Entwurf. */
+:root{--bg:#F3EEE4;--card:#FBF8F2;--ink:#151515;--ink2:#7C776D;--ink3:#B9B3A7;--line:#E4DED2;--blue:#AFC4F2;--blue1:#DCE5F8;--blue3:#7C9BE6;--sage:#CFE3D2;--rose:#F2CFC8;--sand:#E7DCC5;--deal:#E0603F;--page:#E2DCD0}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:"Manrope",-apple-system,system-ui,sans-serif;font-weight:600;background:var(--page);color:var(--ink);-webkit-font-smoothing:antialiased}
+svg.i{width:24px;height:24px;flex:none;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.serif{font-family:"DM Serif Display",Georgia,serif;font-weight:400;letter-spacing:-.005em}
+.row{display:flex;align-items:center;gap:8px}.between{justify-content:space-between}
+img.ill{display:block}
+.head{max-width:1360px;margin:0 auto;padding:48px 24px 8px}
+.head h1{font-family:"DM Serif Display",serif;font-weight:400;font-size:46px;line-height:1.05}
+.head p{color:#5b574f;margin-top:12px;max-width:880px;line-height:1.6;font-size:15px}
+.open{margin-top:16px;background:#fff;border-radius:20px;padding:16px 20px;max-width:880px;font-size:14px;line-height:1.65}
+.open b{display:block;margin-bottom:4px}
+.sec{max-width:1360px;margin:0 auto;padding:36px 24px 6px}
+.sec h2{font-family:"DM Serif Display",serif;font-weight:400;font-size:32px}
+.board{max-width:1360px;margin:0 auto;padding:18px 24px 30px;display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:14px}
+.board figure{background:var(--bg);border-radius:22px;padding:10px;text-align:center;font-size:12px;color:var(--ink2);font-weight:700}
+.board img{width:100%;border-radius:14px}
+.screens{display:flex;flex-wrap:wrap;gap:48px 36px;justify-content:center;padding:28px 16px 80px;max-width:1500px;margin:0 auto}
+.screen{width:390px;max-width:100%}
+.caption{margin-top:18px;font-size:13px;color:#55524b;line-height:1.55}
+.caption b{display:block;color:var(--ink);font-family:"DM Serif Display",serif;font-weight:400;font-size:19px;margin-bottom:2px}
+.phone{position:relative;width:390px;max-width:100%;height:844px;background:var(--bg);border-radius:54px;overflow:hidden;box-shadow:0 30px 60px rgba(40,30,20,.14)}
+.sb{position:absolute;top:0;left:0;right:0;height:52px;display:flex;align-items:center;justify-content:space-between;padding:8px 34px 0;font-weight:800;font-size:16px;z-index:20}
+.sb .island{position:absolute;left:50%;top:11px;transform:translateX(-50%);width:122px;height:35px;background:#000;border-radius:20px}
+.sb svg{width:68px;height:14px}
+.scr{position:absolute;inset:0;padding:66px 24px 120px;overflow:hidden}
+.homebar{position:absolute;bottom:8px;left:50%;transform:translateX(-50%);width:134px;height:5px;border-radius:3px;background:var(--ink);z-index:16}
+.small{font-size:15px;color:var(--ink2);font-weight:600}
+.t1{font-family:"DM Serif Display",serif;font-size:34px;line-height:1.1}
+.t2{font-family:"DM Serif Display",serif;font-size:24px;line-height:1.15}
+.tile{border-radius:22px;padding:16px;position:relative;overflow:hidden;background:var(--card)}
+.tile .nm{font-family:"DM Serif Display",serif;font-size:19px;line-height:1.15}
+.tile .s{font-size:12px;color:var(--ink2);font-weight:700;margin-top:3px}
+.qty{display:inline-block;margin-top:8px;background:#fff;border-radius:999px;padding:3px 10px;font-size:12px;font-weight:800}
+.circle{border-radius:50%;background:var(--ink);color:#fff;display:grid;place-items:center;flex:none;font-weight:700}
+.pill{display:inline-flex;align-items:center;gap:6px;height:30px;padding:0 12px;border-radius:999px;background:var(--ink);color:#fff;font-size:13px;font-weight:700}
+.chip{display:inline-flex;align-items:center;gap:6px;height:38px;padding:0 16px;border-radius:999px;font-weight:700;font-size:14px;background:var(--card);color:var(--ink2);flex:none;box-shadow:inset 0 0 0 1.5px var(--line)}
+.chip.on{background:var(--ink);color:#fff;box-shadow:none}
+.chips{display:flex;gap:8px;overflow:hidden;white-space:nowrap}
+.deal{display:inline-flex;align-items:center;height:22px;padding:0 8px;border-radius:999px;background:var(--deal);color:#fff;font-weight:800;font-size:11px}
+.plate{border-radius:50%;background-size:cover;background-position:center;flex:none;box-shadow:0 0 0 5px var(--bg)}
+.ph-pasta{background-image:url(../../../ios/Sources/Essenapp/Resources/hero/pasta.jpg)}
+.ph-bowl{background-image:url(../../../ios/Sources/Essenapp/Resources/hero/bowl.jpg)}
+.ph-grill{background-image:url(../../../ios/Sources/Essenapp/Resources/hero/grill.jpg)}
+.dots{display:flex;gap:7px}.dots i{width:7px;height:7px;border-radius:50%;background:var(--ink3);display:block}.dots i.on{background:var(--ink)}
+.tabbar{position:absolute;left:24px;right:24px;bottom:28px;height:64px;background:var(--card);border-radius:22px;display:flex;align-items:center;justify-content:space-around;box-shadow:0 10px 30px rgba(40,30,20,.08);z-index:15}
+.tb{position:relative;width:48px;height:48px;display:grid;place-items:center;color:var(--ink3)}
+.tb.on{color:var(--ink)}
+.tb.on::before{content:"";position:absolute;width:30px;height:30px;border-radius:50%;background:var(--blue);left:6px;top:14px}
+.tb svg{position:relative;width:26px;height:26px}
+.tb .cnt{position:absolute;top:8px;right:6px;width:8px;height:8px;border-radius:50%;background:var(--deal)}
+.lrow{display:flex;align-items:center;gap:14px;height:58px;border-bottom:1.5px solid var(--line)}
+.ck{width:26px;height:26px;border-radius:50%;border:2px solid var(--ink3);flex:none;display:grid;place-items:center}
+.ck.on{background:var(--ink);border-color:var(--ink);color:#fff}
+/* Tages-Rad */
+.arc{position:absolute;right:-250px;top:120px;width:420px;height:620px;border-radius:50%;border:1.5px solid var(--line)}
+.wd{position:absolute;display:flex;align-items:center;gap:12px;color:var(--ink3);font-weight:700;font-size:17px;transform-origin:right center}
+.wd .b{width:62px;height:50px;border-radius:24px;background:var(--card);display:grid;place-items:center;box-shadow:0 6px 14px rgba(40,30,20,.06)}
+.wd .b img{width:40px;height:40px}
+.wd.on{color:var(--ink)}
+.wd.on .lbl{background:var(--card);border-radius:999px;padding:6px 14px;box-shadow:inset 0 0 0 1.5px var(--line);font-size:18px}
+.wd.on .b{background:var(--blue1);box-shadow:inset 0 0 0 2px var(--blue3)}
+.knob{position:absolute;right:20px;width:46px;height:16px;border-radius:9px;background:var(--ink)}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute">
+  <symbol id="i-home" viewBox="0 0 24 24"><path d="M3.5 11.5 12 4.5l8.5 7M6 10v10h12V10"/><path d="M10.2 20v-3.2c0-2.3 3.6-2.3 3.6 0V20"/></symbol>
+  <symbol id="i-tag" viewBox="0 0 24 24"><path d="M20.5 12.6 12.8 20.3a1.7 1.7 0 0 1-2.4 0L3.7 13.6V3.7h9.9l6.9 6.5a1.7 1.7 0 0 1 0 2.4z"/><path d="M8.4 8.2c-2.6-2.4-5.8.4-3.6 2.2"/></symbol>
+  <symbol id="i-bag" viewBox="0 0 24 24"><path d="M5 8.5h14L17.6 20H6.4z"/><path d="M9 8.5C9 3.6 15 3.6 15 8.5"/><path d="M8.8 14c.8-1.2 1.6 1.2 2.4 0s1.6 1.2 2.4 0 1.6 1.2 2.2 0"/></symbol>
+  <symbol id="i-book" viewBox="0 0 24 24"><path d="M3.8 5.6C6.8 4.3 9.8 4.4 12 6.4c2.2-2 5.2-2.1 8.2-.8v13.2c-3-1.3-6-1.2-8.2.8-2.2-2-5.2-2.1-8.2-.8z"/><path d="M6.3 9.4c.8-.6 1.6.6 2.4 0M15.2 9.4c.8-.6 1.6.6 2.4 0"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="i-mic" viewBox="0 0 24 24"><rect x="9" y="3.5" width="6" height="10.5" rx="3"/><path d="M5.6 11a6.4 6.4 0 0 0 12.8 0M12 17.4v3"/></symbol>
+  <symbol id="i-back" viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></symbol>
+  <symbol id="i-heart" viewBox="0 0 24 24"><path d="M12 19.6S4.6 15 4.6 9.6A3.9 3.9 0 0 1 12 7.6a3.9 3.9 0 0 1 7.4 2C19.4 15 12 19.6 12 19.6z"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.5 9.5 17 19 7" stroke-width="2.6"/></symbol>
+  <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M4 12h15M13 6l6 6-6 6"/></symbol>
+  <symbol id="i-play" viewBox="0 0 24 24"><path d="M8 5v14l11-7z" fill="currentColor" stroke="none"/></symbol>
+  <symbol id="i-fork" viewBox="0 0 24 24"><path d="M7 3v7a2 2 0 0 0 4 0V3M9 10v11M16 3c-2 0-3 3-3 6s1 4 3 4v8"/></symbol>
+  <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M12 7v5l3 2"/></symbol>
+  <symbol id="i-cam" viewBox="0 0 24 24"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></symbol>
+  <symbol id="status" viewBox="0 0 68 14"><g fill="currentColor" stroke="none"><rect x="0" y="9" width="3" height="5" rx="1"/><rect x="5" y="6" width="3" height="8" rx="1"/><rect x="10" y="3" width="3" height="11" rx="1"/><rect x="15" y="0" width="3" height="14" rx="1"/><path d="M30 4.5a10 10 0 0 1 12 0l-1.6 1.8a7.5 7.5 0 0 0-8.8 0zM32.6 7.6a6 6 0 0 1 6.8 0L36 12z"/><rect x="45" y="1" width="20" height="12" rx="3.5" fill="none" stroke="currentColor" stroke-width="1.4"/><rect x="47" y="3" width="16" height="8" rx="2"/><rect x="66" y="5" width="2" height="4" rx="1"/></g></symbol>
+</svg>
+
+<header class="head">
+  <h1>Essenapp v7 – Tinte &amp; Creme</h1>
+  <p><b>Illustrationen</b> (mit fal / Nano Banana 2 erzeugt, alle aus einer Stil-Vorlage): schwarze Pinsel-Tinte, schwarze Flächen, Raster-Punkte für Grau, nur <b>Pastellblau</b> als Farbe, schräge Proportionen, kleine Kringel. <b>UI</b> nach deiner Kochbuch-Vorlage: Creme-Grund in genau der Papierfarbe der Zeichnungen (sie verschmelzen ohne Kasten), Serif-Titel, farbige Zutaten-Kacheln, großer Farbbogen im Rezept – dazu das <b>Tages-Rad</b> und die schwarzen Kreis-Knöpfe der Lern-App.</p>
+  <div class="open"><b>Bitte entscheiden</b>
+    1. Passt die Mischung (Kochbuch-UI + Tinte-Illustrationen)?<br>
+    2. Gerichte als Foto (wie hier) oder auch als Zeichnung?<br>
+    3. Welche Szenen fehlen noch? Jede weitere kostet ca. 0,08 $.
+  </div>
+</header>
+
+<section class="sec"><h2>Illustrationen</h2></section>
+<div class="board">
+  <figure><img src="ill-v7/shopper.webp" alt=""><figcaption>Einkauf (Stil-Vorlage)</figcaption></figure>
+  <figure><img src="ill-v7/binoculars.webp" alt=""><figcaption>Angebote suchen</figcaption></figure>
+  <figure><img src="ill-v7/cook.webp" alt=""><figcaption>Kochen</figcaption></figure>
+  <figure><img src="ill-v7/cookbook.webp" alt=""><figcaption>Rezepte entdecken</figcaption></figure>
+  <figure><img src="ill-v7/table.webp" alt=""><figcaption>Zusammen essen</figcaption></figure>
+  <figure><img src="ill-v7/fridge.webp" alt=""><figcaption>Kühlschrank scannen</figcaption></figure>
+  <figure><img src="ill-v7/lying.webp" alt=""><figcaption>Leer – entspannen</figcaption></figure>
+  <figure><img src="ill-v7/pot.webp" alt=""><figcaption>Topf</figcaption></figure>
+  <figure><img src="ill-v7/bag.webp" alt=""><figcaption>Einkaufstüte</figcaption></figure>
+  <figure><img src="ill-v7/tomato.webp" alt=""><figcaption>Tomate</figcaption></figure>
+  <figure><img src="ill-v7/garlic.webp" alt=""><figcaption>Knoblauch</figcaption></figure>
+  <figure><img src="ill-v7/basil.webp" alt=""><figcaption>Basilikum</figcaption></figure>
+  <figure><img src="ill-v7/pasta.webp" alt=""><figcaption>Spaghetti</figcaption></figure>
+</div>
+
+<section class="sec"><h2>Screens</h2></section>
+<div class="screens">
+
+  <!-- Einstieg -->
+  <div class="screen"><div class="phone">
+    <div class="sb"><b>9:41</b><span class="island"></span><svg><use href="#status"/></svg></div>
+    <img class="ill" src="ill-v7/shopper.webp" style="position:absolute;left:30px;top:70px;width:340px" alt="">
+    <div style="position:absolute;left:28px;right:28px;bottom:150px">
+      <div class="small">Wenn du magst</div>
+      <div class="t1" style="margin-top:8px">Kochen nach Angebot – jede Woche günstig.</div>
+    </div>
+    <div style="position:absolute;left:28px;right:28px;bottom:50px" class="row between">
+      <div class="dots"><i class="on"></i><i></i><i></i></div>
+      <div class="row" style="gap:14px"><span style="font-weight:700">Los geht's</span><span class="circle" style="width:72px;height:72px"><svg class="i" style="width:28px;height:28px"><use href="#i-fork"/></svg></span></div>
+    </div>
+    <div class="homebar"></div></div>
+    <div class="caption"><b>Einstieg</b>Wie die Kochbuch-Vorlage: große Szene, kleiner Vorsatz, Serif-Satz, Punkte und runder Knopf unten.</div></div>
+
+  <!-- Start -->
+  <div class="screen"><div class="phone">
+    <div class="sb"><b>9:41</b><span class="island"></span><svg><use href="#status"/></svg></div>
+    <div class="scr">
+      <div class="row between"><div><div class="small">Hey Jona,</div><div class="t1" style="margin-top:2px">Was kochen<br>wir heute?</div></div><span class="circle" style="width:44px;height:44px;background:var(--blue1);color:var(--ink);font-size:20px">🧑‍🍳</span></div>
+      <div class="tile" style="margin-top:20px;height:236px;background:var(--blue1)">
+        <img class="ill" src="ill-v7/table.webp" style="position:absolute;right:-20px;top:-6px;width:270px" alt="">
+        <div style="position:absolute;left:18px;bottom:18px;right:18px" class="row between">
+          <div><div class="s" style="color:var(--blue3);font-weight:800;letter-spacing:.06em">HEUTE ABEND</div><div class="nm" style="font-size:22px">Spaghetti Pomodoro</div><div class="s">25 min · 2,10 € p. P.</div></div>
+          <span class="circle" style="width:54px;height:54px"><svg class="i" style="width:20px"><use href="#i-play"/></svg></span>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px">
+        <div class="tile" style="height:170px"><img class="ill" src="ill-v7/binoculars.webp" style="position:absolute;right:-16px;top:-8px;width:140px" alt=""><div style="position:absolute;left:16px;bottom:14px"><div class="nm">Angebote</div><div class="s">128 diese Woche</div></div></div>
+        <div class="tile" style="height:170px"><img class="ill" src="ill-v7/bag.webp" style="position:absolute;right:-14px;top:-6px;width:130px" alt=""><div style="position:absolute;left:16px;bottom:14px"><div class="nm">Einkauf</div><div class="s">7 offen</div></div></div>
+      </div>
+      <div class="row between" style="margin-top:16px"><div><div style="font-weight:800">38,20 € von 60 €</div><div class="s" style="color:var(--ink2);font-size:13px">diese Woche · <span style="color:var(--deal)">12,40 € gespart</span></div></div><span class="pill">Woche →</span></div>
+    </div>
+    <div class="tabbar"><span class="tb on"><svg class="i"><use href="#i-home"/></svg></span><span class="tb"><svg class="i"><use href="#i-tag"/></svg><span class="cnt"></span></span><span class="circle" style="width:46px;height:46px"><svg class="i"><use href="#i-plus"/></svg></span><span class="tb"><svg class="i"><use href="#i-bag"/></svg></span><span class="tb"><svg class="i"><use href="#i-book"/></svg></span></div>
+    <div class="homebar"></div></div>
+    <div class="caption"><b>Start</b>Große Kachel für heute mit der Tisch-Szene, darunter Angebote und Einkauf mit ihren Szenen.</div></div>
+
+  <!-- Wochenplan Rad -->
+  <div class="screen"><div class="phone">
+    <div class="sb"><b>9:41</b><span class="island"></span><svg><use href="#status"/></svg></div>
+    <div class="scr">
+      <div class="small">KW 45</div><div class="t1">Deine Woche</div>
+    </div>
+    <div class="arc"></div>
+    <div class="wd" style="right:96px;top:160px;opacity:.5"><span class="lbl">Mo</span><span class="b"><img class="ill" src="ill-v7/pot.webp" alt=""></span></div>
+    <div class="wd on" style="right:118px;top:260px"><span class="lbl">Dienstag</span><span class="b"><img class="ill" src="ill-v7/pasta.webp" alt=""></span></div>
+    <div class="knob" style="top:276px"></div>
+    <div class="wd" style="right:126px;top:360px"><span class="lbl">Mi</span><span class="b"><img class="ill" src="ill-v7/basil.webp" alt=""></span></div>
+    <div class="wd" style="right:118px;top:450px"><span class="lbl">Do</span><span class="b"><img class="ill" src="ill-v7/tomato.webp" alt=""></span></div>
+    <div class="wd" style="right:96px;top:536px;opacity:.45"><span class="lbl">Fr</span><span class="b"><img class="ill" src="ill-v7/garlic.webp" alt=""></span></div>
+    <div class="tile" style="position:absolute;left:24px;right:24px;bottom:112px;padding:16px;display:flex;gap:14px;align-items:center;background:var(--card)">
+      <div class="plate ph-pasta" style="width:74px;height:74px"></div>
+      <div style="flex:1"><div class="s" style="margin:0;color:var(--blue3);font-weight:800;letter-spacing:.06em">DIENSTAG · ABEND</div><div class="nm">Spaghetti Pomodoro</div><div class="s">2,10 € · 25 min · <span style="color:var(--deal)">2 im Angebot</span></div></div>
+    </div>
+    <div class="tabbar"><span class="tb"><svg class="i"><use href="#i-home"/></svg></span><span class="tb"><svg class="i"><use href="#i-tag"/></svg></span><span class="circle" style="width:46px;height:46px"><svg class="i"><use href="#i-plus"/></svg></span><span class="tb"><svg class="i"><use href="#i-bag"/></svg></span><span class="tb on"><svg class="i"><use href="#i-book"/></svg></span></div>
+    <div class="homebar"></div></div>
+    <div class="caption"><b>Wochenplan</b>Die Tage liegen auf einem Rad (wie die Aktivitäts-Vorlage), jeder mit kleiner Zeichnung; der gewählte Tag zeigt sein Gericht unten.</div></div>
+
+  <!-- Rezept -->
+  <div class="screen"><div class="phone">
+    <div class="sb"><b>9:41</b><span class="island"></span><svg><use href="#status"/></svg></div>
+    <div style="position:absolute;left:-60px;top:-80px;width:430px;height:430px;border-radius:50%;background:var(--blue)"></div>
+    <div class="scr">
+      <div class="row between"><span class="small" style="color:var(--ink)">Rezepte · <b>Pasta</b></span><span class="pill">25 min</span></div>
+      <div class="t1" style="margin-top:20px;font-size:38px">Spaghetti<br>Pomodoro</div>
+      <div class="plate ph-pasta" style="position:absolute;right:-40px;top:190px;width:230px;height:230px"></div>
+      <div style="margin-top:236px;font-weight:700">Zutaten · 6</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px">
+        <div class="tile" style="background:var(--rose);padding:10px 14px;height:124px"><img class="ill" src="ill-v7/tomato.webp" style="width:62px;margin:-6px 0 0 -6px" alt=""><div class="nm">Tomaten</div><span class="qty">400 g</span><span class="deal" style="position:absolute;right:10px;top:10px">−30 %</span></div>
+        <div class="tile" style="background:var(--sage);padding:10px 14px;height:124px"><img class="ill" src="ill-v7/basil.webp" style="width:62px;margin:-6px 0 0 -6px" alt=""><div class="nm">Basilikum</div><span class="qty">1 Bund</span></div>
+        <div class="tile" style="background:var(--blue1);padding:10px 14px;height:124px"><img class="ill" src="ill-v7/pasta.webp" style="width:62px;margin:-6px 0 0 -6px" alt=""><div class="nm">Spaghetti</div><span class="qty">250 g</span></div>
+        <div class="tile" style="background:var(--sand);padding:10px 14px;height:124px"><img class="ill" src="ill-v7/garlic.webp" style="width:62px;margin:-6px 0 0 -6px" alt=""><div class="nm">Knoblauch</div><span class="qty">2 Zehen</span></div>
+      </div>
+    </div>
+    <div style="position:absolute;left:24px;right:24px;bottom:30px" class="row between"><div><div style="font-weight:800">Kochmodus</div><div class="small" style="font-size:13px">5 Schritte</div></div><span class="circle" style="width:64px;height:64px"><svg class="i" style="width:22px"><use href="#i-play"/></svg></span></div>
+    <div class="homebar"></div></div>
+    <div class="caption"><b>Rezept</b>Nach der Kochbuch-Vorlage: großer blauer Bogen, Serif-Titel, Teller ragt rechts hinein, Zutaten als farbige Kacheln mit gezeichneter Zutat und Mengen-Pille.</div></div>
+
+  <!-- Kochmodus -->
+  <div class="screen"><div class="phone">
+    <div class="sb"><b>9:41</b><span class="island"></span><svg><use href="#status"/></svg></div>
+    <div class="scr">
+      <div class="row between"><svg class="i" style="width:26px;height:26px"><use href="#i-back"/></svg><span class="pill" style="background:var(--blue1);color:var(--ink)"><svg class="i" style="width:16px"><use href="#i-clock"/></svg>08:24</span></div>
+      <div class="dots" style="margin-top:22px"><i class="on"></i><i class="on" style="width:22px;border-radius:4px"></i><i></i><i></i><i></i></div>
+      <div class="small" style="margin-top:16px">Schritt 2 von 5</div>
+      <div class="t1" style="margin-top:6px">Knoblauch anschwitzen, Tomaten dazu.</div>
+      <img class="ill" src="ill-v7/cook.webp" style="width:310px;margin:8px auto 0" alt="">
+      <div style="font-size:17px;line-height:1.5;color:var(--ink2)">In Olivenöl glasig dünsten, dann <b style="color:var(--ink)">8 Minuten</b> köcheln lassen.</div>
+    </div>
+    <div style="position:absolute;left:24px;right:24px;bottom:34px" class="row between"><span class="circle" style="width:60px;height:60px;background:var(--card);color:var(--ink);box-shadow:inset 0 0 0 1.5px var(--line)"><svg class="i"><use href="#i-mic"/></svg></span><span class="circle" style="width:72px;height:72px"><svg class="i"><use href="#i-arrow"/></svg></span></div>
+    <div class="homebar"></div></div>
+    <div class="caption"><b>Kochmodus</b>Ruhig und hell: Schritt als Serif-Satz, Koch-Szene, unten Mikro und schwarzer Weiter-Kreis.</div></div>
+
+  <!-- Angebote -->
+  <div class="screen"><div class="phone">
+    <div class="sb"><b>9:41</b><span class="island"></span><svg><use href="#status"/></svg></div>
+    <div class="scr">
+      <div class="small">10115 · 6 Läden</div><div class="t1">Angebote</div>
+      <div class="tile" style="margin-top:16px;height:210px;background:var(--blue1)">
+        <img class="ill" src="ill-v7/binoculars.webp" style="position:absolute;right:-20px;top:-10px;width:230px" alt="">
+        <div style="position:absolute;left:18px;bottom:18px;width:150px"><div class="nm" style="font-size:24px">128 Angebote</div><div class="s">Wir haben für dich geschaut.</div></div>
+      </div>
+      <div class="chips" style="margin-top:16px"><span class="chip on">Alle</span><span class="chip">Merkliste 3</span><span class="chip">Gemüse</span><span class="chip">Kühlung</span></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px">
+        <div class="tile" style="background:var(--rose);height:176px"><img class="ill" src="ill-v7/tomato.webp" style="position:absolute;right:-10px;top:-10px;width:110px" alt=""><span class="deal">−30 %</span><div style="position:absolute;left:16px;bottom:14px"><div class="nm">Tomaten</div><div class="s">Lidl · 1 kg</div><div style="font-weight:800;margin-top:4px">1,99 €</div></div></div>
+        <div class="tile" style="background:var(--sand);height:176px"><img class="ill" src="ill-v7/garlic.webp" style="position:absolute;right:-10px;top:-10px;width:110px" alt=""><span class="deal">−20 %</span><div style="position:absolute;left:16px;bottom:14px"><div class="nm">Knoblauch</div><div class="s">Rewe · 3 Stück</div><div style="font-weight:800;margin-top:4px">0,79 €</div></div></div>
+      </div>
+    </div>
+    <div class="tabbar"><span class="tb"><svg class="i"><use href="#i-home"/></svg></span><span class="tb on"><svg class="i"><use href="#i-tag"/></svg></span><span class="circle" style="width:46px;height:46px"><svg class="i"><use href="#i-plus"/></svg></span><span class="tb"><svg class="i"><use href="#i-bag"/></svg></span><span class="tb"><svg class="i"><use href="#i-book"/></svg></span></div>
+    <div class="homebar"></div></div>
+    <div class="caption"><b>Angebote</b>Fernglas-Szene oben, darunter Produkt-Kacheln in Pastell mit gezeichnetem Produkt (oder Foto aus dem Prospekt).</div></div>
+
+  <!-- Einkauf -->
+  <div class="screen"><div class="phone">
+    <div class="sb"><b>9:41</b><span class="island"></span><svg><use href="#status"/></svg></div>
+    <div class="scr">
+      <div class="small">Rewe · 4 offen</div><div class="t1">Einkauf</div>
+      <div class="chips" style="margin-top:16px">
+        <span class="chip on"><img src="https://upload.wikimedia.org/wikipedia/commons/thumb/4/4c/Logo_REWE.svg/250px-Logo_REWE.svg.png" height="13" style="background:#fff;border-radius:4px;padding:2px" alt="Rewe"> Rewe</span>
+        <span class="chip"><img src="https://upload.wikimedia.org/wikipedia/commons/thumb/9/91/Lidl-Logo.svg/250px-Lidl-Logo.svg.png" height="18" alt="Lidl"> Lidl</span>
+        <span class="chip"><img src="https://upload.wikimedia.org/wikipedia/commons/thumb/2/2c/Dm-drogerie-Logo.svg/250px-Dm-drogerie-Logo.svg.png" height="14" alt="dm"> dm</span></div>
+      <div style="margin-top:10px">
+        <div class="lrow"><span class="ck"></span><span style="font-weight:700;flex:1">Basmatireis</span><span style="color:var(--ink2)">1 kg</span><span class="deal">−25 %</span></div>
+        <div class="lrow"><span class="ck"></span><span style="font-weight:700;flex:1">Hähnchenbrust</span><span style="color:var(--ink2)">400 g</span></div>
+        <div class="lrow"><span class="ck"></span><span style="font-weight:700;flex:1">Kaffee</span><span style="color:var(--ink2)">500 g</span></div>
+        <div class="lrow"><span class="ck on"><svg class="i" style="width:15px"><use href="#i-check"/></svg></span><span style="font-weight:700;flex:1;color:var(--ink3);text-decoration:line-through">Basilikum</span></div>
+        <div class="lrow" style="color:var(--ink3);border:0"><svg class="i"><use href="#i-plus"/></svg><span style="flex:1">Artikel hinzufügen</span><svg class="i" style="color:var(--ink)"><use href="#i-mic"/></svg></div>
+      </div>
+      <div class="tile" style="margin-top:8px;height:168px;background:var(--blue1)">
+        <img class="ill" src="ill-v7/shopper.webp" style="position:absolute;right:-10px;top:-6px;width:150px" alt="">
+        <div style="position:absolute;left:18px;top:18px"><div class="nm" style="font-size:24px">5,48 €</div><div class="s">noch offen · <span style="color:var(--deal)">2,50 € gespart</span></div></div>
+        <span class="circle" style="position:absolute;left:18px;bottom:16px;width:56px;height:56px;font-size:13px">Los</span>
+      </div>
+    </div>
+    <div class="tabbar"><span class="tb"><svg class="i"><use href="#i-home"/></svg></span><span class="tb"><svg class="i"><use href="#i-tag"/></svg></span><span class="circle" style="width:46px;height:46px"><svg class="i"><use href="#i-plus"/></svg></span><span class="tb on"><svg class="i"><use href="#i-bag"/></svg></span><span class="tb"><svg class="i"><use href="#i-book"/></svg></span></div>
+    <div class="homebar"></div></div>
+    <div class="caption"><b>Einkauf</b>Läden als Chips mit Logo, ruhige Liste, unten der Einkäufer mit „Los“-Kreis.</div></div>
+
+  <!-- Kühlschrank -->
+  <div class="screen"><div class="phone">
+    <div class="sb"><b>9:41</b><span class="island"></span><svg><use href="#status"/></svg></div>
+    <div class="scr">
+      <div class="row between"><svg class="i" style="width:26px;height:26px"><use href="#i-back"/></svg><span class="small">1 / 3</span></div>
+      <img class="ill" src="ill-v7/fridge.webp" style="width:330px;margin:20px auto 0" alt="">
+      <div class="t1" style="margin-top:8px">Was ist im Kühlschrank?</div>
+      <div style="font-size:16px;line-height:1.5;color:var(--ink2);margin-top:8px">Mach 1–3 Fotos. Wir füllen den Vorrat und schlagen Gerichte vor.</div>
+    </div>
+    <div style="position:absolute;left:24px;right:24px;bottom:40px" class="row between"><span style="font-weight:800;font-size:17px">Foto machen</span><span class="circle" style="width:72px;height:72px"><svg class="i" style="width:28px;height:28px"><use href="#i-cam"/></svg></span></div>
+    <div class="homebar"></div></div>
+    <div class="caption"><b>Kühlschrank scannen</b>Szene groß, eine Frage, ein Satz, ein Knopf.</div></div>
+
+  <!-- Leer -->
+  <div class="screen"><div class="phone">
+    <div class="sb"><b>9:41</b><span class="island"></span><svg><use href="#status"/></svg></div>
+    <div class="scr">
+      <div class="t1" style="margin-top:40px;font-size:42px">Noch nichts<br>geplant.</div>
+      <div style="color:var(--ink2);font-size:17px;margin-top:8px">Kein Stress – in 30 Sekunden steht dein Plan.</div>
+      <img class="ill" src="ill-v7/lying.webp" style="width:360px;margin:50px 0 0 -12px" alt="">
+    </div>
+    <div style="position:absolute;left:24px;right:24px;bottom:120px" class="row between"><span style="font-weight:800;font-size:17px">Plan erstellen</span><span class="circle" style="width:72px;height:72px"><svg class="i"><use href="#i-arrow"/></svg></span></div>
+    <div class="tabbar"><span class="tb"><svg class="i"><use href="#i-home"/></svg></span><span class="tb"><svg class="i"><use href="#i-tag"/></svg></span><span class="circle" style="width:46px;height:46px"><svg class="i"><use href="#i-plus"/></svg></span><span class="tb"><svg class="i"><use href="#i-bag"/></svg></span><span class="tb on"><svg class="i"><use href="#i-book"/></svg></span></div>
+    <div class="homebar"></div></div>
+    <div class="caption"><b>Leer-Zustand</b>Wie „already late.“: großer Satz, entspannte Figur, ein klarer nächster Schritt.</div></div>
+
+</div>
+</body>
+</html>
