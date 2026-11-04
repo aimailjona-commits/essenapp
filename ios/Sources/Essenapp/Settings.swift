@@ -190,6 +190,7 @@ struct SettingsView: View {
     @AppStorage("appearance") private var appearance = "system"
     static let appearances = [("system", "System"), ("light", "Hell"), ("dark", "Dunkel")]
     static let storage = [("klein", "Klein (3 Packungen)"), ("mittel", "Mittel (6)"), ("gross", "Groß (12)")]
+    @State private var confirmReset = false
 
     var body: some View {
         @Bindable var api = store.api
@@ -319,10 +320,17 @@ struct SettingsView: View {
                     .padding(.vertical, 4)
                     row("clock.arrow.circlepath", Theme.C.danger, "Neu installieren", "alle 7 Tage (kostenlose Apple-ID)")
                 }
-                Button("Abmelden & neu einrichten", role: .destructive) {
-                    api.token = nil; store.onboarded = false; store.plan = nil; store.household = nil
-                }
+                Button("Abmelden & neu einrichten", role: .destructive) { confirmReset = true }
                 .frame(maxWidth: .infinity).padding(.top, 8)
+                // 19.3: neu einrichten legt einen neuen Haushalt an – Plan, Liste und Rezepte bleiben beim alten
+                .confirmationDialog("Wirklich neu einrichten?", isPresented: $confirmReset, titleVisibility: .visible) {
+                    Button("Abmelden & neu einrichten", role: .destructive) {
+                        api.token = nil; store.onboarded = false; store.plan = nil; store.household = nil
+                    }
+                    Button("Abbrechen", role: .cancel) {}
+                } message: {
+                    Text("Dein Wochenplan, die Einkaufsliste und deine Rezepte sind danach auf diesem iPhone weg. Präferenzen änderst du ohne Neueinrichtung oben unter „Präferenzen“ – der Plan bleibt dabei.")
+                }
             }
             .padding(.horizontal, Theme.pagePadding)
             .padding(.bottom, 120)

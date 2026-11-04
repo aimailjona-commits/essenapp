@@ -12,6 +12,7 @@ struct Prefs: Equatable {
     var budgetEuro = 60.0
     var goal = "ausgewogen"
     var maxCook = 45.0
+    var productRules: [ProductRuleDTO] = []  // „Hafermilch statt Milch“ (19.2)
 
     init() {}
 
@@ -20,6 +21,7 @@ struct Prefs: Equatable {
         dislikes = h.excludedIngredients.joined(separator: ", ")
         cuisines = Set(h.cuisines); mealTypes = Set(h.mealTypes); planDays = Set(h.planDays)
         budgetEuro = Double(h.budgetFoodWeekCents) / 100; goal = h.nutritionGoal; maxCook = Double(h.maxCookMinutes)
+        productRules = h.productRules ?? []
     }
 
     var mealTypeList: [String] { Labels.mealTypes.map(\.0).filter(mealTypes.contains) }
@@ -28,7 +30,8 @@ struct Prefs: Equatable {
         HouseholdPatch(persons: persons, diet: diet, allergies: Array(allergies),
                        excludedIngredients: dislikes.split(separator: ",").map { $0.trimmingCharacters(in: .whitespaces) }.filter { !$0.isEmpty },
                        cuisines: Array(cuisines), mealTypes: mealTypeList, planDays: planDays.sorted(),
-                       budgetFoodWeekCents: Int(budgetEuro) * 100, nutritionGoal: goal, maxCookMinutes: Int(maxCook))
+                       budgetFoodWeekCents: Int(budgetEuro) * 100, nutritionGoal: goal, maxCookMinutes: Int(maxCook),
+                       productRules: productRules)
     }
 
     func options(wishes: String, saveAsDefault: Bool) -> PlanOptions {
@@ -62,6 +65,9 @@ struct PlanOptions: Encodable {
 struct PreferencesForm: View {
     @Binding var prefs: Prefs
     var showDiet = true
+    @State private var newAllergy = ""
+    @State private var instead = ""
+    @State private var use = ""
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
@@ -110,9 +116,44 @@ struct PreferencesForm: View {
             if showDiet {
                 section("🥗", "Ernährung & Allergien") {
                     ChipFlow(items: Labels.diets.map { ($0.0, $0.1) }, selected: [prefs.diet]) { prefs.diet = $0 }
-                    ChipFlow(items: Labels.allergies.map { ($0, $0) }, selected: prefs.allergies, color: Theme.C.protein) { prefs.allergies.formSymmetricDifference([$0]) }
+                    // feste Allergien + eigene (19.2: „Meine Allergie war nicht dabei“)
+                    let custom = prefs.allergies.subtracting(Labels.allergies).sorted()
+                    ChipFlow(items: (Labels.allergies + custom).map { ($0, $0) }, selected: prefs.allergies, color: Theme.C.protein) { prefs.allergies.formSymmetricDifference([$0]) }
+                    TextField("Andere Allergie, z.B. Senf", text: $newAllergy)
+                        .submitLabel(.done)
+                        .onSubmit {
+                            let a = newAllergy.trimmingCharacters(in: .whitespaces)
+                            if !a.isEmpty { prefs.allergies.insert(a) }
+                            newAllergy = ""
+                        }
+                        .padding(12).background(Theme.C.surface, in: RoundedRectangle(cornerRadius: Theme.R.chip))
                     TextField("Mag ich nicht, z.B. Koriander, Pilze", text: $prefs.dislikes)
                         .padding(12).background(Theme.C.surface, in: RoundedRectangle(cornerRadius: Theme.R.chip))
+                }
+                section("🔁", "Immer statt") {
+                    ForEach(prefs.productRules, id: \.self) { r in
+                        HStack {
+                            Text("\(r.use) statt \(r.instead)").font(Theme.F.callout)
+                            Spacer()
+                            Button {
+                                prefs.productRules.removeAll { $0 == r }
+                            } label: { Image(systemName: "xmark.circle.fill").foregroundStyle(Theme.C.text3).frame(minWidth: 44, minHeight: 44) }
+                            .accessibilityLabel("Regel \(r.use) statt \(r.instead) löschen")
+                        }
+                    }
+                    HStack(spacing: 8) {
+                        TextField("Hafermilch", text: $use)
+                            .padding(12).background(Theme.C.surface, in: RoundedRectangle(cornerRadius: Theme.R.chip))
+                        Text("statt").font(Theme.F.callout)
+                        TextField("Milch", text: $instead)
+                            .padding(12).background(Theme.C.surface, in: RoundedRectangle(cornerRadius: Theme.R.chip))
+                        Button {
+                            let r = ProductRuleDTO(instead: instead.trimmingCharacters(in: .whitespaces), use: use.trimmingCharacters(in: .whitespaces))
+                            if !r.instead.isEmpty, !r.use.isEmpty, !prefs.productRules.contains(r) { prefs.productRules.append(r) }
+                            instead = ""; use = ""
+                        } label: { Image(systemName: "plus.circle.fill").font(.title2).frame(minWidth: 44, minHeight: 44) }
+                        .accessibilityLabel("Regel hinzufügen")
+                    }
                 }
             }
         }

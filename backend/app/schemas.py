@@ -126,6 +126,7 @@ class OfferOut(BaseModel):
     title: str
     brand: str
     category: str
+    subcategory: str = ""  # feine Kategorie (19.1), Filter im Angebote-Screen (19.4)
     price_cents: int
     regular_price_cents: int | None
     amount: float | None

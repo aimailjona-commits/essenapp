@@ -4,8 +4,9 @@ import SwiftUI
 /// S4 Angebote (diese/nächste Woche, Filter Urteil/Bio/Vegan/Nutri, Monatsaktionen) + S10 Merkliste.
 struct OffersView: View {
     @Environment(AppStore.self) private var store
-    @State private var chain: String?
-    @State private var category: String?
+    @AppStorage("offers.chain") private var chain: String?  // Auswahl merken (19.4)
+    @AppStorage("offers.category") private var category: String?
+    @AppStorage("offers.subcategory") private var subcategory: String?
     @State private var search = ""
     @State private var watchMode = ["watch", "scanner"].contains(Demo.screen ?? "")
     @State private var nextWeek = Demo.screen == "nextweek"  // Vorschau (30)
@@ -17,11 +18,12 @@ struct OffersView: View {
     @State private var filtering = false  // v3: Suche + weitere Filter im Sheet hinter dem Such-Knopf
 
     var body: some View {
-        let all = nextWeek ? store.nextOffers : store.offers
+        let all = (nextWeek ? store.nextOffers : store.offers).filter { $0.category != "nonfood" }  // Möbel, Technik … (19.1)
         let byChain = Dictionary(grouping: all, by: \.chain)
         let chains = Labels.chains.map(\.key).filter { byChain[$0] != nil }
         let filtered = all.filter {
             (chain == nil || $0.chain == chain) && (category == nil || $0.category == category)
+                && (subcategory == nil || $0.subcategory == subcategory)
                 && (search.isEmpty || $0.title.localizedCaseInsensitiveContains(search))
                 && (!realOnly || $0.verdict != "kein_echtes") && (!bio || $0.bio == true) && (!vegan || $0.vegan == true)
                 && (!nutri || ["A", "B"].contains($0.nutriScore ?? "")) && (!bonusOnly || ($0.bonusCents ?? 0) > 0)
@@ -67,10 +69,35 @@ struct OffersView: View {
                 .font(.system(.subheadline, weight: .semibold))
                 .padding(.top, -6)
 
+                // Laden wählen (19.4): sichtbar statt im Filter-Sheet
+                if chains.count > 1 {
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(spacing: 8) {
+                            FilterChip(label: "Alle Läden", selected: chain == nil) { withAnimation(Theme.spring) { chain = nil } }
+                            ForEach(chains, id: \.self) { c in
+                                Button { withAnimation(Theme.spring) { chain = chain == c ? nil : c } } label: {
+                                    HStack(spacing: 6) {
+                                        StoreLogo(chain: c, size: 24)
+                                        Text(Labels.chain(c)).font(.system(.subheadline, weight: .semibold))
+                                        Text("\(byChain[c]?.count ?? 0)").font(.system(.caption, weight: .bold)).opacity(0.6)
+                                    }
+                                    .foregroundStyle(chain == c ? Theme.C.onAction : Theme.C.text1)
+                                    .padding(.horizontal, 10).frame(minHeight: 44)
+                                    .background(chain == c ? Theme.C.action : Theme.C.surface, in: Capsule())
+                                }
+                                .buttonStyle(PressableStyle())
+                                .accessibilityAddTraits(chain == c ? .isSelected : [])
+                            }
+                        }
+                        .padding(.horizontal, Theme.pagePadding)
+                    }
+                    .padding(.horizontal, -Theme.pagePadding)
+                }
+
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 8) {
                         FilterChip(label: "Alle", count: all.count, selected: !watchMode && category == nil) {
-                            withAnimation(Theme.spring) { watchMode = false; category = nil }
+                            withAnimation(Theme.spring) { watchMode = false; category = nil; subcategory = nil }
                         }
                         FilterChip(label: "Merkliste", count: store.watches.count, countHighlight: store.watchHits > 0, selected: watchMode) {
                             withAnimation(Theme.spring) { watchMode.toggle() }
@@ -80,7 +107,7 @@ struct OffersView: View {
                             if n > 0 {
                                 FilterChip(label: String(c.1.split(separator: " ").dropFirst().joined(separator: " ")), count: n,
                                            selected: !watchMode && category == c.0) {
-                                    withAnimation(Theme.spring) { watchMode = false; category = category == c.0 ? nil : c.0 }
+                                    withAnimation(Theme.spring) { watchMode = false; category = category == c.0 ? nil : c.0; subcategory = nil }
                                 }
                             }
                         }
@@ -88,6 +115,26 @@ struct OffersView: View {
                     .padding(.horizontal, Theme.pagePadding)
                 }
                 .padding(.horizontal, -Theme.pagePadding)
+
+                // feine Kategorien der gewählten Kategorie (19.4): Joghurt ≠ Käse
+                if let category, !watchMode {
+                    let inCat = all.filter { o in o.category == category && (chain == nil || o.chain == chain) }
+                    let subs = Labels.subcategories.filter { s in inCat.contains { $0.subcategory == s.0 } }
+                    if subs.count > 1 {
+                        ScrollView(.horizontal, showsIndicators: false) {
+                            HStack(spacing: 8) {
+                                ForEach(subs, id: \.0) { s in
+                                    FilterChip(label: s.1, count: inCat.filter { $0.subcategory == s.0 }.count, filled: true,
+                                               selected: subcategory == s.0) {
+                                        withAnimation(Theme.spring) { subcategory = subcategory == s.0 ? nil : s.0 }
+                                    }
+                                }
+                            }
+                            .padding(.horizontal, Theme.pagePadding)
+                        }
+                        .padding(.horizontal, -Theme.pagePadding)
+                    }
+                }
 
                 if watchMode {
                     WatchListView()
@@ -128,11 +175,11 @@ struct OffersView: View {
             await store.refreshOffers()
             await store.loadWatch()
         }
-        .sheet(isPresented: $filtering) { filterSheet(chains: chains, byChain: byChain, all: all).presentationDetents([.medium, .large]) }
+        .sheet(isPresented: $filtering) { filterSheet(all: all).presentationDetents([.medium, .large]) }
     }
 
     private var activeFilters: Int {
-        [chain != nil, nextWeek, realOnly, bio, vegan, nutri, bonusOnly, !search.isEmpty].filter { $0 }.count
+        [nextWeek, realOnly, bio, vegan, nutri, bonusOnly, !search.isEmpty].filter { $0 }.count
     }
 
     /// „Knaller der Woche“: größter Rabatt (ohne Drogerie/Haushalt).
@@ -141,7 +188,7 @@ struct OffersView: View {
     }
 
     /// Suche, Woche, Läden, Eigenschaften (im Mockup nicht sichtbar → Sheet hinter dem Such-Knopf).
-    private func filterSheet(chains: [String], byChain: [String: [OfferDTO]], all: [OfferDTO]) -> some View {
+    private func filterSheet(all: [OfferDTO]) -> some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
                 Text("Suchen & filtern").font(Theme.F.display(30))
@@ -151,15 +198,6 @@ struct OffersView: View {
                     FilterChip(label: "Diese Woche", selected: !nextWeek) { withAnimation(Theme.spring) { nextWeek = false } }
                     FilterChip(label: "Nächste Woche", count: store.nextOffers.isEmpty ? nil : store.nextOffers.count, selected: nextWeek) {
                         withAnimation(Theme.spring) { nextWeek = true }
-                    }
-                }
-                Text("Läden").font(Theme.F.headline)
-                FlowLayout(spacing: 8) {
-                    FilterChip(label: "Alle", count: all.count, selected: chain == nil) { withAnimation(Theme.spring) { chain = nil } }
-                    ForEach(chains, id: \.self) { c in
-                        FilterChip(label: Labels.chain(c), count: byChain[c]?.count, selected: chain == c) {
-                            withAnimation(Theme.spring) { chain = chain == c ? nil : c }
-                        }
                     }
                 }
                 Text("Eigenschaften").font(Theme.F.headline)

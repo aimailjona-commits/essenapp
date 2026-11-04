@@ -168,6 +168,9 @@ struct DayCard: View {
     @State private var rolling = false
     @State private var replacing = false  // „ersetzen durch eigenes Rezept“ → S19
     @State private var open = false
+    @State private var choosing = false  // Würfel → Richtung wählen (19.3)
+    @State private var wishing = false
+    @State private var wish = ""
 
     /// Karten eines Tages: Tagesfarbe, dann die Farben der Folgetage; Dessert/Snack weiß.
     static func color(day: Int, index: Int, mealType: String) -> Color {
@@ -230,6 +233,31 @@ struct DayCard: View {
         .sheet(isPresented: $replacing) {
             PlanSlotSheet(entry: meal).presentationDetents([.medium, .large]).presentationCornerRadius(Theme.R.sheet)
         }
+        .confirmationDialog("Neues Gericht – wie soll es sein?", isPresented: $choosing, titleVisibility: .visible) {
+            Button("Einfach anders") { roll() }
+            ForEach(Labels.rerollDirections, id: \.0) { d in Button(d.1) { roll(direction: d.0) } }
+            Button("Eigener Wunsch …") { wish = ""; wishing = true }
+            Button("Mag ich nicht – nie wieder vorschlagen", role: .destructive) {
+                Task {
+                    if await store.rate(meal.recipe.id, stars: 1, again: "nie", note: "") { roll() }
+                }
+            }
+            Button("Abbrechen", role: .cancel) {}
+        }
+        .alert("Was hättest du gern?", isPresented: $wishing) {
+            TextField("z. B. mit Reis, etwas Asiatisches", text: $wish)
+            Button("Würfeln") { roll(wish: wish) }
+            Button("Abbrechen", role: .cancel) {}
+        }
+    }
+
+    private func roll(direction: String? = nil, wish: String = "") {
+        guard !meal.locked, !rolling else { return }
+        withAnimation(.easeInOut(duration: 0.9).repeatForever(autoreverses: false)) { rolling = true }
+        Task {
+            await store.reroll(meal, direction: direction, wish: wish)
+            withAnimation(Theme.spring) { rolling = false }
+        }
     }
 
     private var actions: some View {
@@ -243,12 +271,7 @@ struct DayCard: View {
                 Task { await store.setLocked(meal, !meal.locked) }
             },
             .init(symbol: "dice", label: "Neu würfeln") {
-                guard !meal.locked, !rolling else { return }
-                withAnimation(.easeInOut(duration: 0.9).repeatForever(autoreverses: false)) { rolling = true }
-                Task {
-                    await store.reroll(meal)
-                    withAnimation(Theme.spring) { rolling = false }
-                }
+                if !meal.locked, !rolling { choosing = true }
             },
         ], compact: true, ink: color == Theme.C.card ? Theme.C.text1 : Theme.C.ink)
         .sensoryFeedback(.impact(weight: .light), trigger: meal.locked)
@@ -612,8 +635,10 @@ extension RecipeDetailView {
                 .contextMenu {  // lange drücken → Ersatz (7)
                     Button("Ersatz finden", systemImage: "arrow.left.arrow.right") { substituting = index }
                     Button("Preisalarm", systemImage: "bell.badge") { alarmFor = ing.name }
+                    Button("Mag ich nicht", systemImage: "hand.thumbsdown") { Task { await store.dislike(ing.name) } }  // 19.2
                 }
                 .accessibilityAction(named: "Ersatz finden") { substituting = index }
+                .accessibilityAction(named: "Mag ich nicht") { Task { await store.dislike(ing.name) } }
                 .accessibilityAction(named: "Preisalarm") { alarmFor = ing.name }
                 .accessibilityHint(who.flatMap { w in mine.map { m in "Portion \(w.name): \(qty(ing.amount * m * meal.scale / base, ing.unit))" } } ?? "")
             }

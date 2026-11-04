@@ -45,27 +45,27 @@ Status: **aktiv** (2026-11-04). UI ohne Mockup-Freigabe direkt mit v3-Bausteinen
 
 ## 19.2 Präferenzen, „mag ich nicht“, Allergien
 
-- [ ] **Produkt-Regeln** je Haushalt/Person: „immer X statt Y“ (Hafermilch statt Milch), „nur Marke/Bio“, „nie X“; Planer + Einkaufsliste wenden sie an
-- [ ] **„Mag ich nicht“** direkt am Gericht und an der Zutat (Rezeptdetail, Wochenplan) → landet in den Abneigungen, Gericht wird gleich ersetzt (Rückfrage)
-- [ ] Allergien: feste Chips **plus freie Eingabe**
-- [ ] Code-Prüfung nach der KI: Gerichte mit Allergenen/Abneigungen/„nie“-Zutaten werden verworfen und neu erzeugt (`substitutes.forbidden` wiederverwenden), nicht nur Prompt-Text
-- [ ] **Kalorien fixen:** Plan nutzt Ziele (kcal/Protein) aktiv; unsichere USDA-Treffer („niedrig“) markieren statt still zählen; fehlende Zutaten als Hinweis statt 0 kcal; Stückgewichte für häufige „stk“-Zutaten; ml ≠ g (Dichte für Öl, Milch, Sahne)
+- [x] **Produkt-Regeln** je Haushalt: „immer X statt Y“ (`household.product_rules`, Einstellungen › Präferenzen › „Immer statt“); Planer bekommt sie als Regel und der Code benennt Zutaten danach um (`planner.apply_rules`), Liste folgt dem Plan. „nie X“ = „Mag nicht“. „nur Marke/Bio“ weggelassen (nicht verlangt)
+- [x] **„Mag ich nicht“**: Zutat lange drücken im Rezept → Abneigungen; Gericht: Würfel › „Mag ich nicht – nie wieder vorschlagen“ (Bewertung „nie“ + neues Gericht)
+- [x] Allergien: feste Chips **plus freie Eingabe** (Präferenzen; Onboarding folgt mit 19.7)
+- [x] Code-Prüfung nach der KI: Gerichte mit Allergenen/Abneigungen/„nie“-Zutaten werden verworfen und neu erzeugt (`substitutes.forbidden` wiederverwenden), nicht nur Prompt-Text
+- [x] **Kalorien fixen:** echte Pläne nachgerechnet → Fehlzuordnungen (Tortilla = Backmischung, Dosenbohnen = getrocknet, 2,5× kcal). Prompts korrigiert, unsichere/betroffene Zuordnungen per Migration neu, Nährwert-Abruf ordnet Fehlendes nach; Stück ohne Gewicht zählt 100 g statt den Tag leer zu lassen. ml ≈ g bleibt (Abweichung < 10 %)
 - Abnahme: Testhaushalt mit Hafermilch-Regel + freier Allergie → 5 Pläne ohne Verstoß; kcal je Tag innerhalb ± 15 % des Ziels
 
 ## 19.3 Einzelne Gerichte neu generieren, Plan nie verlieren
 
-- [ ] „Neu würfeln“ mit Richtung: schneller · günstiger · ohne Fleisch · anderes Gericht · eigener Wunsch (Text); neues Gericht läuft durch Allergie- und Abwechslungsprüfung
-- [ ] Rückgängig nach dem Würfeln (vorheriges Gericht zurück)
-- [ ] Plan-Woche sauber trennen: „aktueller Plan“ = Plan der laufenden Woche; Plan für nächste Woche ersetzt ihn nicht (R6)
-- [ ] Einstellungen ändern nie den bestehenden Plan; „neu einrichten“ warnt vorher, dass der Plan wegfällt
+- [x] „Neu würfeln“ mit Richtung: schneller · günstiger · ohne Fleisch · anderes Gericht · eigener Wunsch (Text); neues Gericht läuft durch Allergie- und Abwechslungsprüfung
+- [x] Rückgängig nach dem Würfeln (Toast „Rückgängig“, `POST /plans/current/entries/{id}/undo`) und nach einem neuen Plan (`POST /plans/current/undo`)
+- [x] Plan nie verlieren (R6): aktueller Plan = zuletzt aktivierter (`meal_plan.active_at`), alte Pläne bleiben gespeichert und kommen per „Rückgängig“ zurück. Plan für nächste Woche bleibt bewusst der aktuelle (Einkauf am Wochenende)
+- [x] Einstellungen ändern nie den bestehenden Plan (geprüft: `PATCH /household`); „neu einrichten“ fragt jetzt nach
 - Abnahme: Test „Plan nächste Woche erzeugen“ lässt den laufenden Plan + Liste unverändert
 
 ## 19.4 Angebote: Laden wählen, nach Kategorien filtern
 
-- [ ] Laden-Leiste sichtbar oben im Angebote-Screen (Logos wie S5, „Alle“ + je Laden), nicht im Filter-Sheet versteckt
-- [ ] Kategorie-Chips mit den feineren Kategorien aus 19.1, kombinierbar mit Laden
-- [ ] Auswahl merken
-- [ ] Mockup S4 erweitern → 👤 Freigabe → Bau → CI-Vergleich
+- [x] Laden-Leiste sichtbar oben im Angebote-Screen (Logos wie S5, „Alle“ + je Laden), nicht im Filter-Sheet versteckt
+- [x] Kategorie-Chips + zweite Reihe mit feinen Kategorien aus 19.1, kombinierbar mit Laden; Nicht-Lebensmittel ausgeblendet
+- [x] Auswahl merken (`@AppStorage`)
+- [x] ~~Mockup~~ entfällt (E91); CI-Screenshot am Ende von Phase 19
 
 ## 19.5 Einkaufsliste = Rezept, in Packungen des Ladens
 

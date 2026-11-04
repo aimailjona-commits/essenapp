@@ -53,6 +53,12 @@ struct HouseholdDTO: Codable {
     var stepImagesAvailable: Bool? = nil  // FAL_KEY im Backend gesetzt → Schalter zeigen
     var variety: VarietyDTO? = nil  // Abwechslungsregeln (12)
     var storageSpace: String? = nil  // Vorratsplatz klein | mittel | gross (31)
+    var productRules: [ProductRuleDTO]? = nil  // „Hafermilch statt Milch“ (19.2)
+}
+
+struct ProductRuleDTO: Codable, Hashable {
+    var instead: String
+    var use: String
 }
 
 struct HouseholdCreated: Codable {
@@ -66,6 +72,7 @@ struct OfferDTO: Codable, Identifiable, Hashable {
     var title: String
     var brand: String
     var category: String
+    var subcategory: String? = nil  // feine Kategorie (19.1/19.4)
     var priceCents: Int
     var regularPriceCents: Int?
     var amount: Double?
@@ -595,11 +602,19 @@ enum Labels {
     static let dayNames = ["Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag", "Sonntag"]
     static let diets = [("alles", "Alles"), ("vegetarisch", "Vegetarisch"), ("vegan", "Vegan"), ("pescetarisch", "Pescetarisch"), ("halal", "Halal")]
     static let allergies = ["Gluten", "Laktose", "Nüsse", "Erdnüsse", "Ei", "Soja", "Fisch", "Sellerie"]
+    static let rerollDirections = [("schneller", "Schneller"), ("guenstiger", "Günstiger"), ("ohne_fleisch", "Ohne Fleisch"),
+                                   ("leichter", "Leichter"), ("anders", "Ganz andere Küche")]
     static let goals = [("ausgewogen", "Ausgewogen", "Alle Nährstoffe abdecken"), ("proteinreich", "Proteinreich", "Viel Eiweiß"),
                         ("kalorienarm", "Kalorienarm", "Leichter essen")]
     static let cuisines = ["Indisch", "Asiatisch", "Italienisch", "Deutsch", "Mexikanisch", "Orientalisch"]
     static let categories = [("obst_gemuese", "🥦 Obst & Gemüse"), ("fleisch_fisch", "🥩 Fleisch & Fisch"), ("kuehlung", "🧀 Kühlung"),
                              ("vorrat", "🥫 Vorrat"), ("getraenke", "🥤 Getränke"), ("drogerie", "🧴 Drogerie"), ("haushalt", "🧽 Haushalt")]
+    /// Feine Kategorien (Backend kaufda.SUBCATEGORIES) für die zweite Chip-Reihe im Angebote-Screen (19.4).
+    static let subcategories = [("obst", "Obst"), ("gemuese", "Gemüse"), ("fleisch", "Fleisch"), ("wurst", "Wurst"), ("fisch", "Fisch"),
+                                ("molkerei", "Milch & Butter"), ("joghurt", "Joghurt & Quark"), ("kaese", "Käse"), ("tiefkuehl", "Tiefkühl"),
+                                ("brot", "Brot"), ("nudeln_reis", "Nudeln & Reis"), ("konserven", "Konserven & Öl"), ("saucen", "Saucen"),
+                                ("backen", "Backen"), ("fruehstueck", "Frühstück"), ("kaffee_tee", "Kaffee & Tee"), ("suesses", "Süßes"),
+                                ("snacks", "Snacks & Nüsse")]
 }
 
 /// Settings-PATCH: nur gesetzte Felder werden gesendet (Optionals fallen beim Encoden weg).
@@ -621,6 +636,7 @@ struct HouseholdPatch: Encodable {
     var stepImages: Bool?
     var variety: VarietyDTO?
     var storageSpace: String?
+    var productRules: [ProductRuleDTO]?
 }
 
 /// App-Zustand: lädt und hält Haushalt, Angebote und Plan.
@@ -775,9 +791,11 @@ final class AppStore {
         generating = true
         defer { generating = false }
         do {
+            let had = plan != nil
             plan = try await api.request("POST", "/plans", body: options, timeout: 300)  // KI-Plan dauert bis ~2 min
             await loadLists()  // Backend übernimmt die Zutaten in die Haushaltsliste
             error = nil
+            if had { flash("Neuer Plan erstellt", action: ("Rückgängig", { Task { await self.undoPlan() } })) }  // 19.3
             await loadNutrition()
         } catch {
             self.error = error.localizedDescription
@@ -825,16 +843,52 @@ extension AppStore {
         try await api.request("GET", "/stores/nearby?radius_km=\(radiusKm)", timeout: 60)
     }
 
-    /// Neu würfeln; `maxCost`: „günstigere Alternative“ mit Kostengrenze (43).
-    func reroll(_ meal: MealDTO, maxCost: Int? = nil) async {
+    /// Neu würfeln; `maxCost`: „günstigere Alternative“ mit Kostengrenze (43); `direction`/`wish`: Richtung (19.3).
+    func reroll(_ meal: MealDTO, maxCost: Int? = nil, direction: String? = nil, wish: String = "") async {
         guard let id = meal.id else { return }
-        struct Body: Encodable { var maxCostCents: Int }
+        struct Body: Encodable { var maxCostCents: Int?; var direction: String?; var wish: String }
         do {
-            plan = try await api.request("POST", "/plans/current/entries/\(id)/reroll", body: maxCost.map { c in Body(maxCostCents: c) },
-                                         timeout: 180)
+            plan = try await api.request("POST", "/plans/current/entries/\(id)/reroll",
+                                         body: Body(maxCostCents: maxCost, direction: direction, wish: wish), timeout: 180)
+            let title = plan?.entries.first { $0.id == id }?.recipe.title ?? "Neues Gericht"
+            flash(title, action: ("Rückgängig", { Task { await self.undo(entry: id) } }))
             await loadNutrition()  // Tagesringe reagieren aufs Würfeln
         } catch {
             self.error = error.localizedDescription
+        }
+    }
+
+    /// Gericht vor dem letzten Würfeln/Ersetzen zurück (19.3).
+    func undo(entry id: Int) async {
+        do {
+            plan = try await api.request("POST", "/plans/current/entries/\(id)/undo")
+            await loadLists()
+            await loadNutrition()
+        } catch {
+            flash("Rückgängig nicht möglich: \(error.localizedDescription)")
+        }
+    }
+
+    /// Vorigen Plan wieder aktiv machen (19.3); der neue bleibt gespeichert.
+    func undoPlan() async {
+        do {
+            plan = try await api.request("POST", "/plans/current/undo")
+            await loadLists()
+            await loadNutrition()
+            flash("Voriger Plan ist wieder aktiv")
+        } catch {
+            flash("Rückgängig nicht möglich: \(error.localizedDescription)")
+        }
+    }
+
+    /// „Mag ich nicht“ (19.2): Zutat in die Abneigungen; die KI plant sie nicht mehr ein, der Code prüft das nach.
+    func dislike(_ ingredient: String) async {
+        guard let h = household, !h.excludedIngredients.contains(where: { $0.caseInsensitiveCompare(ingredient) == .orderedSame }) else { return }
+        do {
+            try await save(HouseholdPatch(excludedIngredients: h.excludedIngredients + [ingredient]))
+            flash("„\(ingredient)“ kommt nicht mehr in deine Pläne")
+        } catch {
+            flash("Nicht gespeichert: \(error.localizedDescription)")
         }
     }
 
