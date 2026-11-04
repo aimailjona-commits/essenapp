@@ -110,7 +110,9 @@ enum APIError: LocalizedError {
 
 @MainActor @Observable
 final class API {
-    var baseURL: String = UserDefaults.standard.string(forKey: "backendURL") ?? "" {
+    /// Server der App-Store-Version (19.7); leer = Entwicklung, Adresse im Willkommens-Screen eingeben.
+    static let defaultServer = ""
+    var baseURL: String = UserDefaults.standard.string(forKey: "backendURL") ?? API.defaultServer {
         didSet { UserDefaults.standard.set(baseURL, forKey: "backendURL") }
     }
     var token: String? = Keychain.read() {

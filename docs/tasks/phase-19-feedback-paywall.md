@@ -88,11 +88,11 @@ Status: **aktiv** (2026-11-04). UI ohne Mockup-Freigabe direkt mit v3-Bausteinen
 
 ## 19.7 Besseres Onboarding
 
-- [ ] Server-Adresse aus dem Willkommens-Screen raus (fest, nur versteckt für Entwicklung)
-- [ ] Weniger Fragen am Anfang: PLZ, Läden, Personen – Rest (Ziele, Küchen, Allergien) später/optional; erst Wert zeigen (Angebote der Woche), dann fragen (R9)
-- [ ] Budget: realistische Spanne je Person anzeigen („für 2 Personen meist 40–70 €“), niedrige Budgets erlaubt, aber mit ehrlichem Hinweis statt Sperre (R8)
-- [ ] **Preis/Abo vor dem ersten Dateneingeben zeigen**, nicht danach (R9)
-- [ ] Mockup Onboarding 1–4 → 👤 Freigabe → Bau
+- [x] Server-Adresse aus dem Willkommens-Screen raus (fest, nur versteckt für Entwicklung) – `API.defaultServer`; Feld nur ohne eingebaute Adresse oder per langem Druck auf den Titel. 👤 Domain des VPS nennen, dann trage ich sie ein
+- [x] Weniger Fragen am Anfang: PLZ, Läden, Personen – Rest (Ziele, Küchen, Allergien) später/optional; erst Wert zeigen (Angebote der Woche), dann fragen (R9) – Allergien + Ernährung bleiben (Sicherheit, inkl. eigener Allergie); Angebote laden ab der Laden-Auswahl, Anzahl wird gezeigt
+- [x] Budget: realistische Spanne je Person anzeigen („für 2 Personen meist 40–70 €“), niedrige Budgets erlaubt, aber mit ehrlichem Hinweis statt Sperre (R8) – 25–40 € je Person, Regler ab 10 €
+- [x] **Preis/Abo vor dem ersten Dateneingeben zeigen**, nicht danach (R9) – Satz auf dem Willkommens-Screen
+- [x] ~~Mockup Onboarding 1–4 → 👤 Freigabe → Bau~~ entfällt (E91)
 
 ## 19.8 Paywall (nach Entscheidung 0)
 

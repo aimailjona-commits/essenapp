@@ -1,6 +1,7 @@
 import SwiftUI
 
-/// S6 Onboarding: Willkommen → PLZ → Läden auf der Karte → Haushalt → Budget & Ziel.
+/// S6 Onboarding: Willkommen (mit Preis) → PLZ → Läden auf der Karte → Haushalt & Allergien → Budget.
+/// 19.7: Ziel, Mahlzeiten, Küchen und „Mag ich nicht“ später unter Vorlieben (Standard: ausgewogen, Mittag + Abend).
 struct OnboardingView: View {
     @Environment(AppStore.self) private var store
     @State private var step = 0
@@ -8,11 +9,9 @@ struct OnboardingView: View {
     @State private var persons = 2
     @State private var diet = "alles"
     @State private var allergies: Set<String> = []
-    @State private var dislikes = ""
+    @State private var newAllergy = ""
     @State private var budgetEuro = 60.0
-    @State private var goal = "ausgewogen"
-    @State private var meals: Set<String> = ["mittag", "abend"]
-    @State private var cuisines: Set<String> = []
+    @State private var showServer = false
     @State private var busy = false
     @State private var error: String?
 
@@ -23,7 +22,10 @@ struct OnboardingView: View {
             } else if step == 2 {
                 VStack(spacing: 0) {
                     progress.padding(.horizontal, Theme.pagePadding).padding(.top, 8)
-                    StoreMapView { withAnimation(Theme.spring) { step = 3 } }
+                    StoreMapView {
+                        withAnimation(Theme.spring) { step = 3 }
+                        Task { await store.refreshOffers() }  // 19.7: erst Wert zeigen – Angebote laden, während gefragt wird
+                    }
                 }
                 .background(Theme.C.bg)
                 .transition(.move(edge: .trailing).combined(with: .opacity))
@@ -56,6 +58,11 @@ struct OnboardingView: View {
                     case 1: plzStep
                     case 3: householdStep
                     default: budgetStep
+                    }
+                    if step > 2, !store.offers.isEmpty {
+                        Text("🔥 \(store.offers.count) Angebote deiner Läden diese Woche – daraus planen wir gleich.")
+                            .font(Theme.F.caption).foregroundStyle(Theme.C.text1)
+                            .padding(14).frame(maxWidth: .infinity, alignment: .leading).card()
                     }
                     if let error { Text(error).font(Theme.F.caption).foregroundStyle(Theme.C.danger) }
                 }
@@ -102,15 +109,12 @@ struct OnboardingView: View {
             Task {
                 defer { busy = false }
                 do {
-                    try await store.save(HouseholdPatch(
-                        persons: persons, diet: diet, allergies: Array(allergies),
-                        excludedIngredients: dislikes.split(separator: ",").map { $0.trimmingCharacters(in: .whitespaces) }.filter { !$0.isEmpty },
-                        cuisines: Array(cuisines), mealTypes: Labels.mealTypes.map(\.0).filter(meals.contains),
-                        budgetFoodWeekCents: Int(budgetEuro) * 100, nutritionGoal: goal))
+                    try await store.save(HouseholdPatch(persons: persons, diet: diet, allergies: Array(allergies),
+                                                        budgetFoodWeekCents: Int(budgetEuro) * 100))
                     store.onboarded = true
                     Task {
                         store.generating = true  // Start zeigt Skeleton, bis Angebote + Plan da sind
-                        await store.refreshOffers()
+                        if store.offers.isEmpty { await store.refreshOffers() }
                         await store.generatePlan()
                     }
                 } catch {
@@ -159,14 +163,20 @@ struct OnboardingView: View {
                 }
                 .padding(.bottom, 22)
                 DisplayHeader(line1: "Kochen nach", line2: "Angebot.", size: 50)
+                    .onLongPressGesture { showServer = true }  // Entwicklung: eigenen Server eintragen
                 Text("Wir lesen die Prospekte deiner Läden und planen daraus deine Woche.")
-                    .font(.system(.callout)).foregroundStyle(Theme.C.text2).lineSpacing(4).padding(.top, 12).padding(.bottom, 16)
-                TextField("Server, z.B. http://192.168.178.20:8000", text: $api.baseURL)
-                    .keyboardType(.URL).textInputAutocapitalization(.never).autocorrectionDisabled()
-                    .font(Theme.F.caption)
-                    .padding(.horizontal, 18).frame(height: 44)
-                    .background(Theme.C.card, in: Capsule()).overlay(Capsule().strokeBorder(Theme.C.line, lineWidth: 1))
-                    .padding(.bottom, 10)
+                    .font(.system(.callout)).foregroundStyle(Theme.C.text2).lineSpacing(4).padding(.top, 12).padding(.bottom, 8)
+                // 19.7 (R9): Preis vor dem ersten Eingeben
+                Text("Kostenlos nutzbar. Pro-Funktionen für 3 € im Monat – oder gratis mit kurzer Werbung.")
+                    .font(Theme.F.caption).foregroundStyle(Theme.C.text1).padding(.bottom, 16)
+                if showServer || API.defaultServer.isEmpty && api.baseURL.isEmpty {
+                    TextField("Server, z.B. http://192.168.178.20:8000", text: $api.baseURL)
+                        .keyboardType(.URL).textInputAutocapitalization(.never).autocorrectionDisabled()
+                        .font(Theme.F.caption)
+                        .padding(.horizontal, 18).frame(height: 44)
+                        .background(Theme.C.card, in: Capsule()).overlay(Capsule().strokeBorder(Theme.C.line, lineWidth: 1))
+                        .padding(.bottom, 10)
+                }
                 Button("Los geht's") { step = 1 }
                     .buttonStyle(PrimaryButtonStyle())
                     .disabled(api.baseURL.isEmpty)
@@ -210,49 +220,42 @@ struct OnboardingView: View {
             label("ERNÄHRUNG")
             ChipFlow(items: Labels.diets.map { ($0.0, $0.1) }, selected: [diet]) { diet = $0 }
             label("ALLERGIEN & UNVERTRÄGLICHKEITEN")
-            ChipFlow(items: Labels.allergies.map { ($0, $0) }, selected: allergies, color: Theme.C.protein) { allergies.formSymmetricDifference([$0]) }
-            label("MAG ICH NICHT")
-            TextField("z.B. Koriander, Pilze …", text: $dislikes)
+            let custom = allergies.subtracting(Labels.allergies).sorted()
+            ChipFlow(items: (Labels.allergies + custom).map { ($0, $0) }, selected: allergies, color: Theme.C.protein) { allergies.formSymmetricDifference([$0]) }
+            TextField("Andere Allergie, z.B. Senf", text: $newAllergy)
+                .submitLabel(.done)
+                .onSubmit {
+                    let a = newAllergy.trimmingCharacters(in: .whitespaces)
+                    if !a.isEmpty { allergies.insert(a) }
+                    newAllergy = ""
+                }
                 .padding(16).background(Theme.C.card, in: RoundedRectangle(cornerRadius: Theme.R.tile))
                 .overlay(RoundedRectangle(cornerRadius: Theme.R.tile).strokeBorder(Theme.C.line, lineWidth: 0.5))
+            Text("Ziele, Küchen und was du nicht magst, stellst du später unter Vorlieben ein.")
+                .font(Theme.F.micro).foregroundStyle(Theme.C.text2)
         }
     }
 
     private var budgetStep: some View {
-        VStack(alignment: .leading, spacing: 18) {
-            DisplayHeader(line1: "Budget", line2: "& Ziel")
+        // 19.7 (R8): ehrliche Spanne statt Sperre; meist 25–40 € je Person und Woche beim Kochen nach Angebot
+        let low = persons * 25, high = persons * 40
+        return VStack(alignment: .leading, spacing: 18) {
+            DisplayHeader(line1: "Dein", line2: "Budget")
             VStack(spacing: 4) {
                 Text(euro(Int(budgetEuro) * 100)).font(.system(size: 54, weight: .bold, design: .rounded)).monospacedDigit()
                     .contentTransition(.numericText())
                     .animation(Theme.spring, value: budgetEuro)
                 Text("pro Woche für Lebensmittel").font(Theme.F.caption).foregroundStyle(Theme.C.text2)
-                Slider(value: $budgetEuro, in: 20...200, step: 5).tint(Theme.C.accent)
+                Slider(value: $budgetEuro, in: 10...250, step: 5).tint(Theme.C.accent)
                     .sensoryFeedback(.selection, trigger: budgetEuro)
             }
             .padding(18).card()
-            label("ZIEL")
-            LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 10) {
-                ForEach(Labels.goals, id: \.0) { g in
-                    let on = goal == g.0
-                    Button { withAnimation(Theme.spring) { goal = g.0 } } label: {
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text(g.0 == "proteinreich" ? "💪" : g.0 == "kalorienarm" ? "🥗" : "⚖️").font(.system(size: 28))
-                            Text(g.1).font(Theme.F.callout)
-                            Text(g.2).font(Theme.F.micro).foregroundStyle(Theme.C.text2)
-                        }
-                        .foregroundStyle(Theme.C.text1)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(14)
-                        .background(on ? Theme.C.accentSoft : Theme.C.card, in: RoundedRectangle(cornerRadius: 20))
-                        .overlay(RoundedRectangle(cornerRadius: 20).strokeBorder(on ? Theme.C.accent : Theme.C.line, lineWidth: on ? 2 : 0.5))
-                    }
-                    .buttonStyle(PressableStyle())
-                }
+            Text("Für \(persons) \(persons == 1 ? "Person" : "Personen") reichen meist \(low)–\(high) €.")
+                .font(Theme.F.caption).foregroundStyle(Theme.C.text1)
+            if Int(budgetEuro) < persons * 20 {
+                Text("Sehr knapp: Wir planen so günstig wie möglich, aber das Budget wird vielleicht nicht ganz reichen.")
+                    .font(Theme.F.caption).foregroundStyle(Theme.C.danger)
             }
-            label("MAHLZEITEN")
-            ChipFlow(items: Labels.mealTypes.filter { m in m.0 != "snack" }, selected: meals, color: Theme.C.kcal) { meals.formSymmetricDifference([$0]) }
-            label("KÜCHE (leer = gemischt)")
-            ChipFlow(items: Labels.cuisines.map { ($0, $0) }, selected: cuisines, color: Theme.C.accent) { cuisines.formSymmetricDifference([$0]) }
         }
     }
 
