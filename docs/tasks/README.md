@@ -37,7 +37,11 @@
 | Selbst getroffene Entscheidungen prüfen (Playbook E78–E85) | optional | 11–16 |
 | IONOS-VPS (Ubuntu 24.04, ≥ 2 GB) + Domain anlegen | Umzug | 17 |
 | Download Fraunces + JetBrains Mono (OFL) freigeben; Mockup-Gruppen freigeben | Redesign v3 | 18 |
-| Anfrage beim gewählten Angebots-API-Anbieter; später App-Store-Connect (Abo-Produkt), AdMob-Konto | Kommerziell | 19 |
+| Anfragen an Shopfully / Bonial / marktguru abschicken (Texte: `docs/research/anfragen-angebotsdaten.md`) | Kommerziell | 19 |
+| App Store Connect: Abo `de.jsenf.essenapp.pro.monthly` (3 €/Monat, optional Testphase) anlegen; In-App-Purchase-Key (`.p8`) nach `backend/secrets/`, Key-ID + Issuer-ID nennen | Paywall | 19.8 |
+| Domain des VPS nennen (kommt als feste Server-Adresse in die App) | Onboarding | 19.7 |
+| AdMob-Konto + Anzeigenblock (Belohnungsvideo) | Werbung statt Abo | 19.8 |
+| Gratis/Pro-Aufteilung (Vorschlag C) bestätigen oder ändern; Apple-Erinnerungen-Export gewünscht? Wo kam „Joghurt als Cherrygold-Käse“? | Entscheidungen | 19 |
 
 ## Regeln
 

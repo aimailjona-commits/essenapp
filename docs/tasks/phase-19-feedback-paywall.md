@@ -118,3 +118,23 @@ Status: **aktiv** (2026-11-04). UI ohne Mockup-Freigabe direkt mit v3-Bausteinen
 - Alle Abnahmen oben erfüllt, Tests grün, CI-Screenshots neben freigegebenen Mockups
 - Rezensions-Tabelle: jede Zeile R1–R15 ist erledigt oder bewusst verworfen (Grund dahinter)
 - Neue Entscheidungen im Playbook (E90 ff.)
+
+### Stand R1–R15 (2026-11-04)
+
+| # | Stand |
+|---|---|
+| R1 | erledigt: Liste fasst Singular/Plural + kg/g zusammen, Schritte werden gegen Zutaten geprüft (19.5) |
+| R2 | erledigt: Packungen des Angebots auf der Liste, falsche Angebots-Zuordnungen fliegen raus (19.1, 19.5) |
+| R3 | erledigt: Plan-Summe = ganze Packungen (war schon so), doppelte Packungen durch Plural behoben |
+| R4 | erledigt: Neu würfeln mit Richtung/Wunsch (19.3) |
+| R5 | erledigt: nur deutsche Einheiten (Schemas), Web zeigt EL/TL |
+| R6 | erledigt: aktueller Plan = zuletzt aktivierter, Rückgängig (19.3) |
+| R7 | erledigt: eigene Allergien (19.2, auch im Onboarding) |
+| R8 | erledigt: Budget ab 10 €, ehrliche Spanne (19.7) |
+| R9 | erledigt: Preis auf dem Willkommens-Screen, Paywall schließbar (19.7, 19.8) |
+| R10 | erledigt: Erinnerung 2 Tage vor Ende der Testphase (19.8) |
+| R11 | erledigt: Abo je Haushalt, serverseitig (19.8) |
+| R12 | erledigt: Bewertungsabfrage nur nach dem 3. gut bewerteten Gericht (19.8) |
+| R13 | erledigt: „Fehler melden“ (19.9) |
+| R14 | offen 👤: Apple-Erinnerungen nur, wenn gewünscht |
+| R15 | erledigt: Filter „Ausgeblendet“ + „Wieder vorschlagen“ (19.9) |
