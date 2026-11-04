@@ -1,3 +1,4 @@
+import re
 from datetime import date
 
 from app.models import Offer
@@ -205,6 +206,25 @@ def test_repair_replans_only_the_bad_meal():
     p = planner.make_plan(h, [], [(0, "abend"), (1, "abend")], [], ask=ask, forbid=lambda n: forbidden(n, h.allergies))
     assert [m.title for m in p.draft.meals] == ["Curry", "Suppe"]
     assert "NUR diese Mahlzeiten" in notes[1] and "Di abend: Suppe" in notes[1]
+
+
+def test_week_is_planned_in_parallel_day_blocks_and_truncation_retried():
+    from types import SimpleNamespace
+    h = SimpleNamespace(persons=2, diet="alles", allergies=[], excluded_ingredients=[], cuisines=[],
+                        nutrition_goal="ausgewogen", max_cook_minutes=30, budget_food_week_cents=100000,
+                        product_rules=[], plan_days=list(range(7)), meal_types=["mittag", "abend"])
+    slots = [(d, m) for d in range(7) for m in ("mittag", "abend")]
+    asked, broken = [], [True]
+
+    def ask(prompt):
+        todo = [(int(d), m) for d, m in re.findall(r"- day=(\d) \(\w+\), meal_type=(\w+)", prompt[-1]["text"])]
+        if broken.pop() if broken else False:
+            raise RuntimeError("Plan nicht erzeugt (Antwort unvollständig)")
+        asked.append(todo)
+        return planner.PlanDraft(meals=[meal(d, f"Gericht {d}{m}", [ing("Kartoffeln", 100)], m) for d, m in todo]),             {"output_tokens": 10}
+    p = planner.make_plan(h, [], slots, [], ask=ask)
+    assert sorted(len(t) for t in asked) == [4, 4, 6] and sorted(s for t in asked for s in t) == sorted(slots)
+    assert len(p.draft.meals) == 14 and p.usage["output_tokens"] == 30
 
 
 def test_never_recipes_are_findable_and_can_be_unhidden(client, auth, db):

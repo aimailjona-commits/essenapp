@@ -5,6 +5,8 @@ import re
 import time
 from datetime import date, datetime, timedelta
 
+import pytest
+
 from app import jobs
 from app.jobs import BERLIN
 from app.models import Household, MealPlan, Member, Offer, PantryItem, Recipe
@@ -12,6 +14,11 @@ from app.services import food_map, pantry_ai, planner, seasons, substitutes, var
 from app.services.planner import PlanDraft, PlannedIngredient, PlannedMeal
 
 RULES = variety.rules_of({})
+
+
+@pytest.fixture(autouse=True)
+def one_call(monkeypatch):
+    monkeypatch.setattr(planner, "PART_SLOTS", 99)  # Fakes hier zählen Aufrufe; Aufteilen prüft test_phase19
 
 
 def ing(name, amount, unit="g", offer_id=None, pack=500, price=200, pantry=False):

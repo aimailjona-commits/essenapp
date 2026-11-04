@@ -9,7 +9,7 @@ from dataclasses import dataclass, field
 from typing import Literal
 
 import anthropic
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, ValidationError
 
 from app.core.config import settings
 from app.models import AiCost, Household, MemberProfile, Offer, PantryItem
@@ -29,6 +29,7 @@ MealKind = Literal["fruehstueck", "lunchbox", "mittag", "snack", "vorspeise", "a
 DAYS = ["Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag", "Sonntag"]
 FOOD_CATEGORIES = ("fleisch_fisch", "obst_gemuese", "kuehlung", "vorrat", "sonstiges")  # ohne Getränke/Drogerie/Haushalt
 MAX_OFFERS = 120
+PART_SLOTS = 6  # 19.6: größere Wochen in Tagesblöcken parallel planen
 # Cent pro Mio. Tokens (Eingabe, Ausgabe, Cache-Lesen), Prompts bis 100K Tokens; Cache-Schreiben = 1,25 × Eingabe.
 PRICES = {"claude-haiku-5-5": (10, 50, 1), "claude-sonnet-5-5": (200, 1000, 20), "claude-opus-5-5": (400, 2000, 20)}
 USAGE_KEYS = ("input_tokens", "cache_read_input_tokens", "cache_creation_input_tokens", "output_tokens", "cost_cents")
@@ -224,10 +225,17 @@ def ask_claude(content: list[dict]) -> tuple[PlanDraft, dict]:
     model = settings.model_planner
     params = dict(model=model, max_tokens=16000, output_config={"effort": settings.planner_effort}, system=SYSTEM,
                   messages=[{"role": "user", "content": content}], output_format=PlanDraft)
-    if model.startswith(("claude-opus", "claude-sonnet")):
-        response = client.beta.messages.parse(**params, betas=["server-side-fallback-2026-07-01"], fallbacks="default")
-    else:  # Haiku 5.5 hat keinen serverseitigen Fallback bei Ablehnung
-        response = client.messages.parse(**params)
+    if settings.planner_effort in ("low", "medium", "high"):  # ohne Denken geht nur bis high
+        # Haiku dachte sonst bis ~10k Tokens vor, das JSON brach bei max_tokens ab (und dauerte)
+        params["thinking"] = {"type": "disabled"}
+    try:
+        if model.startswith(("claude-opus", "claude-sonnet")):
+            response = client.beta.messages.parse(**params, betas=["server-side-fallback-2026-07-01"],
+                                                  fallbacks="default")
+        else:  # Haiku 5.5 hat keinen serverseitigen Fallback bei Ablehnung
+            response = client.messages.parse(**params)
+    except ValidationError as e:  # abgeschnittenes JSON
+        raise RuntimeError("Plan nicht erzeugt (Antwort unvollständig)") from e
     u = response.usage
     usage = {"model": response.model, "input_tokens": u.input_tokens, "output_tokens": u.output_tokens,
              "cache_read_input_tokens": u.cache_read_input_tokens or 0,
@@ -387,12 +395,32 @@ def make_plan(household: Household, offers: list[Offer], slots: list[tuple[int, 
         return build_prompt(household, offers, todo, favorites, wishes, note, portions, pantry, never, recent, extra,
                             guests, repeat_weeks)
 
+    def ask_once(todo: list[tuple[int, str]], note: str) -> tuple[PlanDraft, dict]:
+        try:
+            return ask(prompt(todo, note))
+        except RuntimeError:  # unvollständige Antwort: ein zweiter Versuch
+            logger.warning("Claude-Antwort unbrauchbar, zweiter Versuch", exc_info=True)
+            return ask(prompt(todo, note))
+
+    def ask_parts(todo: list[tuple[int, str]], note: str) -> tuple[PlanDraft, dict]:
+        """19.6: Woche in Tagesblöcken parallel planen – je Aufruf weniger Ausgabe, Wartezeit ≈ ein Block.
+        Doppelte Gerichte zwischen Blöcken fängt der zweite Durchgang (variety)."""
+        days = sorted({d for d, _ in todo})
+        n = max(min(math.ceil(len(todo) / PART_SLOTS), len(days)), 1)
+        parts = [[s for s in todo if s[0] in days[i * len(days) // n:(i + 1) * len(days) // n]] for i in range(n)]
+        with ThreadPoolExecutor(max_workers=n) as pool:
+            results = list(pool.map(lambda p: ask_once(p, note), parts))
+        usage = {}
+        for _, u in results:
+            usage = add_usage(usage, u)
+        return PlanDraft(meals=[m for d, _ in results for m in d.meals]), usage
+
     note, usage, todo = "", {}, slots
     best: PricedPlan | None = None
     best_key = None
     draft = None
     for _ in range(max_repairs + 1):
-        new, call_usage = ask(prompt(todo, note))
+        new, call_usage = ask_parts(todo, note)
         usage = add_usage(usage, call_usage)
         new.meals = [m for m in new.meals if (m.day, m.meal_type) in set(todo)]
         apply_rules(new.meals, getattr(household, "product_rules", None))
@@ -433,7 +461,7 @@ def make_plan(household: Household, offers: list[Offer], slots: list[tuple[int, 
             note += f" In den Schritten verwendet, aber nicht in den Zutaten – mit Menge ergänzen: {'; '.join(missing)}."
     if rules is not None:
         best, usage = second_pass(best, usage, household, offers_by_id, slots, stock, rules, fish_ok, recent, never,
-                                  lambda todo, note: ask(prompt(todo, note)), forbid)
+                                  ask_once, forbid)
     if bad := violations(best.draft.meals, forbid):  # harte Regel: lieber Fehler als Allergen im Plan
         raise RuntimeError(f"Kein Plan ohne ausgeschlossene Zutaten gefunden ({', '.join(bad)}), bitte erneut versuchen")
     best.usage = usage
