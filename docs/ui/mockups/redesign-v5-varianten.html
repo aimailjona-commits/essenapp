@@ -1,0 +1,515 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pastellblau Varianten</title>
+<link href="https://fonts.googleapis.com/css2?family=Young+Serif&family=Caveat:wght@500;700&family=Nunito:wght@500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+/* Redesign v4 „Skizzenbuch“ – Entwurf. Alles von Hand gezeichnet wirkend: Tintenlinien + weiche Farbflecken. */
+:root{
+  --paper:#FBF7EF; --cream:#F3ECDD; --white:#FFFFFF; --ink:#1C1B19; --ink2:#6E685E; --ink3:#A8A196;
+  --blue:#B4C8F5; --green:#B5E0C0; --yellow:#FFE29A; --pink:#F8CAD8; --orange:#FAC3A0; --lav:#D5CBF2;
+  --deal:#E2603F; --page:#E6DFD1;
+  --r:22px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:"Nunito",-apple-system,system-ui,sans-serif;font-weight:600;background:var(--page);color:var(--ink);-webkit-font-smoothing:antialiased}
+.serif{font-family:"Young Serif",Georgia,serif;font-weight:400;letter-spacing:-.01em}
+.hand{font-family:"Caveat",cursive;font-weight:700}
+svg.i{width:24px;height:24px;flex:none}
+svg.ill{flex:none}
+.row{display:flex;align-items:center;gap:8px}.between{justify-content:space-between}
+
+/* Seite */
+.head{max-width:1360px;margin:0 auto;padding:48px 24px 8px}
+.head h1{font-family:"Young Serif",serif;font-weight:400;font-size:46px;line-height:1.05}
+.head h1 .hand{font-size:52px;color:var(--deal)}
+.head p{color:#5d5a53;margin-top:12px;max-width:860px;line-height:1.6;font-size:15px}
+.nav{display:flex;gap:8px;margin-top:18px;flex-wrap:wrap}
+.nav a{background:var(--ink);color:#fff;text-decoration:none;font-weight:800;font-size:14px;padding:10px 18px;border-radius:999px}
+.nav a.o{background:#fff;color:var(--ink)}
+.open{margin-top:16px;background:#fff;border-radius:20px;padding:16px 20px;max-width:860px;font-size:14px;line-height:1.65}
+.open b{display:block;margin-bottom:4px}
+.sec{max-width:1360px;margin:0 auto;padding:40px 24px 10px}
+.sec h2{font-family:"Young Serif",serif;font-weight:400;font-size:34px}
+.sec>p{color:#5d5a53;margin-top:6px;font-size:15px;max-width:860px;line-height:1.55}
+.board{max-width:1360px;margin:0 auto;padding:20px 24px 40px;display:grid;grid-template-columns:repeat(auto-fill,minmax(400px,1fr));gap:20px}
+.spec{background:var(--paper);border-radius:28px;padding:22px;display:flex;flex-direction:column;gap:14px}
+.spec.wide{grid-column:span 2}
+.spec .nm{font:700 12px/1 ui-monospace,Menlo,monospace;color:#8a857b}
+.spec h4{font-family:"Young Serif",serif;font-weight:400;font-size:22px;margin-top:-6px}
+.spec .d{font-size:13px;color:#6a665e;line-height:1.55;font-weight:600}
+.demo{display:flex;flex-wrap:wrap;gap:14px;align-items:center}
+@media (max-width:900px){.spec.wide{grid-column:auto}.board{grid-template-columns:1fr}}
+
+/* Linien & Flecken */
+.ln{fill:none;stroke:var(--stroke,var(--ink));stroke-width:3;stroke-linecap:round;stroke-linejoin:round;filter:url(#rough)}
+.lnf{fill:var(--stroke,var(--ink));stroke:none;filter:url(#rough)}
+.blob{filter:url(#wc)}
+svg.i .ln{stroke-width:2;filter:url(#roughS)}
+
+/* Karte: weiß, zittrige Tintenkante, harter Versatz-Schatten */
+.card{position:relative;background:var(--white);border-radius:var(--r);filter:drop-shadow(3px 4px 0 var(--ink))}
+.card::before,.sk::before{content:"";position:absolute;inset:0;border:2.2px solid var(--ink);border-radius:inherit;filter:url(#rough);pointer-events:none}
+.sk{position:relative}
+.flat{filter:none}
+
+/* Knöpfe */
+.btn{height:56px;border-radius:999px;display:inline-flex;align-items:center;justify-content:center;gap:10px;font-weight:800;font-size:16px;padding:0 26px;position:relative}
+.btn.k{background:var(--ink);color:#fff;--stroke:#fff}
+.btn.o{background:#fff;color:var(--ink);filter:drop-shadow(3px 4px 0 var(--ink))}
+.btn.o::before{content:"";position:absolute;inset:0;border:2.2px solid var(--ink);border-radius:999px;filter:url(#rough)}
+.btn.full{width:100%}
+.rbtn{width:46px;height:46px;border-radius:50%;display:grid;place-items:center;position:relative;flex:none;background:#fff}
+.rbtn::before{content:"";position:absolute;inset:0;border:2px solid var(--ink);border-radius:50%;filter:url(#rough)}
+.rbtn.k{background:var(--ink);color:#fff;--stroke:#fff}.rbtn.k::before{display:none}
+.bigplay{--stroke:#fff;width:78px;height:78px;border-radius:50%;background:var(--ink);color:#fff;display:grid;place-items:center;font-weight:800;font-size:16px}
+
+/* Chips */
+.chip{display:inline-flex;align-items:center;gap:8px;height:40px;padding:0 16px;border-radius:999px;font-weight:800;font-size:14px;position:relative;background:#fff;flex:none}
+.chip::before{content:"";position:absolute;inset:0;border:2px solid var(--ink);border-radius:999px;filter:url(#roughS)}
+.chip.on{background:var(--ink);color:#fff;--stroke:#fff}.chip.on::before{display:none}
+.chip .n{font-size:12px;color:var(--ink2)}.chip.on .n{color:var(--yellow)}
+.chips{display:flex;gap:8px;overflow:hidden;white-space:nowrap;padding:2px 2px 6px}
+
+/* Suchfeld (Versatz-Schatten wie Humaaans) */
+.search{height:54px;border-radius:18px;background:#fff;display:flex;align-items:center;gap:10px;padding:0 16px;color:var(--ink3);font-size:16px;font-weight:700;position:relative;filter:drop-shadow(3px 4px 0 var(--ink))}
+.search::before{content:"";position:absolute;inset:0;border:2.2px solid var(--ink);border-radius:18px;filter:url(#rough)}
+.search svg{margin-left:auto;color:var(--ink)}
+
+/* Sticker-Preis (handgemalter Kreis) */
+.pricetag{--stroke:var(--deal);position:relative;display:inline-grid;place-items:center;min-width:64px;height:40px;padding:0 12px;font-weight:900;font-size:17px}
+.pricetag svg{position:absolute;inset:-6px -8px;width:calc(100% + 16px);height:calc(100% + 12px);overflow:visible}
+.deal{display:inline-flex;align-items:center;height:26px;padding:0 10px;border-radius:999px;background:var(--deal);color:#fff;font-weight:900;font-size:12px}
+.note{font-family:"Caveat",cursive;font-weight:700;font-size:22px;line-height:1;color:var(--ink)}
+.note.red{color:var(--deal)}
+
+/* Telefon */
+.screens{display:flex;flex-wrap:wrap;gap:48px 36px;justify-content:center;padding:28px 16px 80px;max-width:1500px;margin:0 auto}
+.screen{width:390px;max-width:100%}
+.caption{margin-top:18px;font-size:13px;color:#4d4a44;line-height:1.55;font-weight:600}
+.caption b{display:block;color:var(--ink);font-family:"Young Serif",serif;font-weight:400;font-size:18px;margin-bottom:2px}
+.phone{position:relative;width:390px;max-width:100%;height:844px;background:var(--paper);border-radius:54px;overflow:hidden;box-shadow:0 0 0 10px var(--ink),0 30px 60px rgba(0,0,0,.18)}
+.sb{position:absolute;top:0;left:0;right:0;height:52px;display:flex;align-items:center;justify-content:space-between;padding:8px 34px 0;font-weight:800;font-size:16px;z-index:20}
+.sb .island{position:absolute;left:50%;top:11px;transform:translateX(-50%);width:122px;height:35px;background:#000;border-radius:20px}
+.sb svg{width:68px;height:14px}
+.scr{position:absolute;inset:0;padding:62px 20px 120px;overflow:hidden}
+.homebar{position:absolute;bottom:8px;left:50%;transform:translateX(-50%);width:134px;height:5px;border-radius:3px;background:var(--ink);z-index:16}
+
+/* Tab-Leiste: weiß, zittrige Kante, nur Symbole; aktiv = Farbfleck dahinter */
+.tabbar{position:absolute;left:18px;right:18px;bottom:26px;height:70px;background:#fff;border-radius:999px;display:flex;align-items:center;justify-content:space-between;padding:0 14px;z-index:15;filter:drop-shadow(3px 4px 0 var(--ink))}
+.tabbar::before{content:"";position:absolute;inset:0;border:2.2px solid var(--ink);border-radius:999px;filter:url(#rough)}
+.tab{position:relative;width:52px;height:52px;display:grid;place-items:center}
+.tab svg.i{width:28px;height:28px;position:relative}
+.tab .spot{position:absolute;inset:4px;color:var(--blue)}
+.tab .cnt{position:absolute;top:4px;right:2px;min-width:18px;height:18px;border-radius:9px;background:var(--deal);color:#fff;font-size:10px;font-weight:900;display:grid;place-items:center;padding:0 4px;border:2px solid #fff}
+.tab.plus{width:58px;height:58px;border-radius:50%;background:var(--ink);color:#fff;--stroke:#fff}
+
+/* Bausteine in Screens */
+.title{font-family:"Young Serif",serif;font-size:38px;line-height:1.05}
+.title.l{font-size:44px}
+.sub{font-size:15px;color:var(--ink2);font-weight:700}
+.sec-h{display:flex;align-items:baseline;justify-content:space-between;margin:22px 0 12px}
+.sec-h h3{font-family:"Young Serif",serif;font-weight:400;font-size:22px}
+.sec-h span{font-size:14px;font-weight:800;color:var(--ink2)}
+.plate{border-radius:50%;background-size:cover;background-position:center;flex:none;position:relative}
+.plate::after{content:"";position:absolute;inset:-4px;border:2.4px solid var(--ink);border-radius:50%;filter:url(#rough)}
+.ph-pasta{background-image:url(../../../ios/Sources/Essenapp/Resources/hero/pasta.jpg)}
+.ph-bowl{background-image:url(../../../ios/Sources/Essenapp/Resources/hero/bowl.jpg)}
+.ph-grill{background-image:url(../../../ios/Sources/Essenapp/Resources/hero/grill.jpg)}
+.ph-chef{background-image:url(../../../ios/Sources/Essenapp/Resources/hero/chef.jpg)}
+.blobwrap{position:relative;display:grid;place-items:center}
+.blobwrap>svg.bg{position:absolute;inset:-14%;width:128%;height:128%}
+.check{width:26px;height:26px;flex:none}
+.strike{position:relative}
+.strike svg{position:absolute;left:-4px;right:-4px;top:50%;width:calc(100% + 8px);height:14px;transform:translateY(-50%);overflow:visible}
+.tile{border-radius:20px;padding:14px;position:relative}
+.tile .nm{font-family:"Young Serif",serif;font-size:17px;line-height:1.15}
+.tile .q{display:inline-block;margin-top:6px;background:#fff;border-radius:999px;padding:2px 10px;font-size:12px;font-weight:800}
+.ruled{background:repeating-linear-gradient(#fff 0 43px,#D9E3F7 43px 45px);}
+
+/* ===== v4.1 „clean pastell“: Kanten, Knöpfe, Leisten sauber; Skizze nur bei Illustrationen, Doodles, Notizen ===== */
+.blob{filter:none}
+.card{filter:none;border-radius:26px;box-shadow:0 10px 30px rgba(28,27,25,.07)}
+.card::before,.sk::before,.btn.o::before,.rbtn::before,.chip::before,.search::before,.tabbar::before{display:none}
+.btn.o{filter:none;box-shadow:0 8px 22px rgba(28,27,25,.08)}
+.rbtn{box-shadow:0 4px 14px rgba(28,27,25,.08)}
+.rbtn.k{box-shadow:none}
+.chip{box-shadow:inset 0 0 0 1.5px #E6DFD1}.chip.on{box-shadow:none}
+.search{filter:none;border-radius:999px;box-shadow:0 8px 24px rgba(28,27,25,.07)}
+.tabbar{filter:none;box-shadow:0 14px 34px rgba(28,27,25,.13)}
+.plate::after{filter:none;border:4px solid #fff;inset:-4px;box-shadow:0 8px 18px rgba(28,27,25,.14)}
+svg.i .ln{filter:none;stroke-width:1.7}
+.strike svg{display:none}.strike{text-decoration:line-through;text-decoration-thickness:2px}
+.ruled{background:#fff}
+/* Icon-Stil wie Vorlage: saubere Linie über versetztem Pastell-Kreis */
+.ico{position:relative;display:inline-grid;place-items:center;width:52px;height:52px;flex:none}
+.ico::before{content:"";position:absolute;width:34px;height:34px;border-radius:50%;background:var(--dot,var(--blue));left:5px;top:13px}
+.ico svg.i{position:relative;width:30px;height:30px}
+.tab .dot{position:absolute;width:32px;height:32px;border-radius:50%;background:var(--blue);left:6px;top:13px}
+.cbox{width:24px;height:24px;border-radius:8px;border:2px solid #CFC8BB;flex:none;display:grid;place-items:center}
+.cbox.on{background:var(--green);border-color:var(--green)}
+</style>
+</head>
+<body>
+
+<!-- Filter + Zeichnungen -->
+<svg width="0" height="0" style="position:absolute">
+  <defs>
+    <filter id="rough" x="-10%" y="-10%" width="120%" height="120%"><feTurbulence type="fractalNoise" baseFrequency=".045" numOctaves="2" seed="4"/><feDisplacementMap in="SourceGraphic" scale="2.6"/></filter>
+    <filter id="roughS" x="-10%" y="-10%" width="120%" height="120%"><feTurbulence type="fractalNoise" baseFrequency=".07" numOctaves="2" seed="9"/><feDisplacementMap in="SourceGraphic" scale="1.3"/></filter>
+    <filter id="wc" x="-20%" y="-20%" width="140%" height="140%">
+      <feTurbulence type="fractalNoise" baseFrequency=".025" numOctaves="3" seed="2" result="n"/>
+      <feDisplacementMap in="SourceGraphic" in2="n" scale="9" result="d"/>
+      <feTurbulence type="fractalNoise" baseFrequency=".6" numOctaves="1" seed="5" result="g"/>
+      <feColorMatrix in="g" type="matrix" values="0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 -.22 1" result="ga"/>
+      <feComposite in="d" in2="ga" operator="in"/>
+    </filter>
+  </defs>
+
+  <!-- Farbflecken (Farbe über `color`) -->
+  <symbol id="blobA" viewBox="0 0 120 120"><path fill="currentColor" class="blob" d="M60 12c24 0 46 14 48 42s-14 52-46 54-50-12-52-42S34 12 60 12z"/></symbol>
+  <symbol id="blobB" viewBox="0 0 120 120"><path fill="currentColor" class="blob" d="M28 28c16-18 50-20 66-4s20 46 4 62-50 22-68 6S12 46 28 28z"/></symbol>
+  <symbol id="blobC" viewBox="0 0 120 120"><path fill="currentColor" class="blob" d="M18 54c4-26 30-40 56-36s34 26 30 50-30 40-56 36-34-24-30-50z"/></symbol>
+
+  <!-- Illustrationen: Fleck + Tintenlinie -->
+  <symbol id="il-pot" viewBox="0 0 120 120"><use href="#blobA" x="6" y="14" width="108" height="100"/>
+    <g class="ln"><path d="M28 58h64v24c0 11-8 18-18 18H46c-10 0-18-7-18-18z"/><path d="M22 58h76"/><path d="M34 52c8-12 44-12 52 0"/><path d="M56 43h8"/><path d="M28 66h-9M92 66h9"/><path d="M47 34c-4-6 4-9 0-15M61 30c-4-6 4-9 0-15M75 34c-4-6 4-9 0-15"/><path d="M40 72v10M46 74v7"/></g></symbol>
+  <symbol id="il-bowl" viewBox="0 0 120 120"><use href="#blobB" x="4" y="10" width="112" height="104"/>
+    <g class="ln"><path d="M18 62h84c0 22-18 36-42 36S18 84 18 62z"/><path d="M34 62c0-14 10-22 20-22 0 10-7 18-20 22z"/><path d="M60 60c4-14 18-18 26-13-4 10-14 14-26 13z"/><circle cx="50" cy="54" r="7"/><path d="M34 76h8M78 76h6"/></g></symbol>
+  <symbol id="il-bag" viewBox="0 0 120 120"><use href="#blobC" x="4" y="14" width="112" height="100"/>
+    <g class="ln"><path d="M28 50h62l-7 50H35z"/><path d="M44 50c0-16 30-16 30 0"/><path d="M70 48l13-32c3-6 10-3 8 3l-12 31"/><path d="M80 24l4 2M77 32l4 2"/><path d="M38 50l-8-28M42 50l2-31M46 50l9-25"/><path d="M45 72c4-6 8 6 12 0s8 6 12 0"/></g></symbol>
+  <symbol id="il-lemon" viewBox="0 0 120 120"><use href="#blobA" x="8" y="12" width="104" height="100"/>
+    <g class="ln"><path d="M28 64c0-18 15-30 32-30s32 12 32 30-15 28-32 28-32-10-32-28z"/><path d="M28 64h-7M92 64h7"/><path d="M60 34c6-12 20-14 25-10-4 10-14 14-25 10z"/><path d="M48 58h.1M70 72h.1M62 54h.1"/></g></symbol>
+  <symbol id="il-fish" viewBox="0 0 120 120"><use href="#blobB" x="4" y="14" width="112" height="96"/>
+    <g class="ln"><path d="M20 60c14-20 46-22 64 0-18 22-50 20-64 0z"/><path d="M84 60l16-13v26z"/><circle cx="36" cy="56" r="2.5"/><path d="M47 50c4 6 4 14 0 20M58 55c3 3 3 7 0 10M67 55c3 3 3 7 0 10"/></g></symbol>
+  <symbol id="il-carrot" viewBox="0 0 120 120"><use href="#blobC" x="6" y="10" width="108" height="104"/>
+    <g class="ln"><path d="M42 42l46 46c-32 10-54-12-46-46z"/><path d="M42 42l-10-17M42 42l-17-6M42 42l-4-19"/><path d="M54 62l7-4M64 73l7-4M48 52l5-3"/></g></symbol>
+  <symbol id="il-cheese" viewBox="0 0 120 120"><use href="#blobA" x="6" y="12" width="108" height="100"/>
+    <g class="ln"><path d="M20 78L84 40l18 20v26H20z"/><path d="M20 78h82"/><circle cx="40" cy="84" r="3.5"/><circle cx="72" cy="66" r="5"/><circle cx="90" cy="80" r="3"/></g></symbol>
+  <symbol id="il-fridge" viewBox="0 0 120 120"><use href="#blobB" x="8" y="10" width="104" height="104"/>
+    <g class="ln"><rect x="36" y="16" width="48" height="90" rx="8"/><path d="M36 46h48"/><path d="M43 28v9M43 56v14"/><rect x="58" y="58" width="18" height="18"/><path d="M62 64h10M62 70h7"/><path d="M60 30c0-4 6-4 6 0 0-4 6-4 6 0 0 4-6 7-6 7s-6-3-6-7z"/></g></symbol>
+  <symbol id="il-pan" viewBox="0 0 120 120"><use href="#blobC" x="2" y="14" width="112" height="96"/>
+    <g class="ln"><circle cx="50" cy="64" r="30"/><path d="M78 54l30-14"/><path d="M36 62c0-10 14-16 22-10s14 4 12 12-12 14-22 12-12-6-12-14z"/></g>
+    <circle cx="52" cy="64" r="6" fill="#FFC94D" class="ln" style="fill:#FFC94D"/></symbol>
+  <symbol id="il-list" viewBox="0 0 120 120"><use href="#blobA" x="6" y="12" width="108" height="100"/>
+    <g class="ln"><path d="M32 18h50v86H32z"/><path d="M40 38l4 4 8-9M58 38h16M40 56l4 4 8-9M58 56h16M40 74h8v8h-8zM58 78h14"/><path d="M84 84l14-30 6 3-14 30-7 3z"/></g></symbol>
+  <symbol id="il-tomato" viewBox="0 0 120 120"><use href="#blobB" x="6" y="12" width="108" height="100"/>
+    <g class="ln"><circle cx="60" cy="68" r="30"/><path d="M60 38l-9-8M60 38l9-8M60 38V27M60 38l-11 3M60 38l11 3"/><path d="M42 62c2-7 6-11 11-13"/></g></symbol>
+  <symbol id="il-garlic" viewBox="0 0 120 120"><use href="#blobC" x="8" y="12" width="104" height="100"/>
+    <g class="ln"><path d="M60 30c-26 10-34 52 0 64 34-12 26-54 0-64z"/><path d="M60 42v48M50 48c-6 14-4 32 6 42M70 48c6 14 4 32-6 42"/><path d="M52 96l-4 7M60 96v8M68 96l4 7M60 30V20"/></g></symbol>
+  <symbol id="il-basil" viewBox="0 0 120 120"><use href="#blobA" x="6" y="10" width="108" height="104"/>
+    <g class="ln"><path d="M28 92c0-40 30-64 64-64 0 40-30 64-64 64z"/><path d="M28 92l56-56M44 76l-6-12M56 64l-4-14M68 52l-2-12M52 70l12 2M64 58l12 2"/></g></symbol>
+  <symbol id="il-pasta" viewBox="0 0 120 120"><use href="#blobB" x="4" y="12" width="112" height="100"/>
+    <g class="ln"><path d="M16 72c0 14 20 24 44 24s44-10 44-24"/><path d="M16 72h88"/><path d="M28 70c4-12 12 4 18-8s12 6 18-6 12 6 18-4 8 6 10 18"/><path d="M34 62c4-10 10 2 16-8s10 4 16-6"/><circle cx="58" cy="50" r="5"/></g></symbol>
+  <!-- Nachbar mit Einkaufstasche (winkt) -->
+  <symbol id="il-neighbor" viewBox="0 0 160 200"><use href="#blobA" x="10" y="54" width="140" height="130"/>
+    <g class="ln"><circle cx="80" cy="44" r="16"/><path d="M68 66c6-6 18-6 24 0l8 70H60z"/><path d="M92 74l20-26"/><circle cx="115" cy="44" r="5"/><path d="M68 76l-16 30"/><path d="M38 106h28l-3 30H41z"/><path d="M46 106c0-10 12-10 12 0"/><path d="M70 136v34M90 136v34M64 170h10M86 170h10"/><path d="M74 46h.1M86 46h.1"/><path d="M75 52c3 3 7 3 10 0"/><path d="M124 30l6-6M126 40h8M120 22l2-8"/></g>
+    <path class="lnf" d="M64 40c0-16 32-18 32-2-8-6-24-6-32 2z"/></symbol>
+  <!-- Entspannt liegend (Leer-Zustand) -->
+  <symbol id="il-relax" viewBox="0 0 200 120"><use href="#blobC" x="30" y="30" width="150" height="90"/>
+    <g class="ln"><circle cx="46" cy="70" r="13"/><path d="M58 76c20-6 40-6 62-2l30-26 16 8-22 30H58"/><path d="M120 74l10 22"/><path d="M38 66h.1"/><path d="M40 75c3 2 6 2 8 0"/><path d="M150 20l4 10 10 2-8 6 2 10-8-6-8 6 2-10-8-6 10-2z"/><path d="M28 40c-6-6 2-12 6-6"/></g>
+    <path class="lnf" d="M34 66c2-14 22-18 26-6-8-4-18-2-26 6z"/></symbol>
+
+  <!-- Doodles -->
+  <symbol id="d-star" viewBox="0 0 40 40"><path class="ln" d="M20 4l5 11 12 1-9 8 3 12-11-6-11 6 3-12-9-8 12-1z"/></symbol>
+  <symbol id="d-spark" viewBox="0 0 40 40"><path class="ln" d="M20 4c2 10 6 14 16 16-10 2-14 6-16 16-2-10-6-14-16-16 10-2 14-6 16-16z"/></symbol>
+  <symbol id="d-swirl" viewBox="0 0 60 30"><path class="ln" d="M4 22c10-2 16-8 14-14s-10-2-6 6 14 10 22 4 8-14 22-8"/></symbol>
+  <symbol id="d-arrow" viewBox="0 0 80 50"><path class="ln" d="M6 8c20 0 40 10 50 32M56 40l-12-4M56 40l2-12"/></symbol>
+  <symbol id="d-heart" viewBox="0 0 40 40"><path class="ln" d="M20 34S4 24 4 13c0-6 5-9 9-9 4 0 6 3 7 5 1-2 3-5 7-5 4 0 9 3 9 9 0 11-16 21-16 21z"/><path class="ln" d="M12 12l14 14M10 18l10 10" style="stroke-width:2"/></symbol>
+  <symbol id="d-under" viewBox="0 0 120 14"><path class="ln" d="M3 9c18-6 36 4 54-2s36 4 60-4"/></symbol>
+  <symbol id="d-circle" viewBox="0 0 120 50"><path class="ln" d="M22 6c40-6 92 0 94 20s-60 24-90 20S2 34 6 22 34 4 66 4"/></symbol>
+  <symbol id="d-strike" viewBox="0 0 100 14"><path class="ln" d="M2 8c12-5 22 4 34 0s22-6 34 0 20 2 28-2" style="stroke-width:2.4"/></symbol>
+  <symbol id="d-check" viewBox="0 0 30 30"><rect class="ln" x="3" y="3" width="24" height="24" rx="6" style="stroke-width:2.2"/></symbol>
+  <symbol id="d-checked" viewBox="0 0 30 30"><rect class="ln" x="3" y="3" width="24" height="24" rx="6" style="stroke-width:2.2"/><path class="ln" d="M7 15l6 6 13-17" style="stroke-width:3;stroke:var(--deal)"/></symbol>
+  <symbol id="d-bang" viewBox="0 0 20 40"><path class="ln" d="M10 4l-1 22"/><circle cx="9" cy="34" r="2.5" class="lnf"/></symbol>
+
+  <!-- UI-Symbole (Strich, leicht zittrig) -->
+  <symbol id="i-home" viewBox="0 0 24 24"><path class="ln" d="M3.5 11.5 12 4.5l8.5 7M6 10v10h12V10"/><path class="ln" d="M10.2 20v-3.2c0-2.3 3.6-2.3 3.6 0V20"/></symbol>
+  <symbol id="i-tag" viewBox="0 0 24 24"><path class="ln" d="M20.5 12.6 12.8 20.3a1.7 1.7 0 0 1-2.4 0L3.7 13.6V3.7h9.9l6.9 6.5a1.7 1.7 0 0 1 0 2.4z"/><path class="ln" d="M8.4 8.2c-2.6-2.4-5.8.4-3.6 2.2"/></symbol>
+  <symbol id="i-bag" viewBox="0 0 24 24"><path class="ln" d="M5 8.5h14L17.6 20H6.4z"/><path class="ln" d="M9 8.5C9 3.6 15 3.6 15 8.5"/><path class="ln" d="M8.8 14c.8-1.2 1.6 1.2 2.4 0s1.6 1.2 2.4 0 1.6 1.2 2.2 0"/></symbol>
+  <symbol id="i-book" viewBox="0 0 24 24"><path class="ln" d="M3.8 5.6C6.8 4.3 9.8 4.4 12 6.4c2.2-2 5.2-2.1 8.2-.8v13.2c-3-1.3-6-1.2-8.2.8-2.2-2-5.2-2.1-8.2-.8z"/><path class="ln" d="M6.3 9.4c.8-.6 1.6.6 2.4 0M6.3 12.6c.8-.6 1.6.6 2.4 0M15.2 9.4c.8-.6 1.6.6 2.4 0"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path class="ln" d="M12 5v14M5 12h14" style="stroke-width:2.6"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24"><circle class="ln" cx="10.6" cy="10.6" r="6.2"/><path class="ln" d="m15.3 15.3 4.4 4.4"/></symbol>
+  <symbol id="i-heart" viewBox="0 0 24 24"><path class="ln" d="M12 19.6S4.6 15 4.6 9.6A3.9 3.9 0 0 1 12 7.6a3.9 3.9 0 0 1 7.4 2C19.4 15 12 19.6 12 19.6z"/></symbol>
+  <symbol id="i-back" viewBox="0 0 24 24"><path class="ln" d="M15 5l-7 7 7 7"/></symbol>
+  <symbol id="i-more" viewBox="0 0 24 24"><path class="ln" d="M5 12h.1M12 12h.1M19 12h.1" style="stroke-width:3.4"/></symbol>
+  <symbol id="i-share" viewBox="0 0 24 24"><path class="ln" d="M12 3v12M8 7l4-4 4 4M5 13v6h14v-6"/></symbol>
+  <symbol id="i-clock" viewBox="0 0 24 24"><circle class="ln" cx="12" cy="12" r="8.5"/><path class="ln" d="M12 7v5l3 2"/></symbol>
+  <symbol id="i-mic" viewBox="0 0 24 24"><rect class="ln" x="9" y="3.5" width="6" height="10.5" rx="3"/><path class="ln" d="M5.6 11a6.4 6.4 0 0 0 12.8 0M12 17.4v3"/></symbol>
+  <symbol id="i-arrow" viewBox="0 0 24 24"><path class="ln" d="M4 12h15M13 6l6 6-6 6"/></symbol>
+  <symbol id="i-dice" viewBox="0 0 24 24"><rect class="ln" x="4" y="4" width="16" height="16" rx="4"/><path class="ln" d="M9 9h.1M15 15h.1M15 9h.1M9 15h.1" style="stroke-width:3"/></symbol>
+  <symbol id="i-lock" viewBox="0 0 24 24"><rect class="ln" x="5" y="11" width="14" height="10" rx="2.5"/><path class="ln" d="M8 11V7a4 4 0 0 1 8 0v4"/></symbol>
+  <symbol id="i-swap" viewBox="0 0 24 24"><path class="ln" d="M4 8h13l-3-3M20 16H7l3 3"/></symbol>
+  <symbol id="i-pin" viewBox="0 0 24 24"><path class="ln" d="M12 21s-7-6-7-11a7 7 0 0 1 14 0c0 5-7 11-7 11z"/><circle class="ln" cx="12" cy="10" r="2.5"/></symbol>
+  <symbol id="i-scan" viewBox="0 0 24 24"><path class="ln" d="M4 8V4h4M16 4h4v4M20 16v4h-4M8 20H4v-4M7 12h10"/></symbol>
+  <symbol id="i-play" viewBox="0 0 24 24"><path class="ln" d="M8 5v14l11-7z"/></symbol>
+  <symbol id="i-user" viewBox="0 0 24 24"><circle class="ln" cx="12" cy="8" r="4"/><path class="ln" d="M4 21a8 8 0 0 1 16 0"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path class="ln" d="M5 12.5 9.5 17 19 7" style="stroke-width:2.6"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path class="ln" d="M6 6l12 12M18 6 6 18" style="stroke-width:2.6"/></symbol>
+  <symbol id="status" viewBox="0 0 68 14"><g fill="currentColor"><rect x="0" y="9" width="3" height="5" rx="1"/><rect x="5" y="6" width="3" height="8" rx="1"/><rect x="10" y="3" width="3" height="11" rx="1"/><rect x="15" y="0" width="3" height="14" rx="1"/><path d="M30 4.5a10 10 0 0 1 12 0l-1.6 1.8a7.5 7.5 0 0 0-8.8 0zM32.6 7.6a6 6 0 0 1 6.8 0L36 12z"/><rect x="45" y="1" width="20" height="12" rx="3.5" fill="none" stroke="currentColor" stroke-width="1.4"/><rect x="47" y="3" width="16" height="8" rx="2"/><rect x="66" y="5" width="2" height="4" rx="1"/></g></symbol>
+</svg>
+
+<style>
+:root{--blue:#B4C8F5;--blue1:#E6EDFC;--blue2:#D3E0FA;--blue3:#8EA9EC;--navy:#24315C}
+.vhead{max-width:1360px;margin:0 auto;padding:46px 24px 0}
+.vhead h2{font-family:"Young Serif",serif;font-weight:400;font-size:34px}
+.vhead h2 .hand{font-size:38px;color:var(--blue3)}
+.vhead p{color:#5d5a53;margin-top:6px;font-size:15px;max-width:860px;line-height:1.55}
+.vrow{display:flex;flex-wrap:wrap;gap:40px 36px;justify-content:center;padding:24px 16px 30px;max-width:1500px;margin:0 auto}
+.wave{position:absolute;left:0;right:0}
+.pillnav{display:flex;gap:6px;background:#fff;border-radius:999px;padding:5px;box-shadow:0 8px 22px rgba(28,27,25,.07)}
+.pillnav span{flex:1;text-align:center;padding:9px 0;border-radius:999px;font-weight:800;font-size:13px;color:var(--ink2)}
+.pillnav span.on{background:var(--blue);color:var(--ink)}
+.menu-row{display:flex;align-items:baseline;gap:8px;padding:11px 0;border-bottom:1.5px solid var(--blue2)}
+.menu-row .d{font-weight:900;font-size:12px;letter-spacing:.08em;width:26px;color:var(--ink2)}
+.menu-row .n{font-family:"Young Serif",serif;font-size:19px}
+.menu-row .dots{flex:1;border-bottom:2px dotted #CFC8BB;transform:translateY(-4px)}
+.menu-row .p{font-weight:800}
+.mark{background:linear-gradient(transparent 55%,var(--blue) 55% 92%,transparent 92%);padding:0 3px}
+.gtile{border-radius:26px;position:relative;overflow:hidden;padding:14px}
+.gtile .t{font-weight:900;font-size:17px;line-height:1.15}
+.gtile .s{font-size:12px;font-weight:700;color:var(--ink2)}
+.wheel{position:absolute;right:-150px;top:150px;width:330px;height:560px;border-left:2px solid #CFDAF5;border-radius:50%}
+.wday{position:absolute;display:flex;align-items:center;gap:12px;font-weight:800;color:#9AA6C4}
+.wday .b{width:58px;height:46px;border-radius:999px;background:#fff;display:grid;place-items:center;box-shadow:0 6px 16px rgba(36,49,92,.07)}
+.wday.on{color:var(--navy)}
+.wday.on .lbl{background:#fff;border-radius:999px;padding:6px 14px;box-shadow:inset 0 0 0 1.5px #CFDAF5}
+.wday.on .b{background:var(--blue);box-shadow:inset 0 0 0 2px var(--blue3)}
+.rail{position:absolute;left:0;top:0;bottom:0;width:62px;background:var(--blue3);border-radius:0 34px 34px 0;display:flex;flex-direction:column;align-items:center;padding-top:190px;gap:84px}
+.rail span{transform:rotate(-90deg);white-space:nowrap;color:#fff;font-weight:800;font-size:14px;opacity:.75}
+.rail span.on{opacity:1;color:var(--ink)}
+.rail .notch{position:absolute;right:-1px;width:18px;height:60px;background:var(--paper);border-radius:20px 0 0 20px}
+</style>
+
+<header class="head">
+  <h1>5 Varianten – <span class="hand">alle in Pastellblau</span></h1>
+  <p>Gleiche Zutaten, fünf Charaktere: saubere Pastell-Flächen, Linien-Icons mit kleinem Kringel auf versetztem Kreis, gezeichnet sind nur Illustrationen, einzelne Doodles und kurze Notizen. Hauptfarbe überall <b>Pastellblau</b> (<code>#B4C8F5</code>, hell <code>#E6EDFC</code>, kräftiger <code>#8EA9EC</code>). Such dir aus, was dir gefällt – gern auch gemischt („Kopf aus 1, Liste aus 4“).</p>
+  <div class="nav"><a href="#v1">1 · Bilderbuch</a><a class="o" href="#v2">2 · Kochbuch</a><a class="o" href="#v3">3 · Galerie</a><a class="o" href="#v4">4 · Wolke</a><a class="o" href="#v5">5 · Markt</a></div>
+</header>
+
+<!-- ============ 1 BILDERBUCH ============ -->
+<section class="vhead" id="v1"><h2>1 · Bilderbuch <span class="hand">große Szene oben</span></h2>
+<p>Wie „Stay Home“: oben eine weiche blaue Fläche mit Wellen-Kante und großer Illustration, unten ruhiges Creme. Sehr einladend, viel Gefühl.</p></section>
+<div class="vrow">
+  <div class="screen"><div class="phone">
+    <div class="sb"><b>9:41</b><span class="island"></span><svg><use href="#status"/></svg></div>
+    <svg class="wave" viewBox="0 0 390 420" style="top:0;height:420px" preserveAspectRatio="none"><path d="M0 0H390V340C330 300 300 400 230 380S120 300 60 360 0 380 0 380Z" fill="var(--blue)"/></svg>
+    <div class="scr">
+      <div class="row between"><span class="row" style="gap:6px;font-weight:800"><span class="ico" style="--dot:#fff;width:40px;height:40px"><svg class="i"><use href="#i-home"/></svg></span>Start</span><span class="rbtn"><svg class="i"><use href="#i-user"/></svg></span></div>
+      <div class="title l" style="margin-top:14px;color:var(--ink)">Hallo Jona,<br>was kochen<br>wir heute?</div>
+      <svg class="ill" width="140" height="175" style="position:absolute;right:4px;top:212px;color:#fff"><use href="#il-neighbor"/></svg>
+      <svg width="30" height="30" style="position:absolute;right:170px;top:300px"><use href="#d-spark"/></svg>
+      <div class="card" style="margin-top:150px;padding:16px;display:flex;gap:14px;align-items:center">
+        <div class="plate ph-pasta" style="width:80px;height:80px"></div>
+        <div style="flex:1"><div style="font-size:12px;font-weight:900;letter-spacing:.08em;color:var(--blue3)">HEUTE · ABEND</div><div class="serif" style="font-size:21px;line-height:1.1;margin-top:2px">Spaghetti Pomodoro</div><div class="sub" style="font-size:13px">25 min · 2,10 €</div></div>
+      </div>
+      <div class="pillnav" style="margin-top:18px"><span class="on">Woche</span><span>Angebote</span><span>Liste</span></div>
+      <div class="row" style="gap:12px;margin-top:16px">
+        <div class="card" style="flex:1;padding:12px;text-align:center"><div class="plate ph-grill" style="width:56px;height:56px;margin:2px auto 8px"></div><b class="serif" style="font-size:15px">Lachs</b><div class="sub" style="font-size:11px">Mi</div></div>
+        <div class="card" style="flex:1;padding:12px;text-align:center"><div class="plate ph-bowl" style="width:56px;height:56px;margin:2px auto 8px"></div><b class="serif" style="font-size:15px">Bowl</b><div class="sub" style="font-size:11px">Do</div></div>
+        <div class="card" style="flex:1;padding:12px;text-align:center"><div class="plate ph-chef" style="width:56px;height:56px;margin:2px auto 8px"></div><b class="serif" style="font-size:15px">Hähnchen</b><div class="sub" style="font-size:11px">Fr</div></div>
+      </div>
+    </div>
+    <div class="tabbar"><span class="tab"><span class="dot"></span><svg class="i"><use href="#i-home"/></svg></span><span class="tab"><svg class="i"><use href="#i-tag"/></svg><span class="cnt">3</span></span><span class="tab plus"><svg class="i"><use href="#i-plus"/></svg></span><span class="tab"><svg class="i"><use href="#i-bag"/></svg></span><span class="tab"><svg class="i"><use href="#i-book"/></svg></span></div>
+    <div class="homebar"></div></div>
+    <div class="caption"><b>Start</b>Große Szene mit Nachbar in der blauen Welle, darunter die Karte für heute und die Woche.</div></div>
+
+  <div class="screen"><div class="phone">
+    <div class="sb"><b>9:41</b><span class="island"></span><svg><use href="#status"/></svg></div>
+    <svg class="wave" viewBox="0 0 390 460" style="top:0;height:460px" preserveAspectRatio="none"><path d="M0 0H390V400C320 360 290 440 200 430S80 360 0 420Z" fill="var(--blue)"/></svg>
+    <div class="scr">
+      <div class="row between"><span class="rbtn"><svg class="i"><use href="#i-back"/></svg></span><span class="rbtn"><svg class="i"><use href="#i-heart"/></svg></span></div>
+      <svg class="ill" width="250" height="250" style="display:block;margin:0 auto;color:#fff"><use href="#il-pot"/></svg>
+      <div class="title" style="text-align:center;margin-top:-6px">Spaghetti Pomodoro</div>
+      <div class="row" style="justify-content:center;gap:8px;margin-top:8px"><span class="chip">25 min</span><span class="chip">2,10 €</span><span class="chip">★ 4,5</span></div>
+      <div style="margin-top:44px" class="row between"><span class="serif" style="font-size:20px">Zutaten</span><span class="note" style="font-size:20px;color:var(--ink2)">für 2</span></div>
+      <div class="card" style="margin-top:10px;padding:6px 14px">
+        <div class="row" style="height:52px;gap:12px;border-bottom:1.5px solid var(--blue1)"><svg class="ill" width="36" height="36" style="color:var(--pink)"><use href="#il-tomato"/></svg><b>Tomaten</b><span class="sub" style="font-size:13px">400 g</span><span class="deal" style="margin-left:auto">−30 %</span></div>
+        <div class="row" style="height:52px;gap:12px;border-bottom:1.5px solid var(--blue1)"><svg class="ill" width="36" height="36" style="color:var(--yellow)"><use href="#il-pasta"/></svg><b>Spaghetti</b><span class="sub" style="font-size:13px">250 g</span></div>
+        <div class="row" style="height:52px;gap:12px"><svg class="ill" width="36" height="36" style="color:var(--blue2)"><use href="#il-garlic"/></svg><b>Knoblauch</b><span class="sub" style="font-size:13px">2 Zehen</span></div>
+      </div>
+    </div>
+    <div style="position:absolute;left:20px;right:20px;bottom:30px"><span class="btn k full">Kochen starten <svg class="i"><use href="#i-arrow"/></svg></span></div>
+    <div class="homebar"></div></div>
+    <div class="caption"><b>Rezept</b>Gericht als große Zeichnung in der Welle, Zutaten als ruhige Liste mit kleinen Zeichnungen.</div></div>
+</div>
+
+<!-- ============ 2 KOCHBUCH ============ -->
+<section class="vhead" id="v2"><h2>2 · Kochbuch <span class="hand">wie eine Speisekarte</span></h2>
+<p>Viel Weiß, große Serif-Schrift, Punktlinien zum Preis wie auf einer Speisekarte, Blau als Textmarker. Wirkt erwachsen und ruhig, Zeichnungen nur klein am Rand.</p></section>
+<div class="vrow">
+  <div class="screen"><div class="phone" style="background:#fff">
+    <div class="sb"><b>9:41</b><span class="island"></span><svg><use href="#status"/></svg></div>
+    <div class="scr">
+      <div class="sub">KW 45 · Dienstag</div>
+      <div class="title l" style="margin-top:6px">Unsere<br><span class="mark">Woche</span></div>
+      <svg class="ill" width="110" height="110" style="position:absolute;right:16px;top:70px;color:var(--blue)"><use href="#il-bowl"/></svg>
+      <div style="margin-top:26px">
+        <div class="menu-row"><span class="d">MO</span><span class="n" style="color:var(--ink3)">Linsen-Dal</span><span class="dots"></span><span class="p" style="color:var(--ink3)">1,40 €</span></div>
+        <div class="menu-row" style="background:var(--blue1);margin:0 -10px;padding:11px 10px;border-radius:14px;border:0"><span class="d" style="color:var(--blue3)">DI</span><span class="n">Spaghetti Pomodoro</span><span class="dots"></span><span class="p">2,10 €</span></div>
+        <div class="menu-row"><span class="d">MI</span><span class="n">Lachs mit Salat</span><span class="dots"></span><span class="p">3,40 €</span></div>
+        <div class="menu-row"><span class="d">DO</span><span class="n">Buddha Bowl</span><span class="dots"></span><span class="p">2,40 €</span></div>
+        <div class="menu-row"><span class="d">FR</span><span class="n">Ofen-Hähnchen</span><span class="dots"></span><span class="p">2,90 €</span></div>
+        <div class="menu-row"><span class="d">SA</span><span class="n">Pizza-Abend</span><span class="dots"></span><span class="p">1,90 €</span></div>
+      </div>
+      <div class="row between" style="margin-top:18px"><span class="serif" style="font-size:22px">38,20 € <span class="sub" style="font-size:14px">von 60 €</span></span><span class="note" style="font-size:24px;color:var(--blue3)">12,40 € gespart ✓</span></div>
+    </div>
+    <div class="tabbar"><span class="tab"><span class="dot"></span><svg class="i"><use href="#i-home"/></svg></span><span class="tab"><svg class="i"><use href="#i-tag"/></svg></span><span class="tab plus"><svg class="i"><use href="#i-plus"/></svg></span><span class="tab"><svg class="i"><use href="#i-bag"/></svg></span><span class="tab"><svg class="i"><use href="#i-book"/></svg></span></div>
+    <div class="homebar"></div></div>
+    <div class="caption"><b>Start</b>Die Woche als Speisekarte: Tag, Gericht, Punktlinie, Preis. Heute blau markiert.</div></div>
+
+  <div class="screen"><div class="phone" style="background:#fff">
+    <div class="sb"><b>9:41</b><span class="island"></span><svg><use href="#status"/></svg></div>
+    <div class="scr">
+      <div class="title l">Angebote</div>
+      <div class="sub" style="margin-top:4px">128 Stück · 6 Läden in 10115</div>
+      <div style="margin-top:20px;border-radius:26px;background:var(--blue1);padding:18px;position:relative;height:190px">
+        <div style="font-size:12px;font-weight:900;letter-spacing:.1em;color:var(--blue3)">ANGEBOT DER WOCHE</div>
+        <div class="serif" style="font-size:28px;line-height:1.05;margin-top:6px">Bio-Zitronen</div>
+        <div class="sub" style="margin-top:4px">Lidl · 500 g</div>
+        <div class="serif" style="font-size:30px;margin-top:20px;color:var(--deal)">0,99 €</div>
+        <svg class="ill" width="140" height="140" style="position:absolute;right:6px;top:30px;color:#fff"><use href="#il-lemon"/></svg>
+      </div>
+      <div style="margin-top:18px">
+        <div class="menu-row"><span class="n" style="font-size:17px">Lachsfilet</span><span class="sub" style="font-size:12px">Rewe</span><span class="dots"></span><span class="pricetag" style="font-size:15px;color:var(--deal);min-width:0">−35%<svg viewBox="0 0 120 50" preserveAspectRatio="none"><use href="#d-circle"/></svg></span><span class="p">3,49 €</span></div>
+        <div class="menu-row"><span class="n" style="font-size:17px">Möhren</span><span class="sub" style="font-size:12px">Aldi</span><span class="dots"></span><span class="p">0,79 €</span></div>
+        <div class="menu-row"><span class="n" style="font-size:17px">Gouda</span><span class="sub" style="font-size:12px">Lidl</span><span class="dots"></span><span class="p">1,99 €</span></div>
+        <div class="menu-row"><span class="n" style="font-size:17px">Hähnchenbrust</span><span class="sub" style="font-size:12px">Rewe</span><span class="dots"></span><span class="p">3,99 €</span></div>
+      </div>
+    </div>
+    <div class="tabbar"><span class="tab"><svg class="i"><use href="#i-home"/></svg></span><span class="tab"><span class="dot"></span><svg class="i"><use href="#i-tag"/></svg></span><span class="tab plus"><svg class="i"><use href="#i-plus"/></svg></span><span class="tab"><svg class="i"><use href="#i-bag"/></svg></span><span class="tab"><svg class="i"><use href="#i-book"/></svg></span></div>
+    <div class="homebar"></div></div>
+    <div class="caption"><b>Angebote</b>Ein großes „Angebot der Woche“, darunter eine schlichte Preisliste – Rabatt mit Stift eingekreist.</div></div>
+</div>
+
+<!-- ============ 3 GALERIE ============ -->
+<section class="vhead" id="v3"><h2>3 · Galerie <span class="hand">große bunte Kacheln</span></h2>
+<p>Wie „Humaaans“: weißer Grund, kräftige Sans-Überschriften, große Kacheln, in die die Zeichnungen hineinragen. Blau dominiert, Rosa/Gelb/Grün als Begleiter. Am verspieltesten.</p></section>
+<div class="vrow">
+  <div class="screen"><div class="phone" style="background:#fff">
+    <div class="sb"><b>9:41</b><span class="island"></span><svg><use href="#status"/></svg></div>
+    <div class="scr">
+      <div class="row between"><svg class="i"><use href="#i-more"/></svg><b style="font-size:22px;font-weight:900">essenapp</b><svg class="i"><use href="#i-user"/></svg></div>
+      <div class="search" style="margin-top:16px;box-shadow:none;background:var(--blue1)">Gericht oder Angebot … <svg class="i"><use href="#i-search"/></svg></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:16px">
+        <div class="gtile" style="background:var(--blue);grid-row:span 2;height:300px"><div class="t">Heute:<br>Spaghetti<br>Pomodoro</div><div class="s" style="color:var(--ink)">25 min · 2,10 €</div><svg class="ill" width="170" height="170" style="position:absolute;left:-10px;bottom:-14px;color:#fff"><use href="#il-pot"/></svg></div>
+        <div class="gtile" style="background:var(--yellow);height:144px"><div class="t">Angebote</div><div class="s">128 diese Woche</div><svg class="ill" width="90" height="90" style="position:absolute;right:-6px;bottom:-10px;color:#fff"><use href="#il-lemon"/></svg></div>
+        <div class="gtile" style="background:var(--pink);height:144px"><div class="t">Einkauf</div><div class="s">7 offen</div><svg class="ill" width="90" height="90" style="position:absolute;right:-6px;bottom:-10px;color:#fff"><use href="#il-bag"/></svg></div>
+        <div class="gtile" style="background:var(--green);height:144px"><div class="t">Kühlschrank</div><div class="s">scannen</div><svg class="ill" width="90" height="90" style="position:absolute;right:-6px;bottom:-10px;color:#fff"><use href="#il-fridge"/></svg></div>
+        <div class="gtile" style="background:var(--blue1);height:144px"><div class="t">Gespart</div><div class="serif" style="font-size:28px;margin-top:8px">12,40 €</div><svg width="30" height="30" style="position:absolute;right:12px;top:12px"><use href="#d-star"/></svg></div>
+      </div>
+    </div>
+    <div class="tabbar"><span class="tab"><span class="dot"></span><svg class="i"><use href="#i-home"/></svg></span><span class="tab"><svg class="i"><use href="#i-tag"/></svg></span><span class="tab plus"><svg class="i"><use href="#i-plus"/></svg></span><span class="tab"><svg class="i"><use href="#i-bag"/></svg></span><span class="tab"><svg class="i"><use href="#i-book"/></svg></span></div>
+    <div class="homebar"></div></div>
+    <div class="caption"><b>Start</b>Alles auf einen Blick als Kacheln, die Zeichnungen ragen aus den Ecken.</div></div>
+
+  <div class="screen"><div class="phone" style="background:var(--blue)">
+    <div class="sb"><b>9:41</b><span class="island"></span><svg><use href="#status"/></svg></div>
+    <div class="scr">
+      <span class="rbtn"><svg class="i"><use href="#i-back"/></svg></span>
+      <svg class="ill" width="300" height="270" style="display:block;margin:0 auto;color:#fff"><use href="#il-bowl"/></svg>
+    </div>
+    <div style="position:absolute;left:0;right:0;bottom:0;height:430px;background:#fff;border-radius:34px 34px 0 0;padding:14px 22px">
+      <div style="width:42px;height:5px;border-radius:3px;background:#D8D2C6;margin:0 auto 16px"></div>
+      <div style="color:var(--blue3);font-weight:900;font-size:14px">Rezept von Malina</div>
+      <div class="row between"><b style="font-size:32px;font-weight:900;letter-spacing:-.02em">Buddha Bowl</b><span class="ico" style="--dot:var(--pink)"><svg class="i"><use href="#i-heart"/></svg></span></div>
+      <div style="font-size:16px;line-height:1.5;color:var(--ink2);margin-top:6px">Bunte Schüssel mit Reis, Avocado und knusprigen Kichererbsen – fertig in 20 Minuten.</div>
+      <div class="row" style="gap:-6px;margin-top:14px"><span style="width:30px;height:30px;border-radius:50%;background:var(--yellow);display:grid;place-items:center;border:2px solid #fff">🧑‍🍳</span><span style="width:30px;height:30px;border-radius:50%;background:var(--pink);display:grid;place-items:center;border:2px solid #fff;margin-left:-8px">🦊</span><span class="sub" style="margin-left:6px;font-size:13px">2× gekocht · ★ 4,5</span></div>
+      <div class="row" style="gap:12px;margin-top:22px"><span class="btn o" style="flex:1">Einplanen</span><span class="btn k" style="flex:1">Kochen</span></div>
+    </div>
+    <div class="homebar"></div></div>
+    <div class="caption"><b>Rezept</b>Blaue Bühne mit großer Zeichnung, darunter ein weißes Blatt mit Titel, Text und zwei Knöpfen.</div></div>
+</div>
+
+<!-- ============ 4 WOLKE ============ -->
+<section class="vhead" id="v4"><h2>4 · Wolke <span class="hand">alles in Blau, ganz sanft</span></h2>
+<p>Ein Farbton in vielen Helligkeiten, weiße schwebende Blasen, die Tage auf einem gebogenen Rad (wie die Aktivitäts-Auswahl). Am ruhigsten und modernsten.</p></section>
+<div class="vrow">
+  <div class="screen"><div class="phone" style="background:linear-gradient(#EEF3FD,#DCE6FB)">
+    <div class="sb"><b>9:41</b><span class="island"></span><svg><use href="#status"/></svg></div>
+    <div class="scr" style="color:var(--navy)">
+      <div class="title l" style="color:var(--navy)">Woche</div>
+      <div class="sub" style="color:#7A88AE">Dreh am Rad für den Tag</div>
+      <div class="wheel"></div>
+      <div class="wday" style="right:120px;top:190px"><span class="lbl">Mo</span><span class="b"><svg class="ill" width="30" height="30" style="color:var(--blue1)"><use href="#il-bowl"/></svg></span></div>
+      <div class="wday on" style="right:150px;top:290px"><span class="lbl">Dienstag</span><span class="b"><svg class="ill" width="32" height="32" style="color:#fff"><use href="#il-pasta"/></svg></span></div>
+      <div class="wday" style="right:140px;top:390px"><span class="lbl">Mi</span><span class="b"><svg class="ill" width="30" height="30" style="color:var(--blue1)"><use href="#il-fish"/></svg></span></div>
+      <div class="wday" style="right:110px;top:480px;opacity:.6"><span class="lbl">Do</span><span class="b"><svg class="ill" width="30" height="30" style="color:var(--blue1)"><use href="#il-carrot"/></svg></span></div>
+      <div class="card" style="position:absolute;left:20px;top:560px;width:230px;padding:16px;border-radius:28px">
+        <div style="font-size:12px;font-weight:900;color:var(--blue3)">DIENSTAG · ABEND</div>
+        <div class="serif" style="font-size:20px;line-height:1.1;margin-top:4px;color:var(--navy)">Spaghetti Pomodoro</div>
+        <div class="sub" style="font-size:13px;margin-top:4px">25 min · 2,10 €</div>
+      </div>
+      <div class="plate ph-pasta" style="position:absolute;left:200px;top:560px;width:96px;height:96px"></div>
+    </div>
+    <div class="tabbar"><span class="tab"><svg class="i"><use href="#i-home"/></svg></span><span class="tab"><svg class="i"><use href="#i-tag"/></svg></span><span class="tab plus" style="background:var(--navy)"><svg class="i"><use href="#i-plus"/></svg></span><span class="tab"><svg class="i"><use href="#i-bag"/></svg></span><span class="tab"><span class="dot"></span><svg class="i"><use href="#i-book"/></svg></span></div>
+    <div class="homebar"></div></div>
+    <div class="caption"><b>Wochenplan</b>Die Tage liegen auf einem Bogen, der gewählte Tag ist blau umrandet, sein Gericht schwebt darunter.</div></div>
+
+  <div class="screen"><div class="phone" style="background:linear-gradient(#EEF3FD,#DCE6FB)">
+    <div class="sb"><b>9:41</b><span class="island"></span><svg><use href="#status"/></svg></div>
+    <div class="scr" style="color:var(--navy)">
+      <div class="row between"><div class="title l" style="color:var(--navy)">Einkauf</div><span class="ico"><svg class="i"><use href="#i-share"/></svg></span></div>
+      <div class="pillnav" style="margin-top:12px"><span class="on">Rewe · 4</span><span>Lidl · 3</span><span>dm · 1</span></div>
+      <div style="margin-top:16px;display:flex;flex-direction:column;gap:10px">
+        <div class="card row" style="padding:14px 16px;border-radius:999px;gap:12px"><span class="cbox" style="border-radius:50%;border-color:var(--blue3)"></span><b>Basmatireis</b><span class="sub" style="font-size:13px">1 kg</span><span class="deal" style="margin-left:auto">−25%</span></div>
+        <div class="card row" style="padding:14px 16px;border-radius:999px;gap:12px"><span class="cbox" style="border-radius:50%;border-color:var(--blue3)"></span><b>Hähnchenbrust</b><span class="sub" style="font-size:13px">400 g</span></div>
+        <div class="card row" style="padding:14px 16px;border-radius:999px;gap:12px"><span class="cbox" style="border-radius:50%;border-color:var(--blue3)"></span><b>Kaffee</b><span class="sub" style="font-size:13px">500 g</span></div>
+        <div class="row" style="padding:14px 16px;border-radius:999px;gap:12px;background:rgba(255,255,255,.5)"><span class="cbox on" style="border-radius:50%;background:var(--blue);border-color:var(--blue)"><svg class="i" style="width:16px;height:16px"><use href="#i-check"/></svg></span><b class="strike" style="color:#9AA6C4">Basilikum</b></div>
+      </div>
+      <div class="card" style="margin-top:18px;padding:16px;border-radius:28px;display:flex;align-items:center;gap:12px">
+        <svg class="ill" width="64" height="64" style="color:var(--blue1)"><use href="#il-bag"/></svg>
+        <div style="flex:1"><div class="serif" style="font-size:22px;color:var(--navy)">5,48 €</div><div class="sub" style="font-size:13px">noch offen</div></div>
+        <span class="note" style="color:var(--blue3);font-size:22px">−2,50 €!</span>
+      </div>
+    </div>
+    <div style="position:absolute;left:20px;right:20px;bottom:30px"><span class="btn k full" style="background:var(--navy)">Einkauf starten</span></div>
+    <div class="homebar"></div></div>
+    <div class="caption"><b>Einkauf</b>Artikel als schwebende weiße Pillen, Häkchen in Blau, alles in einem einzigen Farbton.</div></div>
+</div>
+
+<!-- ============ 5 MARKT ============ -->
+<section class="vhead" id="v5"><h2>5 · Markt <span class="hand">wie ein Gemüsestand</span></h2>
+<p>Wie „Apples/Lemon“: senkrechte Kategorie-Leiste links in Blau, große Produkte auf runden Tellern, unten drei hohe Pillen. Am meisten „Laden-Gefühl“.</p></section>
+<div class="vrow">
+  <div class="screen"><div class="phone">
+    <div class="sb"><b>9:41</b><span class="island"></span><svg><use href="#status"/></svg></div>
+    <div class="rail"><span>Fleisch</span><span class="on">Obst</span><span>Gemüse</span><span>Kühlung</span><div class="notch" style="top:212px"></div></div>
+    <div class="scr" style="padding-left:84px">
+      <div class="sub">Di, 4. Nov</div><div class="serif" style="font-size:24px">Hallo Jona!</div>
+      <div class="card" style="margin-top:18px;height:190px;background:var(--blue);padding:16px;overflow:visible">
+        <div class="plate" style="position:absolute;right:-6px;top:-24px;width:120px;height:120px;background:#fff;display:grid;place-items:center"><svg class="ill" width="96" height="96" style="color:var(--yellow)"><use href="#il-lemon"/></svg></div>
+        <div style="position:absolute;left:16px;bottom:16px"><div class="sub" style="color:var(--ink)">500 g</div><div class="serif" style="font-size:28px">Zitronen</div></div>
+        <span style="position:absolute;right:14px;bottom:14px;background:var(--yellow);border-radius:14px;padding:6px 10px;font-weight:900">0,99 €</span>
+      </div>
+      <div class="serif" style="font-size:20px;margin-top:22px">Beliebt</div>
+      <div style="display:flex;flex-direction:column;gap:10px;margin-top:10px">
+        <div class="card row" style="padding:10px;gap:12px"><span style="width:56px;height:56px;border-radius:16px;background:var(--blue1);display:grid;place-items:center"><svg class="ill" width="48" height="48" style="color:#fff"><use href="#il-fish"/></svg></span><div style="flex:1"><b>Lachsfilet</b><div class="sub" style="font-size:12px">Rewe · <span style="color:var(--deal)">3,49 €</span></div></div><span class="rbtn k" style="width:36px;height:36px;background:var(--yellow);--stroke:var(--ink)"><svg class="i" style="width:18px"><use href="#i-plus"/></svg></span></div>
+        <div class="card row" style="padding:10px;gap:12px"><span style="width:56px;height:56px;border-radius:16px;background:var(--blue1);display:grid;place-items:center"><svg class="ill" width="48" height="48" style="color:#fff"><use href="#il-carrot"/></svg></span><div style="flex:1"><b>Möhren</b><div class="sub" style="font-size:12px">Aldi · 0,79 €</div></div><span class="rbtn k" style="width:36px;height:36px;background:var(--yellow);--stroke:var(--ink)"><svg class="i" style="width:18px"><use href="#i-plus"/></svg></span></div>
+      </div>
+    </div>
+    <div class="tabbar" style="left:84px"><span class="tab"><svg class="i"><use href="#i-home"/></svg></span><span class="tab"><span class="dot"></span><svg class="i"><use href="#i-tag"/></svg></span><span class="tab plus"><svg class="i"><use href="#i-plus"/></svg></span><span class="tab"><svg class="i"><use href="#i-bag"/></svg></span></div>
+    <div class="homebar"></div></div>
+    <div class="caption"><b>Angebote</b>Kategorien als senkrechte blaue Leiste mit Kerbe, großes Produkt auf weißem Teller, Liste darunter.</div></div>
+
+  <div class="screen"><div class="phone" style="background:var(--blue3)">
+    <div class="sb" style="color:var(--ink)"><b>9:41</b><span class="island"></span><svg><use href="#status"/></svg></div>
+    <div style="position:absolute;left:0;right:0;top:0;height:560px;background:var(--blue1);border-radius:0 0 46px 46px"></div>
+    <div class="scr">
+      <div class="row between"><span class="row" style="gap:8px"><svg class="i"><use href="#i-back"/></svg><span class="serif" style="font-size:22px">Obst</span></span><span class="ico" style="--dot:var(--yellow)"><svg class="i"><use href="#i-bag"/></svg></span></div>
+      <div class="plate" style="width:250px;height:250px;margin:16px auto 0;background:#fff;display:grid;place-items:center"><svg class="ill" width="210" height="210" style="color:var(--yellow)"><use href="#il-lemon"/></svg></div>
+      <div class="row between" style="align-items:flex-end;margin-top:22px"><div class="title">Bio-<br>Zitronen</div><div class="serif" style="font-size:32px;color:var(--blue3)">0,99 €<span class="sub" style="font-size:13px">/500 g</span></div></div>
+      <div class="sub" style="margin-top:4px">Frisch, saftig, bei Lidl noch 4 Tage.</div>
+    </div>
+    <div style="position:absolute;left:20px;right:20px;bottom:40px;display:flex;gap:12px">
+      <div style="flex:1;height:190px;border-radius:999px;background:#fff;display:flex;flex-direction:column;align-items:center;justify-content:space-around;padding:14px 0"><span class="ico" style="--dot:var(--blue1);width:40px;height:40px"><svg class="i"><use href="#i-plus"/></svg></span><span class="serif" style="font-size:24px">2</span><span class="sub">Stück</span></div>
+      <div style="flex:1;height:190px;border-radius:999px;background:#fff;display:flex;flex-direction:column;align-items:center;justify-content:space-around;padding:14px 0"><img src="https://upload.wikimedia.org/wikipedia/commons/thumb/9/91/Lidl-Logo.svg/250px-Lidl-Logo.svg.png" width="46" alt="Lidl"><span class="serif" style="font-size:18px">4 Tage</span><span class="sub">gültig</span></div>
+      <div style="flex:1;height:190px;border-radius:999px;background:#fff;display:flex;flex-direction:column;align-items:center;justify-content:space-around;padding:14px 0"><span class="serif" style="font-size:22px">1,98 €</span><span class="bigplay" style="width:60px;height:60px;font-size:14px;background:var(--navy)">Liste</span></div>
+    </div>
+    <div class="homebar"></div></div>
+    <div class="caption"><b>Angebotsdetail</b>Produkt auf großem Teller, Preis in Blau, unten drei hohe Pillen: Menge · Laden · Summe.</div></div>
+</div>
+</body>
+</html>
