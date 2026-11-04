@@ -7,10 +7,11 @@ struct DisplayHeader: View {
     var line2 = ""
     var size: CGFloat = 46
     var onDark = false
+    var color: Color?  // z. B. Tinte auf Pastell (Listenkopf)
 
     var body: some View {
         VStack(alignment: .leading, spacing: -size * 0.26) {  // Zeilenhöhe 0.95
-            Text(line1).font(Theme.F.display(size)).foregroundStyle(onDark ? .white : Theme.C.text1)
+            Text(line1).font(Theme.F.display(size)).foregroundStyle(color ?? (onDark ? .white : Theme.C.text1))
             if !line2.isEmpty {
                 Text(line2).font(Theme.F.displayItalic(size)).foregroundStyle(onDark ? Theme.C.tabInactive : Theme.C.text3)
             }
@@ -242,7 +243,7 @@ struct Plate: View {
     var body: some View {
         let food = emoji ?? Self.foods[abs(seed.unicodeScalars.reduce(0) { $0 &* 31 &+ Int($1.value) }) % Self.foods.count]
         RemoteImage(url: url, contentMode: .fill) {
-            Text(food).font(.system(size: size * 0.54)).frame(width: size, height: size).background(Theme.C.card)
+            Text(food).font(.system(size: size * 0.54)).frame(width: size, height: size).background(Theme.C.plate)  // Teller bleibt weiß
         }
         .frame(width: size, height: size)
         .clipShape(Circle())

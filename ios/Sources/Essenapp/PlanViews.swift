@@ -250,7 +250,7 @@ struct DayCard: View {
                     withAnimation(Theme.spring) { rolling = false }
                 }
             },
-        ], compact: true)
+        ], compact: true, ink: color == Theme.C.card ? Theme.C.text1 : Theme.C.ink)
         .sensoryFeedback(.impact(weight: .light), trigger: meal.locked)
     }
 }

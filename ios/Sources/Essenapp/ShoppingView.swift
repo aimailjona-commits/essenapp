@@ -259,7 +259,7 @@ struct ShoppingListView: View {
             }
             HStack(spacing: 14) {
                 StoreLogo(chain: chain, size: 60)
-                DisplayHeader(line1: chain.isEmpty ? "Überall" : Labels.chain(chain), size: 56)
+                DisplayHeader(line1: chain.isEmpty ? "Überall" : Labels.chain(chain), size: 56, color: Theme.C.ink)
             }
             .padding(.top, 22)
             HStack {

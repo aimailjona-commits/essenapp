@@ -20,8 +20,8 @@ enum Theme {
         static let onLime = Color(hex: 0x111111)
         /// v3: Auswahl/Fortschritt auf hellem Grund = Tinte (Orange entfällt); auf dunklem Grund `lime` nehmen.
         static let accent = Color(0x111111, 0xF4F1EA)
-        static let accentSoft = Color(hex: 0xDCEDA0)  // weiche Hervorhebung (gewählte Person, „gespart“-Pille)
-        static let accentDeep = Color(hex: 0x111111)  // Schrift auf accentSoft (Limette bleibt auch dunkel hell)
+        static let accentSoft = Color(0xDCEDA0, 0x2E3320)  // dunkel: Limetten-Tönung, Schrift darauf bleibt lesbar  // weiche Hervorhebung (gewählte Person, „gespart“-Pille)
+        static let accentDeep = Color(0x111111, 0xDCEDA0)  // Schrift auf accentSoft
         static let highlight = lime
         static let deal = Color(0xE8694A, 0xF07A5C)
         static let star = Color(hex: 0xE8B33A)

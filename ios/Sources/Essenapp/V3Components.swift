@@ -151,6 +151,7 @@ struct ActionCluster: View {
 
     let items: [Item]
     var compact = false
+    var ink: Color = Theme.C.text1  // auf Pastell-Karten immer Tinte
 
     var body: some View {
         HStack(spacing: compact ? 6 : 2) {
@@ -159,7 +160,7 @@ struct ActionCluster: View {
                 Button(action: item.action) {
                     Image(systemName: item.symbol)
                         .font(.system(size: compact ? 14 : 18, weight: .semibold))
-                        .foregroundStyle(item.main ? Theme.C.onAction : Theme.C.text1)
+                        .foregroundStyle(item.main ? Theme.C.onAction : ink)
                         .frame(width: size, height: size)
                         .background(item.main ? Theme.C.action : compact ? Color.black.opacity(0.08) : .clear, in: Circle())
                         .frame(minWidth: 44, minHeight: 44)
