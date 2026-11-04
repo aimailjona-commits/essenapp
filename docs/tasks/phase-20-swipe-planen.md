@@ -17,7 +17,10 @@ entsteht erst für die gewählten Gerichte, parallel.
 - [x] Alter Weg bleibt als **„Überrasch mich“** (KI plant die ganze Woche wie heute)
 - [x] **Alle Mahlzeiten** werden geswipet (je Mahlzeitart ein Stapel: Frühstück, Mittag, Abend, Snack, Dessert, Lunchbox)
 - [x] Zu wenig gemocht → **weiter swipen**: „Fertig“ erst, wenn jede Mahlzeitart genug Gerichte hat; der Stapel lädt nach
-- [x] Gesten: rechts = diese Woche, links = diese Woche nicht, **oben = nie wieder**; dazu drei Knöpfe unter der Karte
+- [x] Gesten: rechts = diese Woche, links = diese Woche nicht, **oben = „Mag ich nicht“ mit Grund** (Zutaten mag ich nicht → Zutat wählen / Schmeckt mir einfach nicht / Keine Lust / Sonstiges, wie im Rezeptdetail seit 2026-11-04); dazu drei Knöpfe unter der Karte
+- [x] Frühstück/Snack: ein gemochtes Gericht darf mehrfach in die Woche (Zähler auf der Karte „2×“)
+- [x] Lunchbox: ein Stapel für alle, verteilt nur auf die Lunchbox-Tage
+- [x] Vorlieben schon im Onboarding (20.4)
 - [x] Swipen **nur in der iOS-App**; die Web-App zeigt weiter den fertigen Plan
 - [x] **Erst Mockup, dann bauen** (anders als E91 in Phase 19)
 
@@ -25,7 +28,7 @@ entsteht erst für die gewählten Gerichte, parallel.
 
 1. **Woche planen** → Stapel der ersten offenen Mahlzeitart. Oben je Art ein Fortschritt, z. B. „Abend 3/7 · Mittag 1/5“.
 2. **Karte:** Foto, Titel, Preis pro Portion, Kochzeit, Anzahl Zutaten im Angebot, Laden. Antippen = Kurzbeschreibung.
-3. **Wischen:** rechts / links / oben, mit Rückgängig für die letzte Karte. Nach „Nie wieder“ wird das Rezept wie eine 1-Stern-Bewertung „nie“ behandelt (E96: unter „Ausgeblendet“ wieder holbar).
+3. **Wischen:** rechts / links / oben, mit Rückgängig für die letzte Karte. Oben = „Mag ich nicht“ → Grund (`DislikeDialog`): Zutat → „Mag nicht“-Liste; schmeckt nicht / Sonstiges → Nie-Liste (E96, unter „Ausgeblendet“ wieder holbar); keine Lust → nur diese Woche.
 4. **Familie:** Jedes Mitglied sieht denselben Stapel und nur Karten, über die es noch nicht entschieden hat. Mögen zwei
    dasselbe → Match-Animation. „Nie wieder“ von einer Person nimmt die Karte für alle raus (Allergien, Abneigungen).
 5. **Fertig** (sobald jede Art genug hat) → **Wochenübersicht**: gewählte Gerichte, Matches zuerst, überzählige als Reserve.
@@ -36,7 +39,7 @@ entsteht erst für die gewählten Gerichte, parallel.
 
 ## 20.0 Mockup + Spezifikation
 
-- [ ] Screens in `docs/ui/screens.md`: S30 Stapel, S31 Match, S32 Wochenübersicht/Verteilen (inkl. Laden, Leer, Fehler, „Stapel lädt nach“)
+- [ ] Screens in `docs/ui/screens.md`: S30 Stapel, S31 Match, S32 Wochenübersicht/Verteilen (inkl. Laden, Leer, Fehler, „Stapel lädt nach“), Onboarding „Deine Gewohnheiten“, Angebote „Für dich“
 - [ ] HTML-Mockup `docs/ui/mockups/swipe-*.html`: Karte, Gesten-Feedback (Stempel „Diese Woche“ / „Nicht“ / „Nie“), Fortschritt je Mahlzeitart, Match, Verteilen per Ziehen
 - [ ] 👤 Mockup freigeben
 
@@ -69,11 +72,25 @@ entsteht erst für die gewählten Gerichte, parallel.
 - [ ] Demo-Fälle in `Demo.swift` + `ios/tools/screenshots.sh` (`swipe`, `match`, `verteilen`)
 - [ ] Push an die anderen Mitglieder „Jona plant die Woche – swipe mit“ (APNs, sobald verfügbar)
 
+## 20.4 Vorlieben (Onboarding, Planer, Angebote)
+
+Heute: „Hafermilch statt Milch“ gibt es nur in den Einstellungen (19.2, `product_rules`), „isst gern“ nur als Favoriten
+und Freitext-Wünsche. Neu:
+
+- [ ] Onboarding-Schritt **„Deine Gewohnheiten“** (nach Ernährung/Allergien), überspringbar:
+  - **Statt … nehme ich …**: Vorschlags-Chips (Hafermilch statt Milch, Vollkorn statt Weißmehl, Tofu statt Hackfleisch, laktosefrei, Skyr statt Joghurt …) + eigene Regel → `product_rules`
+  - **Immer dabei** je Mahlzeitart: z. B. Frühstück „Müsli mit Hafermilch“, Snack „Apfel“ → neue Liste `staples` [{meal_type, name, tage}] (Haushalt bzw. Person)
+  - **Esse ich gern**: Gerichte/Zutaten als Chips + Freitext → `likes` (Zutaten, Gerichte, Küchen)
+- [ ] Einstellungen: dieselben drei Bereiche bearbeiten (Vorlieben-Screen erweitern)
+- [ ] Planer + Swipe: `staples` füllen ihre Mahlzeiten direkt (kein KI-Aufruf, Karte vorab als „gemocht“ im Stapel); `likes` kommen in den Prompt und heben Karten nach vorn; `product_rules` wie bisher
+- [ ] Angebote: Bereich **„Für dich“** oben – Angebote zu `staples`, `likes` und dem „use“-Teil der Regeln (z. B. Hafermilch im Angebot); Angebote zur „instead“-Seite (Kuhmilch) blass bzw. ans Ende
+- [ ] Einkaufsliste: `staples` für die Woche automatisch drauf (Menge aus Tagen × Portion), mit Angebot, wenn vorhanden
+- [ ] Tests: Regeln/Staples/Likes im Prompt, Staples belegen Slots ohne KI, „Für dich“-Auswahl
+
 ## Offene Punkte (vor dem Bau klären)
 
-- [ ] Frühstück/Snack: 7 verschiedene Frühstücke swipen ist viel. Vorschlag: ein gemochtes Frühstück darf mehrfach in die Woche, Zähler auf der Karte („2×“)
-- [ ] Lunchbox gilt je Person und Arbeitstag (Phase 11). Vorschlag: ein Stapel für alle, verteilt nur auf die Lunchbox-Tage
-- [ ] Wer darf „Fertig“ drücken: jedes Mitglied oder nur, wer das Deck gestartet hat?
+- [ ] Wer darf „Fertig“ drücken: jedes Mitglied oder nur, wer das Deck gestartet hat? (Vorschlag: jedes Mitglied)
+- [ ] `staples`/`likes` je Haushalt oder je Person? (Vorschlag: je Person, Planer fasst zusammen; Hafermilch gilt dann nur für die Portion dieser Person – oder für alle, wenn nur einer im Haushalt)
 
 ## DoD
 

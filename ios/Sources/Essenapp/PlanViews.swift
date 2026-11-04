@@ -295,6 +295,7 @@ struct RecipeDetailView: View {
     @State private var photoColor: Color?  // Verlaufsfarbe des Rezept-Kopfs (v3)
     @State private var replacingDish = false  // „Ersatz“: Gericht im Plan ersetzen (S19)
     @State private var choosing = false  // „Würfeln“ im Plan-Gericht (19.3), wie auf der Tageskarte
+    @State private var disliking = false  // „Mag ich nicht“ mit Grund
     @State private var rolling = false
     @Environment(\.openURL) private var openURL
 
@@ -414,13 +415,8 @@ struct RecipeDetailView: View {
         }
         .ignoresSafeArea(edges: .top)
         .background(heroColor.ignoresSafeArea())
-        .modifier(RerollDialog(meal: meal, isPresented: $choosing, onReplace: { replacingDish = true }) { direction, wish in
-            rolling = true
-            Task {
-                await store.reroll(meal, direction: direction, wish: wish)
-                rolling = false
-            }
-        })
+        .modifier(RerollDialog(meal: meal, isPresented: $choosing, onReplace: { replacingDish = true }, roll: reroll))
+        .modifier(DislikeDialog(meal: meal, isPresented: $disliking, roll: meal.id == nil || meal.locked ? nil : { reroll(nil, "") }))
         .onChange(of: recipe.id) {  // gewürfelt oder ersetzt: Daten des alten Rezepts verwerfen
             info = nil; favorite = nil; stepImages = nil; imagesSettled = false
         }
@@ -440,6 +436,7 @@ struct RecipeDetailView: View {
             HStack(spacing: 10) {
                 RoundIconButton(systemName: "chevron.left", fill: .clear, label: "Zurück") { dismiss() }.glassDark()
                 Spacer()
+                RoundIconButton(systemName: "hand.thumbsdown", fill: .clear, label: "Mag ich nicht") { disliking = true }.glassDark()
                 Button { toggleFavorite() } label: {
                     Image(systemName: isFavorite ? "heart.fill" : "heart").font(.system(size: 18, weight: .semibold))
                         .symbolEffect(.bounce, value: isFavorite).contentTransition(.symbolEffect(.replace))
@@ -528,6 +525,14 @@ struct RecipeDetailView: View {
     }
 
     /// Plan-Gerichte holen Bewertungen/Favorit nach; fehlen Nährwerte (Berechnung läuft), einmal nach ~3 s neu laden.
+    private func reroll(_ direction: String?, _ wish: String) {
+        rolling = true
+        Task {
+            await store.reroll(meal, direction: direction, wish: wish)
+            rolling = false
+        }
+    }
+
     private func loadInfo() async {
         if recipe.ratings == nil { info = (try? await store.recipe(recipe.id)) ?? info }
         guard nutrition == nil || composition == nil else { return }
@@ -1068,6 +1073,7 @@ struct RerollDialog: ViewModifier {
     @Binding var isPresented: Bool
     var onReplace: (() -> Void)?  // „Durch eigenes Rezept ersetzen“ (Rezeptdetail)
     let roll: (_ direction: String?, _ wish: String) -> Void
+    @State private var disliking = false
     @State private var wishing = false
     @State private var wish = ""
 
@@ -1080,11 +1086,7 @@ struct RerollDialog: ViewModifier {
                     Button("Eigener Wunsch …") { wish = ""; wishing = true }
                 }
                 if let onReplace { Button("Durch eigenes Rezept ersetzen", action: onReplace) }
-                Button("Mag ich nicht – nie wieder vorschlagen", role: .destructive) {
-                    Task {
-                        if await store.rate(meal.recipe.id, stars: 1, again: "nie", note: ""), !meal.locked { roll(nil, "") }
-                    }
-                }
+                Button("Mag ich nicht …", role: .destructive) { disliking = true }
                 Button("Abbrechen", role: .cancel) {}
             }
             .alert("Was hättest du gern?", isPresented: $wishing) {
@@ -1092,5 +1094,50 @@ struct RerollDialog: ViewModifier {
                 Button("Würfeln") { roll(nil, wish) }
                 Button("Abbrechen", role: .cancel) {}
             }
+            .modifier(DislikeDialog(meal: meal, isPresented: $disliking, roll: meal.locked ? nil : { roll(nil, "") }))
+    }
+}
+
+/// „Mag ich nicht“ mit Grund: Zutat → „Mag nicht“-Liste (19.2), schmeckt nicht/Sonstiges → Nie-Liste (Bewertung „nie“,
+/// E96), keine Lust → nur diese Woche. Im Plan wird danach neu gewürfelt (`roll`), sonst bleibt es beim Merken.
+struct DislikeDialog: ViewModifier {
+    @Environment(AppStore.self) private var store
+    let meal: MealDTO
+    @Binding var isPresented: Bool
+    let roll: (() -> Void)?
+    @State private var picking = false
+    @State private var other = false
+    @State private var note = ""
+
+    private var ingredients: [String] { meal.recipe.ingredients.filter { $0.inPantry != true }.map(\.name).uniqued() }
+
+    func body(content: Content) -> some View {
+        content
+            .confirmationDialog("Was magst du daran nicht?", isPresented: $isPresented, titleVisibility: .visible) {
+                if !ingredients.isEmpty { Button("Zutaten mag ich nicht") { picking = true } }
+                Button("Schmeckt mir einfach nicht") { never("schmeckt nicht") }
+                if let roll { Button("Keine Lust (nur diese Woche)", action: roll) }
+                Button("Sonstiges …") { note = ""; other = true }
+                Button("Abbrechen", role: .cancel) {}
+            }
+            .confirmationDialog("Welche Zutat?", isPresented: $picking, titleVisibility: .visible) {
+                ForEach(ingredients, id: \.self) { name in
+                    Button(name) { Task { await store.dislike(name); roll?() } }
+                }
+                Button("Abbrechen", role: .cancel) {}
+            }
+            .alert("Was passt dir nicht?", isPresented: $other) {
+                TextField("z. B. zu scharf, zu aufwendig", text: $note)
+                Button("Nie wieder vorschlagen") { never(note.isEmpty ? "sonstiges" : note) }
+                Button("Abbrechen", role: .cancel) {}
+            }
+    }
+
+    private func never(_ reason: String) {
+        Task {
+            if await store.rate(meal.recipe.id, stars: 1, again: "nie", note: "Mag ich nicht: \(reason)") {
+                if let roll { roll() } else { store.flash("Kommt nicht mehr in deine Pläne") }
+            }
+        }
     }
 }
