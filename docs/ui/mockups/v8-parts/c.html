@@ -1,0 +1,384 @@
+<style>
+/* Teil c: Angebote & Merkliste */
+.c-chip{height:32px;padding:0 12px;font-size:13px}
+.c-wrap{display:flex;flex-wrap:wrap;gap:8px}
+.c-lg{width:48px;height:48px;border-radius:50%;background:#fff;display:grid;place-items:center;flex:none;font-weight:800;font-size:14px;overflow:hidden}
+.c-lg img{width:34px}
+.c-r2{display:flex;align-items:center;gap:14px;padding:11px 0;border-top:1.5px solid var(--line)}
+.c-r2 .tx{flex:1;min-width:0}
+.c-r2 .tx b{display:block;font-size:16px}
+.c-r2 .tx span{display:block;font-size:12px;color:var(--ink2);margin-top:2px}
+.c-best{background:#F7D8CE;color:#A8402A}
+.c-norm{background:var(--line);color:var(--ink2)}
+.c-nA{background:#038141;color:#fff}.c-nB{background:#85BB2F;color:#fff}
+.c-nss{display:inline-flex;align-items:center}
+.c-nss i{width:22px;height:24px;display:grid;place-items:center;font-style:normal;color:#fff;font-size:12px;font-weight:800}
+.c-nss i:first-child{border-radius:7px 0 0 7px}.c-nss i:last-child{border-radius:0 7px 7px 0}
+.c-nss i.on{width:30px;height:34px;border-radius:9px;font-size:16px;box-shadow:0 0 0 2px var(--bg)}
+.c-off{height:166px}
+.c-mini{width:104px;text-align:center}
+.c-mini .c-lg{width:72px;height:72px;margin:0 auto}
+.c-mini b{display:block;font-size:13px;line-height:1.3;margin-top:8px;height:36px}
+.c-key{display:inline-block;width:16px;height:2.5px;border-radius:2px;vertical-align:middle;margin-right:6px}
+</style>
+
+<section class="sec"><h2>Angebote</h2><p>Prospekte der Woche als ruhige Zeilen mit Farb-Lasche; Filter als Chips, Drogerie mit Monatsaktionen, Läden über die Karte.</p></section>
+<div class="screens">
+
+  <!-- S4 Angebote (aus v8) -->
+  <div class="screen"><div class="phone">
+    <div class="sb"><b>9:41</b><span class="island"></span><svg><use href="#status"/></svg></div>
+    <div class="leaf" style="right:0;top:0;width:240px;height:290px;background:var(--blue1)"></div>
+    <img class="ill" src="ill-v7/binoculars.webp" style="position:absolute;left:200px;top:56px;width:200px" alt="">
+    <div class="scr">
+      <div class="small">10115 · 6 Läden</div><div class="t1">Angebote</div>
+      <div style="width:170px;margin-top:22px">
+        <div class="stat"><span class="lbl">Diese<br>Woche</span><span class="num" style="font-size:64px">128</span></div>
+      </div>
+      <div class="chips" style="margin-top:40px"><span class="chip on">Alle</span><span class="chip">Merkliste 3</span><span class="chip">Gemüse</span><span class="chip">Kühlung</span></div>
+      <div style="margin-top:16px">
+        <div class="offer"><div class="tab" style="background:var(--rose)"><img src="ill-v7/tomato.webp" alt=""></div>
+          <span class="deal">−30 %</span><div class="t2" style="margin-top:6px">Tomaten</div><div class="small" style="font-size:13px">Lidl · 1 kg</div><div class="num" style="font-size:34px;margin-top:8px">1,99 €</div></div>
+        <div class="offer"><div class="tab" style="background:var(--sand)"><img src="ill-v7/garlic.webp" alt=""></div>
+          <span class="deal">−20 %</span><div class="t2" style="margin-top:6px">Knoblauch</div><div class="small" style="font-size:13px">Rewe · 3 Stück</div><div class="num" style="font-size:34px;margin-top:8px">0,79 €</div></div>
+        <div class="offer"><div class="tab" style="background:var(--sage)"><img src="ill-v7/basil.webp" alt=""></div>
+          <span class="deal">−25 %</span><div class="t2" style="margin-top:6px">Basilikum</div></div>
+      </div>
+    </div>
+    <div class="nav" data-on="2"></div>
+    <div class="homebar"></div></div>
+    <div class="caption"><b>Angebote (S4)</b>Wie in v8: Fernglas im Blatt oben rechts, Anzahl groß, jedes Angebot eine Zeile mit Farb-Lasche von rechts.</div></div>
+
+  <!-- S4 Nächste Woche + Filter -->
+  <div class="screen"><div class="phone">
+    <div class="sb"><b>9:41</b><span class="island"></span><svg><use href="#status"/></svg></div>
+    <div class="leaf" style="right:0;top:0;width:200px;height:240px;border-bottom-left-radius:130px;background:var(--blue1)"></div>
+    <img class="ill" src="ill-v7/binoculars.webp" style="position:absolute;left:222px;top:58px;width:160px" alt="">
+    <div class="scr">
+      <div class="small">10115 · 6 Läden</div><div class="t1">Angebote</div>
+      <div style="width:170px;margin-top:18px">
+        <div class="stat"><span class="lbl">Ab nächster<br>Woche</span><span class="num" style="font-size:56px">42</span></div>
+      </div>
+      <div class="chips" style="margin-top:26px"><span class="chip c-chip">Diese Woche 128</span><span class="chip c-chip on">Nächste Woche 42 <span class="deal">neu</span></span></div>
+      <div class="c-wrap" style="margin-top:10px">
+        <span class="chip c-chip on"><svg class="i" style="width:15px;height:15px"><use href="#i-check"/></svg>Nur echte Angebote</span>
+        <span class="chip c-chip">Bio</span>
+        <span class="chip c-chip"><svg class="i" style="width:16px;height:16px"><use href="#i-leaf"/></svg>Vegan</span>
+        <span class="chip c-chip">Nutri A/B</span>
+        <span class="chip c-chip"><svg class="i" style="width:16px;height:16px"><use href="#i-gift"/></svg>Bonus 4</span>
+      </div>
+      <div style="margin-top:14px">
+        <div class="offer c-off"><div class="tab" style="background:var(--rose)"><img src="ill-v7/tomato.webp" alt=""></div>
+          <div class="row" style="gap:6px"><span class="deal">−30 %</span><span class="soft c-best">Bestpreis</span></div>
+          <div class="t2" style="margin-top:6px">Tomaten</div><div class="small" style="font-size:13px">Rewe · 500 g · ab 9.11.</div>
+          <div class="row" style="gap:5px;margin-top:6px"><span class="soft c-nA">Nutri A</span><span class="soft ok">Bio</span></div>
+          <div class="num" style="font-size:34px;margin-top:8px">1,49 €</div></div>
+        <div class="offer c-off"><div class="tab" style="background:var(--blue1)"><img src="ill-v7/pasta.webp" alt=""></div>
+          <div class="row" style="gap:6px"><span class="deal">−40 %</span><span class="soft ok">Gutes Angebot</span></div>
+          <div class="t2" style="margin-top:6px">Spaghetti</div><div class="small" style="font-size:13px">Lidl · 500 g · ab 9.11.</div>
+          <div class="row" style="gap:5px;margin-top:6px"><span class="soft c-nA">Nutri A</span><span class="soft ok"><svg class="i" style="width:13px;height:13px"><use href="#i-leaf"/></svg>Vegan</span></div>
+          <div class="num" style="font-size:34px;margin-top:8px">0,89 €</div></div>
+        <div class="offer c-off"><div class="tab" style="background:var(--sand)"><img src="ill-v7/garlic.webp" alt=""></div>
+          <div class="row" style="gap:6px"><span class="deal">−15 %</span><span class="soft c-norm">Normal</span></div>
+          <div class="t2" style="margin-top:6px">Knoblauch</div></div>
+      </div>
+    </div>
+    <div class="nav" data-on="2"></div>
+    <div class="homebar"></div></div>
+    <div class="caption"><b>Nächste Woche + Filter (S4)</b>Pille „Nächste Woche“ mit „neu“, zweite Chip-Reihe (echte Angebote, Bio, Vegan, Nutri A/B, Bonus); jede Zeile zeigt Urteil und Siegel.</div></div>
+
+  <!-- S4 Drogerie -->
+  <div class="screen"><div class="phone">
+    <div class="sb"><b>9:41</b><span class="island"></span><svg><use href="#status"/></svg></div>
+    <div class="quarter" style="right:0;top:0;width:190px;height:190px;background:var(--rose)"></div>
+    <img class="ill" src="ill-v7/bag.webp" style="position:absolute;left:262px;top:46px;width:110px" alt="">
+    <div class="scr">
+      <div class="small">10115 · 6 Läden</div><div class="t1">Angebote</div>
+      <div class="chips" style="margin-top:40px"><span class="chip">Alle</span><span class="chip on">Drogerie 34</span><span class="chip">Haushalt 12</span></div>
+      <div class="sec2 row" style="gap:6px"><svg class="i" style="width:16px;height:16px"><use href="#i-cal"/></svg>MONATSAKTIONEN<span style="flex:1"></span><span style="letter-spacing:0;font-size:12px">November</span></div>
+      <div class="row between" style="margin-top:10px;align-items:flex-start">
+        <div class="c-mini"><span class="c-lg" style="background:var(--blue1)"><img src="https://upload.wikimedia.org/wikipedia/commons/thumb/2/2c/Dm-drogerie-Logo.svg/250px-Dm-drogerie-Logo.svg.png" style="width:46px" alt="dm"></span><b>Balea Duschgel</b><div class="num" style="font-size:24px">0,55 €</div><span class="deal" style="margin-top:6px">−20 %</span></div>
+        <div class="c-mini"><span class="c-lg" style="background:var(--rose);font-size:20px">Ro</span><b>Isana Shampoo</b><div class="num" style="font-size:24px">0,79 €</div><span class="deal" style="margin-top:6px">−25 %</span></div>
+        <div class="c-mini"><span class="c-lg" style="background:var(--sage)"><img src="https://upload.wikimedia.org/wikipedia/commons/thumb/2/2c/Dm-drogerie-Logo.svg/250px-Dm-drogerie-Logo.svg.png" style="width:46px" alt="dm"></span><b>Ebelin Wattepads</b><div class="num" style="font-size:24px">0,95 €</div><span class="deal" style="margin-top:6px">−15 %</span></div>
+      </div>
+      <div class="sec2" style="margin-top:26px">ALLE DROGERIE-ANGEBOTE</div>
+      <div class="c-r2"><span class="c-lg" style="background:var(--rose)">Ro</span><div class="tx"><b>Persil Color Gel</b><span>Rossmann · 20 Waschladungen</span></div><div style="text-align:right"><div class="num" style="font-size:24px">4,44 €</div><span class="deal" style="margin-top:4px">−35 %</span></div></div>
+      <div class="c-r2"><span class="c-lg"><img src="https://upload.wikimedia.org/wikipedia/commons/thumb/2/2c/Dm-drogerie-Logo.svg/250px-Dm-drogerie-Logo.svg.png" alt="dm"></span><div class="tx"><b>Nivea Creme</b><span>dm · 150 ml</span></div><div style="text-align:right"><div class="num" style="font-size:24px">1,95 €</div><span class="deal" style="margin-top:4px">−20 %</span></div></div>
+      <div class="c-r2"><span class="c-lg" style="background:var(--rose)">Ro</span><div class="tx"><b>Zewa Küchenrolle</b><span>Rossmann · 4 Rollen</span></div><div style="text-align:right"><div class="num" style="font-size:24px">2,99 €</div><span class="deal" style="margin-top:4px">−25 %</span></div></div>
+    </div>
+    <div class="nav" data-on="2"></div>
+    <div class="homebar"></div></div>
+    <div class="caption"><b>Drogerie (S4)</b>Kategorie Drogerie: oben die Monatsaktionen von dm und Rossmann nebeneinander, darunter die übrigen Angebote als Zeilen.</div></div>
+
+  <!-- S4 Leer / Händler nicht erreichbar -->
+  <div class="screen"><div class="phone">
+    <div class="sb"><b>9:41</b><span class="island"></span><svg><use href="#status"/></svg></div>
+    <div class="blob" style="left:-70px;top:300px;width:440px;height:440px;background:var(--blue1)"></div>
+    <img class="ill" src="ill-v7/binoculars.webp" style="position:absolute;left:70px;top:290px;width:240px" alt="">
+    <div class="scr">
+      <div class="small">10115 · 6 Läden</div><div class="t1">Angebote</div>
+      <div class="row hr" style="gap:12px;margin-top:16px;padding:12px 0;border-bottom:1.5px solid var(--line)">
+        <span class="circle" style="width:36px;height:36px;background:#F6E2B8;color:var(--ink)"><svg class="i" style="width:18px;height:18px"><use href="#i-wifioff"/></svg></span>
+        <span style="font-size:13px;line-height:1.4"><b>Aldi gerade nicht erreichbar.</b><br><span style="color:var(--ink2)">Die anderen Läden siehst du wie immer.</span></span>
+      </div>
+      <div class="chips" style="margin-top:16px"><span class="chip c-chip on"><svg class="i" style="width:16px;height:16px"><use href="#i-leaf"/></svg>Vegan</span><span class="chip c-chip on">Nutri A/B</span><span class="chip c-chip on"><svg class="i" style="width:16px;height:16px"><use href="#i-gift"/></svg>Bonus</span><span class="chip c-chip">Bio</span></div>
+      <div style="position:absolute;left:24px;right:24px;top:556px">
+        <div class="t2">Keine Angebote für diesen Filter</div>
+        <div style="font-size:15px;line-height:1.5;color:var(--ink2);margin-top:6px">Nimm einen Filter raus – oder schau Donnerstag wieder rein, dann kommen neue Prospekte.</div>
+        <div class="btn2" style="display:inline-flex;margin-top:16px"><svg class="i" style="width:18px;height:18px"><use href="#i-refresh"/></svg>Filter zurücksetzen</div>
+      </div>
+    </div>
+    <div class="nav" data-on="2"></div>
+    <div class="homebar"></div></div>
+    <div class="caption"><b>Leer &amp; Händler weg (S4)</b>Ein Laden antwortet nicht: ruhiger Hinweis zwischen zwei Linien, Rest bleibt sichtbar. Filter ohne Treffer: Fernglas im Kreis, Knopf zum Zurücksetzen.</div></div>
+
+  <!-- S14 Läden & Umkreis -->
+  <div class="screen"><div class="phone">
+    <div class="sb"><b>9:41</b><span class="island"></span><svg><use href="#status"/></svg></div>
+    <div class="scr">
+      <div class="row" style="gap:12px"><svg class="i" style="width:26px;height:26px"><use href="#i-back"/></svg><span class="t2">Läden &amp; Umkreis</span></div>
+      <div class="small" style="font-size:13px;margin:2px 0 0 38px">10115 Berlin-Mitte · 5 von 6 Läden</div>
+    </div>
+    <svg viewBox="0 0 390 240" width="390" height="240" style="position:absolute;left:0;top:130px">
+      <defs><radialGradient id="c-g"><stop offset=".35" stop-color="#fff"/><stop offset=".98" stop-color="#000"/></radialGradient><mask id="c-fade"><rect width="390" height="240" fill="url(#c-g)"/></mask></defs>
+      <g mask="url(#c-fade)" fill="none" stroke-linecap="round">
+        <path d="M0 214C80 230 160 168 240 214S350 200 390 222" stroke="#C9D7F4" stroke-width="9"/>
+        <g stroke="#CEC6B6" stroke-width="1.2"><path d="M0 88 390 98M0 142 390 132M0 236 390 230M40 0 52 240M160 0 150 240M222 0 236 240M350 0 344 240M0 12 180 240M260 0 390 150"/></g>
+        <g stroke="#C2B9A6" stroke-width="2.6"><path d="M0 40C120 52 260 30 390 46M0 186C140 176 250 200 390 180M96 0C104 80 88 160 110 240M300 0C290 90 312 170 296 240"/></g>
+      </g>
+      <circle cx="195" cy="120" r="95" fill="#AFC4F2" fill-opacity=".3" stroke="#7C9BE6" stroke-width="1.5"/>
+      <circle cx="195" cy="120" r="6" fill="#7C9BE6" stroke="#fff" stroke-width="2.5"/>
+      <g font-size="11" font-weight="800" text-anchor="middle">
+        <circle cx="172" cy="96" r="14" fill="#151515"/><text x="172" y="100" fill="#fff">R</text>
+        <circle cx="228" cy="102" r="14" fill="#151515"/><text x="228" y="106" fill="#fff">dm</text>
+        <circle cx="146" cy="158" r="14" fill="#151515"/><text x="146" y="162" fill="#fff">L</text>
+        <circle cx="252" cy="170" r="14" fill="#151515"/><text x="252" y="174" fill="#fff">E</text>
+        <circle cx="124" cy="72" r="14" fill="#151515"/><text x="124" y="76" fill="#fff">A</text>
+        <circle cx="322" cy="58" r="14" fill="#FBF8F2" stroke="#B9B3A7" stroke-width="1.5"/><text x="322" y="62" fill="#7C776D">Ro</text>
+      </g>
+    </svg>
+    <div style="position:absolute;left:24px;right:24px;top:384px">
+      <div class="stat"><span class="lbl">Umkreis</span><span class="num" style="font-size:48px">3 km</span></div>
+      <div class="row" style="gap:12px;margin-top:12px;font-size:12px;color:var(--ink2)"><span>1 km</span>
+        <div style="flex:1;position:relative"><div class="bar"><i style="width:7%"></i></div><span class="circle" style="position:absolute;left:7%;top:-9px;margin-left:-13px;width:26px;height:26px;box-shadow:0 0 0 4px var(--bg)"></span></div><span>30 km</span></div>
+      <div style="margin-top:12px">
+        <div class="irow" style="height:50px"><b style="width:56px">Rewe</b><span class="small" style="font-size:13px;flex:1">Torstraße 12</span><b>1,0 km</b><span class="ck on"><svg class="i" style="width:15px"><use href="#i-check"/></svg></span></div>
+        <div class="irow" style="height:50px"><b style="width:56px">dm</b><span class="small" style="font-size:13px;flex:1">Rosenthaler Str. 40</span><b>1,1 km</b><span class="ck on"><svg class="i" style="width:15px"><use href="#i-check"/></svg></span></div>
+        <div class="irow" style="height:50px"><b style="width:56px">Lidl</b><span class="small" style="font-size:13px;flex:1">Invalidenstr. 60</span><b>2,0 km</b><span class="ck on"><svg class="i" style="width:15px"><use href="#i-check"/></svg></span></div>
+        <div class="irow" style="height:50px"><b style="width:56px">Edeka</b><span class="small" style="font-size:13px;flex:1">Chausseestr. 118</span><b>2,4 km</b><span class="ck on"><svg class="i" style="width:15px"><use href="#i-check"/></svg></span></div>
+        <div class="irow" style="height:50px"><b style="width:56px">Aldi</b><span class="small" style="font-size:13px;flex:1">Brunnenstr. 7</span><b>2,7 km</b><span class="ck on"><svg class="i" style="width:15px"><use href="#i-check"/></svg></span></div>
+      </div>
+    </div>
+    <div class="btn" style="position:absolute;left:24px;right:24px;bottom:34px">5 Läden übernehmen</div>
+    <div class="homebar"></div></div>
+    <div class="caption"><b>Läden &amp; Umkreis (S14)</b>Gezeichnete Karte mit feinen Straßen, Umkreis als blauer Kreis, Läden als Kreise mit Kürzel (Rossmann liegt draußen). Umkreis groß, Liste mit Entfernung.</div></div>
+
+</div>
+
+<section class="sec"><h2>Angebotsdetail</h2><p>Ein Angebot von oben nach unten: Preis riesig, dann Preisverlauf, Vorratstipp, Nährwerte, Siegel und passende Gerichte.</p></section>
+<div class="screens">
+
+  <!-- S9 oben -->
+  <div class="screen"><div class="phone">
+    <div class="sb"><b>9:41</b><span class="island"></span><svg><use href="#status"/></svg></div>
+    <div class="blob" style="left:160px;top:-110px;width:380px;height:380px;background:var(--sand)"></div>
+    <img class="ill" src="ill-v7/pasta.webp" style="position:absolute;left:176px;top:92px;width:230px" alt="">
+    <div class="scr">
+      <div class="row between"><svg class="i" style="width:26px;height:26px"><use href="#i-back"/></svg><span class="circle" style="width:44px;height:44px"><svg class="i" style="width:20px;height:20px"><use href="#i-heart"/></svg></span></div>
+      <span class="deal" style="margin-top:30px">−45 %</span>
+      <div class="t1" style="margin-top:8px">Spaghetti<br>n.5</div>
+      <div class="small" style="margin-top:4px">Barilla · 500 g</div>
+      <div class="row" style="gap:5px;margin-top:10px"><span class="soft c-nA">Nutri A</span><span class="soft ok"><svg class="i" style="width:13px;height:13px"><use href="#i-leaf"/></svg>Vegan</span></div>
+      <div class="stat" style="margin-top:44px"><span class="lbl">Preis</span><span class="num" style="font-size:92px">0,99 €</span></div>
+      <div class="stat mute" style="margin-top:14px"><span class="lbl">Normal</span><span class="num" style="font-size:38px;text-decoration:line-through;text-decoration-thickness:2px">1,79 €</span></div>
+      <div style="margin-top:14px">
+        <div class="irow" style="height:50px"><span class="small" style="flex:1">Grundpreis</span><b>1,98 €/kg</b></div>
+        <div class="irow" style="height:50px"><span class="small" style="flex:1">Laden</span><img src="https://upload.wikimedia.org/wikipedia/commons/thumb/4/4c/Logo_REWE.svg/250px-Logo_REWE.svg.png" height="13" alt=""><b>Torstraße</b></div>
+        <div class="irow" style="height:50px"><span class="small" style="flex:1">Gültig bis</span><b>Sa, 7.11.</b><span class="soft">noch 3 Tage</span></div>
+      </div>
+    </div>
+    <div class="btn" style="position:absolute;left:24px;right:24px;bottom:34px"><svg class="i" style="width:20px;height:20px"><use href="#i-bag"/></svg>Zur Einkaufsliste</div>
+    <div class="homebar"></div></div>
+    <div class="caption"><b>Angebotsdetail (S9)</b>Packung im Kreis oben rechts, Herz für die Merkliste. Preis als riesige Zahl, Normalpreis grau durchgestrichen, darunter Grundpreis, Laden und Frist.</div></div>
+
+  <!-- S9 Preisverlauf + Vorratstipp -->
+  <div class="screen"><div class="phone">
+    <div class="sb"><b>9:41</b><span class="island"></span><svg><use href="#status"/></svg></div>
+    <div class="blob" style="left:240px;top:520px;width:300px;height:300px;background:var(--sage)"></div>
+    <img class="ill" src="ill-v7/bag.webp" style="position:absolute;left:258px;top:530px;width:124px" alt="">
+    <div class="scr">
+      <div class="row between"><svg class="i" style="width:26px;height:26px"><use href="#i-back"/></svg><span class="small" style="color:var(--ink)">Barilla Spaghetti n.5</span><span class="circle" style="width:44px;height:44px"><svg class="i" style="width:20px;height:20px;fill:currentColor"><use href="#i-heart"/></svg></span></div>
+      <div class="row between" style="margin-top:18px"><span class="t2">Preisverlauf</span><span class="soft c-best">Bestpreis</span></div>
+      <svg viewBox="0 0 342 192" width="342" height="192" style="display:block;margin-top:10px;font-weight:700">
+        <rect x="316" y="10" width="26" height="160" rx="13" fill="#DCE5F8"/>
+        <line x1="22" y1="45" x2="342" y2="45" stroke="#DCD5C7"/><line x1="22" y1="145" x2="342" y2="145" stroke="#DCD5C7"/>
+        <text x="0" y="49" font-size="10" fill="#B9B3A7">2 €</text><text x="0" y="149" font-size="10" fill="#B9B3A7">1 €</text>
+        <line x1="30" y1="66" x2="342" y2="66" stroke="#7C776D" stroke-width="1.4" stroke-dasharray="4 4"/>
+        <path d="M30 56H160V116H186V56H264V106H290V56H342" fill="none" stroke="#7C9BE6" stroke-width="2.2"/>
+        <path d="M30 66H82V116H108V66H134V146H160V66H212V96H238V66H316V146H342" fill="none" stroke="#151515" stroke-width="2.2"/>
+        <g fill="#7C9BE6"><circle cx="173" cy="116" r="4"/><circle cx="277" cy="106" r="4"/></g>
+        <g fill="#151515"><circle cx="95" cy="116" r="4"/><circle cx="147" cy="146" r="4"/><circle cx="225" cy="96" r="4"/><circle cx="329" cy="146" r="7" stroke="#fff" stroke-width="2.5"/></g>
+        <rect x="226" y="20" width="112" height="20" rx="10" fill="#FBF8F2" stroke="#DCD5C7"/>
+        <text x="282" y="34" font-size="10.5" fill="#151515" text-anchor="middle">Normalpreis 1,79 €</text>
+        <g font-size="10" fill="#7C776D"><text x="30" y="188">KW 34</text><text x="147" y="188" text-anchor="middle">KW 38</text><text x="251" y="188" text-anchor="middle">KW 42</text><text x="342" y="188" text-anchor="end" fill="#151515">KW 45</text></g>
+      </svg>
+      <div class="row" style="gap:16px;margin-top:8px;font-size:12px;color:var(--ink2)"><span><i class="c-key" style="background:var(--ink)"></i>Rewe</span><span><i class="c-key" style="background:var(--blue3)"></i>Edeka</span><span><i class="c-key" style="background:repeating-linear-gradient(90deg,var(--ink2) 0 4px,transparent 4px 7px)"></i>Normalpreis</span></div>
+      <div class="row" style="gap:18px;margin-top:18px;align-items:flex-start">
+        <div class="stat mute" style="flex:1"><span class="lbl">Median<br>12 Wo.</span><span class="num" style="font-size:30px">1,79 €</span></div>
+        <div class="stat" style="flex:1"><span class="lbl">Tiefst-<br>preis</span><span class="num" style="font-size:30px">0,99 €</span></div>
+      </div>
+      <div class="small" style="font-size:13px;line-height:1.5;margin-top:12px">Zuletzt so günstig: KW 38 bei Rewe (0,99 €)<br>Im Schnitt alle 4 Wochen im Angebot</div>
+      <div style="position:absolute;left:24px;width:220px;top:540px">
+        <div class="lbl row" style="gap:6px;color:var(--ink)"><svg class="i" style="width:15px;height:15px"><use href="#i-sparkle"/></svg>VORRATSTIPP</div>
+        <div class="t2" style="margin-top:6px">3 Packungen reichen ~6 Wochen</div>
+        <div class="small" style="font-size:13px;margin-top:4px">sparst 2,40 € zum Normalpreis</div>
+        <div class="btn blue" style="display:inline-flex;height:48px;margin-top:12px">3× auf die Liste</div>
+      </div>
+    </div>
+    <div class="btn" style="position:absolute;left:24px;right:24px;bottom:34px"><svg class="i" style="width:20px;height:20px"><use href="#i-bag"/></svg>Zur Einkaufsliste</div>
+    <div class="homebar"></div></div>
+    <div class="caption"><b>Preisverlauf &amp; Vorratstipp (S9)</b>Weiter unten: Stufenlinien der letzten 12 Wochen je Laden, diese Woche im blauen Band, Urteil „Bestpreis“. Median und Tiefstpreis groß, Vorratstipp neben der Tasche im Kreis.</div></div>
+
+  <!-- S9 Nährwerte, Siegel, Passt zu -->
+  <div class="screen"><div class="phone">
+    <div class="sb"><b>9:41</b><span class="island"></span><svg><use href="#status"/></svg></div>
+    <div class="blob" style="left:-100px;top:540px;width:340px;height:340px;background:var(--blue1)"></div>
+    <div class="scr">
+      <div class="row between"><svg class="i" style="width:26px;height:26px"><use href="#i-back"/></svg><span class="small" style="color:var(--ink)">Barilla Spaghetti n.5</span><span class="circle" style="width:44px;height:44px"><svg class="i" style="width:20px;height:20px;fill:currentColor"><use href="#i-heart"/></svg></span></div>
+      <div class="t2" style="margin-top:18px">Nährwerte</div>
+      <div class="seg" style="margin-top:10px"><span class="on">pro 100 g</span><span>pro Packung (500 g)</span></div>
+      <div class="row" style="gap:10px;margin-top:16px;align-items:flex-start">
+        <div class="stat" style="flex:1;display:block"><span class="lbl">kcal</span><div class="num" style="font-size:30px;margin-top:6px">359</div></div>
+        <div class="stat" style="flex:1;display:block"><span class="lbl">Protein</span><div class="num" style="font-size:30px;margin-top:6px">12 g</div></div>
+        <div class="stat" style="flex:1;display:block"><span class="lbl">KH</span><div class="num" style="font-size:30px;margin-top:6px">71 g</div></div>
+        <div class="stat" style="flex:1;display:block"><span class="lbl">Fett</span><div class="num" style="font-size:30px;margin-top:6px">2 g</div></div>
+      </div>
+      <div class="small" style="font-size:12px;margin-top:10px">Quelle: USDA FoodData Central · „Spaghetti, dry“</div>
+      <div class="t2" style="margin-top:22px">Bio, vegan, Nutri-Score</div>
+      <div style="margin-top:8px">
+        <div class="c-r2"><span class="soft c-nA" style="width:72px;justify-content:center">Nutri A</span><div class="tx"><span style="margin:0;font-size:13px;color:var(--ink)">Nährwert-Ampel von A (günstig) bis E</span></div></div>
+        <div class="c-r2"><span class="soft ok" style="width:72px;justify-content:center"><svg class="i" style="width:13px;height:13px"><use href="#i-leaf"/></svg>Vegan</span><div class="tx"><span style="margin:0;font-size:13px;color:var(--ink)">ohne tierische Zutaten</span></div></div>
+      </div>
+      <div class="small hr" style="font-size:12px;line-height:1.5;padding-top:8px">Quelle: Prospekttext · Open Food Facts (ODbL)<br><span style="color:var(--blue3);font-weight:800">Bei Open Food Facts ansehen</span></div>
+      <div class="t2" style="margin-top:22px">Passt zu</div>
+      <div class="row" style="gap:15px;margin-top:14px;align-items:flex-start">
+        <div class="c-mini"><div class="plate" style="width:92px;height:92px;margin:0 auto;background-image:url(../../../ios/Sources/Essenapp/Resources/hero/pasta.jpg)"></div><b>Spaghetti Pomodoro</b></div>
+        <div class="c-mini"><div class="plate" style="width:92px;height:92px;margin:0 auto;background-image:url(../../../ios/Sources/Essenapp/Resources/hero/bowl.jpg)"></div><b>Pasta-Bowl mit Feta</b></div>
+        <div class="c-mini"><div class="plate" style="width:92px;height:92px;margin:0 auto;background-image:url(../../../ios/Sources/Essenapp/Resources/hero/chef.jpg)"></div><b>Aglio e Olio</b></div>
+      </div>
+    </div>
+    <div class="btn2" style="position:absolute;left:24px;right:24px;bottom:34px;background:var(--bg)"><svg class="i" style="width:18px;height:18px"><use href="#i-check"/></svg>Auf der Liste</div>
+    <div class="homebar"></div></div>
+    <div class="caption"><b>Nährwerte, Siegel, Passt zu (S9)</b>Ganz unten: vier Nährwerte als Zahlen, Siegel mit Erklärung und Quelle, passende Gerichte als Teller über einem Kreis. Knopf schon im Zustand „Auf der Liste“.</div></div>
+
+</div>
+
+<section class="sec"><h2>Merkliste &amp; Scanner</h2><p>Gemerkte Produkte, Preisalarme und Wunschpreise; neue Einträge per Suche oder Barcode.</p></section>
+<div class="screens">
+
+  <!-- S10 Merkliste -->
+  <div class="screen"><div class="phone">
+    <div class="sb"><b>9:41</b><span class="island"></span><svg><use href="#status"/></svg></div>
+    <div class="quarter" style="right:0;top:0;width:180px;height:180px;background:var(--sage)"></div>
+    <img class="ill" src="ill-v7/bag.webp" style="position:absolute;left:268px;top:44px;width:104px" alt="">
+    <div class="scr">
+      <div class="small">8 beobachtet</div><div class="t1">Merkliste</div>
+      <div class="seg" style="margin-top:14px;width:230px"><span>Angebote</span><span class="on">Merkliste · 8</span></div>
+      <div class="sec2 row" style="gap:6px;margin-top:14px"><svg class="i" style="width:16px;height:16px"><use href="#i-tag"/></svg>DIESE WOCHE GÜNSTIG</div>
+      <div class="c-r2" style="padding:4px 0"><span class="c-lg" style="background:var(--blue1)"><img src="ill-v7/pasta.webp" style="width:60px;max-width:none" alt=""></span><div class="tx"><b>Barilla Spaghetti</b><span>0,99 € bei Rewe</span></div><span class="deal">−45 %</span><svg class="i" style="width:18px;color:var(--ink3)"><use href="#i-chev"/></svg></div>
+      <div class="c-r2" style="padding:4px 0"><span class="c-lg"><img src="https://upload.wikimedia.org/wikipedia/commons/thumb/2/2c/Dm-drogerie-Logo.svg/250px-Dm-drogerie-Logo.svg.png" alt="dm"></span><div class="tx"><b>Balea Shampoo</b><span>1,79 € bei dm</span></div><span class="deal">−25 %</span><svg class="i" style="width:18px;color:var(--ink3)"><use href="#i-chev"/></svg></div>
+      <div class="sec2 row" style="gap:6px;margin-top:14px"><svg class="i" style="width:16px;height:16px"><use href="#i-eye"/></svg>BEOBACHTET</div>
+      <div class="c-r2" style="padding:8px 0"><div class="tx"><b>Kaffee · Lavazza</b><span>Alarm unter 4,99 € · hält ca. 6 Wochen · leer ca. 1.12.</span><span>zuletzt im Angebot: KW 44 bei Lidl (4,49 €)</span></div><svg class="i" style="width:18px;color:var(--ink3)"><use href="#i-chev"/></svg></div>
+      <div class="c-r2" style="padding:8px 0"><div class="tx"><b class="row" style="gap:8px">Duschgel · Balea <span class="soft" style="display:inline-flex;margin:0;color:var(--ink);font-size:11px">Coupon −20 %</span></b><span>gerade nicht im Angebot</span></div><svg class="i" style="width:18px;color:var(--ink3)"><use href="#i-chev"/></svg></div>
+      <div class="sec2 row" style="gap:6px;margin-top:14px"><svg class="i" style="width:16px;height:16px"><use href="#i-bell"/></svg>PREISALARME<span style="flex:1"></span><span class="pill" style="height:26px;letter-spacing:0;font-size:12px"><svg class="i" style="width:14px;height:14px"><use href="#i-plus"/></svg>Zutat</span></div>
+      <div class="c-r2" style="padding:8px 0"><div class="tx"><b>Butter unter 1,49 €</b><span>wartet auf ein passendes Angebot</span></div></div>
+      <div class="c-r2" style="padding:8px 0"><div class="tx"><b>Lachsfilet unter 15,00 €/kg</b><span class="soft ok" style="color:var(--ink);display:inline-flex;margin-top:4px">greift: 3,49 € bei Lidl – Lachsfilet</span></div></div>
+    </div>
+    <div class="row" style="position:absolute;left:24px;right:24px;bottom:100px;gap:10px"><div class="btn2" style="flex:none;background:var(--bg)"><svg class="i" style="width:18px;height:18px"><use href="#i-search"/></svg>Suchen</div><div class="btn" style="flex:1;height:52px"><svg class="i" style="width:20px;height:20px"><use href="#i-barcode"/></svg>Barcode scannen</div></div>
+    <div class="nav" data-on="2"></div>
+    <div class="homebar"></div></div>
+    <div class="caption"><b>Merkliste (S10)</b>Drei Abschnitte als Zeilen: diese Woche günstig, beobachtet (mit Wunschpreis, Rhythmus, letztem Angebot), Preisalarme. Unten Suchen und Barcode.</div></div>
+
+  <!-- S10 Bearbeiten-Sheet -->
+  <div class="screen"><div class="phone">
+    <div class="sb"><b>9:41</b><span class="island"></span><svg><use href="#status"/></svg></div>
+    <div class="quarter" style="right:0;top:0;width:180px;height:180px;background:var(--sage)"></div>
+    <div class="scr"><div class="small">8 beobachtet</div><div class="t1">Merkliste</div>
+      <div class="seg" style="margin-top:14px;width:230px"><span>Angebote</span><span class="on">Merkliste · 8</span></div></div>
+    <div class="scrim"></div>
+    <div class="sheet">
+      <div class="row between" style="align-items:flex-start"><div><div class="t2">Kaffee</div><div class="small" style="font-size:13px">Lavazza · Qualità Oro 500 g</div></div><span class="x"><svg class="i"><use href="#i-x"/></svg></span></div>
+      <div class="sec2 row" style="gap:6px"><svg class="i" style="width:16px;height:16px"><use href="#i-bell"/></svg>WUNSCHPREIS</div>
+      <div class="stat" style="margin-top:8px"><span class="lbl">unter</span><span class="num" style="font-size:64px">4,99 €</span></div>
+      <div class="seg" style="margin-top:12px"><span class="on">Packung</span><span>pro kg</span><span>pro l</span><span>pro Stück</span></div>
+      <div class="small" style="font-size:12px;margin-top:6px">Grundpreis-Alarm gilt für jede Packungsgröße.</div>
+      <div class="sec2">LÄDEN</div>
+      <div class="chips" style="margin-top:8px"><span class="chip c-chip">Alle</span><span class="chip c-chip on">Rewe</span><span class="chip c-chip on">Lidl</span><span class="chip c-chip">Edeka</span><span class="chip c-chip">Aldi</span></div>
+      <div class="sec2 row" style="gap:6px"><svg class="i" style="width:16px;height:16px"><use href="#i-refresh"/></svg>VERBRAUCHSRHYTHMUS<span style="flex:1"></span><span class="sw on"></span></div>
+      <div class="irow" style="height:52px"><span style="flex:1"><b>Hält ca.</b><br><span class="small" style="font-size:12px">Vorschlag: 6 Wochen</span></span><span class="stepper"><i>−</i>6 Wochen<i>+</i></span></div>
+      <div class="irow" style="height:52px"><span style="flex:1"><b>Zuletzt gekauft</b><br><span class="small" style="font-size:12px">Di, 21.10.</span></span><span class="sw on"></span></div>
+      <div class="small hr" style="font-size:12px;padding-top:8px;line-height:1.45">Wird automatisch gesetzt, wenn du es auf der Liste abhakst.</div>
+      <div class="btn" style="margin-top:18px">Speichern</div>
+      <div style="text-align:center;margin-top:12px;color:var(--deal);font-weight:800;font-size:15px">Entfernen</div>
+    </div>
+    <div class="homebar"></div></div>
+    <div class="caption"><b>Bearbeiten (S10)</b>Sheet zum beobachteten Produkt: Wunschpreis als große Zahl, Einheit im Segment, Läden als Chips, Verbrauchsrhythmus mit Stepper.</div></div>
+
+  <!-- S10 Suchen-Sheet -->
+  <div class="screen"><div class="phone">
+    <div class="sb"><b>9:41</b><span class="island"></span><svg><use href="#status"/></svg></div>
+    <div class="quarter" style="right:0;top:0;width:180px;height:180px;background:var(--sage)"></div>
+    <div class="scr"><div class="small">8 beobachtet</div><div class="t1">Merkliste</div>
+      <div class="seg" style="margin-top:14px;width:230px"><span>Angebote</span><span class="on">Merkliste · 8</span></div></div>
+    <div class="scrim"></div>
+    <div class="sheet">
+      <div class="row between"><div class="t2">Produkt merken</div><span class="x"><svg class="i"><use href="#i-x"/></svg></span></div>
+      <div class="field" style="margin-top:16px;color:var(--ink)"><svg class="i" style="width:20px;height:20px;color:var(--ink2)"><use href="#i-search"/></svg>Shampoo<span style="width:2px;height:20px;background:var(--blue3);margin-left:-8px"></span></div>
+      <div class="btn" style="margin-top:14px"><svg class="i" style="width:20px;height:20px"><use href="#i-eye"/></svg>„Shampoo“ beobachten</div>
+      <div class="sec2">DIESE WOCHE IM ANGEBOT</div>
+      <div class="c-r2"><span class="c-lg"><img src="https://upload.wikimedia.org/wikipedia/commons/thumb/2/2c/Dm-drogerie-Logo.svg/250px-Dm-drogerie-Logo.svg.png" alt="dm"></span><div class="tx"><b>Balea Shampoo</b><span>dm · 300 ml · <span style="display:inline;color:var(--deal)">−25 %</span></span></div><div class="num" style="font-size:24px">1,79 €</div><svg class="i" style="fill:currentColor"><use href="#i-heart"/></svg></div>
+      <div class="c-r2"><span class="c-lg" style="background:var(--rose)">Ro</span><div class="tx"><b>Isana Shampoo</b><span>Rossmann · 300 ml · <span style="display:inline;color:var(--deal)">−25 %</span></span></div><div class="num" style="font-size:24px">0,79 €</div><svg class="i"><use href="#i-heart"/></svg></div>
+      <div class="c-r2"><span class="c-lg"><img src="https://upload.wikimedia.org/wikipedia/commons/thumb/9/91/Lidl-Logo.svg/250px-Lidl-Logo.svg.png" style="width:40px" alt="Lidl"></span><div class="tx"><b>Head &amp; Shoulders</b><span>Lidl · 250 ml · <span style="display:inline;color:var(--deal)">−30 %</span></span></div><div class="num" style="font-size:24px">2,49 €</div><svg class="i"><use href="#i-heart"/></svg></div>
+    </div>
+    <div class="homebar"></div></div>
+    <div class="caption"><b>Suchen (S10)</b>Sheet „Produkt merken“: Suchwort beobachten oder ein Angebot dieser Woche per Herz merken.</div></div>
+
+  <!-- Barcode-Scan -->
+  <div class="screen"><div class="phone" style="background:#1E1C19;color:#fff">
+    <div style="position:absolute;inset:0;background:radial-gradient(circle at 50% 46%,#4A4640,#1E1C19 68%)"></div>
+    <div class="sb"><b>9:41</b><span class="island"></span><svg><use href="#status"/></svg></div>
+    <div class="scr">
+      <div class="row between"><span class="t2">Barcode scannen</span><span class="x" style="box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.45)"><svg class="i"><use href="#i-x"/></svg></span></div>
+    </div>
+    <svg viewBox="0 0 270 170" width="270" height="170" style="position:absolute;left:60px;top:330px">
+      <g stroke="#fff" stroke-opacity=".35" stroke-width="3"><path d="M70 50v70M80 50v70M86 50v70M98 50v70M104 50v70M118 50v70M124 50v70M134 50v70M146 50v70M152 50v70M164 50v70M176 50v70M182 50v70M194 50v70M200 50v70"/></g>
+      <path d="M4 40V16A12 12 0 0 1 16 4H40M230 4h24a12 12 0 0 1 12 12v24M266 130v24a12 12 0 0 1-12 12h-24M40 166H16A12 12 0 0 1 4 154v-24" fill="none" stroke="#AFC4F2" stroke-width="5" stroke-linecap="round"/>
+    </svg>
+    <div class="row" style="position:absolute;left:50%;transform:translateX(-50%);bottom:120px;height:48px;padding:0 20px;border-radius:999px;background:rgba(255,255,255,.14);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);box-shadow:inset 0 0 0 1px rgba(255,255,255,.2);white-space:nowrap;font-size:14px;gap:10px"><svg class="i" style="width:18px;height:18px"><use href="#i-barcode"/></svg>Strichcode in den Rahmen halten</div>
+    <div class="homebar" style="background:#fff"></div></div>
+    <div class="caption"><b>Barcode scannen (S10)</b>Vollbild-Kamera, dunkel. Rahmen-Ecken in Pastellblau, unten eine Glas-Pille mit Hinweis.</div></div>
+
+  <!-- Auf Merkliste? -->
+  <div class="screen"><div class="phone" style="background:#1E1C19">
+    <div style="position:absolute;inset:0;background:radial-gradient(circle at 50% 46%,#4A4640,#1E1C19 68%)"></div>
+    <div class="sb" style="color:#fff"><b>9:41</b><span class="island"></span><svg><use href="#status"/></svg></div>
+    <svg viewBox="0 0 270 170" width="270" height="170" style="position:absolute;left:60px;top:200px"><path d="M4 40V16A12 12 0 0 1 16 4H40M230 4h24a12 12 0 0 1 12 12v24M266 130v24a12 12 0 0 1-12 12h-24M40 166H16A12 12 0 0 1 4 154v-24" fill="none" stroke="#AFC4F2" stroke-width="5" stroke-linecap="round"/></svg>
+    <div class="scrim"></div>
+    <div class="sheet">
+      <div class="row between"><div class="t2">Auf Merkliste?</div><span class="x"><svg class="i"><use href="#i-x"/></svg></span></div>
+      <div class="row" style="gap:18px;margin-top:18px">
+        <span class="c-lg" style="width:104px;height:104px;background:var(--sand)"><img src="ill-v7/pasta.webp" style="width:130px;max-width:none" alt=""></span>
+        <div><div class="t2">Spaghetti n.5</div><div class="small" style="font-size:13px">Barilla · 500 g</div>
+          <div class="c-nss" style="margin-top:10px"><i class="on" style="background:#038141">A</i><i style="background:#85BB2F">B</i><i style="background:#FECB02">C</i><i style="background:#EE8100">D</i><i style="background:#E63E11">E</i></div></div>
+      </div>
+      <div style="margin-top:18px">
+        <div class="irow" style="height:48px"><span class="small" style="flex:1">EAN</span><b style="font-family:'Inter Tight',sans-serif">8076 8001 9505 7</b></div>
+        <div class="irow" style="height:48px"><span class="small" style="flex:1">Daten</span><b style="font-size:14px">Open Food Facts (ODbL)</b></div>
+      </div>
+      <div class="btn" style="margin-top:16px"><svg class="i" style="width:20px;height:20px"><use href="#i-heart"/></svg>Auf die Merkliste</div>
+      <div class="btn2" style="margin-top:10px"><svg class="i" style="width:18px;height:18px"><use href="#i-barcode"/></svg>Weiter scannen</div>
+    </div>
+    <div class="homebar"></div></div>
+    <div class="caption"><b>Auf Merkliste? (S10)</b>Nach dem Treffer: Packung im Kreis, Nutri-Score als Ampel-Leiste, EAN und Datenquelle als Zeilen, dann merken oder weiter scannen.</div></div>
+
+</div>

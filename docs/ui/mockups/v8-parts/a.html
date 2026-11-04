@@ -1,0 +1,409 @@
+<style>
+/* Teil a: Start & Planen */
+.a-av{width:44px;height:44px;border-radius:50%;background:var(--sand);display:grid;place-items:center;font-family:"DM Serif Display",serif;font-size:20px;flex:none}
+.a-r{height:52px}
+.a-r .nm{font-size:17px}
+.a-act{width:34px;height:34px;border-radius:50%;box-shadow:inset 0 0 0 1.5px var(--line);display:grid;place-items:center;flex:none}
+.a-act svg{width:17px;height:17px}
+.a-act.on{background:var(--ink);color:#fff;box-shadow:none}
+.a-acts{display:grid;grid-template-columns:34px 34px;gap:6px;flex:none}
+.a-sl{position:relative;height:26px}
+.a-sl::before{content:"";position:absolute;left:0;right:0;top:11px;height:4px;border-radius:2px;background:var(--line)}
+.a-sl i{position:absolute;left:0;top:11px;height:4px;border-radius:2px;background:var(--ink)}
+.a-sl b{position:absolute;top:0;width:26px;height:26px;margin-left:-13px;border-radius:50%;background:var(--ink);box-shadow:0 0 0 4px var(--bg)}
+.a-day{position:relative;width:38px;height:38px;border-radius:50%;display:grid;place-items:center;font-size:13px;font-weight:800;color:var(--ink2);box-shadow:inset 0 0 0 1.5px var(--line);flex:none}
+.a-day.on{background:var(--ink);color:#fff;box-shadow:none}
+.a-day.off{opacity:.4}
+.a-day sup{position:absolute;top:-7px;right:-9px;height:18px;padding:0 5px;border-radius:999px;background:var(--blue);color:var(--ink);font-size:10px;line-height:18px}
+.a-foot{position:absolute;left:0;right:0;bottom:0;padding:28px 24px 34px;background:linear-gradient(rgba(243,238,228,0),var(--bg) 40%);z-index:2}
+.a-mini{box-shadow:0 0 0 3px var(--card),0 6px 14px rgba(40,30,20,.14)}
+.a-rot{animation:a-rot 9s linear infinite}
+@keyframes a-rot{to{transform:rotate(360deg)}}
+.a-run{border-color:var(--line);border-top-color:var(--ink)}
+</style>
+
+<section class="sec"><h2>Start</h2><p>Überblick der Woche, Spar-Hinweise beim Weiterscrollen und die Schnell-Aktionen hinter dem „+“ im Kopf.</p></section>
+<div class="screens">
+
+  <!-- S1 Start -->
+  <div class="screen"><div class="phone">
+    <div class="sb"><b>9:41</b><span class="island"></span><svg><use href="#status"/></svg></div>
+    <div class="blob" style="left:130px;top:150px;width:400px;height:400px;background:var(--blue1)"></div>
+    <img class="ill" src="ill-v7/table.webp" style="position:absolute;left:150px;top:190px;width:250px" alt="">
+    <div class="row" style="position:absolute;right:24px;top:66px;gap:10px;z-index:2"><span class="a-av">J</span><span class="circle" style="width:44px;height:44px"><svg class="i" style="width:22px"><use href="#i-plus"/></svg></span></div>
+    <div class="scr">
+      <div class="small">Hey Jona,</div><div class="t1" style="margin-top:2px">Was kochen<br>wir heute?</div>
+      <div style="position:absolute;left:24px;top:380px;width:190px">
+        <div class="lbl" style="color:var(--blue3)">HEUTE ABEND</div>
+        <div class="t2" style="margin-top:4px;font-size:28px">Spaghetti Pomodoro</div>
+        <div class="small" style="font-size:13px;margin-top:4px">25 min · 2,10 € p. P.</div>
+        <div class="row" style="margin-top:14px;gap:10px"><span class="circle" style="width:56px;height:56px"><svg class="i" style="width:20px"><use href="#i-play"/></svg></span><span class="btn2" style="height:44px;font-size:14px;padding:0 16px">Keine Lust?</span></div>
+      </div>
+      <div style="position:absolute;left:24px;right:24px;top:578px">
+        <div class="stat"><span class="lbl">Diese Woche</span><span class="num" style="font-size:52px">38,20 €</span></div>
+        <div class="stat mute" style="margin-top:12px"><span class="lbl">Gespart</span><span class="num" style="font-size:40px;color:var(--deal)">12,40 €</span></div>
+      </div>
+    </div>
+    <div class="nav" data-on="0"></div>
+    <div class="homebar"></div></div>
+    <div class="caption"><b>Start (S1)</b>Wie v8, im Kopf jetzt Avatar (→ Einstellungen) und schwarzer „+“-Kreis für die Schnell-Aktionen; unter dem Gericht „Keine Lust?“.</div></div>
+
+  <!-- S1 Start gescrollt -->
+  <div class="screen"><div class="phone">
+    <div class="sb"><b>9:41</b><span class="island"></span><svg><use href="#status"/></svg></div>
+    <div class="blob" style="left:250px;top:-70px;width:240px;height:240px;background:var(--blue1)"></div>
+    <div class="scr" style="padding-top:60px">
+      <div class="stat"><span class="lbl">Budget-Rest –<br>wie wär's mit …</span><span class="num" style="font-size:48px">6,80 €</span></div>
+      <div style="margin-top:10px">
+        <div class="irow a-r"><span class="c" style="background:var(--rose)"><img src="ill-v7/tomato.webp" alt=""></span><div style="flex:1"><div class="nm">Bruschetta</div><div class="small" style="font-size:12px">Snack</div></div><div style="text-align:right"><b>2,10 €</b><div class="small" style="font-size:12px;color:var(--blue3)">einplanen</div></div></div>
+        <div class="irow a-r"><span class="c" style="background:var(--sand)"><img src="ill-v7/garlic.webp" alt=""></span><div style="flex:1"><div class="nm">Knoblauchbrot</div><div class="small" style="font-size:12px">Snack · Mi</div></div><span class="row small" style="font-size:12px;gap:4px;color:var(--ink)"><svg class="i" style="width:15px"><use href="#i-check"/></svg>erledigt</span></div>
+        <div class="irow a-r"><span class="c" style="background:var(--blue1)"><img src="ill-v7/pasta.webp" alt=""></span><div style="flex:1"><div class="nm">Spaghetti 2×</div><div class="small" style="font-size:12px">Vorrat</div></div><div style="text-align:right"><b>1,98 €</b><div class="small" style="font-size:12px;color:var(--blue3)">auf die Liste</div></div></div>
+      </div>
+      <div class="lbl" style="margin-top:14px">NÄCHSTE WOCHE GÜNSTIGER</div>
+      <div class="hr" style="margin-top:8px;padding-top:10px;display:flex;gap:12px;align-items:flex-start">
+        <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/9/91/Lidl-Logo.svg/250px-Lidl-Logo.svg.png" width="32" height="32" style="flex:none" alt="Lidl">
+        <div style="flex:1;font-size:14px;line-height:1.4"><b>Hähnchenbrust</b> nächste Woche <b style="color:var(--deal)">−30 %</b> bei Lidl: 3,49 € statt 4,99 € bei Rewe.
+          <div style="margin-top:6px"><span class="soft" style="height:28px;padding:0 12px;font-size:13px">Auf nächste Woche schieben</span></div></div>
+      </div>
+      <div class="lbl" style="margin-top:14px">VORRAT ANLEGEN LOHNT SICH</div>
+      <div class="irow a-r" style="margin-top:6px"><span class="c" style="background:var(--sand)"><img src="ill-v7/bag.webp" alt=""></span><div style="flex:1"><div class="nm">Basmatireis 1 kg</div><div class="small" style="font-size:12px">−25 % · hält 2 Jahre</div></div><span class="pill">6×</span></div>
+      <div class="stat" style="margin-top:14px"><span class="lbl">Ausgaben<br>November</span><span class="num" style="font-size:40px">182,40 €</span></div>
+      <div class="row" style="margin-top:8px;gap:10px"><div class="bar" style="flex:1"><i style="width:71%"></i></div><span class="small" style="font-size:12px">von 257,14 €</span><svg class="i" style="width:16px;color:var(--ink3)"><use href="#i-chev"/></svg></div>
+      <div class="irow a-r" style="margin-top:12px"><span class="c" style="background:var(--blue1)"><svg class="i"><use href="#i-book"/></svg></span><span class="nm">Wochenrückblick KW 44</span><svg class="i" style="width:18px;color:var(--ink3)"><use href="#i-chev"/></svg></div>
+      <div class="irow a-r"><span class="row" style="width:84px;flex:none"><span class="plate a-mini" style="width:34px;height:34px;background-image:url(../../../ios/Sources/Essenapp/Resources/hero/chef.jpg)"></span><span class="plate a-mini" style="width:34px;height:34px;margin-left:-12px;background-image:url(../../../ios/Sources/Essenapp/Resources/hero/bowl.jpg)"></span><span class="plate a-mini" style="width:34px;height:34px;margin-left:-12px;background-image:url(../../../ios/Sources/Essenapp/Resources/hero/pasta.jpg)"></span></span><div style="flex:1"><div class="nm">3 Lieblinge günstig</div><div class="small" style="font-size:12px">Ofen-Lachs, Bowl, Pomodoro</div></div><svg class="i" style="width:18px;color:var(--ink3)"><use href="#i-chev"/></svg></div>
+      <div class="irow a-r"><span class="c" style="background:var(--sage)"><img src="ill-v7/fridge.webp" alt=""></span><div style="flex:1"><div class="nm">Kühlschrank scannen</div><div class="small" style="font-size:12px">Fotos machen – wir füllen den Vorrat</div></div><svg class="i" style="width:18px;color:var(--ink3)"><use href="#i-chev"/></svg></div>
+    </div>
+    <div class="nav" data-on="0"></div>
+    <div class="homebar"></div></div>
+    <div class="caption"><b>Start weiter unten (S1)</b>Budget-Rest als große Zahl mit 3 Ideen, Hinweise „Nächste Woche günstiger“ und „Vorrat anlegen“, Ausgaben November, Rückblick, günstige Lieblinge und Kühlschrank – alles Zeilen, keine Karten.</div></div>
+
+  <!-- Schnell-Aktionen -->
+  <div class="screen"><div class="phone">
+    <div class="sb"><b>9:41</b><span class="island"></span><svg><use href="#status"/></svg></div>
+    <div class="blob" style="left:130px;top:150px;width:400px;height:400px;background:var(--blue1)"></div>
+    <img class="ill" src="ill-v7/table.webp" style="position:absolute;left:150px;top:190px;width:250px" alt="">
+    <div class="row" style="position:absolute;right:24px;top:66px;gap:10px"><span class="a-av">J</span><span class="circle" style="width:44px;height:44px"><svg class="i" style="width:22px"><use href="#i-plus"/></svg></span></div>
+    <div class="scr"><div class="small">Hey Jona,</div><div class="t1" style="margin-top:2px">Was kochen<br>wir heute?</div></div>
+    <div class="scrim"></div>
+    <div class="sheet">
+      <div class="row between"><div class="t2">Schnell-Aktionen</div><span class="x"><svg class="i"><use href="#i-x"/></svg></span></div>
+      <div style="margin-top:14px">
+        <div class="irow"><span class="c" style="background:var(--blue1)"><svg class="i"><use href="#i-sparkle"/></svg></span><span class="nm">Wochenplan erstellen</span><svg class="i" style="width:18px;color:var(--ink3)"><use href="#i-chev"/></svg></div>
+        <div class="irow"><span class="c" style="background:var(--blue1)"><svg class="i"><use href="#i-barcode"/></svg></span><span class="nm">Barcode scannen</span><svg class="i" style="width:18px;color:var(--ink3)"><use href="#i-chev"/></svg></div>
+        <div class="irow"><span class="c" style="background:var(--blue1)"><svg class="i"><use href="#i-bag"/></svg></span><span class="nm">Zur Einkaufsliste</span><svg class="i" style="width:18px;color:var(--ink3)"><use href="#i-chev"/></svg></div>
+        <div class="irow"><span class="c" style="background:var(--blue1)"><svg class="i"><use href="#i-edit"/></svg></span><span class="nm">Rezept anlegen</span><svg class="i" style="width:18px;color:var(--ink3)"><use href="#i-chev"/></svg></div>
+      </div>
+      <div class="btn" style="margin-top:18px"><svg class="i"><use href="#i-cam"/></svg>Kühlschrank scannen</div>
+    </div>
+    <div class="homebar"></div></div>
+    <div class="caption"><b>Schnell-Aktionen</b>Sheet aus dem „+“ im Start-Kopf: vier Zeilen, darunter volle Breite „Kühlschrank scannen“.</div></div>
+
+  <!-- S1 Leer -->
+  <div class="screen"><div class="phone">
+    <div class="sb"><b>9:41</b><span class="island"></span><svg><use href="#status"/></svg></div>
+    <div class="blob" style="left:-60px;top:470px;width:510px;height:510px;background:var(--blue1)"></div>
+    <img class="ill" src="ill-v7/lying.webp" style="position:absolute;left:14px;top:330px;width:360px" alt="">
+    <div class="row" style="position:absolute;right:24px;top:66px;gap:10px;z-index:2"><span class="a-av">J</span><span class="circle" style="width:44px;height:44px"><svg class="i" style="width:22px"><use href="#i-plus"/></svg></span></div>
+    <div class="scr">
+      <div class="t1" style="margin-top:40px;font-size:42px">Noch nichts<br>geplant.</div>
+      <div style="color:var(--ink2);font-size:17px;margin-top:8px">Kein Stress – in 30 Sekunden steht dein Plan.</div>
+    </div>
+    <div style="position:absolute;left:24px;right:24px;bottom:124px" class="row between"><span style="font-weight:800;font-size:17px">Plan erstellen</span><span class="circle" style="width:72px;height:72px"><svg class="i"><use href="#i-arrow"/></svg></span></div>
+    <div class="nav" data-on="0"></div>
+    <div class="homebar"></div></div>
+    <div class="caption"><b>Start ohne Plan (S1)</b>Die Figur liegt auf einem Hügel, der unten aus dem Bild läuft; „Plan erstellen“ öffnet den Plan-Generator.</div></div>
+
+</div>
+
+<section class="sec"><h2>Woche &amp; Planen</h2><p>Wochenplan, ein Tag im Detail, Plan-Generator und die Sheets rund ums Gericht.</p></section>
+<div class="screens">
+
+  <!-- S2 Wochenplan -->
+  <div class="screen"><div class="phone">
+    <div class="sb"><b>9:41</b><span class="island"></span><svg><use href="#status"/></svg></div>
+    <div class="blob" style="left:140px;top:180px;width:500px;height:500px;background:var(--blue)"></div>
+    <div class="scr">
+      <div class="row between" style="align-items:flex-end"><div><div class="small">KW 45 · 3.–9. Nov</div><div class="t1">Deine Woche</div></div><div class="num" style="font-size:30px">6<span style="color:var(--ink3)">/7</span></div></div>
+    </div>
+    <div class="tl"></div>
+    <div class="day has" style="top:236px"><i class="d"></i><div><b>Mo</b><span>Linsen-Dal</span></div></div>
+    <div class="day on" style="top:308px"><i class="d"></i><div><b>Dienstag</b><span>4. Nov</span></div></div>
+    <div class="day has" style="top:380px"><i class="d"></i><div><b>Mi</b><span>Ofengemüse</span></div></div>
+    <div class="day has" style="top:452px"><i class="d"></i><div><b>Do</b><span>Curry</span></div></div>
+    <div class="day has" style="top:524px"><i class="d"></i><div><b>Fr</b><span>Pizza</span></div></div>
+    <div class="day" style="top:596px"><i class="d"></i><div><b>Sa</b><span>frei</span></div></div>
+    <div class="day has" style="top:668px"><i class="d"></i><div><b>So</b><span>Braten</span></div></div>
+    <div style="position:absolute;left:140px;top:317px;width:42px;height:1.5px;background:var(--ink)"></div>
+    <div class="plate ph-pasta" style="position:absolute;left:182px;top:232px;width:190px;height:190px"></div>
+    <div style="position:absolute;left:182px;right:20px;top:446px">
+      <div class="lbl" style="color:var(--ink)">ABEND · 25 MIN</div>
+      <div class="t2" style="margin-top:4px">Spaghetti Pomodoro</div>
+      <div class="row between" style="margin-top:12px;align-items:flex-end">
+        <div><div class="num" style="font-size:44px">2,10 €</div><div class="small" style="font-size:12px;margin-top:4px;color:var(--ink)">p. P. · <span style="color:var(--deal)">2 im Angebot</span></div></div>
+        <span class="circle" style="width:50px;height:50px"><svg class="i" style="width:18px"><use href="#i-play"/></svg></span>
+      </div>
+    </div>
+    <div class="nav" data-on="1"></div>
+    <div class="homebar"></div></div>
+    <div class="caption"><b>Wochenplan (S2)</b>Unverändert aus v8: Zeitstrahl links, der gewählte Tag führt zum blauen Halbkreis mit Teller, Name und Preis.</div></div>
+
+  <!-- S2 Tag im Detail -->
+  <div class="screen"><div class="phone">
+    <div class="sb"><b>9:41</b><span class="island"></span><svg><use href="#status"/></svg></div>
+    <div class="blob" style="left:-110px;top:140px;width:220px;height:220px;background:var(--blue1)"></div>
+    <div class="scr">
+      <div class="row between" style="align-items:flex-end"><div><div class="small">KW 45 · 4. Nov</div><div class="t1">Dienstag</div></div><span class="soft ok" style="height:30px;font-size:13px;margin-bottom:4px"><svg class="i" style="width:15px"><use href="#i-check"/></svg>Abwechslung</span></div>
+
+      <div class="lbl" style="margin-top:22px;color:var(--ink)">MITTAG · 20 MIN</div>
+      <div class="row" style="margin-top:10px;align-items:flex-start;gap:14px">
+        <div class="plate" style="width:76px;height:76px;background-image:url(../../../ios/Sources/Essenapp/Resources/hero/bowl.jpg)"></div>
+        <div style="flex:1"><div class="t2" style="font-size:21px">Lachs-Bowl</div><div class="small" style="font-size:13px;margin-top:2px">3,40 € p. P. · 610 kcal</div>
+          <span class="soft ok" style="margin-top:8px"><svg class="i" style="width:13px"><use href="#i-refresh"/></svg>Rest von Mo</span></div>
+        <div class="a-acts"><span class="a-act on"><svg class="i"><use href="#i-heart"/></svg></span><span class="a-act"><svg class="i"><use href="#i-swap"/></svg></span><span class="a-act"><svg class="i"><use href="#i-lock"/></svg></span><span class="a-act"><svg class="i"><use href="#i-dice"/></svg></span></div>
+      </div>
+
+      <div class="hr" style="margin-top:12px"></div>
+      <div class="lbl" style="margin-top:12px;color:var(--ink)">ABEND · 25 MIN</div>
+      <div class="row" style="margin-top:10px;align-items:flex-start;gap:14px">
+        <div class="plate ph-pasta" style="width:76px;height:76px"></div>
+        <div style="flex:1"><div class="t2" style="font-size:21px">Spaghetti Pomodoro</div><div class="small" style="font-size:13px;margin-top:2px">2,10 € p. P. · 540 kcal</div>
+          <span class="soft" style="margin-top:8px"><svg class="i" style="width:14px"><use href="#i-users"/></svg>+2 Gäste</span></div>
+        <div class="a-acts"><span class="a-act"><svg class="i"><use href="#i-heart"/></svg></span><span class="a-act"><svg class="i"><use href="#i-swap"/></svg></span><span class="a-act on"><svg class="i"><use href="#i-lock"/></svg></span><span class="a-act"><svg class="i"><use href="#i-dice"/></svg></span></div>
+      </div>
+
+      <div class="row between" style="margin-top:18px"><span class="lbl">TAGESWERTE</span><span class="small" style="font-size:13px;color:var(--ink)">Für: Jona ▾</span></div>
+      <div class="row" style="margin-top:12px;align-items:flex-start;gap:20px">
+        <div style="width:92px;text-align:center;flex:none">
+          <svg width="88" height="88" viewBox="0 0 88 88" style="display:block;margin:0 auto"><circle cx="44" cy="44" r="44" fill="var(--blue1)"/><g fill="none" stroke-width="7" stroke-linecap="round" transform="rotate(-90 44 44)"><circle cx="44" cy="44" r="36" stroke="var(--line)"/><circle cx="44" cy="44" r="36" stroke="var(--ink)" stroke-dasharray="179 227"/><circle cx="44" cy="44" r="26" stroke="var(--line)"/><circle cx="44" cy="44" r="26" stroke="var(--blue3)" stroke-dasharray="121 164"/></g><text x="44" y="51" text-anchor="middle" font-family="DM Serif Display" font-size="20">J</text></svg>
+          <div style="font-size:13px;font-weight:800;margin-top:4px">Jona</div>
+          <svg width="54" height="54" viewBox="0 0 88 88" style="display:block;margin:8px auto 0"><g fill="none" stroke-width="8" stroke-linecap="round" transform="rotate(-90 44 44)"><circle cx="44" cy="44" r="36" stroke="var(--line)"/><circle cx="44" cy="44" r="36" stroke="var(--ink)" stroke-dasharray="188 227"/><circle cx="44" cy="44" r="25" stroke="var(--line)"/><circle cx="44" cy="44" r="25" stroke="var(--blue3)" stroke-dasharray="122 157"/></g><text x="44" y="53" text-anchor="middle" font-family="DM Serif Display" font-size="26">M</text></svg>
+          <div style="font-size:13px;font-weight:800;margin-top:4px;color:var(--ink2)">Mia</div>
+        </div>
+        <div style="flex:1">
+          <div class="stat"><span class="lbl">kcal</span><span class="num" style="font-size:28px">1980<span style="color:var(--ink3);font-size:17px"> /2500</span></span></div>
+          <div class="stat" style="margin-top:10px"><span class="lbl">Protein</span><span class="num" style="font-size:28px">104<span style="color:var(--ink3);font-size:17px"> /140 g</span></span></div>
+          <div class="stat mute" style="margin-top:10px"><span class="lbl">KH</span><span class="num" style="font-size:28px">231 g</span></div>
+          <div class="stat mute" style="margin-top:10px"><span class="lbl">Fett</span><span class="num" style="font-size:28px">62 g</span></div>
+        </div>
+      </div>
+      <div class="btn2" style="margin-top:12px">Keine Lust?</div>
+    </div>
+    <div class="nav" data-on="1"></div>
+    <div class="homebar"></div></div>
+    <div class="caption"><b>Tag im Detail (S2)</b>Gerichte nach Mahlzeit mit 2×2 Aktionen (Herz, Ersetzen, Schloss, Würfel), Badges „Rest von Mo“ und „+2 Gäste“, Abwechslungs-Chip, Tageswerte je Person als Ringe und große Zahlen gegen das Ziel.</div></div>
+
+  <!-- S7 Plan-Generator -->
+  <div class="screen"><div class="phone">
+    <div class="sb"><b>9:41</b><span class="island"></span><svg><use href="#status"/></svg></div>
+    <div class="blob" style="left:140px;top:180px;width:500px;height:500px;background:var(--blue)"></div>
+    <div class="scr"><div class="small">KW 45 · 3.–9. Nov</div><div class="t1">Deine Woche</div></div>
+    <div class="scrim"></div>
+    <div class="sheet" style="top:54px">
+      <div class="quarter" style="right:0;top:0;width:150px;height:150px;background:var(--blue1)"></div>
+      <div style="position:relative">
+        <div class="row between"><div class="t2">Wochenplan erstellen</div><span class="x" style="background:var(--bg)"><svg class="i"><use href="#i-x"/></svg></span></div>
+        <div class="row" style="gap:6px;margin-top:2px"><svg class="i" style="width:16px;color:var(--ink3)"><use href="#i-back"/></svg><span class="small" style="font-size:14px;color:var(--ink)">KW 45 · 3.–9. November</span><svg class="i" style="width:16px"><use href="#i-chev"/></svg></div>
+
+        <div class="sec2" style="margin-top:16px">WOCHE &amp; LÄDEN</div>
+        <div class="row between" style="height:40px"><span style="font-weight:700">Plan für nächste Woche</span><span class="sw"></span></div>
+        <div class="row between hr" style="height:44px"><span style="font-weight:700">Nur ein Laden</span><span class="sw"></span></div>
+        <div class="chips" style="margin-top:6px">
+          <span class="chip on"><img src="https://upload.wikimedia.org/wikipedia/commons/thumb/4/4c/Logo_REWE.svg/250px-Logo_REWE.svg.png" height="13" style="background:#fff;border-radius:4px;padding:2px" alt="Rewe"> 42</span>
+          <span class="chip on"><img src="https://upload.wikimedia.org/wikipedia/commons/thumb/9/91/Lidl-Logo.svg/250px-Lidl-Logo.svg.png" height="18" alt="Lidl"> 38</span>
+          <span class="chip">Edeka 27</span><span class="chip">Aldi 31</span></div>
+
+        <div class="sec2" style="margin-top:16px">KÜCHE</div>
+        <div class="chips"><span class="chip on">Gemischt</span><span class="chip">Italienisch</span><span class="chip">Asiatisch</span></div>
+
+        <div class="sec2" style="margin-top:16px">MAHLZEITEN &amp; TAGE</div>
+        <div class="chips"><span class="chip">Frühstück</span><span class="chip on">Mittag</span><span class="chip on">Abend</span><span class="chip">Snack</span></div>
+        <div class="row between" style="margin-top:10px"><span class="a-day on">Mo</span><span class="a-day on">Di</span><span class="a-day on">Mi</span><span class="a-day on">Do</span><span class="a-day on">Fr</span><span class="a-day">Sa</span><span class="a-day on">So</span></div>
+
+        <div class="stat" style="margin-top:20px"><span class="lbl">Budget<br>pro Woche</span><span class="num" style="font-size:48px">60 €</span></div>
+        <div class="a-sl" style="margin-top:8px"><i style="width:45%"></i><b style="left:45%"></b></div>
+
+        <div class="sec2" style="margin-top:14px">ZIEL</div>
+        <div class="seg"><span class="on">Ausgewogen</span><span>Proteinreich</span><span>Kalorienarm</span></div>
+      </div>
+      <div class="a-foot"><div class="btn"><svg class="i"><use href="#i-sparkle"/></svg>Plan erstellen</div></div>
+    </div>
+    <div class="homebar"></div></div>
+    <div class="caption"><b>Plan-Generator (S7)</b>Sheet mit Viertelkreis oben rechts: Woche &amp; Läden, Küche, Mahlzeiten und Tage, Budget als große Zahl mit Regler, Ziel; „Plan erstellen“ fest unten.</div></div>
+
+  <!-- S7 weiter unten -->
+  <div class="screen"><div class="phone">
+    <div class="sb"><b>9:41</b><span class="island"></span><svg><use href="#status"/></svg></div>
+    <div class="blob" style="left:140px;top:180px;width:500px;height:500px;background:var(--blue)"></div>
+    <div class="scrim"></div>
+    <div class="sheet" style="top:54px">
+      <div class="sec2" style="margin-top:0">WÜNSCHE</div>
+      <div class="row between" style="height:44px"><span style="font-weight:700">Lieblingsrezepte bevorzugen</span><span class="sw on"></span></div>
+      <div class="row between hr" style="height:44px"><span style="font-weight:700">Vorrat zuerst verbrauchen</span><span class="sw on"></span></div>
+
+      <div class="sec2" style="margin-top:16px">DIESE WOCHE IM ANGEBOT</div>
+      <div class="irow" style="height:46px"><span style="font-weight:700;flex:1">Hähnchenbrustfilet</span><span class="small" style="font-size:12px">Lidl</span><span class="deal">−30 %</span><b>3,49 €</b></div>
+      <div class="irow" style="height:46px"><span style="font-weight:700;flex:1">Lachsfilet</span><span class="small" style="font-size:12px">Rewe</span><span class="deal">−25 %</span><b>4,99 €</b></div>
+      <div class="irow" style="height:46px"><span style="font-weight:700;flex:1">Feta</span><span class="small" style="font-size:12px">Aldi</span><span class="deal">−20 %</span><b>1,19 €</b></div>
+
+      <div class="sec2" style="margin-top:16px">SPECIAL</div>
+      <div class="chips"><span class="chip">Ohne</span><span class="chip on" style="background:var(--blue);color:var(--ink)">Festtagsmenü</span><span class="chip">Grillparty</span></div>
+      <div class="small" style="font-size:13px;margin-top:6px">Weihnachten · Vorspeise, Hauptgang und Dessert am Tag des Anlasses</div>
+
+      <div class="sec2" style="margin-top:16px">GÄSTE</div>
+      <div class="row between" style="margin-top:10px"><span class="a-day">Mo</span><span class="a-day">Di</span><span class="a-day">Mi</span><span class="a-day">Do</span><span class="a-day on">Fr<sup>+4</sup></span><span class="a-day off">Sa</span><span class="a-day">So</span></div>
+      <div class="row between" style="height:52px;margin-top:6px"><span style="font-weight:700">Freitag · Abend</span><span class="stepper"><i>−</i>4<i>+</i></span></div>
+      <div class="row between hr" style="height:52px"><span style="font-weight:700">Gäste-Budget extra</span><div class="row" style="gap:12px"><span class="num" style="font-size:30px">20 €</span><span class="sw on"></span></div></div>
+      <div class="a-foot"><div class="btn"><svg class="i"><use href="#i-sparkle"/></svg>Plan erstellen</div></div>
+    </div>
+    <div class="homebar"></div></div>
+    <div class="caption"><b>Plan-Generator weiter unten (S7)</b>Wünsche-Schalter, die Top-3-Angebote der Woche als Zeilen, Special-Chips mit Anlass und Gäste je Tag mit Stepper und Extra-Budget.</div></div>
+
+  <!-- S7 Laden -->
+  <div class="screen"><div class="phone">
+    <div class="sb"><b>9:41</b><span class="island"></span><svg><use href="#status"/></svg></div>
+    <div class="blob" style="left:140px;top:180px;width:500px;height:500px;background:var(--blue)"></div>
+    <div class="scrim"></div>
+    <div class="sheet" style="top:54px">
+      <div class="t2">Wochenplan erstellen</div>
+      <div class="small" style="font-size:14px;margin-top:2px">KW 45 · 3.–9. November</div>
+      <div style="position:relative;width:250px;height:250px;margin:26px auto 0">
+        <div class="a-rot" style="position:absolute;inset:0;border-radius:50%;border:2px dashed var(--ink3)"></div>
+        <div style="position:absolute;inset:16px;border-radius:50%;background:var(--blue1)"></div>
+        <img class="ill a-rot" src="ill-v7/pot.webp" style="position:absolute;left:-108px;top:-108px;width:466px;max-width:none" alt="">
+      </div>
+      <div style="margin-top:26px">
+        <div class="irow" style="height:52px"><span class="ck on"><svg class="i" style="width:15px"><use href="#i-check"/></svg></span><span style="font-weight:700;flex:1">Angebote auswerten</span><span class="small" style="font-size:13px">128</span></div>
+        <div class="irow" style="height:52px"><span class="ck on"><svg class="i" style="width:15px"><use href="#i-check"/></svg></span><span style="font-weight:700;flex:1">Lieblingsrezepte prüfen</span><span class="small" style="font-size:13px">14</span></div>
+        <div class="irow" style="height:52px"><span class="ck a-run a-rot"></span><span style="font-weight:800;flex:1">Gerichte planen …</span></div>
+        <div class="irow" style="height:52px;color:var(--ink3)"><span class="ck" style="border-color:var(--line)"></span><span style="font-weight:700;flex:1">Preise &amp; Nährwerte rechnen</span></div>
+      </div>
+      <div class="small" style="font-size:13px;text-align:center;margin-top:18px">Dauert meist unter einer Minute.</div>
+    </div>
+    <div class="homebar"></div></div>
+    <div class="caption"><b>Plan wird erstellt (S7)</b>Der Topf dreht sich langsam im blauen Kreis, darunter die Schritte mit Häkchen; der aktuelle läuft.</div></div>
+
+</div>
+
+<section class="sec"><h2>Rund ums Gericht</h2><p>Bewerten, Reste, Keine Lust, Gäste und Einplanen – alles als Sheets.</p></section>
+<div class="screens">
+
+  <!-- S8 Bewertung -->
+  <div class="screen"><div class="phone">
+    <div class="sb"><b>9:41</b><span class="island"></span><svg><use href="#status"/></svg></div>
+    <div class="blob" style="left:-60px;top:-80px;width:430px;height:430px;background:var(--blue)"></div>
+    <div class="scr"><div class="t1" style="margin-top:46px;font-size:38px">Spaghetti<br>Pomodoro</div></div>
+    <div class="plate ph-pasta" style="position:absolute;right:-50px;top:200px;width:230px;height:230px"></div>
+    <div class="scrim"></div>
+    <div class="sheet" style="height:476px">
+      <div class="row" style="gap:14px"><div class="plate ph-pasta a-mini" style="width:56px;height:56px"></div><div style="flex:1"><div class="small" style="font-size:13px">Heute Abend gekocht</div><div class="t2" style="font-size:22px">Spaghetti Pomodoro</div></div><span class="x"><svg class="i"><use href="#i-x"/></svg></span></div>
+      <div class="t1" style="margin-top:22px;font-size:30px">Wie war's?</div>
+      <div class="row" style="gap:8px;margin-top:10px">
+        <svg class="i" style="width:46px;height:46px;fill:var(--ink)"><use href="#i-star"/></svg><svg class="i" style="width:46px;height:46px;fill:var(--ink)"><use href="#i-star"/></svg><svg class="i" style="width:46px;height:46px;fill:var(--ink)"><use href="#i-star"/></svg><svg class="i" style="width:46px;height:46px;fill:var(--ink)"><use href="#i-star"/></svg><svg class="i" style="width:46px;height:46px;color:var(--ink3)"><use href="#i-star"/></svg>
+      </div>
+      <div class="sec2">WIEDER KOCHEN?</div>
+      <div class="seg"><span class="on">Bald</span><span>Irgendwann</span><span>Nie</span></div>
+      <div class="field" style="margin-top:14px"><svg class="i" style="width:18px"><use href="#i-edit"/></svg>Notiz (optional)</div>
+      <div class="btn" style="margin-top:18px">Speichern</div>
+    </div>
+    <div class="homebar"></div></div>
+    <div class="caption"><b>Bewertung (S8)</b>Halbe Höhe: kleiner Teller, große Sterne, „Wieder kochen?“ als Segment, Notiz, Speichern.</div></div>
+
+  <!-- S30 Reste -->
+  <div class="screen"><div class="phone">
+    <div class="sb"><b>9:41</b><span class="island"></span><svg><use href="#status"/></svg></div>
+    <div class="blob" style="left:-60px;top:-80px;width:430px;height:430px;background:var(--blue)"></div>
+    <div class="scr"><div class="t1" style="margin-top:46px;font-size:38px">Spaghetti<br>Pomodoro</div></div>
+    <div class="scrim"></div>
+    <div class="sheet" style="height:596px">
+      <div class="quarter" style="right:0;top:0;width:130px;height:130px;background:var(--sage)"></div>
+      <div style="position:relative">
+        <div class="row between"><div class="t2">Reste in den Vorrat?</div><span class="x" style="background:var(--bg)"><svg class="i"><use href="#i-x"/></svg></span></div>
+        <div class="small" style="font-size:14px;line-height:1.45;margin-top:6px;padding-right:20px">Von angebrochenen Packungen bleibt etwas übrig – Menge prüfen, dann übernehmen.</div>
+        <div style="margin-top:14px">
+          <div class="irow" style="height:64px"><span class="ck on"><svg class="i" style="width:15px"><use href="#i-check"/></svg></span><span class="c" style="width:42px;height:42px;background:var(--blue1)"><img src="ill-v7/pasta.webp" style="width:46px" alt=""></span><div style="flex:1"><div style="font-weight:700">Spaghetti</div><span class="soft ok" style="height:20px;font-size:11px;margin-top:3px">1 Jahr</span></div><span class="field" style="height:38px;padding:0 14px;color:var(--ink);font-weight:800">250 g</span></div>
+          <div class="irow" style="height:64px"><span class="ck on"><svg class="i" style="width:15px"><use href="#i-check"/></svg></span><span class="c" style="width:42px;height:42px;background:var(--rose)"><img src="ill-v7/tomato.webp" style="width:46px" alt=""></span><div style="flex:1"><div style="font-weight:700">Passierte Tomaten</div><span class="soft warn" style="height:20px;font-size:11px;margin-top:3px">4 Tage</span></div><span class="field" style="height:38px;padding:0 14px;color:var(--ink);font-weight:800">200 g</span></div>
+          <div class="irow" style="height:64px"><span class="ck on"><svg class="i" style="width:15px"><use href="#i-check"/></svg></span><span class="c" style="width:42px;height:42px;background:var(--sand)"><img src="ill-v7/garlic.webp" style="width:46px" alt=""></span><div style="flex:1"><div style="font-weight:700">Knoblauch</div><span class="soft ok" style="height:20px;font-size:11px;margin-top:3px">2 Wochen</span></div><span class="field" style="height:38px;padding:0 14px;color:var(--ink);font-weight:800">3 Zehen</span></div>
+          <div class="irow" style="height:64px;color:var(--ink3)"><span class="ck"></span><span class="c" style="width:42px;height:42px;background:var(--sage);opacity:.5"><img src="ill-v7/basil.webp" style="width:46px" alt=""></span><div style="flex:1"><div style="font-weight:700">Basilikum</div><span class="soft warn" style="height:20px;font-size:11px;margin-top:3px;opacity:.6">2 Tage</span></div><span class="field" style="height:38px;padding:0 14px;font-weight:800">½ Bund</span></div>
+        </div>
+        <div class="btn" style="margin-top:18px">3 in den Vorrat</div>
+        <div class="btn2" style="margin-top:10px">Nichts übrig</div>
+      </div>
+    </div>
+    <div class="homebar"></div></div>
+    <div class="caption"><b>Reste in den Vorrat? (S30)</b>Folgt auf die Bewertung: Zeilen mit Haken, Haltbarkeit und Menge zum Ändern; Basilikum ist abgewählt.</div></div>
+
+  <!-- S27 Keine Lust -->
+  <div class="screen"><div class="phone">
+    <div class="sb"><b>9:41</b><span class="island"></span><svg><use href="#status"/></svg></div>
+    <div class="scr"><div class="small">Hey Jona,</div><div class="t1" style="margin-top:2px">Was kochen<br>wir heute?</div></div>
+    <div class="scrim"></div>
+    <div class="sheet" style="top:150px">
+      <div class="blob" style="left:-100px;top:96px;width:230px;height:230px;background:var(--blue1)"></div>
+      <div style="position:relative">
+        <div class="row between"><div><div class="t2">Keine Lust?</div><div class="small" style="font-size:14px;margin-top:2px">Schnell &amp; ohne Einkauf · höchstens 15 min</div></div><span class="x"><svg class="i"><use href="#i-x"/></svg></span></div>
+        <div style="margin-top:16px">
+          <div class="hr" style="display:flex;gap:16px;align-items:center;padding:14px 0">
+            <div class="plate ph-pasta" style="width:92px;height:92px"></div>
+            <div style="flex:1"><div class="t2" style="font-size:21px">Aglio e Olio</div><div class="small" style="font-size:13px;margin-top:2px">12 min · 2 Portionen</div><span class="soft ok" style="margin-top:6px"><svg class="i" style="width:13px"><use href="#i-check"/></svg>Alles da</span>
+              <div class="btn blue" style="height:38px;font-size:14px;margin-top:10px;padding:0 14px">Das koche ich heute</div></div>
+          </div>
+          <div class="hr" style="display:flex;gap:16px;align-items:center;padding:14px 0">
+            <div class="plate" style="width:92px;height:92px;background-image:url(../../../ios/Sources/Essenapp/Resources/hero/bowl.jpg)"></div>
+            <div style="flex:1"><div class="t2" style="font-size:21px">Bunter Salat</div><div class="small" style="font-size:13px;margin-top:2px">10 min · 2 Portionen</div><span class="soft ok" style="margin-top:6px"><svg class="i" style="width:13px"><use href="#i-check"/></svg>Alles da</span>
+              <div class="btn blue" style="height:38px;font-size:14px;margin-top:10px;padding:0 14px">Das koche ich heute</div></div>
+          </div>
+          <div class="hr" style="display:flex;gap:16px;align-items:center;padding:14px 0">
+            <div class="plate" style="width:92px;height:92px;background-image:url(../../../ios/Sources/Essenapp/Resources/hero/grill.jpg)"></div>
+            <div style="flex:1"><div class="t2" style="font-size:21px">Thunfisch-Teller</div><div class="small" style="font-size:13px;margin-top:2px">15 min · 2 Portionen</div><span class="soft ok" style="margin-top:6px"><svg class="i" style="width:13px"><use href="#i-check"/></svg>Alles da</span>
+              <div class="btn blue" style="height:38px;font-size:14px;margin-top:10px;padding:0 14px">Das koche ich heute</div></div>
+          </div>
+        </div>
+        <div class="row between hr" style="padding-top:16px"><div class="dots"><i class="on"></i><i></i><i></i></div><span class="small" style="font-size:14px">Wischen für 3 weitere ›</span></div>
+      </div>
+    </div>
+    <div class="homebar"></div></div>
+    <div class="caption"><b>Keine Lust? (S27)</b>Drei schnelle Ideen aus dem Vorrat als Zeilen mit Teller, „Alles da“ und blauem Knopf; wischen zeigt drei weitere.</div></div>
+
+  <!-- S28 Gäste -->
+  <div class="screen"><div class="phone">
+    <div class="sb"><b>9:41</b><span class="island"></span><svg><use href="#status"/></svg></div>
+    <div class="blob" style="left:140px;top:180px;width:500px;height:500px;background:var(--blue)"></div>
+    <div class="scr"><div class="small">KW 45 · 3.–9. Nov</div><div class="t1">Deine Woche</div></div>
+    <div class="scrim"></div>
+    <div class="sheet" style="height:466px">
+      <div class="blob" style="right:-90px;top:96px;width:250px;height:250px;background:var(--blue1)"></div>
+      <div style="position:relative">
+        <div class="row between"><div class="t2">Gäste hinzufügen</div><span class="x"><svg class="i"><use href="#i-x"/></svg></span></div>
+        <div class="small" style="font-size:14px;margin-top:2px">Mittwoch · Abend: „Ofengemüse“</div>
+        <div class="stat" style="margin-top:26px"><span class="lbl"><svg class="i" style="width:22px"><use href="#i-users"/></svg><br>Gäste</span><span class="num" style="font-size:96px">+2</span></div>
+        <div class="row between" style="margin-top:16px"><span class="small" style="font-size:13px">0 bis 20</span><span class="stepper" style="height:48px;gap:20px;font-size:18px"><i style="width:38px;height:38px">−</i>2<i style="width:38px;height:38px">+</i></span></div>
+        <div class="small" style="font-size:14px;line-height:1.5;margin-top:18px">Mengen, Kosten und Einkaufsliste werden angepasst – ohne neue KI-Planung.</div>
+        <div class="btn" style="margin-top:18px">Übernehmen</div>
+      </div>
+    </div>
+    <div class="homebar"></div></div>
+    <div class="caption"><b>Gäste hinzufügen (S28)</b>„+2“ als riesige Zahl vor einem blauen Kreis, der rechts aus dem Sheet läuft; Stepper und Übernehmen darunter.</div></div>
+
+  <!-- S19 Diese Woche einplanen -->
+  <div class="screen"><div class="phone">
+    <div class="sb"><b>9:41</b><span class="island"></span><svg><use href="#status"/></svg></div>
+    <div class="blob" style="left:-60px;top:-80px;width:430px;height:430px;background:var(--blue)"></div>
+    <div class="scr"><div class="t1" style="margin-top:14px;font-size:38px">Ofen-Lachs</div></div>
+    <div class="scrim"></div>
+    <div class="sheet" style="top:136px">
+      <div class="row between"><div class="t2">Diese Woche einplanen</div><span class="x"><svg class="i"><use href="#i-x"/></svg></span></div>
+      <div class="small" style="font-size:14px;margin-top:4px">„Ofen-Lachs“ ersetzt das Gericht im gewählten Slot.</div>
+      <div style="margin-top:14px">
+        <div class="irow" style="height:64px"><div class="plate a-mini" style="width:44px;height:44px;background-image:url(../../../ios/Sources/Essenapp/Resources/hero/table.jpg)"></div><div style="flex:1"><div class="lbl">MONTAG · ABEND</div><div style="font-weight:700;margin-top:2px">Linsen-Dal</div></div><svg class="i"><use href="#i-swap"/></svg></div>
+        <div class="irow" style="height:64px"><div class="plate a-mini" style="width:44px;height:44px;background-image:url(../../../ios/Sources/Essenapp/Resources/hero/bowl.jpg)"></div><div style="flex:1"><div class="lbl">DIENSTAG · MITTAG</div><div style="font-weight:700;margin-top:2px">Lachs-Bowl</div></div><svg class="i"><use href="#i-swap"/></svg></div>
+        <div class="irow" style="height:64px"><div class="plate ph-pasta a-mini" style="width:44px;height:44px"></div><div style="flex:1"><div class="lbl">DIENSTAG · ABEND</div><div style="font-weight:700;margin-top:2px">Spaghetti Pomodoro</div></div><svg class="i" style="color:var(--ink3)"><use href="#i-lock"/></svg></div>
+        <div class="irow" style="height:64px"><div class="plate a-mini" style="width:44px;height:44px;background-image:url(../../../ios/Sources/Essenapp/Resources/hero/market.jpg)"></div><div style="flex:1"><div class="lbl">MITTWOCH · ABEND</div><div style="font-weight:700;margin-top:2px">Ofengemüse</div></div><svg class="i"><use href="#i-swap"/></svg></div>
+        <div class="irow" style="height:64px"><div class="plate a-mini" style="width:44px;height:44px;background-image:url(../../../ios/Sources/Essenapp/Resources/hero/table.jpg)"></div><div style="flex:1"><div class="lbl">DONNERSTAG · ABEND</div><div style="font-weight:700;margin-top:2px">Curry</div></div><svg class="i"><use href="#i-swap"/></svg></div>
+        <div class="irow" style="height:64px"><div class="plate a-mini" style="width:44px;height:44px;background-image:url(../../../ios/Sources/Essenapp/Resources/hero/grill.jpg)"></div><div style="flex:1"><div class="lbl">FREITAG · ABEND</div><div style="font-weight:700;margin-top:2px">Pizza</div></div><svg class="i"><use href="#i-swap"/></svg></div>
+        <div class="irow" style="height:64px"><div class="plate a-mini" style="width:44px;height:44px;background-image:url(../../../ios/Sources/Essenapp/Resources/hero/chef.jpg)"></div><div style="flex:1"><div class="lbl">SONNTAG · ABEND</div><div style="font-weight:700;margin-top:2px">Braten</div></div><svg class="i"><use href="#i-swap"/></svg></div>
+      </div>
+    </div>
+    <div class="homebar"></div></div>
+    <div class="caption"><b>Diese Woche einplanen (S19)</b>Aus einem Rezept: alle Plan-Gerichte als Zeilen mit kleinem Teller, Tag und Mahlzeit; fixierte mit Schloss, sonst Ersetzen.</div></div>
+
+</div>

@@ -1,0 +1,66 @@
+<style>
+/* Bausteine für alle Screens (v8) */
+.sec{max-width:1360px;margin:0 auto;padding:40px 24px 0}.sec h2{font-family:"DM Serif Display",serif;font-weight:400;font-size:32px}.sec p{color:#5b574f;font-size:14px;margin-top:4px}
+.btn{display:flex;align-items:center;justify-content:center;gap:8px;height:56px;padding:0 22px;border-radius:999px;background:var(--ink);color:#fff;font-weight:800;font-size:16px}
+.btn.blue{background:var(--blue);color:var(--ink)}
+.btn2{display:flex;align-items:center;justify-content:center;gap:8px;height:52px;padding:0 20px;border-radius:999px;color:var(--ink);font-weight:800;font-size:15px;box-shadow:inset 0 0 0 1.5px var(--ink)}
+.btn.off{opacity:.35}
+.field{height:52px;border-radius:999px;background:var(--card);box-shadow:inset 0 0 0 1.5px var(--line);display:flex;align-items:center;gap:10px;padding:0 18px;color:var(--ink2);font-weight:600;font-size:15px}
+.seg{display:flex;padding:4px;border-radius:999px;box-shadow:inset 0 0 0 1.5px var(--line)}
+.seg span{flex:1;height:34px;display:grid;place-items:center;border-radius:999px;font-size:13px;font-weight:700;color:var(--ink2);white-space:nowrap}
+.seg span.on{background:var(--ink);color:#fff}
+.sw{width:50px;height:30px;border-radius:999px;background:var(--ink3);position:relative;flex:none}
+.sw::after{content:"";position:absolute;left:3px;top:3px;width:24px;height:24px;border-radius:50%;background:#fff}
+.sw.on{background:var(--ink)}.sw.on::after{left:23px}
+.stepper{display:inline-flex;align-items:center;gap:12px;height:40px;padding:0 5px;border-radius:999px;box-shadow:inset 0 0 0 1.5px var(--line);font-weight:800;flex:none}
+.stepper i{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;font-style:normal;font-weight:800;background:var(--card)}
+.scrim{position:absolute;inset:0;background:rgba(21,21,21,.32);z-index:17}
+.sheet{position:absolute;left:0;right:0;bottom:0;background:var(--bg);border-radius:36px 36px 0 0;padding:12px 24px 40px;z-index:18;overflow:hidden}
+.sheet::before{content:"";display:block;width:40px;height:5px;border-radius:3px;background:var(--ink3);margin:0 auto 16px}
+.x{width:40px;height:40px;border-radius:50%;box-shadow:inset 0 0 0 1.5px var(--line);display:grid;place-items:center;flex:none}
+.x svg{width:18px;height:18px}
+.bar:not(svg){height:8px;border-radius:999px;background:var(--line);overflow:hidden}.bar:not(svg) i{display:block;height:100%;background:var(--ink);border-radius:999px}
+.toast{position:absolute;left:50%;transform:translateX(-50%);bottom:130px;background:var(--ink);color:#fff;border-radius:999px;padding:12px 18px;font-size:14px;font-weight:700;z-index:19;white-space:nowrap}
+.sk{background:linear-gradient(90deg,var(--line),var(--card),var(--line));border-radius:12px}
+.prog{display:flex;gap:6px}.prog i{flex:1;height:4px;border-radius:2px;background:var(--line)}.prog i.on{background:var(--ink)}
+.quarter{position:absolute;border-radius:0 0 0 100%}
+.soft{display:inline-flex;align-items:center;gap:5px;height:24px;padding:0 10px;border-radius:999px;background:var(--blue1);font-size:12px;font-weight:800}
+.ok{background:var(--sage)}.warn{background:#F6E2B8}
+.hr{border-top:1.5px solid var(--line)}
+.sec2{font-weight:800;font-size:13px;letter-spacing:.06em;color:var(--ink2);margin:22px 0 4px}
+</style>
+<svg width="0" height="0" style="position:absolute">
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></symbol>
+  <symbol id="i-heart" viewBox="0 0 24 24"><path d="M12 19.6S4.6 15 4.6 9.6A3.9 3.9 0 0 1 12 7.6a3.9 3.9 0 0 1 7.4 2C19.4 15 12 19.6 12 19.6z"/></symbol>
+  <symbol id="i-share" viewBox="0 0 24 24"><path d="M12 15V4M7.5 8.5 12 4l4.5 4.5M5 13v6h14v-6"/></symbol>
+  <symbol id="i-star" viewBox="0 0 24 24"><path d="m12 4 2.4 5 5.4.6-4 3.7 1.1 5.3L12 16l-4.9 2.6 1.1-5.3-4-3.7 5.4-.6z"/></symbol>
+  <symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="10.5" width="14" height="9.5" rx="2.5"/><path d="M8.5 10.5V8a3.5 3.5 0 0 1 7 0v2.5"/></symbol>
+  <symbol id="i-dice" viewBox="0 0 24 24"><rect x="4.5" y="4.5" width="15" height="15" rx="4"/><circle cx="9" cy="9" r=".6" fill="currentColor"/><circle cx="15" cy="15" r=".6" fill="currentColor"/><circle cx="12" cy="12" r=".6" fill="currentColor"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="10.6" cy="10.6" r="6.2"/><path d="m15.3 15.3 4.4 4.4"/></symbol>
+  <symbol id="i-chev" viewBox="0 0 24 24"><path d="m9 5 7 7-7 7"/></symbol>
+  <symbol id="i-bell" viewBox="0 0 24 24"><path d="M6 16.5V11a6 6 0 0 1 12 0v5.5l1.5 1.5h-15zM10 20.5h4"/></symbol>
+  <symbol id="i-gear" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 3.5v2.2M12 18.3v2.2M3.5 12h2.2M18.3 12h2.2M6 6l1.6 1.6M16.4 16.4 18 18M6 18l1.6-1.6M16.4 7.6 18 6"/></symbol>
+  <symbol id="i-minus" viewBox="0 0 24 24"><path d="M5 12h14"/></symbol>
+  <symbol id="i-barcode" viewBox="0 0 24 24"><path d="M4 6v12M7 6v12M10.5 6v12M13 6v12M17 6v12M20 6v12"/></symbol>
+  <symbol id="i-pin" viewBox="0 0 24 24"><path d="M12 20.5s-6.5-5.6-6.5-10.5a6.5 6.5 0 0 1 13 0c0 4.9-6.5 10.5-6.5 10.5z"/><circle cx="12" cy="10" r="2.4"/></symbol>
+  <symbol id="i-link" viewBox="0 0 24 24"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/></symbol>
+  <symbol id="i-sparkle" viewBox="0 0 24 24"><path d="M12 3.5c.7 4.4 2.1 5.8 6.5 6.5-4.4.7-5.8 2.1-6.5 6.5-.7-4.4-2.1-5.8-6.5-6.5 4.4-.7 5.8-2.1 6.5-6.5zM18.5 15.5c.3 1.8.9 2.4 2.5 2.7-1.6.3-2.2.9-2.5 2.7-.3-1.8-.9-2.4-2.5-2.7 1.6-.3 2.2-.9 2.5-2.7z"/></symbol>
+  <symbol id="i-swap" viewBox="0 0 24 24"><path d="M5 8.5h13M14.5 5l3.5 3.5-3.5 3.5M19 15.5H6M9.5 12 6 15.5 9.5 19"/></symbol>
+  <symbol id="i-users" viewBox="0 0 24 24"><circle cx="9" cy="8.5" r="3.2"/><path d="M3.5 19.5c.6-3.4 2.8-5 5.5-5s4.9 1.6 5.5 5"/><circle cx="16.5" cy="9" r="2.6"/><path d="M16 14.6c2.4.1 4 1.5 4.5 4.4"/></symbol>
+  <symbol id="i-trophy" viewBox="0 0 24 24"><path d="M8 4.5h8v5a4 4 0 0 1-8 0zM8 6.5H5c0 3 1.3 4.5 3.2 4.7M16 6.5h3c0 3-1.3 4.5-3.2 4.7M12 13.5v3.5M8.5 20h7M10 17h4v3h-4z"/></symbol>
+  <symbol id="i-chart" viewBox="0 0 24 24"><path d="M4 20h16M7 20v-6M12 20V8M17 20v-9"/></symbol>
+  <symbol id="i-gift" viewBox="0 0 24 24"><rect x="4" y="9" width="16" height="11" rx="2"/><path d="M4 13h16M12 9v11M12 9c-1.5-4-6-4-5-1.5.6 1.4 5 1.5 5 1.5zM12 9c1.5-4 6-4 5-1.5-.6 1.4-5 1.5-5 1.5z"/></symbol>
+  <symbol id="i-box" viewBox="0 0 24 24"><path d="M4 8.5 12 4.5l8 4v8.5l-8 4-8-4zM4 8.5l8 4 8-4M12 12.5v8.5"/></symbol>
+  <symbol id="i-photo" viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="14" rx="3"/><circle cx="9" cy="10" r="1.6"/><path d="m4.5 17 5-4.5 3.5 3 2.5-2 4 3.5"/></symbol>
+  <symbol id="i-edit" viewBox="0 0 24 24"><path d="M5 19l1-4 9.5-9.5a2.1 2.1 0 0 1 3 3L9 18z"/></symbol>
+  <symbol id="i-trash" viewBox="0 0 24 24"><path d="M5 7h14M9.5 7V4.5h5V7M7 7l1 13h8l1-13"/></symbol>
+  <symbol id="i-wifioff" viewBox="0 0 24 24"><path d="M4 4l16 16M8.5 13a5 5 0 0 1 4-1.4M5 9.5A10 10 0 0 1 9 7.3M19 9.5a10 10 0 0 0-5.6-2.5M15.8 13.3l.6.5"/><circle cx="12" cy="17.5" r=".8" fill="currentColor"/></symbol>
+  <symbol id="i-copy" viewBox="0 0 24 24"><rect x="8.5" y="8.5" width="11" height="11" rx="2.5"/><path d="M15.5 8.5V6a1.5 1.5 0 0 0-1.5-1.5H6A1.5 1.5 0 0 0 4.5 6v8A1.5 1.5 0 0 0 6 15.5h2.5"/></symbol>
+  <symbol id="i-eye" viewBox="0 0 24 24"><path d="M3 12s3.3-6 9-6 9 6 9 6-3.3 6-9 6-9-6-9-6z"/><circle cx="12" cy="12" r="2.6"/></symbol>
+  <symbol id="i-dots" viewBox="0 0 24 24"><circle cx="6" cy="12" r=".9" fill="currentColor"/><circle cx="12" cy="12" r=".9" fill="currentColor"/><circle cx="18" cy="12" r=".9" fill="currentColor"/></symbol>
+  <symbol id="i-pause" viewBox="0 0 24 24"><path d="M9 6v12M15 6v12"/></symbol>
+  <symbol id="i-qr" viewBox="0 0 24 24"><rect x="4" y="4" width="6" height="6" rx="1"/><rect x="14" y="4" width="6" height="6" rx="1"/><rect x="4" y="14" width="6" height="6" rx="1"/><path d="M14 14h2v2h-2zM18 18h2v2h-2zM14 18h2M18 14h2"/></symbol>
+  <symbol id="i-widget" viewBox="0 0 24 24"><rect x="4" y="4" width="7" height="7" rx="2"/><rect x="13" y="4" width="7" height="7" rx="2"/><rect x="4" y="13" width="7" height="7" rx="2"/><rect x="13" y="13" width="7" height="7" rx="2"/></symbol>
+  <symbol id="i-leaf" viewBox="0 0 24 24"><path d="M5 19c0-8 5-13 14-14 0 9-5 14-13 14zM5 19c3-4 6-6 9-7.5"/></symbol>
+  <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M19 12a7 7 0 1 1-2-4.9M19 4.5v3.6h-3.6"/></symbol>
+</svg>

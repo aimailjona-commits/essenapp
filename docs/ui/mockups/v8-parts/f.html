@@ -1,0 +1,354 @@
+<style>
+/* Teil f: Balken, Medaillen, Story-Seiten */
+.f-bars{display:flex;align-items:flex-end;gap:10px;border-bottom:1.5px solid var(--ink)}
+.f-bars i{flex:1;display:block;position:relative;background:var(--blue);border-radius:8px 8px 0 0}
+.f-bars i.on{background:var(--ink)}
+.f-bars i.no{background:none;box-shadow:inset 0 0 0 1.5px var(--line);border-bottom:0}
+.f-bars b{position:absolute;left:-12px;right:-12px;bottom:calc(100% + 5px);text-align:center;font-size:11px;font-weight:800;font-style:normal}
+.f-ax{display:flex;gap:10px;margin-top:6px}.f-ax span{flex:1;text-align:center;font-size:11px;color:var(--ink2);font-weight:700}
+.f-ax span.on{color:var(--ink);font-weight:800}
+.f-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px 8px;margin-top:14px}
+.f-med{display:flex;flex-direction:column;align-items:center;text-align:center}
+.f-med b{font-size:13px;margin-top:8px;line-height:1.25}
+.f-med span{font-size:11px;color:var(--blue3);font-weight:800;margin-top:2px}
+.f-med.off b,.f-med.off span{color:var(--ink3)}
+.f-m{position:relative;width:76px;height:76px;border-radius:50%;display:grid;place-items:center;background:var(--blue);box-shadow:inset 0 0 0 5px rgba(255,255,255,.55)}
+.f-m svg.i{width:30px;height:30px}
+.f-m.off{background:none;box-shadow:none;color:var(--ink3)}
+.f-m svg.f-r{position:absolute;inset:0;width:100%;height:100%;transform:rotate(-90deg)}
+.f-st{position:absolute;left:20px;right:20px;top:58px;z-index:21}
+.f-st .prog i{background:rgba(21,21,21,.16)}.f-st .prog i.on{background:var(--ink)}
+.f-cb{width:40px;height:40px;border-radius:50%;background:rgba(255,255,255,.5);display:grid;place-items:center;flex:none}
+.f-cb svg.i{width:18px;height:18px}
+.f-dim{color:rgba(21,21,21,.45)}
+.f-thick{height:12px;border-radius:999px;overflow:hidden;margin-top:10px}.f-thick i{display:block;height:100%;background:var(--ink);border-radius:999px}
+.f-cf{position:absolute;display:block}
+</style>
+
+<section class="sec"><h2>Ausgaben &amp; Ersparnis</h2><p>Große Zahlen wie in der Sport-Vorlage: Haarlinie, Label klein links, Zahl riesig rechts; dazu schlichte Balken in Pastellblau.</p></section>
+<div class="screens">
+
+  <!-- S11 Ersparnis -->
+  <div class="screen"><div class="phone">
+    <div class="sb"><b>9:41</b><span class="island"></span><svg><use href="#status"/></svg></div>
+    <div class="blob" style="left:190px;top:-120px;width:330px;height:330px;background:var(--blue1)"></div>
+    <img class="ill" src="ill-v7/bag.webp" style="position:absolute;left:236px;top:52px;width:136px" alt="">
+    <div class="scr">
+      <svg class="i" style="width:26px;height:26px"><use href="#i-back"/></svg>
+      <div class="small" style="margin-top:34px">seit 1. Oktober</div><div class="t1">Gespart</div>
+      <div class="stat" style="margin-top:24px"><span class="lbl">Gesamt</span><span class="num" style="font-size:96px">64,40<span style="font-size:40px"> €</span></span></div>
+      <div class="stat mute" style="margin-top:12px"><span class="lbl">Diese Woche</span><span class="num" style="font-size:40px">12,40 €</span></div>
+      <div class="row between" style="margin-top:28px"><span style="font-weight:800">Letzte 8 Wochen</span><span class="small" style="font-size:13px">Ø 10,04 €</span></div>
+      <div class="f-bars" style="margin-top:14px;height:120px"><i style="height:58px"></i><i style="height:78px"></i><i style="height:63px"></i><i style="height:96px"></i><i style="height:76px"></i><i style="height:117px"></i><i style="height:93px"></i><i class="on" style="height:106px"></i></div>
+      <div class="f-ax"><span>38</span><span>39</span><span>40</span><span>41</span><span>42</span><span>43</span><span>44</span><span class="on">45</span></div>
+      <div class="sec2">DIESE WOCHE · KW 45</div>
+      <div class="irow"><div style="flex:1"><div style="font-weight:800">Rewe · 14 Artikel</div><div class="small" style="font-size:12px">Dienstag, 3. Nov</div></div><span class="num" style="font-size:24px">+4,60 €</span></div>
+      <div class="irow"><div style="flex:1"><div style="font-weight:800">Lidl · 9 Artikel</div><div class="small" style="font-size:12px">Montag, 2. Nov</div></div><span class="num" style="font-size:24px">+5,10 €</span></div>
+      <div class="irow"><div style="flex:1"><div style="font-weight:800">dm · 3 Artikel</div><div class="small" style="font-size:12px">Montag, 2. Nov</div></div><span class="num" style="font-size:24px">+2,70 €</span></div>
+    </div>
+    <div class="homebar"></div></div>
+    <div class="caption"><b>Ersparnis (S11)</b>Gesamtsumme riesig, diese Woche grau darunter, acht schlichte Wochenbalken (aktuelle KW schwarz) und der Verlauf als Zeilen je Einkauf.</div></div>
+
+  <!-- S32 oben -->
+  <div class="screen"><div class="phone">
+    <div class="sb"><b>9:41</b><span class="island"></span><svg><use href="#status"/></svg></div>
+    <div class="blob" style="left:196px;top:56px;width:300px;height:300px;background:var(--blue1)"></div>
+    <svg viewBox="0 0 120 120" style="position:absolute;left:212px;top:120px;width:160px;height:160px">
+      <circle cx="60" cy="60" r="50" fill="none" stroke="var(--card)" stroke-width="11"/>
+      <circle cx="60" cy="60" r="50" fill="none" stroke="var(--ink)" stroke-width="11" stroke-linecap="round" pathLength="100" stroke-dasharray="61 100" transform="rotate(-90 60 60)"/>
+    </svg>
+    <div style="position:absolute;left:212px;top:120px;width:160px;height:160px;display:grid;place-content:center;text-align:center"><span class="num" style="font-size:40px">61 %</span><span class="small" style="font-size:12px;color:var(--ink);margin-top:4px">vom Budget</span></div>
+    <div class="scr">
+      <div class="row between"><svg class="i" style="width:26px;height:26px"><use href="#i-back"/></svg><span class="circle" style="width:44px;height:44px"><svg class="i" style="width:20px"><use href="#i-share"/></svg></span></div>
+      <div class="small" style="margin-top:24px">November 2026</div><div class="t1">Ausgaben</div>
+      <div style="position:absolute;left:24px;right:24px;top:376px">
+        <div class="row between" style="font-weight:800"><span class="row" style="gap:4px"><svg class="i" style="width:18px"><use href="#i-back"/></svg>Oktober</span><span class="row" style="gap:4px;color:var(--ink3)">Dezember<svg class="i" style="width:18px"><use href="#i-chev"/></svg></span></div>
+        <div class="stat" style="margin-top:28px"><span class="lbl">Ausgegeben</span><span class="num" style="font-size:72px">156,86<span style="font-size:32px"> €</span></span></div>
+        <div class="row" style="justify-content:flex-end;margin-top:8px"><span class="soft warn">davon 12,60 € geschätzt</span></div>
+        <div class="stat mute" style="margin-top:16px"><span class="lbl">Budget</span><span class="num" style="font-size:36px">257,14 €</span></div>
+        <div class="stat" style="margin-top:14px"><span class="lbl">zum Oktober</span><span class="num" style="font-size:36px;color:var(--deal)">+8,6 %</span></div>
+      </div>
+    </div>
+    <div class="homebar"></div></div>
+    <div class="caption"><b>Monats-Dashboard (S32)</b>Ring 61 % im Pastell-Kreis oben rechts, Monat wechseln per ‹ Oktober / Dezember ›, darunter Ausgegeben riesig, Budget grau, Vormonat in Rot (mehr ausgegeben).</div></div>
+
+  <!-- S32 Mitte -->
+  <div class="screen"><div class="phone">
+    <div class="sb"><b>9:41</b><span class="island"></span><svg><use href="#status"/></svg></div>
+    <div class="scr">
+      <div class="row between"><svg class="i" style="width:26px;height:26px"><use href="#i-back"/></svg><span style="font-weight:800">Ausgaben · November</span><span class="circle" style="width:44px;height:44px"><svg class="i" style="width:20px"><use href="#i-share"/></svg></span></div>
+      <div class="sec2">GESPART</div>
+      <div class="stat" style="margin-top:10px"><span class="lbl">Gesamt</span><span class="num" style="font-size:64px">18,70 €</span></div>
+      <div class="row" style="gap:20px;margin-top:12px;align-items:flex-start">
+        <div class="stat" style="flex:1"><span class="lbl">Angebote</span><span class="num" style="font-size:26px">14,20 €</span></div>
+        <div class="stat" style="flex:1"><span class="lbl">Bonus</span><span class="num" style="font-size:26px">4,50 €</span></div>
+      </div>
+      <div class="sec2" style="margin-top:30px">PRO WOCHE</div>
+      <div class="f-bars" style="margin-top:28px;height:130px"><i style="height:120px"><b>87,96</b></i><i class="on" style="height:94px"><b>68,90</b></i><i class="no" style="height:14px"><b style="color:var(--ink3)">–</b></i><i class="no" style="height:14px"><b style="color:var(--ink3)">–</b></i><i class="no" style="height:14px"><b style="color:var(--ink3)">–</b></i></div>
+      <div class="f-ax"><span>KW 44</span><span class="on">KW 45</span><span>KW 46</span><span>KW 47</span><span>KW 48</span></div>
+      <div class="sec2" style="margin-top:30px">PRO LADEN</div>
+      <div class="row" style="gap:22px;margin-top:12px">
+        <svg viewBox="0 0 120 120" style="width:136px;height:136px;flex:none;transform:rotate(-90deg)">
+          <circle cx="60" cy="60" r="44" fill="none" stroke="var(--rose)" stroke-width="22" pathLength="100" stroke-dasharray="41 100"/>
+          <circle cx="60" cy="60" r="44" fill="none" stroke="var(--blue)" stroke-width="22" pathLength="100" stroke-dasharray="27 100" stroke-dashoffset="-42"/>
+          <circle cx="60" cy="60" r="44" fill="none" stroke="var(--sand)" stroke-width="22" pathLength="100" stroke-dasharray="17 100" stroke-dashoffset="-70"/>
+          <circle cx="60" cy="60" r="44" fill="none" stroke="var(--sage)" stroke-width="22" pathLength="100" stroke-dasharray="11 100" stroke-dashoffset="-88"/>
+        </svg>
+        <div style="flex:1;font-size:14px">
+          <div class="row between" style="height:32px"><span class="row"><i style="width:10px;height:10px;border-radius:50%;background:var(--rose)"></i><img src="https://upload.wikimedia.org/wikipedia/commons/thumb/4/4c/Logo_REWE.svg/250px-Logo_REWE.svg.png" height="12" alt="">Rewe</span><b>42 %</b></div>
+          <div class="row between" style="height:32px"><span class="row"><i style="width:10px;height:10px;border-radius:50%;background:var(--blue)"></i><img src="https://upload.wikimedia.org/wikipedia/commons/thumb/9/91/Lidl-Logo.svg/250px-Lidl-Logo.svg.png" height="18" alt="">Lidl</span><b>28 %</b></div>
+          <div class="row between" style="height:32px"><span class="row"><i style="width:10px;height:10px;border-radius:50%;background:var(--sand)"></i><img src="https://upload.wikimedia.org/wikipedia/commons/thumb/2/2c/Dm-drogerie-Logo.svg/250px-Dm-drogerie-Logo.svg.png" height="14" alt="">dm</span><b>18 %</b></div>
+          <div class="row between" style="height:32px"><span class="row"><i style="width:10px;height:10px;border-radius:50%;background:var(--sage)"></i>Andere</span><b>12 %</b></div>
+        </div>
+      </div>
+    </div>
+    <div class="homebar"></div></div>
+    <div class="caption"><b>Monats-Dashboard, weiter unten</b>Gespart mit Angebote/Bonus als kleine Zahlen nebeneinander, Balken je KW mit Betrag darüber (kommende Wochen leer), Pro Laden als Ring-Torte mit Logo-Legende.</div></div>
+
+  <!-- S32 unten -->
+  <div class="screen"><div class="phone">
+    <div class="sb"><b>9:41</b><span class="island"></span><svg><use href="#status"/></svg></div>
+    <div class="scr">
+      <div class="row between"><svg class="i" style="width:26px;height:26px"><use href="#i-back"/></svg><span style="font-weight:800">Ausgaben · November</span><span class="circle" style="width:44px;height:44px"><svg class="i" style="width:20px"><use href="#i-share"/></svg></span></div>
+      <div class="sec2">PRO KATEGORIE</div>
+      <div class="irow"><span class="c" style="background:var(--rose)"><img src="ill-v7/tomato.webp" alt=""></span><span class="nm">Gemüse &amp; Obst</span><span class="small" style="font-size:13px">38 %</span><span class="num" style="font-size:22px;width:76px;text-align:right">59,60 €</span></div>
+      <div class="irow"><span class="c" style="background:var(--sand)"><svg class="i"><use href="#i-box"/></svg></span><span class="nm">Drogerie</span><span class="small" style="font-size:13px">18 %</span><span class="num" style="font-size:22px;width:76px;text-align:right">28,40 €</span></div>
+      <div class="irow"><span class="c" style="background:var(--blue1)"><img src="ill-v7/pasta.webp" alt=""></span><span class="nm">Nudeln &amp; Reis</span><span class="small" style="font-size:13px">10 %</span><span class="num" style="font-size:22px;width:76px;text-align:right">16,40 €</span></div>
+      <div class="irow"><span class="c" style="background:var(--sage)"><img src="ill-v7/basil.webp" alt=""></span><span class="nm">Kräuter</span><span class="small" style="font-size:13px">4 %</span><span class="num" style="font-size:22px;width:76px;text-align:right">6,20 €</span></div>
+      <div class="sec2" style="margin-top:30px">TOP 5 TEUERSTE</div>
+      <div class="irow"><span class="num" style="font-size:30px;width:30px">1</span><div style="flex:1"><div style="font-weight:800">Rinderhack 1 kg</div><div class="small row" style="font-size:12px;gap:6px"><img src="https://upload.wikimedia.org/wikipedia/commons/thumb/4/4c/Logo_REWE.svg/250px-Logo_REWE.svg.png" height="10" alt="Rewe">3. Nov</div></div><span class="num" style="font-size:22px">11,99 €</span></div>
+      <div class="irow"><span class="num" style="font-size:30px;width:30px">2</span><div style="flex:1"><div style="font-weight:800">Olivenöl 1 l</div><div class="small row" style="font-size:12px;gap:6px"><img src="https://upload.wikimedia.org/wikipedia/commons/thumb/9/91/Lidl-Logo.svg/250px-Lidl-Logo.svg.png" height="14" alt="Lidl">1. Nov</div></div><span class="num" style="font-size:22px">8,49 €</span></div>
+      <div class="irow"><span class="num" style="font-size:30px;width:30px">3</span><div style="flex:1"><div style="font-weight:800">Waschmittel</div><div class="small row" style="font-size:12px;gap:6px"><img src="https://upload.wikimedia.org/wikipedia/commons/thumb/2/2c/Dm-drogerie-Logo.svg/250px-Dm-drogerie-Logo.svg.png" height="11" alt="dm">2. Nov</div></div><span class="num" style="font-size:22px">6,95 €</span></div>
+      <div class="irow"><span class="num" style="font-size:30px;width:30px">4</span><div style="flex:1"><div style="font-weight:800">Lachsfilet</div><div class="small row" style="font-size:12px;gap:6px"><img src="https://upload.wikimedia.org/wikipedia/commons/thumb/4/4c/Logo_REWE.svg/250px-Logo_REWE.svg.png" height="10" alt="Rewe">3. Nov<span class="soft warn" style="height:20px;font-size:11px;color:var(--ink)">geschätzt</span></div></div><span class="num" style="font-size:22px">6,49 €</span></div>
+      <div class="irow"><span class="num" style="font-size:30px;width:30px">5</span><div style="flex:1"><div style="font-weight:800">Parmesan</div><div class="small row" style="font-size:12px;gap:6px"><img src="https://upload.wikimedia.org/wikipedia/commons/thumb/9/91/Lidl-Logo.svg/250px-Lidl-Logo.svg.png" height="14" alt="Lidl">1. Nov</div></div><span class="num" style="font-size:22px">4,99 €</span></div>
+    </div>
+    <div class="homebar"></div></div>
+    <div class="caption"><b>Monats-Dashboard, Ende</b>Pro Kategorie als Zeilen mit Farb-Kreis, Anteil und Betrag; Top 5 teuerste mit großer Rang-Zahl, Laden-Logo, Datum und „geschätzt“.</div></div>
+
+</div>
+
+<section class="sec"><h2>Erfolge</h2><p>Medaillen als Pastell-Kreise mit Linien-Icon; gesperrte als grauer Ring, der sich mit dem Fortschritt füllt.</p></section>
+<div class="screens">
+
+  <!-- S34 Erfolge -->
+  <div class="screen"><div class="phone">
+    <div class="sb"><b>9:41</b><span class="island"></span><svg><use href="#status"/></svg></div>
+    <div class="blob" style="left:190px;top:-60px;width:340px;height:340px;background:var(--blue1)"></div>
+    <div class="scr">
+      <svg class="i" style="width:26px;height:26px"><use href="#i-back"/></svg>
+      <div class="small" style="margin-top:34px">Mein Profil</div><div class="t1">Erfolge</div>
+      <div class="stat" style="margin-top:20px"><span class="lbl">Erreicht</span><span class="num" style="font-size:120px">5<span style="font-size:44px;color:var(--ink2)">/18</span></span></div>
+      <div class="sec2">SPAREN · HAUSHALT</div>
+      <div class="f-grid">
+        <div class="f-med"><div class="f-m"><svg class="i"><use href="#i-cal"/></svg></div><b>Erster Plan</b><span>12.10.2026</span></div>
+        <div class="f-med"><div class="f-m"><svg class="i"><use href="#i-tag"/></svg></div><b>50 € gespart</b><span>26.10.2026</span></div>
+        <div class="f-med off"><div class="f-m off"><svg class="f-r" viewBox="0 0 76 76"><circle cx="38" cy="38" r="35" fill="none" stroke="var(--line)" stroke-width="4"/><circle cx="38" cy="38" r="35" fill="none" stroke="var(--blue3)" stroke-width="4" stroke-linecap="round" pathLength="100" stroke-dasharray="68 100"/></svg><svg class="i"><use href="#i-gift"/></svg></div><b>Bonus-Profi</b><span>34 / 50 €</span></div>
+        <div class="f-med"><div class="f-m"><svg class="i"><use href="#i-check"/></svg></div><b>Im Budget</b><span>2.11.2026</span></div>
+        <div class="f-med off"><div class="f-m off"><svg class="f-r" viewBox="0 0 76 76"><circle cx="38" cy="38" r="35" fill="none" stroke="var(--line)" stroke-width="4"/><circle cx="38" cy="38" r="35" fill="none" stroke="var(--blue3)" stroke-width="4" stroke-linecap="round" pathLength="100" stroke-dasharray="30 100"/></svg><svg class="i"><use href="#i-box"/></svg></div><b>Resteretter</b><span>3 / 10</span></div>
+        <div class="f-med off"><div class="f-m off"><svg class="f-r" viewBox="0 0 76 76"><circle cx="38" cy="38" r="35" fill="none" stroke="var(--line)" stroke-width="4"/><circle cx="38" cy="38" r="35" fill="none" stroke="var(--blue3)" stroke-width="4" stroke-linecap="round" pathLength="100" stroke-dasharray="64 100"/></svg><svg class="i"><use href="#i-trophy"/></svg></div><b>100 € gespart</b><span>64 / 100 €</span></div>
+      </div>
+      <div class="sec2">GESUNDHEIT · JONA</div>
+      <div class="f-grid">
+        <div class="f-med"><div class="f-m" style="background:var(--sage)"><svg class="i"><use href="#i-leaf"/></svg></div><b>30 Pflanzen</b><span>1.11.2026</span></div>
+        <div class="f-med"><div class="f-m" style="background:var(--sage)"><svg class="i"><use href="#i-chart"/></svg></div><b>Proteinwoche</b><span>1.11.2026</span></div>
+        <div class="f-med off"><div class="f-m off"><svg class="f-r" viewBox="0 0 76 76"><circle cx="38" cy="38" r="35" fill="none" stroke="var(--line)" stroke-width="4"/><circle cx="38" cy="38" r="35" fill="none" stroke="var(--blue3)" stroke-width="4" stroke-linecap="round" pathLength="100" stroke-dasharray="36 100"/></svg><svg class="i"><use href="#i-fork"/></svg></div><b>Koch-Serie</b><span>5 / 14 Tage</span></div>
+      </div>
+    </div>
+    <div class="homebar"></div></div>
+    <div class="caption"><b>Erfolge (S34)</b>„5/18“ riesig auf dem Pastell-Kreis, Medaillen in 3 Spalten: erreicht als Farb-Kreis mit Datum, gesperrt als grauer Ring mit blauem Fortschritt.</div></div>
+
+  <!-- S34 Sheet -->
+  <div class="screen"><div class="phone">
+    <div class="sb"><b>9:41</b><span class="island"></span><svg><use href="#status"/></svg></div>
+    <div class="blob" style="left:190px;top:-60px;width:340px;height:340px;background:var(--blue1)"></div>
+    <div class="scr">
+      <svg class="i" style="width:26px;height:26px"><use href="#i-back"/></svg>
+      <div class="small" style="margin-top:34px">Mein Profil</div><div class="t1">Erfolge</div>
+      <div class="stat" style="margin-top:20px"><span class="lbl">Erreicht</span><span class="num" style="font-size:120px">5<span style="font-size:44px;color:var(--ink2)">/18</span></span></div>
+      <div class="sec2">SPAREN · HAUSHALT</div>
+      <div class="f-grid">
+        <div class="f-med"><div class="f-m"><svg class="i"><use href="#i-cal"/></svg></div><b>Erster Plan</b></div>
+        <div class="f-med"><div class="f-m"><svg class="i"><use href="#i-tag"/></svg></div><b>50 € gespart</b></div>
+        <div class="f-med off"><div class="f-m off" style="box-shadow:inset 0 0 0 4px var(--line)"><svg class="i"><use href="#i-gift"/></svg></div><b>Bonus-Profi</b></div>
+      </div>
+    </div>
+    <div class="scrim"></div>
+    <div class="sheet">
+      <div class="blob" style="left:65px;top:-70px;width:260px;height:260px;background:var(--blue1)"></div>
+      <div style="position:relative">
+        <div class="row between"><span class="lbl">SPAREN · HAUSHALT</span><span class="x" style="background:var(--bg)"><svg class="i"><use href="#i-x"/></svg></span></div>
+        <div class="f-m off" style="width:130px;height:130px;margin:0 auto;background:var(--bg)"><svg class="f-r" viewBox="0 0 76 76"><circle cx="38" cy="38" r="35" fill="none" stroke="var(--line)" stroke-width="3"/><circle cx="38" cy="38" r="35" fill="none" stroke="var(--blue3)" stroke-width="3" stroke-linecap="round" pathLength="100" stroke-dasharray="68 100"/></svg><svg class="i" style="width:52px;height:52px"><use href="#i-gift"/></svg></div>
+        <div class="t2" style="text-align:center;margin-top:22px">Bonus-Profi</div>
+        <div class="small" style="text-align:center;font-size:14px;margin-top:4px">Sammle 50 € Bonus mit Rewe-Bonus und Lidl Plus.</div>
+        <div class="stat" style="margin-top:22px"><span class="lbl">Fortschritt</span><span class="num" style="font-size:48px">34<span style="font-size:24px;color:var(--ink2)"> / 50 €</span></span></div>
+        <div class="f-thick" style="background:var(--line)"><i style="width:68%"></i></div>
+        <div class="small" style="font-size:14px;margin-top:10px">Noch <b style="color:var(--ink)">16 €</b> bis zum Ziel</div>
+      </div>
+    </div>
+    <div class="homebar"></div></div>
+    <div class="caption"><b>Erfolg-Sheet (S34)</b>Halbe Höhe: Medaille 130 pt im Halbkreis, Titel, Bedingung, „34 / 50 €“ als große Zahl mit dickem Fortschrittsbalken und „Noch 16 € bis zum Ziel“.</div></div>
+
+  <!-- Neuer Erfolg -->
+  <div class="screen"><div class="phone">
+    <div class="sb"><b>9:41</b><span class="island"></span><svg><use href="#status"/></svg></div>
+    <div class="blob" style="left:-110px;top:190px;width:610px;height:610px;background:var(--blue)"></div>
+    <i class="f-cf" style="left:62px;top:262px;width:12px;height:12px;border-radius:50%;background:var(--ink)"></i>
+    <i class="f-cf" style="left:300px;top:250px;width:18px;height:9px;border-radius:9px 9px 0 0;background:var(--rose)"></i>
+    <i class="f-cf" style="left:330px;top:340px;width:6px;height:18px;border-radius:3px;background:var(--ink)"></i>
+    <i class="f-cf" style="left:44px;top:380px;width:16px;height:16px;border-radius:50%;background:var(--sand)"></i>
+    <i class="f-cf" style="left:96px;top:226px;width:18px;height:6px;border-radius:3px;background:var(--sage)"></i>
+    <i class="f-cf" style="left:318px;top:450px;width:14px;height:14px;border-radius:50%;background:var(--card)"></i>
+    <i class="f-cf" style="left:70px;top:480px;width:20px;height:10px;border-radius:0 0 10px 10px;background:var(--rose)"></i>
+    <i class="f-cf" style="left:250px;top:214px;width:8px;height:8px;border-radius:50%;background:var(--card)"></i>
+    <i class="f-cf" style="left:136px;top:520px;width:6px;height:16px;border-radius:3px;background:var(--sage)"></i>
+    <i class="f-cf" style="left:258px;top:516px;width:10px;height:10px;border-radius:50%;background:var(--ink)"></i>
+    <div class="f-m" style="position:absolute;left:110px;top:280px;width:170px;height:170px;background:var(--sage);box-shadow:inset 0 0 0 9px rgba(255,255,255,.6),0 18px 36px rgba(40,30,20,.16)"><svg class="i" style="width:72px;height:72px;stroke-width:1.5"><use href="#i-leaf"/></svg></div>
+    <div class="scr">
+      <div class="small" style="margin-top:30px">Glückwunsch, Jona</div><div class="t1" style="font-size:42px">Neuer Erfolg!</div>
+      <div style="position:absolute;left:24px;right:24px;top:560px;text-align:center">
+        <div class="lbl" style="color:var(--ink)">GESUNDHEIT · JONA</div>
+        <div class="t1" style="margin-top:6px">30 Pflanzen</div>
+        <div style="font-size:15px;margin-top:6px">30 verschiedene Pflanzen in einer Woche</div>
+      </div>
+    </div>
+    <div class="btn" style="position:absolute;left:24px;right:24px;bottom:40px">Weiter (1/2)</div>
+    <div class="homebar"></div></div>
+    <div class="caption"><b>Neuer Erfolg (Vollbild)</b>Großer blauer Kreis aus beiden Rändern, Medaille 170 pt in der Mitte, Konfetti als kleine gerade Formen, Titel und Gruppe, „Weiter (1/2)“.</div></div>
+
+</div>
+
+<section class="sec"><h2>Wochenrückblick</h2><p>Story in sechs Seiten, je Seite eine Pastellfarbe mit einer dunkleren Form aus dem Rand; Schrift schwarz.</p></section>
+<div class="screens">
+
+  <!-- S35 Seite 1 -->
+  <div class="screen"><div class="phone" style="background:var(--blue)">
+    <div class="sb"><b>9:41</b><span class="island"></span><svg><use href="#status"/></svg></div>
+    <div class="blob" style="left:160px;top:470px;width:420px;height:420px;background:#97AFE8"></div>
+    <div class="f-st"><div class="prog"><i class="on"></i><i></i><i></i><i></i><i></i><i></i></div>
+      <div class="row between" style="margin-top:14px"><span class="row" style="font-weight:800;font-size:14px"><svg class="i" style="width:20px"><use href="#i-book"/></svg>Wochenrückblick KW 45</span><span class="row"><span class="f-cb"><svg class="i"><use href="#i-share"/></svg></span><span class="f-cb"><svg class="i"><use href="#i-x"/></svg></span></span></div></div>
+    <div style="position:absolute;left:24px;right:24px;top:150px">
+      <div class="small" style="color:var(--ink)">KW 45 · 3.–9. November</div><div class="t1">Deine Woche</div>
+      <div class="stat" style="margin-top:22px"><span class="lbl">Gekocht</span><span class="num" style="font-size:180px">5</span></div>
+      <div style="text-align:right;font-size:17px;margin-top:2px">von 9 geplanten</div>
+    </div>
+    <div class="plate ph-pasta" style="position:absolute;left:192px;top:524px;width:190px;height:190px"></div>
+    <div style="position:absolute;left:24px;top:540px;width:150px">
+      <div class="lbl" style="color:var(--ink)">LIEBLINGSGERICHT</div>
+      <div class="t2" style="margin-top:6px">Spaghetti Pomodoro</div>
+      <div class="row" style="gap:2px;margin-top:10px"><svg class="i" style="width:18px;fill:currentColor"><use href="#i-star"/></svg><svg class="i" style="width:18px;fill:currentColor"><use href="#i-star"/></svg><svg class="i" style="width:18px;fill:currentColor"><use href="#i-star"/></svg><svg class="i" style="width:18px;fill:currentColor"><use href="#i-star"/></svg><svg class="i" style="width:18px;fill:currentColor"><use href="#i-star"/></svg></div>
+      <div style="font-size:13px;margin-top:6px">von Mia &amp; Jona</div>
+    </div>
+    <div class="homebar"></div></div>
+    <div class="caption"><b>Wochenrückblick 1 (S35)</b>Blau: sechs Story-Striche oben, „5“ gekocht riesig, „von 9 geplanten“, Lieblingsgericht als Teller im dunkleren Kreis mit Sternen.</div></div>
+
+  <!-- S35 Seite 2 -->
+  <div class="screen"><div class="phone" style="background:var(--sage)">
+    <div class="sb"><b>9:41</b><span class="island"></span><svg><use href="#status"/></svg></div>
+    <div class="blob" style="left:-150px;top:640px;width:400px;height:400px;background:#B3D2B8"></div>
+    <img class="ill" src="ill-v7/bag.webp" style="position:absolute;left:14px;top:648px;width:170px" alt="">
+    <div class="f-st"><div class="prog"><i class="on"></i><i class="on"></i><i></i><i></i><i></i><i></i></div>
+      <div class="row between" style="margin-top:14px"><span class="row" style="font-weight:800;font-size:14px"><svg class="i" style="width:20px"><use href="#i-book"/></svg>Wochenrückblick KW 45</span><span class="row"><span class="f-cb"><svg class="i"><use href="#i-share"/></svg></span><span class="f-cb"><svg class="i"><use href="#i-x"/></svg></span></span></div></div>
+    <div style="position:absolute;left:24px;right:24px;top:150px">
+      <div class="small" style="color:var(--ink)">KW 45 · 3.–9. November</div><div class="t1">Gespart &amp;<br>ausgegeben</div>
+      <div class="stat" style="margin-top:22px"><span class="lbl">Ausgegeben</span><span class="num" style="font-size:88px">68,90<span style="font-size:36px"> €</span></span></div>
+      <div style="text-align:right;font-size:14px;margin-top:4px">davon 4,20 € geschätzt</div>
+      <div class="stat" style="margin-top:18px"><span class="lbl">durch Angebote</span><span class="num" style="font-size:44px">9,70 €</span></div>
+      <div class="stat" style="margin-top:12px"><span class="lbl">Bonus</span><span class="num" style="font-size:44px">2,70 €</span></div>
+      <div class="row between" style="margin-top:30px"><span style="font-weight:800">Budget 60,00 €</span><span class="deal" style="height:26px;font-size:12px;padding:0 10px">8,90 € über Budget</span></div>
+      <div style="display:flex;height:30px;border-radius:999px;overflow:hidden;margin-top:10px;background:#B3D2B8"><i style="width:87%;background:var(--ink)"></i><i style="width:13%;background:var(--deal)"></i></div>
+    </div>
+    <div class="homebar"></div></div>
+    <div class="caption"><b>Wochenrückblick 2</b>Salbei: Ausgegeben riesig, gespart durch Angebote und Bonus als Zahlen, ein großer Balken gegen das Budget, Überzug in Rot.</div></div>
+
+  <!-- S35 Seite 3 -->
+  <div class="screen"><div class="phone" style="background:var(--rose)">
+    <div class="sb"><b>9:41</b><span class="island"></span><svg><use href="#status"/></svg></div>
+    <div class="blob" style="left:220px;top:-90px;width:300px;height:300px;background:#E8B5AB"></div>
+    <img class="ill" src="ill-v7/tomato.webp" style="position:absolute;left:246px;top:112px;width:126px" alt="">
+    <div class="f-st"><div class="prog"><i class="on"></i><i class="on"></i><i class="on"></i><i></i><i></i><i></i></div>
+      <div class="row between" style="margin-top:14px"><span class="row" style="font-weight:800;font-size:14px"><svg class="i" style="width:20px"><use href="#i-book"/></svg>Wochenrückblick KW 45</span><span class="row"><span class="f-cb"><svg class="i"><use href="#i-share"/></svg></span><span class="f-cb"><svg class="i"><use href="#i-x"/></svg></span></span></div></div>
+    <div style="position:absolute;left:24px;right:24px;top:150px">
+      <div class="small" style="color:var(--ink)">Schnitt pro Tag</div><div class="t1">Gesundheit</div>
+      <div class="row" style="gap:12px;margin-top:40px"><span class="circle" style="width:44px;height:44px;background:var(--card);color:var(--ink);font-family:'DM Serif Display',serif;font-weight:400;font-size:20px">J</span><span class="t2" style="flex:1">Jona</span><span class="soft" style="background:var(--card)"><svg class="i" style="width:14px;height:14px"><use href="#i-leaf"/></svg>18 Pflanzen</span></div>
+      <div class="stat" style="margin-top:16px"><span class="lbl">kcal</span><span class="num" style="font-size:48px">2.140<span class="f-dim" style="font-size:22px"> / 2.300</span></span></div>
+      <div class="f-thick" style="background:#E8B5AB"><i style="width:93%"></i></div>
+      <div class="stat" style="margin-top:16px"><span class="lbl">Protein</span><span class="num" style="font-size:48px">92<span class="f-dim" style="font-size:22px"> / 110 g</span></span></div>
+      <div class="f-thick" style="background:#E8B5AB"><i style="width:84%"></i></div>
+      <div class="row" style="gap:12px;margin-top:40px"><span class="circle" style="width:44px;height:44px;background:var(--card);color:var(--ink);font-family:'DM Serif Display',serif;font-weight:400;font-size:20px">M</span><span class="t2" style="flex:1">Mia</span><span class="soft" style="background:var(--card)"><svg class="i" style="width:14px;height:14px"><use href="#i-leaf"/></svg>22 Pflanzen</span></div>
+      <div class="stat" style="margin-top:16px"><span class="lbl">kcal</span><span class="num" style="font-size:48px">1.720<span class="f-dim" style="font-size:22px"> / 1.900</span></span></div>
+      <div class="f-thick" style="background:#E8B5AB"><i style="width:91%"></i></div>
+      <div class="stat" style="margin-top:16px"><span class="lbl">Protein</span><span class="num" style="font-size:48px">64<span class="f-dim" style="font-size:22px"> / 70 g</span></span></div>
+      <div class="f-thick" style="background:#E8B5AB"><i style="width:91%"></i></div>
+    </div>
+    <div class="homebar"></div></div>
+    <div class="caption"><b>Wochenrückblick 3</b>Rosé: je Person Name, Pflanzen-Zahl, kcal und Protein als große Zahl gegen das Ziel mit dickem Balken.</div></div>
+
+  <!-- S35 Seite 6 -->
+  <div class="screen"><div class="phone" style="background:var(--sand)">
+    <div class="sb"><b>9:41</b><span class="island"></span><svg><use href="#status"/></svg></div>
+    <div class="arch" style="left:96px;top:586px;width:200px;height:300px;background:#D7C6A4"></div>
+    <img class="ill" src="ill-v7/cookbook.webp" style="position:absolute;left:126px;top:588px;width:140px" alt="">
+    <div class="f-st"><div class="prog"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i></div>
+      <div class="row between" style="margin-top:14px"><span class="row" style="font-weight:800;font-size:14px"><svg class="i" style="width:20px"><use href="#i-book"/></svg>Wochenrückblick KW 45</span><span class="row"><span class="f-cb"><svg class="i"><use href="#i-share"/></svg></span><span class="f-cb"><svg class="i"><use href="#i-x"/></svg></span></span></div></div>
+    <div style="position:absolute;left:24px;right:24px;top:150px">
+      <div class="small" style="color:var(--ink)">Angebote ab Montag</div><div class="t1">Nächste Woche<br>günstig</div>
+      <div style="margin-top:22px">
+        <div class="row" style="gap:14px;height:96px;border-top:1.5px solid rgba(21,21,21,.18)"><span class="plate" style="width:64px;height:64px;box-shadow:0 0 0 4px var(--card);background-image:url(../../../ios/Sources/Essenapp/Resources/hero/bowl.jpg)"></span><div style="flex:1"><div class="t2" style="font-size:19px">Hähnchen-Curry</div><div class="row" style="gap:6px;font-size:13px;margin-top:4px"><img src="https://upload.wikimedia.org/wikipedia/commons/thumb/4/4c/Logo_REWE.svg/250px-Logo_REWE.svg.png" height="11" style="background:#fff;border-radius:3px;padding:1px" alt="Rewe"><b>3,49 €</b><span class="f-dim">statt 4,99 €</span></div></div><span class="deal">−30 %</span></div>
+        <div class="row" style="gap:14px;height:96px;border-top:1.5px solid rgba(21,21,21,.18)"><span class="plate" style="width:64px;height:64px;box-shadow:0 0 0 4px var(--card);background-image:url(../../../ios/Sources/Essenapp/Resources/hero/grill.jpg)"></span><div style="flex:1"><div class="t2" style="font-size:19px">Ofengemüse</div><div class="row" style="gap:6px;font-size:13px;margin-top:4px"><img src="https://upload.wikimedia.org/wikipedia/commons/thumb/9/91/Lidl-Logo.svg/250px-Lidl-Logo.svg.png" height="16" alt="Lidl"><b>2,19 €</b><span class="f-dim">statt 2,99 €</span></div></div><span class="deal">−27 %</span></div>
+        <div class="row" style="gap:14px;height:96px;border-top:1.5px solid rgba(21,21,21,.18)"><span class="plate" style="width:64px;height:64px;box-shadow:0 0 0 4px var(--card);background-image:url(../../../ios/Sources/Essenapp/Resources/hero/pasta.jpg)"></span><div style="flex:1"><div class="t2" style="font-size:19px">Pasta mit Pesto</div><div class="row" style="gap:6px;font-size:13px;margin-top:4px"><img src="https://upload.wikimedia.org/wikipedia/commons/thumb/4/4c/Logo_REWE.svg/250px-Logo_REWE.svg.png" height="11" style="background:#fff;border-radius:3px;padding:1px" alt="Rewe"><b>1,79 €</b><span class="f-dim">statt 2,29 €</span></div></div><span class="deal">−22 %</span></div>
+      </div>
+    </div>
+    <div class="btn" style="position:absolute;left:24px;right:24px;bottom:40px"><svg class="i" style="width:20px"><use href="#i-sparkle"/></svg>Plan erstellen</div>
+    <div class="homebar"></div></div>
+    <div class="caption"><b>Wochenrückblick 6</b>Sand: drei günstige Gerichte für nächste Woche als Zeilen mit Teller, Logo, Preis statt Preis und Rabatt; Kochbuch im Tor-Bogen, „Plan erstellen“.</div></div>
+
+  <!-- S35b Archiv -->
+  <div class="screen"><div class="phone">
+    <div class="sb"><b>9:41</b><span class="island"></span><svg><use href="#status"/></svg></div>
+    <div class="blob" style="left:206px;top:-110px;width:310px;height:310px;background:var(--blue1)"></div>
+    <img class="ill" src="ill-v7/cookbook.webp" style="position:absolute;left:246px;top:40px;width:124px" alt="">
+    <div class="scr">
+      <svg class="i" style="width:26px;height:26px"><use href="#i-back"/></svg>
+      <div class="small" style="margin-top:34px">3 Wochen</div><div class="t1">Rückblicke</div>
+      <div style="margin-top:34px">
+        <div class="row" style="gap:16px;height:104px;border-top:1.5px solid var(--ink)"><div style="width:62px"><div class="lbl">KW</div><div class="num" style="font-size:56px">45</div></div><div style="flex:1"><div style="font-weight:800">5 gekocht</div><div class="small" style="font-size:13px">3.–9. Nov 2026</div></div><div style="text-align:right"><div class="num" style="font-size:30px">68,90 €</div><div class="small" style="font-size:12px;margin-top:4px">ausgegeben</div></div><svg class="i" style="width:18px"><use href="#i-chev"/></svg></div>
+        <div class="row" style="gap:16px;height:104px;border-top:1.5px solid var(--line)"><div style="width:62px"><div class="lbl">KW</div><div class="num" style="font-size:56px">44</div></div><div style="flex:1"><div style="font-weight:800">6 gekocht</div><div class="small" style="font-size:13px">27. Okt – 2. Nov</div></div><div style="text-align:right"><div class="num" style="font-size:30px">74,30 €</div><div class="small" style="font-size:12px;margin-top:4px">ausgegeben</div></div><svg class="i" style="width:18px"><use href="#i-chev"/></svg></div>
+        <div class="row" style="gap:16px;height:104px;border-top:1.5px solid var(--line);border-bottom:1.5px solid var(--line)"><div style="width:62px"><div class="lbl">KW</div><div class="num" style="font-size:56px">43</div></div><div style="flex:1"><div style="font-weight:800">4 gekocht</div><div class="small" style="font-size:13px">20.–26. Okt</div></div><div style="text-align:right"><div class="num" style="font-size:30px">59,80 €</div><div class="small" style="font-size:12px;margin-top:4px">ausgegeben</div></div><svg class="i" style="width:18px"><use href="#i-chev"/></svg></div>
+      </div>
+      <div class="small" style="font-size:13px;margin-top:20px">Der nächste Rückblick kommt am Sonntag um 19 Uhr.</div>
+    </div>
+    <div class="homebar"></div></div>
+    <div class="caption"><b>Rückblicke (S35b)</b>Archiv als Zeilen: KW-Nummer groß links, gekocht und Zeitraum in der Mitte, Ausgaben als große Zahl rechts; Kochbuch im Kreis oben.</div></div>
+
+  <!-- Teilen-Sheet -->
+  <div class="screen"><div class="phone" style="background:var(--blue)">
+    <div class="sb"><b>9:41</b><span class="island"></span><svg><use href="#status"/></svg></div>
+    <div class="f-st"><div class="prog"><i class="on"></i><i></i><i></i><i></i><i></i><i></i></div>
+      <div class="row between" style="margin-top:14px"><span class="row" style="font-weight:800;font-size:14px"><svg class="i" style="width:20px"><use href="#i-book"/></svg>Wochenrückblick KW 45</span><span class="row"><span class="f-cb"><svg class="i"><use href="#i-share"/></svg></span><span class="f-cb"><svg class="i"><use href="#i-x"/></svg></span></span></div></div>
+    <div style="position:absolute;left:24px;right:24px;top:150px"><div class="small" style="color:var(--ink)">KW 45 · 3.–9. November</div><div class="t1">Deine Woche</div></div>
+    <div class="scrim"></div>
+    <div class="sheet">
+      <div class="row between"><span class="t2">Als Bild teilen</span><span class="x"><svg class="i"><use href="#i-x"/></svg></span></div>
+      <div style="position:relative;width:272px;height:340px;margin:18px auto 0;background:var(--card);border-radius:18px;overflow:hidden;box-shadow:0 14px 30px rgba(40,30,20,.14)">
+        <div class="blob" style="left:140px;top:-74px;width:200px;height:200px;background:var(--blue)"></div>
+        <div class="plate ph-pasta" style="position:absolute;left:178px;top:24px;width:78px;height:78px;box-shadow:0 0 0 4px var(--card)"></div>
+        <div style="position:absolute;left:18px;top:20px;width:130px">
+          <div class="t2" style="font-size:20px">Meine Woche</div>
+          <div style="font-size:11px;color:var(--ink2);margin-top:2px">KW 45 · 3.–9. Nov 2026</div>
+          <div class="lbl" style="font-size:9px;margin-top:20px">LIEBLINGSGERICHT</div>
+          <div style="font-size:13px;font-weight:800;margin-top:2px">Spaghetti Pomodoro</div>
+        </div>
+        <div style="position:absolute;left:18px;right:18px;top:150px;display:grid;grid-template-columns:1fr 1fr;gap:14px 14px">
+          <div style="border-top:1.5px solid var(--ink);padding-top:4px"><div style="font-size:10px;font-weight:700">Gekocht</div><div class="num" style="font-size:34px;text-align:right">5</div></div>
+          <div style="border-top:1.5px solid var(--ink);padding-top:4px"><div style="font-size:10px;font-weight:700">Gespart</div><div class="num" style="font-size:34px;text-align:right">12,40 €</div></div>
+          <div style="border-top:1.5px solid var(--ink);padding-top:4px"><div style="font-size:10px;font-weight:700">Pflanzen</div><div class="num" style="font-size:34px;text-align:right">18</div></div>
+          <div style="border-top:1.5px solid var(--ink);padding-top:4px"><div style="font-size:10px;font-weight:700">Neue Erfolge</div><div class="num" style="font-size:34px;text-align:right">2</div></div>
+        </div>
+        <div class="row between" style="position:absolute;left:18px;right:18px;bottom:16px;font-size:11px;font-weight:800"><span class="row" style="gap:5px"><svg class="i" style="width:14px;height:14px"><use href="#i-fork"/></svg>Mit Essenapp geplant</span><span style="color:var(--ink2)">Haushalt Jona</span></div>
+      </div>
+      <div class="btn" style="margin-top:22px"><svg class="i" style="width:20px"><use href="#i-share"/></svg>Teilen</div>
+    </div>
+    <div class="homebar"></div></div>
+    <div class="caption"><b>Als Bild teilen (S35)</b>Sheet über der Story mit heller Hochformat-Karte „Meine Woche“: KW, Lieblingsgericht im Teller, vier große Zahlen, „Mit Essenapp geplant“.</div></div>
+
+</div>
