@@ -67,6 +67,30 @@ class PlanDraft(BaseModel):
     meals: list[PlannedMeal]
 
 
+class CardIngredient(BaseModel):
+    name: str
+    amount: float  # für 1 Portion
+    unit: Literal["g", "ml", "stk"]
+    offer_id: int | None
+
+
+class CardDraft(BaseModel):
+    """Swipe-Karte (Phase 20): nur, was die Karte zeigt, plus Hauptzutaten für Preis und Verteilung – das ganze Rezept
+    entsteht erst nach der Auswahl (schneller)."""
+    title: str
+    description: str
+    cuisine: str
+    prep_minutes: int
+    side: Literal["pasta", "reis", "kartoffel", "brot", "andere"]
+    protein: Literal["fisch", "rot", "gefluegel", "vegetarisch", "vegan"]
+    image_query: str
+    ingredients: list[CardIngredient]
+
+
+class CardSet(BaseModel):
+    cards: list[CardDraft]
+
+
 SYSTEM = """Du planst Wochengerichte für einen deutschen Haushalt, der sparen will.
 Regeln:
 - Baue die Gerichte so weit wie möglich aus den Angeboten der Woche. Für eine Zutat aus der Angebotsliste setze offer_id auf deren ID, sonst null.
@@ -210,7 +234,8 @@ def build_prompt(household: Household, offers: list[Offer], slots: list[tuple[in
             p.name + (f" {p.amount:g}{p.unit}" if p.amount is not None else "")
             + (f" bis {p.best_before:%d.%m.}" if p.best_before else "") for p in stock))
     parts += extra
-    parts.append(f"\nZu planende Mahlzeiten:\n{slot_lines}")
+    if slots:
+        parts.append(f"\nZu planende Mahlzeiten:\n{slot_lines}")
     if note:
         parts.append(f"\n{note}")
     return [
@@ -220,11 +245,30 @@ def build_prompt(household: Household, offers: list[Offer], slots: list[tuple[in
     ]
 
 
-def ask_claude(content: list[dict]) -> tuple[PlanDraft, dict]:
+CARD_SYSTEM = """Du schlägst Gerichte für einen deutschen Haushalt vor, der sparen will. Der Haushalt wählt daraus
+per Swipe seine Woche; das ganze Rezept wird erst danach geschrieben.
+Regeln:
+- Gerichte so weit wie möglich aus den Angeboten der Woche; jedes Gericht klar verschieden (Küche, Hauptzutat, Beilage).
+- ingredients: nur 3–6 Hauptzutaten mit Menge für 1 Portion (2000 kcal/Tag), Einheiten g, ml oder stk; offer_id = ID
+  aus der Angebotsliste, wenn das Produkt genau diese Zutat ist, sonst null. Keine Basics (Salz, Öl, Gewürze).
+- Ernährungsform, Allergien und Ausschlüsse sind harte Regeln. Kochzeit nicht überschreiten.
+- title kurz und appetitlich, description ein Satz. Alle Texte auf Deutsch.
+- image_query: 2–4 englische Suchbegriffe für ein Foto, z.B. "chicken tikka masala".
+- side = Hauptbeilage; protein = fisch, rot (Rind, Schwein, Lamm, Wild), gefluegel, vegetarisch oder vegan.
+- fruehstueck: einfach (Basis + Topping + Obst), max. 10 min. snack: transportierbar. lunchbox: kalt essbar oder gut
+  aufwärmbar, am Vorabend vorbereitbar."""
+
+
+def ask_cards(content: list[dict]) -> tuple[CardSet, dict]:
+    return ask_claude(content, CardSet, CARD_SYSTEM, max_tokens=8000)
+
+
+def ask_claude(content: list[dict], schema: type[BaseModel] = PlanDraft, system: str = SYSTEM,
+               max_tokens: int = 16000) -> tuple[BaseModel, dict]:
     client = anthropic.Anthropic(api_key=settings.anthropic_api_key or None)
     model = settings.model_planner
-    params = dict(model=model, max_tokens=16000, output_config={"effort": settings.planner_effort}, system=SYSTEM,
-                  messages=[{"role": "user", "content": content}], output_format=PlanDraft)
+    params = dict(model=model, max_tokens=max_tokens, output_config={"effort": settings.planner_effort},
+                  system=system, messages=[{"role": "user", "content": content}], output_format=schema)
     if settings.planner_effort in ("low", "medium", "high"):  # ohne Denken geht nur bis high
         # Haiku dachte sonst bis ~10k Tokens vor, das JSON brach bei max_tokens ab (und dauerte)
         params["thinking"] = {"type": "disabled"}
@@ -381,8 +425,10 @@ def make_plan(household: Household, offers: list[Offer], slots: list[tuple[int, 
               max_repairs: int = 1, portions: dict | None = None, pantry: list[PantryItem] = (),
               never: list[str] = (), recent: list[str] = (), rules: dict | None = None, fish_ok: bool = True,
               extra: list[str] = (), guests: dict | None = None, stock: list[PantryItem] | None = None,
-              forbid: Callable[[str], bool] | None = None) -> PricedPlan:
+              forbid: Callable[[str], bool] | None = None, fixed: dict | None = None) -> PricedPlan:
     """forbid(Zutat) = verletzt Allergie/Ernährung/Abneigung → Gericht wird wie ein Nie-Gericht ersetzt (19.2).
+    fixed (20, Swipe): {Slot: „Titel – Beschreibung“} – die KI schreibt genau diese Gerichte aus; kein Budget-Neuplan,
+    Reparatur nur für fehlende Zutaten bzw. verbotene Zutaten.
     rules (12) = Abwechslungsregeln → nach dem Planen Prüfung im Code und ein zweiter Durchgang nur für die
     betroffenen Slots, der zugleich frische Reste (19) in Folgegerichte legt. stock = Vorrat + Wochen-Basics (23)
     für die Kosten (Standard: pantry)."""
@@ -392,7 +438,10 @@ def make_plan(household: Household, offers: list[Offer], slots: list[tuple[int, 
     repeat_weeks = (rules or {}).get("repeat_weeks", 3)
 
     def prompt(todo: list[tuple[int, str]], note: str) -> list[dict]:
-        return build_prompt(household, offers, todo, favorites, wishes, note, portions, pantry, never, recent, extra,
+        lines = list(extra)
+        if chosen := [f"- day={d} ({DAYS[d]}), meal_type={m}: {fixed[(d, m)]}" for d, m in todo if (d, m) in (fixed or {})]:
+            lines.append("Diese Gerichte stehen fest – genau so ausschreiben, Titel übernehmen:\n" + "\n".join(chosen))
+        return build_prompt(household, offers, todo, favorites, wishes, note, portions, pantry, never, recent, lines,
                             guests, repeat_weeks)
 
     def ask_once(todo: list[tuple[int, str]], note: str) -> tuple[PlanDraft, dict]:
@@ -435,7 +484,7 @@ def make_plan(household: Household, offers: list[Offer], slots: list[tuple[int, 
         key = (len(banned), len(missing), planned.total_cents)  # erst Regeln, dann vollständige Liste, dann Preis
         if best is None or key < best_key:
             best, best_key = planned, key
-        over = planned.total_cents > household.budget_food_week_cents
+        over = planned.total_cents > household.budget_food_week_cents and not fixed  # Swipe-Auswahl bleibt
         if not over and not banned and not missing:
             break
         have = {(m.day, m.meal_type) for m in draft.meals}

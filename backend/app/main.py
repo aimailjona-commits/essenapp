@@ -4,7 +4,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 
-from app import api, jobs, web
+from app import api, jobs, swipe_api, web
 from app.api import router
 from app.core.config import settings
 
@@ -21,6 +21,7 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="Kochpilot", lifespan=lifespan)
 app.include_router(router)
+app.include_router(swipe_api.router)
 app.include_router(web.router)
 app.mount("/static", StaticFiles(directory=web.DIR / "static"), name="static")
 api.MEDIA.mkdir(parents=True, exist_ok=True)

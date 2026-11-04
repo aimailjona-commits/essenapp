@@ -482,10 +482,13 @@ def start_plan_job(options: PlanOptions | None = None, member: Member = Depends(
     return plan_job_state(row)
 
 
-def _plan_job(bind, row_id: int, member_id: int, options: PlanOptions | None) -> None:
+def _plan_job(bind, row_id: int, member_id: int, options: PlanOptions | None,
+              make: Callable[[Member, Session], object] | None = None) -> None:
+    """make: anderer Plan-Bau mit gleichem Job-Stand (Swipe-Auswahl, Phase 20)."""
     with Session(bind) as db:
         try:
-            create_plan(options, db.get(Member, member_id), db)
+            member = db.get(Member, member_id)
+            make(member, db) if make else create_plan(options, member, db)
             ok, info = True, "fertig"
         except HTTPException as e:
             db.rollback()

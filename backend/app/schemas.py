@@ -1302,3 +1302,77 @@ class SharedRecipeOut(BaseModel):
     ingredients: list[dict]
     steps: list[str]
     from_household: str  # „Familie Müller“ → Quelle „von Familie Müller“
+
+
+# --- Woche per Swipe (Phase 20, E97) ---
+
+MealSlot = Literal["fruehstueck", "lunchbox", "mittag", "snack", "vorspeise", "abend", "dessert"]
+
+
+class SwipeCardOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    meal_type: str
+    source: str  # ki | rezept
+    recipe_id: int | None
+    title: str
+    description: str
+    cuisine: str
+    prep_minutes: int
+    image_url: str
+    cost_cents: int  # pro Portion, geschätzt
+    deals: int
+    chain: str
+    match: bool = False  # nur in chosen
+    yes: int = 0
+    days: int = 1  # Frühstück/Snack: so viele Tage
+
+
+class SlotCard(BaseModel):
+    day: int = Field(ge=0, le=6)
+    meal_type: MealSlot
+    card_id: int
+
+
+class SwipeOut(BaseModel):
+    id: int
+    state: Literal["offen", "fertig"]
+    loading: bool  # Karten werden gerade erzeugt
+    error: str = ""
+    need: dict[str, int]  # Plätze je Mahlzeitart
+    have: dict[str, int]  # belegt (Frühstück/Snack: Tage)
+    ready: bool  # jede Art hat genug → „Fertig“
+    cards: list[SwipeCardOut]  # noch zu entscheiden (für mich)
+    chosen: list[SwipeCardOut]  # gewählt, Matches zuerst
+    members: list[str]  # wer schon mitswipt
+    slots: list[SlotCard]  # Plätze der Woche (card_id 0)
+
+
+class VoteIn(BaseModel):
+    vote: Literal["ja", "nein", "mag_nicht"]
+    days: int = Field(1, ge=1, le=7)
+    # „Mag ich nicht“ mit Grund: zutat → Mag-nicht-Liste, schmeckt_nicht/sonstiges → Nie-Liste, keine_lust → nur ich
+    reason: Literal["zutat", "schmeckt_nicht", "keine_lust", "sonstiges"] | None = None
+    ingredient: str = Field("", max_length=100)
+    note: str = Field("", max_length=300)
+
+
+class VoteOut(BaseModel):
+    match: bool
+    have: dict[str, int]
+    ready: bool
+
+
+class DistributeIn(BaseModel):
+    fixed: list[SlotCard] = Field(default_factory=list, max_length=60)  # selbst gesetzt, bleibt
+    seed: int = 0  # „Neu mischen“
+
+
+class DistributeOut(BaseModel):
+    assignment: list[SlotCard]
+    reserve: list[int]
+
+
+class FinishIn(BaseModel):
+    assignment: list[SlotCard] = Field(max_length=60)

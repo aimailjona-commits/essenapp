@@ -262,6 +262,56 @@ class Recipe(Base):
     created_at: Mapped[datetime] = mapped_column(server_default=func.now())
 
 
+class SwipeDeck(Base):
+    """Kartenstapel der Woche (Phase 20, E97): der Haushalt swipet Gerichte, danach entsteht daraus der Plan."""
+    __tablename__ = "swipe_deck"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    household_id: Mapped[int] = mapped_column(ForeignKey("household.id"), index=True)
+    member_id: Mapped[int | None] = mapped_column(ForeignKey("member.id"))  # hat gestartet
+    week: Mapped[str] = mapped_column(String(8))
+    state: Mapped[str] = mapped_column(String(10), default="offen")  # offen | fertig
+    need: Mapped[dict] = mapped_column(JSON, default=dict)  # {meal_type: Plätze}
+    slots: Mapped[list] = mapped_column(JSON, default=list)  # [[Tag, meal_type]] der Woche
+    created_at: Mapped[datetime] = mapped_column(server_default=func.now())
+
+    cards: Mapped[list["SwipeCard"]] = relationship(cascade="all, delete-orphan", order_by="SwipeCard.position")
+
+
+class SwipeCard(Base):
+    __tablename__ = "swipe_card"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    deck_id: Mapped[int] = mapped_column(ForeignKey("swipe_deck.id"), index=True)
+    meal_type: Mapped[str] = mapped_column(String(20))
+    position: Mapped[int] = mapped_column(default=0)
+    source: Mapped[str] = mapped_column(String(10))  # ki | rezept
+    recipe_id: Mapped[int | None] = mapped_column(ForeignKey("recipe.id"))  # nur Quelle rezept
+    title: Mapped[str] = mapped_column(String(200))
+    description: Mapped[str] = mapped_column(String(500), default="")
+    cuisine: Mapped[str] = mapped_column(String(50), default="")
+    prep_minutes: Mapped[int] = mapped_column(default=0)
+    side: Mapped[str] = mapped_column(String(20), default="andere")
+    protein: Mapped[str] = mapped_column(String(20), default="vegetarisch")
+    image_url: Mapped[str] = mapped_column(String(500), default="")
+    cost_cents: Mapped[int] = mapped_column(default=0)  # pro Portion, geschätzt
+    deals: Mapped[int] = mapped_column(default=0)  # Hauptzutaten im Angebot
+    chain: Mapped[str] = mapped_column(String(30), default="")  # Laden mit den meisten Angeboten
+    ingredients: Mapped[list[dict]] = mapped_column(JSON, default=list)  # Hauptzutaten je Portion (KI-Karte)
+
+
+class SwipeVote(Base):
+    __tablename__ = "swipe_vote"
+    __table_args__ = (UniqueConstraint("card_id", "member_id"),)
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    card_id: Mapped[int] = mapped_column(ForeignKey("swipe_card.id"), index=True)
+    member_id: Mapped[int] = mapped_column(ForeignKey("member.id"))
+    vote: Mapped[str] = mapped_column(String(10))  # ja | nein | mag_nicht
+    days: Mapped[int] = mapped_column(default=1)  # Frühstück/Snack: an so vielen Tagen
+    created_at: Mapped[datetime] = mapped_column(server_default=func.now())
+
+
 class Report(Base):
     """„Fehler melden“ am Gericht (19.9); Übersicht: ./dev.sh python -m app.reports"""
     __tablename__ = "report"

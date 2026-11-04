@@ -159,11 +159,21 @@ def planner_memory(db: Session, household_id: int, today: date | None = None,
     """Für den Prompt (3): Top 15 Favoriten/≥4★ mit Zutaten, „Nie“/≤2★-Titel, Gerichte der letzten N Wochen (12)."""
     recipes = household_recipes(db, household_id)
     stats = rating_stats(db, [r.id for r in recipes])
-    favs = favorite_ids(db, household_id)
     recent = recent_titles(db, household_id, today, repeat_weeks)
     never = [r.title for r in recipes if hidden(r, stats)]
+    liked = liked_recipes(db, household_id, recipes, stats, recent)
+    favorites = [f"{r.title} ({', '.join(i['name'] for i in r.ingredients)})" for r in liked[:TOP_FAVORITES]]
+    return {"favorites": favorites, "never": list(dict.fromkeys(never)), "recent": recent}
+
+
+def liked_recipes(db: Session, household_id: int, recipes: list[Recipe] | None = None, stats: dict | None = None,
+                  recent: list[str] | None = None) -> list[Recipe]:
+    """Favoriten und ≥ 4 ★, nicht auf der Nie-Liste und nicht in den letzten Wochen; beste zuerst (auch Swipe, 20)."""
+    recipes = household_recipes(db, household_id) if recipes is None else recipes
+    stats = rating_stats(db, [r.id for r in recipes]) if stats is None else stats
+    recent = recent_titles(db, household_id) if recent is None else recent
+    favs = favorite_ids(db, household_id)
     liked = [r for r in recipes if not hidden(r, stats) and r.title not in recent
              and (r.id in favs or (stats.get(r.id) and (stats[r.id].avg_stars or 0) >= 4))]
     liked.sort(key=lambda r: (-(stats[r.id].avg_stars if r.id in stats else 0), r.id not in favs, -r.id))
-    favorites = [f"{r.title} ({', '.join(i['name'] for i in r.ingredients)})" for r in liked[:TOP_FAVORITES]]
-    return {"favorites": favorites, "never": list(dict.fromkeys(never)), "recent": recent}
+    return liked
