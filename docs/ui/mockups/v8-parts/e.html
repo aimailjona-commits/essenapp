@@ -8,7 +8,8 @@
 .e-row .v{color:var(--ink2);font-weight:600;font-size:14px;white-space:nowrap}
 .e-row .ch{width:18px;height:18px;color:var(--ink3)}
 .e-row .nm{font-family:"DM Serif Display",serif;font-size:18px;font-weight:400}
-.e-h{display:block;margin:16px 0 4px}
+.e-h{display:block;margin:28px 0 4px}
+.e-bleed{margin-right:-24px}
 .e-sm .chip{height:32px;padding:0 12px;font-size:13px}
 .e-range{position:relative;height:28px}
 .e-range::before{content:"";position:absolute;left:0;right:0;top:13px;height:2px;background:var(--line)}
@@ -21,7 +22,7 @@
 .e-tg.on{background:var(--ink);box-shadow:none}
 .e-n{font-size:40px;width:56px;text-align:right;flex:none}
 .e-step{display:flex;gap:14px;align-items:flex-start;padding:7px 0;border-top:1.5px solid var(--line);font-size:13px;line-height:1.45}
-.e-step .num{font-size:30px;width:26px;flex:none}
+.e-step .num{font-size:24px;width:20px;flex:none}
 .e-mono{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;font-weight:500}
 .e-w{position:absolute;background:var(--card);border-radius:24px;overflow:hidden;box-shadow:0 10px 24px rgba(40,30,20,.12)}
 .e-app{width:60px;height:60px;border-radius:15px;display:grid;place-items:center}
@@ -68,12 +69,11 @@
       <div class="t1" style="margin-top:24px">Wo kaufst<br>du ein?</div>
       <div class="stat" style="width:220px;margin-top:28px"><span class="lbl">PLZ</span><span class="num" style="font-size:56px">10115</span></div>
       <div class="small" style="font-size:13px;margin-top:6px">Berlin · 6 Läden mit Angeboten</div>
-      <span class="lbl e-h">LÄDEN</span>
-      <div class="irow"><span class="c" style="background:#fff"><img src="https://upload.wikimedia.org/wikipedia/commons/thumb/4/4c/Logo_REWE.svg/250px-Logo_REWE.svg.png" style="width:34px" alt="Rewe"></span><span class="nm">Rewe</span><span class="sw on"></span></div>
+      <div class="irow" style="margin-top:28px"><span class="c" style="background:#fff"><img src="https://upload.wikimedia.org/wikipedia/commons/thumb/4/4c/Logo_REWE.svg/250px-Logo_REWE.svg.png" style="width:34px" alt="Rewe"></span><span class="nm">Rewe</span><span class="sw on"></span></div>
       <div class="row between" style="height:44px;padding-left:62px;margin-top:-6px"><span><b style="font-size:14px">Filiale wählen</b><span class="small" style="display:block;font-size:12px">Invalidenstr. 112 · 400 m</span></span><svg class="i" style="width:18px;color:var(--ink3)"><use href="#i-chev"/></svg></div>
       <div class="irow"><span class="c" style="background:#fff"><img src="https://upload.wikimedia.org/wikipedia/commons/thumb/9/91/Lidl-Logo.svg/250px-Lidl-Logo.svg.png" style="width:34px" alt="Lidl"></span><span class="nm">Lidl</span><span class="sw on"></span></div>
       <div class="irow"><span class="c" style="background:#fff"><img src="https://upload.wikimedia.org/wikipedia/commons/thumb/2/2c/Dm-drogerie-Logo.svg/250px-Dm-drogerie-Logo.svg.png" style="width:30px" alt="dm"></span><span class="nm">dm</span><span class="sw on"></span></div>
-      <div class="irow"><span class="c" style="background:#fff"><img src="https://upload.wikimedia.org/wikipedia/commons/thumb/c/cf/Edeka_Logo_Aktuell.svg/250px-Edeka_Logo_Aktuell.svg.png" style="width:34px" alt="Edeka"></span><span class="nm">Edeka</span><span class="small" style="font-size:12px">filialabhängig</span><span class="sw"></span></div>
+      <div class="irow"><span class="c" style="background:#fff"><img src="https://upload.wikimedia.org/wikipedia/commons/thumb/c/cf/Edeka_Logo_Aktuell.svg/250px-Edeka_Logo_Aktuell.svg.png" style="width:34px" alt="Edeka"></span><span class="nm">Edeka<span class="small" style="display:block;font-family:Manrope,sans-serif;font-size:12px">filialabhängig</span></span><span class="sw"></span></div>
       <div class="irow"><span class="c" style="background:#fff"><img src="https://upload.wikimedia.org/wikipedia/commons/thumb/f/f0/AldiNord-WorldwideLogo.svg/250px-AldiNord-WorldwideLogo.svg.png" style="width:28px" alt="Aldi Nord"></span><span class="nm">Aldi Nord</span><span class="sw"></span></div>
     </div>
     <div class="row" style="position:absolute;left:24px;right:24px;bottom:40px;gap:12px"><span class="x" style="width:56px;height:56px"><svg class="i"><use href="#i-back"/></svg></span><span class="btn" style="flex:1">Weiter <svg class="i" style="width:20px"><use href="#i-arrow"/></svg></span></div>
@@ -92,16 +92,16 @@
         <span><span class="lbl">Personen</span><span class="small" style="display:block;font-size:12px">Jona + Mia</span></span>
         <span class="row" style="gap:14px"><span class="x"><svg class="i"><use href="#i-minus"/></svg></span><span class="num" style="font-size:64px">2</span><span class="circle" style="width:40px;height:40px"><svg class="i" style="width:18px"><use href="#i-plus"/></svg></span></span>
       </div>
-      <span class="lbl e-h" style="margin-top:22px">ERNÄHRUNG</span>
-      <div class="chips e-sm" style="flex-wrap:wrap"><span class="chip on">Alles</span><span class="chip">Vegetarisch</span><span class="chip">Vegan</span><span class="chip">Pescetarisch</span><span class="chip">Halal</span></div>
-      <span class="lbl e-h" style="margin-top:22px">ALLERGIEN</span>
-      <div class="chips e-sm" style="flex-wrap:wrap"><span class="chip">Gluten</span><span class="chip on">Laktose</span><span class="chip">Nüsse</span><span class="chip">Erdnüsse</span><span class="chip">Ei</span><span class="chip">Soja</span><span class="chip">Fisch</span><span class="chip">Sellerie</span></div>
-      <span class="lbl e-h" style="margin-top:22px">MAG ICH NICHT</span>
-      <div class="field"><span style="color:var(--ink)">Koriander, Rosenkohl</span></div>
+      <span class="lbl e-h">ERNÄHRUNG</span>
+      <div class="chips e-sm e-bleed"><span class="chip on">Alles</span><span class="chip">Vegetarisch</span><span class="chip">Vegan</span><span class="chip">Pescetarisch</span><span class="chip">Halal</span></div>
+      <div style="margin-top:28px">
+        <div class="e-row"><span class="c" style="background:var(--rose)"><svg class="i"><use href="#e-alert"/></svg></span><span class="t">Allergien</span><span class="v">Laktose</span><svg class="i ch"><use href="#i-chev"/></svg></div>
+        <div class="e-row"><span class="c" style="background:var(--sand)"><svg class="i"><use href="#e-nope"/></svg></span><span class="t">Mag ich nicht</span><span class="v">Koriander, Rosenkohl</span><svg class="i ch"><use href="#i-chev"/></svg></div>
+      </div>
     </div>
     <div class="row" style="position:absolute;left:24px;right:24px;bottom:40px;gap:12px"><span class="x" style="width:56px;height:56px"><svg class="i"><use href="#i-back"/></svg></span><span class="btn" style="flex:1">Weiter <svg class="i" style="width:20px"><use href="#i-arrow"/></svg></span></div>
     <div class="homebar"></div></div>
-    <div class="caption"><b>Haushalt &amp; Ernährung (S6)</b>Personen als große Zahl mit Minus/Plus, Ernährung und Allergien als Chips, Abneigungen als Freitext.</div></div>
+    <div class="caption"><b>Haushalt &amp; Ernährung (S6)</b>Personen als große Zahl mit Minus/Plus, Ernährung als eine Chip-Reihe (wischbar), Allergien und Abneigungen als Zeilen mit Auswahl dahinter.</div></div>
 
   <!-- S6.4 Budget & Ziel -->
   <div class="screen"><div class="phone">
@@ -115,20 +115,20 @@
       <div class="e-range" style="margin-top:14px"><i style="width:22%"></i><b style="left:22%"></b></div>
       <div class="row between small" style="font-size:12px;margin-top:4px"><span>20 €</span><span>200 €</span></div>
       <span class="lbl e-h">ZIEL</span>
-      <div class="e-row"><span class="t nm">Ausgewogen</span><span class="v">von allem etwas</span><span class="ck"></span></div>
-      <div class="e-row"><span class="t nm">Proteinreich</span><span class="v">mehr Eiweiß</span><span class="ck on"><svg class="i" style="width:15px"><use href="#i-check"/></svg></span></div>
-      <div class="e-row"><span class="t nm">Kalorienarm</span><span class="v">leichter essen</span><span class="ck"></span></div>
-      <div class="e-row"><span class="t nm">Eigenes</span><span class="v">selbst einstellen</span><span class="ck"></span></div>
-      <span class="lbl e-h">MAHLZEITEN</span>
-      <div class="chips e-sm" style="flex-wrap:wrap"><span class="chip">Frühstück</span><span class="chip on">Mittag</span><span class="chip on">Abend</span><span class="chip">Dessert</span></div>
+      <div class="e-row"><span class="t nm">Ausgewogen</span><span class="ck"></span></div>
+      <div class="e-row"><span class="t nm">Proteinreich</span><span class="ck on"><svg class="i" style="width:15px"><use href="#i-check"/></svg></span></div>
+      <div class="e-row"><span class="t nm">Kalorienarm</span><span class="ck"></span></div>
+      <div class="e-row"><span class="t nm">Eigenes</span><span class="ck"></span></div>
+      <div class="chips e-sm" style="margin-top:28px"><span class="chip">Frühstück</span><span class="chip on">Mittag</span><span class="chip on">Abend</span><span class="chip">Dessert</span></div>
+      <div class="e-row" style="margin-top:12px"><span class="t">Küchen</span><span class="v">alle</span><svg class="i ch"><use href="#i-chev"/></svg></div>
     </div>
     <div class="row" style="position:absolute;left:24px;right:24px;bottom:40px;gap:12px"><span class="x" style="width:56px;height:56px"><svg class="i"><use href="#i-back"/></svg></span><span class="btn" style="flex:1"><svg class="i" style="width:20px"><use href="#i-sparkle"/></svg> Ersten Plan erstellen</span></div>
     <div class="homebar"></div></div>
-    <div class="caption"><b>Budget &amp; Ziel (S6)</b>Budget riesig mit Regler (20–200 €), Ziel als Zeilen mit Kreis-Auswahl, Mahlzeiten als Chips.</div></div>
+    <div class="caption"><b>Budget &amp; Ziel (S6)</b>Budget riesig mit Regler (20–200 €), Ziel als Zeilen mit Kreis-Auswahl, darunter Mahlzeiten-Chips und Küchen als Zeile.</div></div>
 
 </div>
 
-<section class="sec"><h2>Einstellungen &amp; Profil</h2><p>Einstellungen als lange Liste mit kleinen Pastell-Kreisen; Unterseiten mit großen Zahlen; Erklär-Sheets vor iOS-Abfragen.</p></section>
+<section class="sec"><h2>Einstellungen &amp; Profil</h2><p>Einstellungen als ruhige Liste: höchstens drei Gruppen pro Bildschirm, Seltenes als Zusammenfassungs-Zeile mit Unterseite; Erklär-Sheets vor iOS-Abfragen.</p></section>
 <div class="screens">
 
   <!-- S13 oben -->
@@ -143,74 +143,82 @@
         <div class="small" style="font-size:13px;margin-top:2px">Haushalt Jona<br>mit Mia · 2 Personen</div>
       </div>
       <div style="position:absolute;left:24px;right:24px;top:212px">
-        <span class="lbl e-h" style="margin-top:0">MEIN PROFIL</span>
         <div class="e-row"><span class="c" style="background:var(--rose)">🧑‍🍳</span><span class="t">Mein Profil</span><span class="v">Proteinreich</span><svg class="i ch"><use href="#i-chev"/></svg></div>
         <div class="e-row"><span class="c" style="background:var(--sand)"><svg class="i"><use href="#i-trophy"/></svg></span><span class="t">Erfolge</span><span class="v">Sparen &amp; Gesundheit</span><svg class="i ch"><use href="#i-chev"/></svg></div>
         <span class="lbl e-h">HAUSHALT</span>
         <div class="e-row"><span class="c" style="background:var(--blue1)"><svg class="i"><use href="#i-users"/></svg></span><span class="t">Personen</span><span class="v">2</span><svg class="i ch"><use href="#i-chev"/></svg></div>
         <div class="e-row"><span class="c" style="background:var(--sage)"><svg class="i"><use href="#i-leaf"/></svg></span><span class="t">Ernährung</span><span class="v">Alles</span><svg class="i ch"><use href="#i-chev"/></svg></div>
-        <div class="e-row"><span class="c" style="background:var(--rose)"><svg class="i"><use href="#e-alert"/></svg></span><span class="t">Allergien</span><span class="v">Laktose</span><svg class="i ch"><use href="#i-chev"/></svg></div>
-        <div class="e-row"><span class="c" style="background:var(--sand)"><svg class="i"><use href="#e-nope"/></svg></span><span class="t">Mag ich nicht</span><span class="v">Koriander, Rosenkohl</span><svg class="i ch"><use href="#i-chev"/></svg></div>
+        <div class="e-row"><span class="c" style="background:var(--rose)"><svg class="i"><use href="#e-alert"/></svg></span><span class="t">Allergien &amp; Abneigungen<span class="s">Laktose · Koriander, Rosenkohl</span></span><svg class="i ch"><use href="#i-chev"/></svg></div>
         <span class="lbl e-h">EINKAUFEN</span>
-        <div class="e-row"><span class="c" style="background:var(--blue1)"><svg class="i"><use href="#i-pin"/></svg></span><span class="t">Ort</span><span class="v">10115 Berlin</span><svg class="i ch"><use href="#i-chev"/></svg></div>
-        <div class="e-row"><span class="c" style="background:var(--sage)"><svg class="i"><use href="#i-bag"/></svg></span><span class="t">Läden &amp; Filialen</span><span class="v">3 Läden</span><svg class="i ch"><use href="#i-chev"/></svg></div>
-        <div class="e-row"><span class="c" style="background:var(--rose)"><svg class="i"><use href="#i-tag"/></svg></span><span class="t">Budget Lebensmittel</span><span class="v">60 €</span><svg class="i ch"><use href="#i-chev"/></svg></div>
-        <div class="e-row"><span class="c" style="background:var(--sand)"><svg class="i"><use href="#i-tag"/></svg></span><span class="t">Budget Drogerie</span><span class="v">15 €</span><svg class="i ch"><use href="#i-chev"/></svg></div>
-        <div class="e-row"><span class="c" style="background:var(--blue1)"><svg class="i"><use href="#i-chart"/></svg></span><span class="t">Ausgaben</span><span class="v">Monats-Dashboard</span><svg class="i ch"><use href="#i-chev"/></svg></div>
+        <div class="e-row"><span class="c" style="background:var(--blue1)"><svg class="i"><use href="#i-pin"/></svg></span><span class="t">Ort &amp; Läden<span class="s">10115 Berlin · Rewe, Lidl, dm</span></span><svg class="i ch"><use href="#i-chev"/></svg></div>
+        <div class="e-row"><span class="c" style="background:var(--rose)"><svg class="i"><use href="#i-tag"/></svg></span><span class="t">Budget<span class="s">Lebensmittel 60 € · Drogerie 15 €</span></span><svg class="i ch"><use href="#i-chev"/></svg></div>
+        <div class="e-row"><span class="c" style="background:var(--sand)"><svg class="i"><use href="#i-chart"/></svg></span><span class="t">Ausgaben</span><span class="v">Monats-Dashboard</span><svg class="i ch"><use href="#i-chev"/></svg></div>
       </div>
     </div>
     <div class="homebar"></div></div>
-    <div class="caption"><b>Einstellungen oben (S13)</b>Avatar groß im blauen Kreis, darunter Mein Profil, Haushalt und Einkaufen als Zeilen mit Wert und Chevron.</div></div>
+    <div class="caption"><b>Einstellungen oben (S13)</b>Avatar groß im blauen Kreis; drei Gruppen mit Luft: Profil &amp; Erfolge, Haushalt, Einkaufen. Seltenes (Allergien, Abneigungen, beide Budgets) ist zu je einer Zeile zusammengefasst.</div></div>
 
   <!-- S13 Mitte -->
   <div class="screen"><div class="phone">
     <div class="sb"><b>9:41</b><span class="island"></span><svg><use href="#status"/></svg></div>
     <div class="scr">
       <div class="row"><svg class="i"><use href="#i-back"/></svg><span class="t2">Einstellungen</span></div>
-      <span class="lbl e-h" style="margin-top:20px">PLANUNG</span>
-      <div class="e-row"><span class="c" style="background:var(--blue1)"><svg class="i"><use href="#i-fork"/></svg></span><span class="t">Mahlzeiten</span><span class="v">Mittag, Abend</span><svg class="i ch"><use href="#i-chev"/></svg></div>
-      <div class="e-row"><span class="c" style="background:var(--sage)"><svg class="i"><use href="#i-cal"/></svg></span><span class="t">Tage</span><span class="v">Mo–So</span><svg class="i ch"><use href="#i-chev"/></svg></div>
+      <span class="lbl e-h">PLANUNG</span>
+      <div class="e-row"><span class="c" style="background:var(--blue1)"><svg class="i"><use href="#i-fork"/></svg></span><span class="t">Mahlzeiten &amp; Tage<span class="s">Mittag, Abend · Mo–So</span></span><svg class="i ch"><use href="#i-chev"/></svg></div>
       <div class="e-row"><span class="c" style="background:var(--rose)"><svg class="i"><use href="#i-book"/></svg></span><span class="t">Küchen</span><span class="v">Italienisch +3</span><svg class="i ch"><use href="#i-chev"/></svg></div>
-      <div class="e-row"><span class="c" style="background:var(--sand)"><svg class="i"><use href="#i-chart"/></svg></span><span class="t">Nährwertziel</span><span class="v">Proteinreich</span><svg class="i ch"><use href="#i-chev"/></svg></div>
-      <div class="e-row"><span class="c" style="background:var(--blue1)"><svg class="i"><use href="#i-clock"/></svg></span><span class="t">Max. Kochzeit</span><span class="v">30 min</span><svg class="i ch"><use href="#i-chev"/></svg></div>
+      <div class="e-row"><span class="c" style="background:var(--sand)"><svg class="i"><use href="#i-chart"/></svg></span><span class="t">Ziel &amp; Kochzeit<span class="s">Proteinreich · max. 30 min</span></span><svg class="i ch"><use href="#i-chev"/></svg></div>
       <span class="lbl e-h">PRÄFERENZEN</span>
       <div class="e-row"><span class="c" style="background:var(--sage)"><svg class="i"><use href="#i-refresh"/></svg></span><span class="t">Abwechslung<span class="s">max. 1× Pasta · 2 Veggie-Tage</span></span><svg class="i ch"><use href="#i-chev"/></svg></div>
       <div class="e-row" style="border-top:1.5px solid var(--ink)"><span class="c" style="background:var(--sand)"><svg class="i"><use href="#e-cup"/></svg></span><span class="t">Frühstück &amp; Snacks<span class="s">jede Woche auf die Liste</span></span><svg class="i ch"><use href="#i-chev"/></svg></div>
-      <span class="lbl e-h">BENACHRICHTIGUNGEN</span>
-      <div class="e-row"><span class="c" style="background:var(--blue1)"><svg class="i"><use href="#i-bell"/></svg></span><span class="t">Mitteilungen<span class="s">In iOS erlaubt · <u style="color:var(--ink)">Test-Push senden</u></span></span><span class="sw on"></span></div>
-      <div class="e-row"><span class="c" style="background:var(--sage)"><svg class="i"><use href="#i-cal"/></svg></span><span class="t">Wochenplan-Erinnerung<span class="s">Sonntag · 18:00</span></span><span class="sw on"></span></div>
-      <div class="e-row"><span class="c" style="background:var(--rose)"><svg class="i"><use href="#i-clock"/></svg></span><span class="t">Ruhezeit<span class="s">22:00 – 7:00</span></span><span class="sw on"></span></div>
-      <div class="e-row"><span class="c" style="background:var(--sand)"><svg class="i"><use href="#i-tag"/></svg></span><span class="t">Angebotsalarme</span><span class="sw on"></span></div>
-      <div class="e-row"><span class="c" style="background:var(--blue1)"><svg class="i"><use href="#i-box"/></svg></span><span class="t">Lunchbox-Erinnerung<span class="s">am Vorabend · 20:00</span></span><span class="sw"></span></div>
+      <span class="lbl e-h">MITTEILUNGEN</span>
+      <div class="e-row"><span class="c" style="background:var(--blue1)"><svg class="i"><use href="#i-bell"/></svg></span><span class="t">Mitteilungen<span class="s">an · 3 Arten · Ruhe ab 22:00</span></span><svg class="i ch"><use href="#i-chev"/></svg></div>
+      <div class="e-row"><span class="c" style="background:var(--sage)"><svg class="i"><use href="#i-pin"/></svg></span><span class="t">Erinnerung im Laden<span class="s">an · 3 Läden überwacht</span></span><svg class="i ch"><use href="#i-chev"/></svg></div>
     </div>
     <div class="homebar"></div></div>
-    <div class="caption"><b>Einstellungen Mitte (S13)</b>Planung, Präferenzen mit Abwechslung und Basics (nach einer Linie), Benachrichtigungen mit Schaltern und Test-Push.</div></div>
+    <div class="caption"><b>Einstellungen Mitte (S13)</b>Planung, Präferenzen (Basics nach einer Linie) und Mitteilungen – je eine Zusammenfassungs-Zeile, die Schalter liegen eine Ebene tiefer.</div></div>
 
   <!-- S13 unten -->
   <div class="screen"><div class="phone">
     <div class="sb"><b>9:41</b><span class="island"></span><svg><use href="#status"/></svg></div>
     <div class="scr">
       <div class="row"><svg class="i"><use href="#i-back"/></svg><span class="t2">Einstellungen</span></div>
-      <span class="lbl e-h" style="margin-top:20px">STANDORT-ERINNERUNG</span>
-      <div class="e-row"><span class="c" style="background:var(--sage)"><svg class="i"><use href="#i-pin"/></svg></span><span class="t">Erinnern, wenn ich in einem Laden bin</span><span class="sw on"></span></div>
-      <div class="small" style="font-size:12px;line-height:1.45;margin:2px 0 8px 44px">Bis zu 20 deiner Läden (nächste zuerst), 8–21 Uhr, höchstens einmal pro Laden und Tag – nur wenn dort etwas auf der Liste steht oder ein Coupon gilt.</div>
-      <span class="soft ok" style="margin-left:44px"><svg class="i" style="width:14px;height:14px"><use href="#i-pin"/></svg>3 Läden überwacht</span>
       <span class="lbl e-h">FAMILIE</span>
       <div class="e-row"><span class="row" style="gap:0"><span class="c" style="background:var(--blue)">🧑‍🍳</span><span class="c" style="background:var(--rose);margin-left:-8px;box-shadow:0 0 0 2px var(--bg)">👩</span></span><span class="t">Jona, Mia</span><span class="v">2 Mitglieder</span></div>
       <div class="e-row"><span class="c" style="background:var(--blue1)"><svg class="i"><use href="#i-share"/></svg></span><span class="t">Einladungslink teilen</span><svg class="i ch"><use href="#i-chev"/></svg></div>
-      <span class="lbl e-h">REZEPTE</span>
+      <span class="lbl e-h">REZEPTE &amp; GERÄTE</span>
       <div class="e-row"><span class="c" style="background:var(--rose)"><svg class="i"><use href="#i-link"/></svg></span><span class="t">Teilen aus Instagram</span><svg class="i ch"><use href="#i-chev"/></svg></div>
       <div class="e-row"><span class="c" style="background:var(--sand)"><svg class="i"><use href="#i-photo"/></svg></span><span class="t">Schritt-Bilder erzeugen<span class="s">ca. 2 Cent/Rezept</span></span><span class="sw"></span></div>
-      <span class="lbl e-h">GERÄTE &amp; WIDGET</span>
       <div class="e-row"><span class="c" style="background:var(--blue1)"><svg class="i"><use href="#i-widget"/></svg></span><span class="t">Widget einrichten</span><span class="v">koppeln</span><svg class="i ch"><use href="#i-chev"/></svg></div>
       <span class="lbl e-h">APP</span>
       <div class="e-row"><span class="c" style="background:var(--sage)"><svg class="i"><use href="#i-eye"/></svg></span><span class="t">Erscheinungsbild</span><span class="v">System</span><svg class="i ch"><use href="#i-chev"/></svg></div>
-      <div class="e-row"><span class="c" style="background:var(--rose)"><svg class="i"><use href="#i-link"/></svg></span><span class="t">Server-Adresse</span><span class="v e-mono">essen.jona.home</span></div>
-      <div class="e-row"><span class="c" style="background:var(--sand)"><svg class="i"><use href="#i-gear"/></svg></span><span class="t">Version</span><span class="v">1.8 (45)</span></div>
+      <div class="e-row"><span class="c" style="background:var(--sand)"><svg class="i"><use href="#i-gear"/></svg></span><span class="t">Server &amp; Version<span class="s"><span class="e-mono">essen.jona.home</span> · 1.8 (45)</span></span><svg class="i ch"><use href="#i-chev"/></svg></div>
       <div class="e-row"><span class="c" style="background:#F6E2B8"><svg class="i"><use href="#i-refresh"/></svg></span><span class="t">Neu installieren fällig</span><span class="soft warn">in 5 Tagen</span></div>
     </div>
     <div class="homebar"></div></div>
-    <div class="caption"><b>Einstellungen unten (S13)</b>Standort-Erinnerung mit Erklärtext und Status, Familie, Rezepte, Widget, App mit Signatur-Hinweis.</div></div>
+    <div class="caption"><b>Einstellungen unten (S13)</b>Familie, Rezepte &amp; Geräte, App – Server-Adresse und Version teilen sich eine Zeile.</div></div>
+
+  <!-- S13 › Mitteilungen -->
+  <div class="screen"><div class="phone">
+    <div class="sb"><b>9:41</b><span class="island"></span><svg><use href="#status"/></svg></div>
+    <div class="blob" style="right:-110px;top:-110px;width:290px;height:290px;background:var(--blue1)"></div>
+    <img class="ill" src="ill-v7/binoculars.webp" style="position:absolute;right:6px;top:56px;width:124px" alt="">
+    <div class="scr">
+      <svg class="i"><use href="#i-back"/></svg>
+      <div class="t1" style="margin-top:10px">Mitteilungen</div>
+      <div class="e-row" style="margin-top:28px"><span class="c" style="background:var(--blue1)"><svg class="i"><use href="#i-bell"/></svg></span><span class="t">Mitteilungen<span class="s">In iOS erlaubt</span></span><span class="sw on"></span></div>
+      <div class="btn2" style="height:44px;margin-top:6px">Test-Push senden</div>
+      <span class="lbl e-h">WORÜBER</span>
+      <div class="e-row"><span class="c" style="background:var(--sage)"><svg class="i"><use href="#i-cal"/></svg></span><span class="t">Wochenplan-Erinnerung<span class="s">Sonntag · 18:00</span></span><span class="sw on"></span></div>
+      <div class="e-row"><span class="c" style="background:var(--sand)"><svg class="i"><use href="#i-tag"/></svg></span><span class="t">Angebotsalarme<span class="s">Merkliste im Angebot</span></span><span class="sw on"></span></div>
+      <div class="e-row"><span class="c" style="background:var(--blue1)"><svg class="i"><use href="#i-box"/></svg></span><span class="t">Lunchbox-Erinnerung<span class="s">am Vorabend · 20:00</span></span><span class="sw on"></span></div>
+      <div class="e-row"><span class="c" style="background:var(--rose)"><svg class="i"><use href="#i-clock"/></svg></span><span class="t">Ruhezeit<span class="s">22:00 – 7:00</span></span><span class="sw on"></span></div>
+      <span class="lbl e-h">IM LADEN</span>
+      <div class="e-row"><span class="c" style="background:var(--sage)"><svg class="i"><use href="#i-pin"/></svg></span><span class="t">Erinnern, wenn ich in einem Laden bin</span><span class="sw on"></span></div>
+      <div class="small" style="font-size:12px;line-height:1.45;margin:2px 0 8px 44px">Bis zu 20 deiner Läden (nächste zuerst), 8–21 Uhr, höchstens einmal pro Laden und Tag – nur wenn dort etwas auf der Liste steht oder ein Coupon gilt.</div>
+      <span class="soft ok" style="margin-left:44px"><svg class="i" style="width:14px;height:14px"><use href="#i-pin"/></svg>3 Läden überwacht</span>
+    </div>
+    <div class="homebar"></div></div>
+    <div class="caption"><b>Einstellungen › Mitteilungen (S13)</b>Neu als Unterseite: Hauptschalter mit Test-Push, drei Arten plus Ruhezeit als Schalter-Zeilen, Erinnerung im Laden mit Erklärtext und Status.</div></div>
 
   <!-- S15 Mein Profil -->
   <div class="screen"><div class="phone">
@@ -221,28 +229,22 @@
       <svg class="i"><use href="#i-back"/></svg>
       <div class="t1" style="margin-top:10px">Mein Profil</div>
       <div class="small" style="font-size:14px">Ziele &amp; Essenszeiten</div>
-      <span class="lbl e-h" style="margin-top:24px">ZIEL</span>
-      <div class="seg"><span style="font-size:12px">Ausgewogen</span><span class="on" style="font-size:12px">Proteinreich</span><span style="font-size:12px">Kalorienarm</span><span style="font-size:12px">Eigenes</span></div>
-      <div class="row between" style="margin:20px 0 8px"><span class="lbl">TAGESZIEL</span><span class="soft">Portion ×1,25</span></div>
-      <div class="stat"><span class="lbl">kcal</span><span class="num" style="font-size:44px">2.500</span></div>
-      <div class="e-range" style="margin-top:6px"><i style="width:37.5%"></i><b style="left:37.5%"></b></div>
-      <div class="stat" style="margin-top:12px"><span class="lbl">Protein</span><span class="num" style="font-size:44px">150 g</span></div>
-      <div class="e-range" style="margin-top:6px"><i style="width:37.5%"></i><b style="left:37.5%"></b></div>
-      <span class="lbl e-h" style="margin-top:20px">ISST MIT</span>
+      <div class="seg" style="margin-top:28px"><span style="font-size:12px">Ausgewogen</span><span class="on" style="font-size:12px">Proteinreich</span><span style="font-size:12px">Kalorienarm</span><span style="font-size:12px">Eigenes</span></div>
+      <div class="stat" style="margin-top:28px"><span><span class="lbl">kcal pro Tag</span><span class="small" style="display:block;font-size:12px">Portion ×1,25</span></span><span class="num" style="font-size:52px">2.500</span></div>
+      <div class="e-range" style="margin-top:8px"><i style="width:37.5%"></i><b style="left:37.5%"></b></div>
+      <div class="e-row" style="margin-top:10px"><span class="t">Protein &amp; Allergien<span class="s">150 g pro Tag · Laktose</span></span><svg class="i ch"><use href="#i-chev"/></svg></div>
+      <span class="lbl e-h">ISST MIT</span>
       <div class="e-grid">
         <span></span><span class="d">Mo</span><span class="d">Di</span><span class="d">Mi</span><span class="d">Do</span><span class="d">Fr</span><span class="d">Sa</span><span class="d">So</span>
         <span>Frühstück</span><i class="e-tg"></i><i class="e-tg"></i><i class="e-tg"></i><i class="e-tg"></i><i class="e-tg"></i><i class="e-tg on"></i><i class="e-tg on"></i>
         <span>Mittag</span><i class="e-tg"></i><i class="e-tg"></i><i class="e-tg"></i><i class="e-tg"></i><i class="e-tg"></i><i class="e-tg on"></i><i class="e-tg on"></i>
         <span>Abend</span><i class="e-tg on"></i><i class="e-tg on"></i><i class="e-tg on"></i><i class="e-tg on"></i><i class="e-tg on"></i><i class="e-tg"></i><i class="e-tg on"></i>
       </div>
-      <span class="lbl e-h" style="margin-top:18px">LUNCHBOX-TAGE</span>
-      <div class="e-grid">
-        <span>Mitnehmen</span><i class="e-tg on"></i><i class="e-tg on"></i><i class="e-tg"></i><i class="e-tg on"></i><i class="e-tg"></i><i class="e-tg"></i><i class="e-tg"></i>
-      </div>
+      <div class="e-row" style="margin-top:14px"><span class="t">Lunchbox-Tage</span><span class="v">Mo, Di, Do</span><svg class="i ch"><use href="#i-chev"/></svg></div>
     </div>
     <div class="btn" style="position:absolute;left:24px;right:24px;bottom:40px">Speichern</div>
     <div class="homebar"></div></div>
-    <div class="caption"><b>Mein Profil (S15)</b>Emoji-Avatar im Kreis, Ziel als Umschalter, Tagesziel als große Zahlen mit Regler, „Isst mit“ und Lunchbox-Tage als runde Schalter.</div></div>
+    <div class="caption"><b>Mein Profil (S15)</b>Emoji-Avatar im Kreis, Ziel als Umschalter, kcal als eine große Zahl mit Regler; Protein, Allergien und Lunchbox-Tage als Zeilen, „Isst mit“ bleibt als Matrix aus runden Schaltern.</div></div>
 
   <!-- S29 Frühstück & Snacks -->
   <div class="screen"><div class="phone">
@@ -254,18 +256,18 @@
       <div class="t1" style="margin-top:8px">Frühstück<br>&amp; Snacks</div>
       <div class="small" style="font-size:14px;line-height:1.45;margin-top:8px;width:220px">Deine Basics kommen jeden Montag automatisch auf die Liste – im Angebot, wenn's günstiger ist; Vorrat wird abgezogen.</div>
       <div style="margin-top:18px">
-        <div class="irow"><span class="c" style="background:var(--sand)"><svg class="i"><use href="#e-bowl"/></svg></span><span style="flex:1"><span class="nm" style="display:block">Haferflocken</span><span class="small" style="font-size:12px">1.000 g pro Woche</span></span><span class="deal">Lidl −20 %</span><svg class="i" style="width:18px;color:var(--ink3)"><use href="#i-chev"/></svg></div>
-        <div class="irow"><span class="c" style="background:var(--blue1)"><svg class="i"><use href="#e-bottle"/></svg></span><span style="flex:1"><span class="nm" style="display:block">Milch</span><span class="small" style="font-size:12px">2.000 ml pro Woche</span></span><svg class="i" style="width:18px;color:var(--ink3)"><use href="#i-chev"/></svg></div>
-        <div class="irow"><span class="c" style="background:var(--rose)"><svg class="i"><use href="#e-cup"/></svg></span><span style="flex:1"><span class="nm" style="display:block">Kaffee</span><span class="small" style="font-size:12px">500 g pro Woche</span></span><span class="deal">Rewe −25 %</span><svg class="i" style="width:18px;color:var(--ink3)"><use href="#i-chev"/></svg></div>
-        <div class="irow"><span class="c" style="background:var(--sage)"><svg class="i"><use href="#i-leaf"/></svg></span><span style="flex:1"><span class="nm" style="display:block">Bananen</span><span class="small" style="font-size:12px">6 Stück pro Woche</span></span><svg class="i" style="width:18px;color:var(--ink3)"><use href="#i-chev"/></svg></div>
-        <div class="irow"><span class="c" style="background:var(--blue1)"><svg class="i"><use href="#e-jar"/></svg></span><span style="flex:1"><span class="nm" style="display:block">Naturjoghurt</span><span class="small" style="font-size:12px">1.000 g pro Woche</span></span><svg class="i" style="width:18px;color:var(--ink3)"><use href="#i-chev"/></svg></div>
-        <div class="irow"><span class="c" style="background:var(--sand)"><svg class="i"><use href="#i-box"/></svg></span><span style="flex:1"><span class="nm" style="display:block">Knäckebrot</span><span class="small" style="font-size:12px">ohne Menge · jede Woche</span></span><svg class="i" style="width:18px;color:var(--ink3)"><use href="#i-chev"/></svg></div>
+        <div class="irow"><span class="c" style="background:var(--sand)"><svg class="i"><use href="#e-bowl"/></svg></span><span style="flex:1"><span class="nm" style="display:block">Haferflocken</span><span class="small" style="font-size:12px">1.000 g pro Woche</span></span><span class="deal">Lidl −20 %</span></div>
+        <div class="irow"><span class="c" style="background:var(--blue1)"><svg class="i"><use href="#e-bottle"/></svg></span><span style="flex:1"><span class="nm" style="display:block">Milch</span><span class="small" style="font-size:12px">2.000 ml pro Woche</span></span></div>
+        <div class="irow"><span class="c" style="background:var(--rose)"><svg class="i"><use href="#e-cup"/></svg></span><span style="flex:1"><span class="nm" style="display:block">Kaffee</span><span class="small" style="font-size:12px">500 g pro Woche</span></span><span class="deal">Rewe −25 %</span></div>
+        <div class="irow"><span class="c" style="background:var(--sage)"><svg class="i"><use href="#i-leaf"/></svg></span><span style="flex:1"><span class="nm" style="display:block">Bananen</span><span class="small" style="font-size:12px">6 Stück pro Woche</span></span></div>
+        <div class="irow"><span class="c" style="background:var(--blue1)"><svg class="i"><use href="#e-jar"/></svg></span><span style="flex:1"><span class="nm" style="display:block">Naturjoghurt</span><span class="small" style="font-size:12px">1.000 g pro Woche</span></span></div>
+        <div class="irow"><span class="c" style="background:var(--sand)"><svg class="i"><use href="#i-box"/></svg></span><span style="flex:1"><span class="nm" style="display:block">Knäckebrot</span><span class="small" style="font-size:12px">ohne Menge · jede Woche</span></span></div>
       </div>
     </div>
     <div class="small" style="position:absolute;left:24px;right:24px;bottom:108px;text-align:center;font-size:13px">Nächstes Mal automatisch: Mo, 10. Nov</div>
     <div class="btn" style="position:absolute;left:24px;right:24px;bottom:40px"><svg class="i" style="width:20px"><use href="#i-bag"/></svg> Jetzt auf die Liste</div>
     <div class="homebar"></div></div>
-    <div class="caption"><b>Frühstück &amp; Snacks (S29)</b>Basics als Zeilen mit Menge pro Woche, Angebote rot; Plus oben im Kreis, unten „Jetzt auf die Liste“.</div></div>
+    <div class="caption"><b>Frühstück &amp; Snacks (S29)</b>Basics als Zeilen mit Menge pro Woche, rechts nur die Angebots-Pille; Antippen öffnet das Basic, Plus oben im Kreis, unten „Jetzt auf die Liste“.</div></div>
 
   <!-- Präferenzen › Abwechslung -->
   <div class="screen"><div class="phone">
@@ -276,21 +278,21 @@
       <svg class="i"><use href="#i-back"/></svg>
       <div class="t1" style="margin-top:10px">Abwechslung</div>
       <div class="small" style="font-size:14px;line-height:1.45;margin-top:4px;width:250px">Der Planer hält diese Regeln ein – Verstöße zeigt der Plan-Kopf.</div>
-      <span class="lbl e-h" style="margin-top:14px">BEILAGEN PRO WOCHE</span>
-      <div class="e-row" style="height:52px"><span class="t">Pasta<span class="s">höchstens</span></span><span class="stepper"><i>−</i><i style="background:var(--ink);color:#fff">+</i></span><span class="num e-n">1×</span></div>
-      <div class="e-row" style="height:52px"><span class="t">Reis<span class="s">höchstens</span></span><span class="stepper"><i>−</i><i style="background:var(--ink);color:#fff">+</i></span><span class="num e-n">2×</span></div>
-      <div class="e-row" style="height:52px"><span class="t">Kartoffeln<span class="s">höchstens</span></span><span class="stepper"><i>−</i><i style="background:var(--ink);color:#fff">+</i></span><span class="num e-n">2×</span></div>
-      <span class="lbl e-h">FISCH, FLEISCH, GEMÜSE</span>
-      <div class="e-row" style="height:52px"><span class="t">Fisch<span class="s">mindestens</span></span><span class="stepper"><i>−</i><i style="background:var(--ink);color:#fff">+</i></span><span class="num e-n">1×</span></div>
-      <div class="e-row" style="height:52px"><span class="t">Vegetarische Tage<span class="s">0–7</span></span><span class="stepper"><i>−</i><i style="background:var(--ink);color:#fff">+</i></span><span class="num e-n">2</span></div>
-      <div class="e-row" style="height:52px"><span class="t">Rotes Fleisch<span class="s">höchstens</span></span><span class="stepper"><i>−</i><i style="background:var(--ink);color:#fff">+</i></span><span class="num e-n">2×</span></div>
-      <span class="lbl e-h">WIEDERHOLUNGEN</span>
-      <div class="e-row" style="height:52px"><span class="t">Gleiches Gericht<span class="s">frühestens nach Wochen</span></span><span class="stepper"><i>−</i><i style="background:var(--ink);color:#fff">+</i></span><span class="num e-n">3</span></div>
+      <div style="margin-top:28px"></div>
+      <div class="e-row" style="height:52px"><span class="t">Pasta<span class="s">höchstens pro Woche</span></span><span class="stepper"><i>−</i><span style="min-width:24px;text-align:center;font-size:17px">1×</span><i style="background:var(--ink);color:#fff">+</i></span></div>
+      <div class="e-row" style="height:52px"><span class="t">Reis<span class="s">höchstens pro Woche</span></span><span class="stepper"><i>−</i><span style="min-width:24px;text-align:center;font-size:17px">2×</span><i style="background:var(--ink);color:#fff">+</i></span></div>
+      <div class="e-row" style="height:52px"><span class="t">Kartoffeln<span class="s">höchstens pro Woche</span></span><span class="stepper"><i>−</i><span style="min-width:24px;text-align:center;font-size:17px">2×</span><i style="background:var(--ink);color:#fff">+</i></span></div>
+      <div style="margin-top:28px"></div>
+      <div class="e-row" style="height:52px"><span class="t">Fisch<span class="s">mindestens pro Woche</span></span><span class="stepper"><i>−</i><span style="min-width:24px;text-align:center;font-size:17px">1×</span><i style="background:var(--ink);color:#fff">+</i></span></div>
+      <div class="e-row" style="height:52px"><span class="t">Vegetarische Tage<span class="s">pro Woche</span></span><span class="stepper"><i>−</i><span style="min-width:24px;text-align:center;font-size:17px">2</span><i style="background:var(--ink);color:#fff">+</i></span></div>
+      <div class="e-row" style="height:52px"><span class="t">Rotes Fleisch<span class="s">höchstens pro Woche</span></span><span class="stepper"><i>−</i><span style="min-width:24px;text-align:center;font-size:17px">2×</span><i style="background:var(--ink);color:#fff">+</i></span></div>
+      <div style="margin-top:28px"></div>
+      <div class="e-row" style="height:52px"><span class="t">Gleiches Gericht<span class="s">frühestens nach Wochen</span></span><span class="stepper"><i>−</i><span style="min-width:24px;text-align:center;font-size:17px">3</span><i style="background:var(--ink);color:#fff">+</i></span></div>
       <div class="e-row" style="height:52px"><span class="t">Gleiche Küche nicht zwei Tage hintereinander</span><span class="sw on"></span></div>
     </div>
-    <div class="btn" style="position:absolute;left:24px;right:24px;bottom:28px">Speichern</div>
+    <div class="btn" style="position:absolute;left:24px;right:24px;bottom:40px">Speichern</div>
     <div class="homebar"></div></div>
-    <div class="caption"><b>Präferenzen › Abwechslung</b>Regeln als Zeilen: Minus/Plus und rechts die Zahl groß; unten ein Schalter gegen gleiche Küche zweimal hintereinander.</div></div>
+    <div class="caption"><b>Präferenzen › Abwechslung</b>Drei Gruppen ohne Überschrift, nur durch Luft getrennt (Beilagen, Fisch/Fleisch/Gemüse, Wiederholungen); Wert im Stepper statt vieler großer Zahlen.</div></div>
 
   <!-- Erklär-Sheet Nichts verpassen -->
   <div class="screen"><div class="phone">
@@ -326,11 +328,9 @@
   <div class="screen"><div class="phone">
     <div class="sb"><b>9:41</b><span class="island"></span><svg><use href="#status"/></svg></div>
     <div class="scr">
-      <div class="row"><svg class="i"><use href="#i-back"/></svg><span class="t2">Einstellungen</span></div>
-      <span class="lbl e-h" style="margin-top:20px">STANDORT-ERINNERUNG</span>
+      <div class="row"><svg class="i"><use href="#i-back"/></svg><span class="t2">Mitteilungen</span></div>
+      <span class="lbl e-h">IM LADEN</span>
       <div class="e-row"><span class="c" style="background:var(--sage)"><svg class="i"><use href="#i-pin"/></svg></span><span class="t">Erinnern, wenn ich in einem Laden bin</span><span class="sw on"></span></div>
-      <span class="lbl e-h">FAMILIE</span>
-      <div class="e-row"><span class="c" style="background:var(--blue1)"><svg class="i"><use href="#i-share"/></svg></span><span class="t">Einladungslink teilen</span></div>
     </div>
     <div class="scrim"></div>
     <div class="sheet">
@@ -361,20 +361,18 @@
       <svg class="i"><use href="#i-back"/></svg>
       <div class="t1" style="margin-top:10px">Teilen aus<br>Instagram</div>
       <div class="small" style="font-size:14px;line-height:1.45;margin-top:6px;width:200px">Rezepte aus Reels landen direkt in Meine Rezepte.</div>
-      <span class="lbl e-h" style="margin-top:18px">SO GEHT'S</span>
+      <span class="lbl e-h">SO GEHT'S</span>
       <div class="e-step"><span class="num">1</span><span>Unten „Neuen Code erzeugen“ tippen.</span></div>
       <div class="e-step"><span class="num">2</span><span>In Instagram Teilen › „Teilen über …“ › Essenapp – ggf. unter „Mehr“ einschalten.</span></div>
       <div class="e-step"><span class="num">3</span><span>Beim ersten Mal Server-Adresse und Code eintragen.</span></div>
       <div class="e-step"><span class="num">4</span><span>Das Rezept landet in Meine Rezepte.</span></div>
-      <div class="stat" style="margin-top:16px"><span class="lbl">Kopplungs-<br>code</span><span class="num" style="font-size:60px">482 913</span></div>
+      <div class="stat" style="margin-top:28px"><span class="lbl">Kopplungs-<br>code</span><span class="num" style="font-size:60px">482 913</span></div>
       <div class="row between" style="margin-top:8px"><span class="small" style="font-size:13px">gültig noch 9:12 · nur einmal benutzbar</span><span class="x"><svg class="i"><use href="#i-refresh"/></svg></span></div>
       <div class="e-row" style="margin-top:8px"><span class="t">Server-Adresse<span class="s e-mono">https://essen.jona.home</span></span><span class="pill"><svg class="i" style="width:15px"><use href="#i-copy"/></svg>Kopieren</span></div>
-      <span class="lbl e-h">GEKOPPELTE GERÄTE</span>
-      <div class="e-row"><span class="c" style="background:var(--rose)"><svg class="i"><use href="#i-share"/></svg></span><span class="t">iPhone Jona<span class="s">gekoppelt am 2.11.2026</span></span><span style="color:var(--deal);font-size:14px">Widerrufen</span></div>
-      <div class="e-row"><span class="c" style="background:var(--sand)"><svg class="i"><use href="#i-share"/></svg></span><span class="t">iPhone Mia<span class="s">gekoppelt am 28.10.2026</span></span><span style="color:var(--deal);font-size:14px">Widerrufen</span></div>
+      <div class="e-row" style="margin-top:28px"><span class="c" style="background:var(--rose)"><svg class="i"><use href="#i-share"/></svg></span><span class="t">Gekoppelte Geräte<span class="s">iPhone Jona, iPhone Mia</span></span><span class="v">2</span><svg class="i ch"><use href="#i-chev"/></svg></div>
     </div>
     <div class="homebar"></div></div>
-    <div class="caption"><b>Teilen aus Instagram (S21)</b>Vier Schritte mit großen Ziffern, Kopplungscode riesig mit Restzeit, Server-Adresse zum Kopieren, gekoppelte Geräte.</div></div>
+    <div class="caption"><b>Teilen aus Instagram (S21)</b>Drei Teile: vier Schritte, Kopplungscode riesig mit Restzeit und Server-Adresse, gekoppelte Geräte als eine Zeile (Liste mit Widerrufen dahinter).</div></div>
 
   <!-- S38 Widget einrichten -->
   <div class="screen"><div class="phone">
@@ -384,20 +382,18 @@
     <div class="scr">
       <svg class="i"><use href="#i-back"/></svg>
       <div class="t1" style="margin-top:10px">Widget<br>einrichten</div>
-      <div class="small" style="font-size:14px;line-height:1.45;margin-top:6px;width:190px">Heutiges Gericht und offene Artikel auf Home- und Sperrbildschirm.</div>
-      <span class="lbl e-h" style="margin-top:18px">SO GEHT'S</span>
+      <div class="small" style="font-size:14px;line-height:1.45;margin-top:6px;width:190px">Gericht und offene Artikel – klein, mittel oder auf dem Sperrbildschirm.</div>
+      <span class="lbl e-h">SO GEHT'S</span>
       <div class="e-step"><span class="num">1</span><span>„Code erzeugen“ tippen.</span></div>
-      <div class="e-step"><span class="num">2</span><span>Home-Bildschirm lange drücken › Bearbeiten › Widget hinzufügen › Essenapp (klein, mittel oder Sperrbildschirm).</span></div>
+      <div class="e-step"><span class="num">2</span><span>Home-Bildschirm lange drücken › Bearbeiten › Widget hinzufügen › Essenapp.</span></div>
       <div class="e-step"><span class="num">3</span><span>Widget lange drücken › Widget bearbeiten › Server-Adresse und Code eintragen.</span></div>
-      <div class="e-step"><span class="num">4</span><span>Das Widget lädt selbst, etwa alle 30 Minuten. Weitere Widgets brauchen nur die Adresse.</span></div>
-      <span class="lbl e-h" style="margin-top:18px">KOPPLUNGSCODE</span>
-      <div class="btn"><svg class="i" style="width:20px"><use href="#i-link"/></svg> Code erzeugen</div>
+      <div class="e-step"><span class="num">4</span><span>Lädt selbst etwa alle 30 Minuten; weitere Widgets brauchen nur die Adresse.</span></div>
+      <div class="btn" style="margin-top:28px"><svg class="i" style="width:20px"><use href="#i-link"/></svg> Code erzeugen</div>
       <div class="e-row" style="margin-top:10px"><span class="t">Server-Adresse<span class="s e-mono">https://essen.jona.home</span></span><span class="pill"><svg class="i" style="width:15px"><use href="#i-copy"/></svg>Kopieren</span></div>
-      <span class="lbl e-h">GEKOPPELTE GERÄTE</span>
-      <div class="e-row"><span class="c" style="background:var(--blue1)"><svg class="i"><use href="#i-widget"/></svg></span><span class="t">Widget · Home<span class="s">gekoppelt am 2.11.2026</span></span><span style="color:var(--deal);font-size:14px">Widerrufen</span></div>
+      <div class="e-row" style="margin-top:28px"><span class="c" style="background:var(--blue1)"><svg class="i"><use href="#i-widget"/></svg></span><span class="t">Gekoppelte Geräte<span class="s">Widget · Home, seit 2.11.2026</span></span><span class="v">1</span><svg class="i ch"><use href="#i-chev"/></svg></div>
     </div>
     <div class="homebar"></div></div>
-    <div class="caption"><b>Widget einrichten (S38)</b>Gleicher Aufbau wie S21, hier noch ohne Code: „Code erzeugen“ als Knopf, ein Widget schon gekoppelt.</div></div>
+    <div class="caption"><b>Widget einrichten (S38)</b>Gleicher Aufbau wie S21, hier noch ohne Code: „Code erzeugen“ als Knopf, gekoppelte Geräte als eine Zeile.</div></div>
 
   <!-- S39 Home-Bildschirm -->
   <div class="screen"><div class="phone" style="background:var(--blue)">

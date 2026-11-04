@@ -1,0 +1,1118 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Essenapp v8 Animationen</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Inter+Tight:wght@500;600&family=Manrope:wght@500;600;700;800&display=swap" rel="stylesheet">
+<style>
+/* v8 „Tinte & Bogen“: keine Rechteck-Kacheln mehr – Pastell-Kreise laufen aus dem Bildschirmrand, große Zahlen mit Haarlinien, Nav mit Mulde. Illustrationen aus ill-v7/. Entwurf. */
+:root{--bg:#F3EEE4;--card:#FBF8F2;--ink:#151515;--ink2:#7C776D;--ink3:#B9B3A7;--line:#DCD5C7;--blue:#AFC4F2;--blue1:#DCE5F8;--blue3:#7C9BE6;--sage:#CFE3D2;--rose:#F2CFC8;--sand:#E7DCC5;--deal:#E0603F;--page:#E2DCD0}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:"Manrope",-apple-system,system-ui,sans-serif;font-weight:600;background:var(--page);color:var(--ink);-webkit-font-smoothing:antialiased}
+svg.i{width:24px;height:24px;flex:none;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.row{display:flex;align-items:center;gap:8px}.between{justify-content:space-between}
+img.ill{display:block}
+.head{max-width:1360px;margin:0 auto;padding:48px 24px 8px}
+.head h1{font-family:"DM Serif Display",serif;font-weight:400;font-size:46px;line-height:1.05}
+.head p{color:#5b574f;margin-top:12px;max-width:880px;line-height:1.6;font-size:15px}
+.open{margin-top:16px;background:#fff;border-radius:20px;padding:16px 20px;max-width:880px;font-size:14px;line-height:1.65}
+.open b{display:block;margin-bottom:4px}
+.screens{display:flex;flex-wrap:wrap;gap:48px 36px;justify-content:center;padding:28px 16px 80px;max-width:1500px;margin:0 auto}
+.screen{width:390px;max-width:100%}
+.caption{margin-top:18px;font-size:13px;color:#55524b;line-height:1.55}
+.caption b{display:block;color:var(--ink);font-family:"DM Serif Display",serif;font-weight:400;font-size:19px;margin-bottom:2px}
+.phone{position:relative;width:390px;max-width:100%;height:844px;background:var(--bg);border-radius:54px;overflow:hidden;box-shadow:0 30px 60px rgba(40,30,20,.14)}
+.sb{position:absolute;top:0;left:0;right:0;height:52px;display:flex;align-items:center;justify-content:space-between;padding:8px 34px 0;font-weight:800;font-size:16px;z-index:20}
+.sb .island{position:absolute;left:50%;top:11px;transform:translateX(-50%);width:122px;height:35px;background:#000;border-radius:20px}
+.sb svg{width:68px;height:14px}
+.scr{position:absolute;inset:0;padding:66px 24px 120px}
+.homebar{position:absolute;bottom:8px;left:50%;transform:translateX(-50%);width:134px;height:5px;border-radius:3px;background:var(--ink);z-index:16}
+.small{font-size:15px;color:var(--ink2);font-weight:600}
+.lbl{font-size:11px;font-weight:800;letter-spacing:.08em;color:var(--ink2)}
+.t1{font-family:"DM Serif Display",serif;font-size:34px;line-height:1.1}
+.t2{font-family:"DM Serif Display",serif;font-size:24px;line-height:1.12}
+.circle{border-radius:50%;background:var(--ink);color:#fff;display:grid;place-items:center;flex:none;font-weight:700}
+.pill{display:inline-flex;align-items:center;gap:6px;height:30px;padding:0 12px;border-radius:999px;background:var(--ink);color:#fff;font-size:13px;font-weight:700}
+.chip{display:inline-flex;align-items:center;gap:6px;height:36px;padding:0 15px;border-radius:999px;font-weight:700;font-size:14px;color:var(--ink2);flex:none;box-shadow:inset 0 0 0 1.5px var(--line)}
+.chip.on{background:var(--ink);color:#fff;box-shadow:none}
+.chips{display:flex;gap:8px;overflow:hidden;white-space:nowrap}
+.deal{display:inline-flex;align-items:center;height:22px;padding:0 8px;border-radius:999px;background:var(--deal);color:#fff;font-weight:800;font-size:11px}
+.plate{border-radius:50%;background-size:cover;background-position:center;flex:none;box-shadow:0 0 0 6px var(--card),0 14px 30px rgba(40,30,20,.16)}
+.ph-pasta{background-image:url(../../../ios/Sources/Essenapp/Resources/hero/pasta.jpg)}
+.dots{display:flex;gap:7px}.dots i{width:7px;height:7px;border-radius:50%;background:var(--ink3);display:block}.dots i.on{background:var(--ink)}
+/* Pastell-Kreis, der aus dem Rand läuft */
+.blob{position:absolute;border-radius:50%}
+/* weitere Rand-Formen: Bogen (Tor), Blatt (eine große Rundung), Lasche (seitlich), L per SVG */
+.arch{position:absolute;border-radius:999px 999px 0 0}
+.leaf{position:absolute;border-radius:0 0 0 150px}
+/* Große Zahlen wie die Sport-Vorlage: Haarlinie, kleines Label links oben, Zahl rechts */
+.num{font-family:"Inter Tight",sans-serif;font-weight:600;letter-spacing:-.05em;line-height:.92}
+.stat{display:flex;justify-content:space-between;align-items:flex-start;border-top:1.5px solid var(--ink);padding-top:6px}
+.stat .lbl{color:var(--ink);letter-spacing:0;font-size:12px;font-weight:700}
+.stat.mute{border-color:var(--ink3)}.stat.mute .lbl,.stat.mute .num{color:var(--ink3)}
+/* Zeilen statt Kacheln */
+.irow{display:flex;align-items:center;gap:14px;height:60px;border-top:1.5px solid var(--line)}
+.irow .c{width:48px;height:48px;border-radius:50%;display:grid;place-items:center;flex:none}
+.irow .c img{width:40px}
+.irow .nm{font-family:"DM Serif Display",serif;font-size:19px;flex:1}
+.ck{width:26px;height:26px;border-radius:50%;border:2px solid var(--ink3);flex:none;display:grid;place-items:center}
+.ck.on{background:var(--ink);border-color:var(--ink);color:#fff}
+.offer{position:relative;height:138px;border-top:1.5px solid var(--line);padding-top:12px}
+.offer .tab{position:absolute;width:150px;height:112px;right:-24px;top:12px;border-radius:56px 0 0 56px}
+.offer .tab img{position:absolute;left:12px;top:-4px;width:118px}
+/* Nav mit Mulde: Leiste unten, aktives Symbol schwebt im Ausschnitt */
+.nav{position:absolute;left:0;bottom:0;width:390px;height:120px;z-index:15;filter:drop-shadow(0 -6px 14px rgba(40,30,20,.07))}
+.nav svg.bar{position:absolute;inset:0;width:390px;height:120px}
+.nav .t{position:absolute;width:44px;height:44px;margin:-22px 0 0 -22px;display:grid;place-items:center;color:var(--ink3)}
+.nav .t.on{width:58px;height:58px;margin:-29px 0 0 -29px;border-radius:50%;background:var(--blue);color:var(--ink)}
+/* Woche: Zeitstrahl links */
+.tl{position:absolute;left:34px;top:205px;width:1.5px;height:470px;background:var(--line)}
+.day{position:absolute;left:28px;display:flex;gap:14px;align-items:flex-start;margin-top:-7px}
+.day .d{width:13px;height:13px;border-radius:50%;background:var(--bg);border:2px solid var(--ink3);flex:none;margin-top:3px}
+.day.has .d{background:var(--ink3);border-color:var(--ink3)}
+.day b{display:block;font-size:15px;color:var(--ink2)}
+.day span{display:block;font-size:12px;color:var(--ink3);font-weight:700;margin-top:1px}
+.day.on .d{width:19px;height:19px;margin:0 -3px 0 -3px;background:var(--ink);border-color:var(--ink);box-shadow:0 0 0 5px var(--bg)}
+.day.on b{color:var(--ink);font-size:19px;font-family:"DM Serif Display",serif;font-weight:400}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute">
+  <symbol id="i-home" viewBox="0 0 24 24"><path d="M3.5 11.5 12 4.5l8.5 7M6 10v10h12V10"/><path d="M10.2 20v-3.2c0-2.3 3.6-2.3 3.6 0V20"/></symbol>
+  <symbol id="i-cal" viewBox="0 0 24 24"><rect x="4" y="5.5" width="16" height="14.5" rx="3"/><path d="M8.5 3.5v4M15.5 3.5v4M4 10.5h16"/><path d="M8.6 15c.8-1.2 1.6 1.2 2.4 0s1.6 1.2 2.4 0"/></symbol>
+  <symbol id="i-tag" viewBox="0 0 24 24"><path d="M20.5 12.6 12.8 20.3a1.7 1.7 0 0 1-2.4 0L3.7 13.6V3.7h9.9l6.9 6.5a1.7 1.7 0 0 1 0 2.4z"/><path d="M8.4 8.2c-2.6-2.4-5.8.4-3.6 2.2"/></symbol>
+  <symbol id="i-bag" viewBox="0 0 24 24"><path d="M5 8.5h14L17.6 20H6.4z"/><path d="M9 8.5C9 3.6 15 3.6 15 8.5"/><path d="M8.8 14c.8-1.2 1.6 1.2 2.4 0s1.6 1.2 2.4 0 1.6 1.2 2.2 0"/></symbol>
+  <symbol id="i-book" viewBox="0 0 24 24"><path d="M3.8 5.6C6.8 4.3 9.8 4.4 12 6.4c2.2-2 5.2-2.1 8.2-.8v13.2c-3-1.3-6-1.2-8.2.8-2.2-2-5.2-2.1-8.2-.8z"/><path d="M6.3 9.4c.8-.6 1.6.6 2.4 0M15.2 9.4c.8-.6 1.6.6 2.4 0"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="i-mic" viewBox="0 0 24 24"><rect x="9" y="3.5" width="6" height="10.5" rx="3"/><path d="M5.6 11a6.4 6.4 0 0 0 12.8 0M12 17.4v3"/></symbol>
+  <symbol id="i-back" viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.5 9.5 17 19 7" stroke-width="2.6"/></symbol>
+  <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M4 12h15M13 6l6 6-6 6"/></symbol>
+  <symbol id="i-play" viewBox="0 0 24 24"><path d="M8 5v14l11-7z" fill="currentColor" stroke="none"/></symbol>
+  <symbol id="i-fork" viewBox="0 0 24 24"><path d="M7 3v7a2 2 0 0 0 4 0V3M9 10v11M16 3c-2 0-3 3-3 6s1 4 3 4v8"/></symbol>
+  <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M12 7v5l3 2"/></symbol>
+  <symbol id="i-cam" viewBox="0 0 24 24"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></symbol>
+  <symbol id="status" viewBox="0 0 68 14"><g fill="currentColor" stroke="none"><rect x="0" y="9" width="3" height="5" rx="1"/><rect x="5" y="6" width="3" height="8" rx="1"/><rect x="10" y="3" width="3" height="11" rx="1"/><rect x="15" y="0" width="3" height="14" rx="1"/><path d="M30 4.5a10 10 0 0 1 12 0l-1.6 1.8a7.5 7.5 0 0 0-8.8 0zM32.6 7.6a6 6 0 0 1 6.8 0L36 12z"/><rect x="45" y="1" width="20" height="12" rx="3.5" fill="none" stroke="currentColor" stroke-width="1.4"/><rect x="47" y="3" width="16" height="8" rx="2"/><rect x="66" y="5" width="2" height="4" rx="1"/></g></symbol>
+</svg>
+
+<style>
+/* Bausteine für alle Screens (v8) */
+.sec{max-width:1360px;margin:0 auto;padding:40px 24px 0}.sec h2{font-family:"DM Serif Display",serif;font-weight:400;font-size:32px}.sec p{color:#5b574f;font-size:14px;margin-top:4px}
+.btn{display:flex;align-items:center;justify-content:center;gap:8px;height:56px;padding:0 22px;border-radius:999px;background:var(--ink);color:#fff;font-weight:800;font-size:16px}
+.btn.blue{background:var(--blue);color:var(--ink)}
+.btn2{display:flex;align-items:center;justify-content:center;gap:8px;height:52px;padding:0 20px;border-radius:999px;color:var(--ink);font-weight:800;font-size:15px;box-shadow:inset 0 0 0 1.5px var(--ink)}
+.btn.off{opacity:.35}
+.field{height:52px;border-radius:999px;background:var(--card);box-shadow:inset 0 0 0 1.5px var(--line);display:flex;align-items:center;gap:10px;padding:0 18px;color:var(--ink2);font-weight:600;font-size:15px}
+.seg{display:flex;padding:4px;border-radius:999px;box-shadow:inset 0 0 0 1.5px var(--line)}
+.seg span{flex:1;height:34px;display:grid;place-items:center;border-radius:999px;font-size:13px;font-weight:700;color:var(--ink2);white-space:nowrap}
+.seg span.on{background:var(--ink);color:#fff}
+.sw{width:50px;height:30px;border-radius:999px;background:var(--ink3);position:relative;flex:none}
+.sw::after{content:"";position:absolute;left:3px;top:3px;width:24px;height:24px;border-radius:50%;background:#fff}
+.sw.on{background:var(--ink)}.sw.on::after{left:23px}
+.stepper{display:inline-flex;align-items:center;gap:12px;height:40px;padding:0 5px;border-radius:999px;box-shadow:inset 0 0 0 1.5px var(--line);font-weight:800;flex:none}
+.stepper i{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;font-style:normal;font-weight:800;background:var(--card)}
+.scrim{position:absolute;inset:0;background:rgba(21,21,21,.32);z-index:17}
+.sheet{position:absolute;left:0;right:0;bottom:0;background:var(--bg);border-radius:36px 36px 0 0;padding:12px 24px 40px;z-index:18;overflow:hidden}
+.sheet::before{content:"";display:block;width:40px;height:5px;border-radius:3px;background:var(--ink3);margin:0 auto 16px}
+.x{width:40px;height:40px;border-radius:50%;box-shadow:inset 0 0 0 1.5px var(--line);display:grid;place-items:center;flex:none}
+.x svg{width:18px;height:18px}
+.bar:not(svg){height:8px;border-radius:999px;background:var(--line);overflow:hidden}.bar:not(svg) i{display:block;height:100%;background:var(--ink);border-radius:999px}
+.toast{position:absolute;left:50%;transform:translateX(-50%);bottom:130px;background:var(--ink);color:#fff;border-radius:999px;padding:12px 18px;font-size:14px;font-weight:700;z-index:19;white-space:nowrap}
+.sk{background:linear-gradient(90deg,var(--line),var(--card),var(--line));border-radius:12px}
+.prog{display:flex;gap:6px}.prog i{flex:1;height:4px;border-radius:2px;background:var(--line)}.prog i.on{background:var(--ink)}
+.quarter{position:absolute;border-radius:0 0 0 100%}
+.soft{display:inline-flex;align-items:center;gap:5px;height:24px;padding:0 10px;border-radius:999px;background:var(--blue1);font-size:12px;font-weight:800}
+.ok{background:var(--sage)}.warn{background:#F6E2B8}
+.hr{border-top:1.5px solid var(--line)}
+.sec2{font-weight:800;font-size:13px;letter-spacing:.06em;color:var(--ink2);margin:22px 0 4px}
+/* Lade-Animation „Topf“: Zutaten hüpfen nacheinander in den Topf, Deckel klappert, Dampf steigt.
+   Markup: <div class="potld"><svg class="steam">…</svg><img class="in" src="ill-v7/tomato.webp" style="--n:0">…(--n 0–3)<img class="body" src="ill-v7/pot-body.webp"><img class="lid" src="ill-v7/pot-lid.webp"></div> */
+.potld{position:relative;width:240px;height:240px;margin:0 auto}
+.potld::before{content:"";position:absolute;inset:0;border-radius:50%;background:var(--blue1);animation:potld-breathe 3s ease-in-out infinite}
+.potld img{position:absolute;display:block}
+.potld .body,.potld .lid{left:0;top:16px;width:240px}
+.potld .body{z-index:2;animation:potld-squash 1.25s infinite}
+.potld .lid{z-index:3;transform-origin:30% 50%;animation:potld-lid 1.25s infinite}
+.potld .in{left:50px;top:6px;width:140px;z-index:1;opacity:0;animation:potld-hop 5s linear infinite;animation-delay:calc(var(--n) * 1.25s)}
+.potld .in:nth-of-type(even){--s:-1}.potld .in:nth-of-type(odd){--s:1}
+.potld .steam{position:absolute;left:150px;top:20px;width:60px;height:70px;z-index:4;fill:none;stroke:var(--ink);stroke-width:2.4;stroke-linecap:round}
+.potld .steam path{stroke-dasharray:60;stroke-dashoffset:60;animation:potld-steam 2.4s ease-in-out infinite}
+.potld .steam path:nth-child(2){animation-delay:.8s}.potld .steam path:nth-child(3){animation-delay:1.6s}
+@keyframes potld-breathe{50%{transform:scale(1.04)}}
+@keyframes potld-hop{
+  0%{transform:translate(calc(var(--s) * -150px),60px) rotate(0) scale(.9);opacity:0;animation-timing-function:cubic-bezier(.2,.7,.4,1)}
+  4%{opacity:1}
+  20%{transform:translate(calc(var(--s) * -55px),-95px) rotate(calc(var(--s) * 140deg)) scale(1);opacity:1;animation-timing-function:cubic-bezier(.6,0,.9,.6)}
+  34%{transform:translate(0,10px) rotate(calc(var(--s) * 260deg)) scale(.85);opacity:1}
+  40%{transform:translate(0,60px) rotate(calc(var(--s) * 280deg)) scale(.6);opacity:1}
+  41%,100%{transform:translate(0,60px) scale(.6);opacity:0}}
+@keyframes potld-lid{0%,26%,52%,100%{transform:none}34%{transform:translateY(-26px) rotate(-12deg)}44%{transform:translateY(0)}48%{transform:translateY(-7px) rotate(-3deg)}}
+@keyframes potld-squash{0%,38%,62%,100%{transform:none}46%{transform:scale(1.05,.95) translateY(5px)}54%{transform:scale(.98,1.03)}}
+@keyframes potld-steam{0%{stroke-dashoffset:60;opacity:0}30%{opacity:1}100%{stroke-dashoffset:-60;opacity:0}}
+/* Tage füllen sich beim Plan-Erstellen: <div class="potdays"><i class="on">Mo</i>…<i class="now">Do</i><i>Fr</i>…</div> */
+.potdays{display:flex;justify-content:center;gap:8px}
+.potdays i{width:38px;height:38px;border-radius:50%;display:grid;place-items:center;font-style:normal;font-size:13px;font-weight:800;color:var(--ink3);box-shadow:inset 0 0 0 1.5px var(--line)}
+.potdays i.on{background:var(--ink);color:#fff;box-shadow:none;animation:potdays-pop .5s cubic-bezier(.3,1.6,.5,1) backwards}
+.potdays i.now{color:var(--ink);box-shadow:inset 0 0 0 2px var(--ink);animation:potdays-wait 1.25s ease-in-out infinite}
+@keyframes potdays-pop{from{transform:scale(.4)}}
+@keyframes potdays-wait{50%{transform:scale(1.12)}}
+/* Kleiner Lader für Knöpfe und Zeilen: drei Zutaten hüpfen nacheinander. <span class="hop3"><img src="ill-v7/tomato.webp"><img src="ill-v7/garlic.webp"><img src="ill-v7/basil.webp"></span> */
+.hop3{display:inline-flex;align-items:flex-end;height:30px}
+.hop3 img{width:62px;margin:-19px -16px -12px;animation:hop3 1.1s ease-in-out infinite}
+.hop3 img:nth-child(2){animation-delay:.15s}.hop3 img:nth-child(3){animation-delay:.3s}
+@keyframes hop3{0%,60%,100%{transform:none}25%{transform:translateY(-12px) rotate(-14deg)}}
+@media (prefers-reduced-motion:reduce){.potld *,.potld::before,.potdays i,.hop3 img{animation:none!important}.potld .in{opacity:0}}
+</style>
+<svg width="0" height="0" style="position:absolute">
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></symbol>
+  <symbol id="i-heart" viewBox="0 0 24 24"><path d="M12 19.6S4.6 15 4.6 9.6A3.9 3.9 0 0 1 12 7.6a3.9 3.9 0 0 1 7.4 2C19.4 15 12 19.6 12 19.6z"/></symbol>
+  <symbol id="i-share" viewBox="0 0 24 24"><path d="M12 15V4M7.5 8.5 12 4l4.5 4.5M5 13v6h14v-6"/></symbol>
+  <symbol id="i-star" viewBox="0 0 24 24"><path d="m12 4 2.4 5 5.4.6-4 3.7 1.1 5.3L12 16l-4.9 2.6 1.1-5.3-4-3.7 5.4-.6z"/></symbol>
+  <symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="10.5" width="14" height="9.5" rx="2.5"/><path d="M8.5 10.5V8a3.5 3.5 0 0 1 7 0v2.5"/></symbol>
+  <symbol id="i-dice" viewBox="0 0 24 24"><rect x="4.5" y="4.5" width="15" height="15" rx="4"/><circle cx="9" cy="9" r=".6" fill="currentColor"/><circle cx="15" cy="15" r=".6" fill="currentColor"/><circle cx="12" cy="12" r=".6" fill="currentColor"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="10.6" cy="10.6" r="6.2"/><path d="m15.3 15.3 4.4 4.4"/></symbol>
+  <symbol id="i-chev" viewBox="0 0 24 24"><path d="m9 5 7 7-7 7"/></symbol>
+  <symbol id="i-bell" viewBox="0 0 24 24"><path d="M6 16.5V11a6 6 0 0 1 12 0v5.5l1.5 1.5h-15zM10 20.5h4"/></symbol>
+  <symbol id="i-gear" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 3.5v2.2M12 18.3v2.2M3.5 12h2.2M18.3 12h2.2M6 6l1.6 1.6M16.4 16.4 18 18M6 18l1.6-1.6M16.4 7.6 18 6"/></symbol>
+  <symbol id="i-minus" viewBox="0 0 24 24"><path d="M5 12h14"/></symbol>
+  <symbol id="i-barcode" viewBox="0 0 24 24"><path d="M4 6v12M7 6v12M10.5 6v12M13 6v12M17 6v12M20 6v12"/></symbol>
+  <symbol id="i-pin" viewBox="0 0 24 24"><path d="M12 20.5s-6.5-5.6-6.5-10.5a6.5 6.5 0 0 1 13 0c0 4.9-6.5 10.5-6.5 10.5z"/><circle cx="12" cy="10" r="2.4"/></symbol>
+  <symbol id="i-link" viewBox="0 0 24 24"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/></symbol>
+  <symbol id="i-sparkle" viewBox="0 0 24 24"><path d="M12 3.5c.7 4.4 2.1 5.8 6.5 6.5-4.4.7-5.8 2.1-6.5 6.5-.7-4.4-2.1-5.8-6.5-6.5 4.4-.7 5.8-2.1 6.5-6.5zM18.5 15.5c.3 1.8.9 2.4 2.5 2.7-1.6.3-2.2.9-2.5 2.7-.3-1.8-.9-2.4-2.5-2.7 1.6-.3 2.2-.9 2.5-2.7z"/></symbol>
+  <symbol id="i-swap" viewBox="0 0 24 24"><path d="M5 8.5h13M14.5 5l3.5 3.5-3.5 3.5M19 15.5H6M9.5 12 6 15.5 9.5 19"/></symbol>
+  <symbol id="i-users" viewBox="0 0 24 24"><circle cx="9" cy="8.5" r="3.2"/><path d="M3.5 19.5c.6-3.4 2.8-5 5.5-5s4.9 1.6 5.5 5"/><circle cx="16.5" cy="9" r="2.6"/><path d="M16 14.6c2.4.1 4 1.5 4.5 4.4"/></symbol>
+  <symbol id="i-trophy" viewBox="0 0 24 24"><path d="M8 4.5h8v5a4 4 0 0 1-8 0zM8 6.5H5c0 3 1.3 4.5 3.2 4.7M16 6.5h3c0 3-1.3 4.5-3.2 4.7M12 13.5v3.5M8.5 20h7M10 17h4v3h-4z"/></symbol>
+  <symbol id="i-chart" viewBox="0 0 24 24"><path d="M4 20h16M7 20v-6M12 20V8M17 20v-9"/></symbol>
+  <symbol id="i-gift" viewBox="0 0 24 24"><rect x="4" y="9" width="16" height="11" rx="2"/><path d="M4 13h16M12 9v11M12 9c-1.5-4-6-4-5-1.5.6 1.4 5 1.5 5 1.5zM12 9c1.5-4 6-4 5-1.5-.6 1.4-5 1.5-5 1.5z"/></symbol>
+  <symbol id="i-box" viewBox="0 0 24 24"><path d="M4 8.5 12 4.5l8 4v8.5l-8 4-8-4zM4 8.5l8 4 8-4M12 12.5v8.5"/></symbol>
+  <symbol id="i-photo" viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="14" rx="3"/><circle cx="9" cy="10" r="1.6"/><path d="m4.5 17 5-4.5 3.5 3 2.5-2 4 3.5"/></symbol>
+  <symbol id="i-edit" viewBox="0 0 24 24"><path d="M5 19l1-4 9.5-9.5a2.1 2.1 0 0 1 3 3L9 18z"/></symbol>
+  <symbol id="i-trash" viewBox="0 0 24 24"><path d="M5 7h14M9.5 7V4.5h5V7M7 7l1 13h8l1-13"/></symbol>
+  <symbol id="i-wifioff" viewBox="0 0 24 24"><path d="M4 4l16 16M8.5 13a5 5 0 0 1 4-1.4M5 9.5A10 10 0 0 1 9 7.3M19 9.5a10 10 0 0 0-5.6-2.5M15.8 13.3l.6.5"/><circle cx="12" cy="17.5" r=".8" fill="currentColor"/></symbol>
+  <symbol id="i-copy" viewBox="0 0 24 24"><rect x="8.5" y="8.5" width="11" height="11" rx="2.5"/><path d="M15.5 8.5V6a1.5 1.5 0 0 0-1.5-1.5H6A1.5 1.5 0 0 0 4.5 6v8A1.5 1.5 0 0 0 6 15.5h2.5"/></symbol>
+  <symbol id="i-eye" viewBox="0 0 24 24"><path d="M3 12s3.3-6 9-6 9 6 9 6-3.3 6-9 6-9-6-9-6z"/><circle cx="12" cy="12" r="2.6"/></symbol>
+  <symbol id="i-dots" viewBox="0 0 24 24"><circle cx="6" cy="12" r=".9" fill="currentColor"/><circle cx="12" cy="12" r=".9" fill="currentColor"/><circle cx="18" cy="12" r=".9" fill="currentColor"/></symbol>
+  <symbol id="i-pause" viewBox="0 0 24 24"><path d="M9 6v12M15 6v12"/></symbol>
+  <symbol id="i-qr" viewBox="0 0 24 24"><rect x="4" y="4" width="6" height="6" rx="1"/><rect x="14" y="4" width="6" height="6" rx="1"/><rect x="4" y="14" width="6" height="6" rx="1"/><path d="M14 14h2v2h-2zM18 18h2v2h-2zM14 18h2M18 14h2"/></symbol>
+  <symbol id="i-widget" viewBox="0 0 24 24"><rect x="4" y="4" width="7" height="7" rx="2"/><rect x="13" y="4" width="7" height="7" rx="2"/><rect x="4" y="13" width="7" height="7" rx="2"/><rect x="13" y="13" width="7" height="7" rx="2"/></symbol>
+  <symbol id="i-leaf" viewBox="0 0 24 24"><path d="M5 19c0-8 5-13 14-14 0 9-5 14-13 14zM5 19c3-4 6-6 9-7.5"/></symbol>
+  <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M19 12a7 7 0 1 1-2-4.9M19 4.5v3.6h-3.6"/></symbol>
+</svg>
+<header class="head">
+  <h1>Essenapp v8 – Animationen</h1>
+  <p>Wie sich die App bewegt. Jede Animation läuft in Schleife; „Nochmal“ startet sie neu. Grundsatz: Bewegung erzählt mit den Zeichnungen, ist kurz (0,2–0,6 s, Warten ausgenommen), federt leicht und entfällt bei „Bewegung reduzieren“.</p>
+</header>
+<style>
+/* Animations-Seite: Abspieler + Nav-Mulde, die wandert */
+.screen .replay{margin-top:10px;display:inline-flex;align-items:center;gap:6px;height:32px;padding:0 14px;border-radius:999px;border:0;background:var(--ink);color:#fff;font:700 13px Manrope,sans-serif;cursor:pointer}
+.tap{position:absolute;width:44px;height:44px;margin:-22px 0 0 -22px;border-radius:50%;background:rgba(21,21,21,.18);z-index:30;pointer-events:none;opacity:0}
+.tap.go{animation:tap .5s ease-out}
+@keyframes tap{0%{transform:scale(.4);opacity:1}100%{transform:scale(1.4);opacity:0}}
+@property --x{syntax:'<length>';inherits:true;initial-value:39px}
+.mnav{position:absolute;left:0;bottom:0;width:390px;height:120px;z-index:15;filter:drop-shadow(0 -6px 14px rgba(40,30,20,.07));transition:--x .55s cubic-bezier(.3,1.25,.5,1)}
+.mnav .mbar{position:absolute;left:0;right:0;top:34px;bottom:0;background:#fff;-webkit-mask:radial-gradient(circle 39px at var(--x) 12px,transparent 38px,#000 39.5px);mask:radial-gradient(circle 39px at var(--x) 12px,transparent 38px,#000 39.5px)}
+.mnav .t{position:absolute;top:68px;width:44px;height:44px;margin:-22px 0 0 -22px;display:grid;place-items:center;color:var(--ink3);transition:opacity .2s,transform .3s}
+.mnav .t.on{opacity:0;transform:translateY(8px)}
+.mnav .ball{position:absolute;left:var(--x);top:46px;width:58px;height:58px;margin:-29px 0 0 -29px;border-radius:50%;background:var(--blue);display:grid;place-items:center;color:var(--ink)}
+.mnav .ball svg{transition:transform .25s}
+.mnav .ball.swap svg{transform:scale(0)}
+</style>
+<script>
+// Abspieler: jeder Screen mit data-anim bekommt „Nochmal“; ANIM[name](phone) startet die Animation, Schleifen laufen, solange phone im DOM hängt.
+window.ANIM = {};
+const wait = ms => new Promise(r => setTimeout(r, ms));
+async function loop(el, fn) { while (el.isConnected) { await fn(); } }
+function tap(phone, x, y) {
+  const t = document.createElement('i'); t.className = 'tap'; t.style.left = x + 'px'; t.style.top = y + 'px';
+  phone.appendChild(t); requestAnimationFrame(() => t.classList.add('go')); setTimeout(() => t.remove(), 600);
+}
+window.addEventListener('load', () => {
+  document.querySelectorAll('.screen[data-anim]').forEach(s => {
+    const tpl = s.querySelector('.phone').cloneNode(true), name = s.dataset.anim;
+    const b = document.createElement('button'); b.className = 'replay'; b.textContent = '↻ Nochmal';
+    s.querySelector('.caption').appendChild(b);
+    b.onclick = () => { const p = tpl.cloneNode(true); s.querySelector('.phone').replaceWith(p); ANIM[name] && ANIM[name](p); };
+    ANIM[name] && ANIM[name](s.querySelector('.phone'));
+  });
+});
+</script>
+
+<section class="sec"><h2>Warten</h2><p>Statt eines drehenden Kreises: Zutaten hüpfen in den Topf, der Deckel klappert, Dampf steigt. Beim Plan füllen sich dazu die Wochentage.</p></section>
+<div class="screens">
+
+  <!-- Plan wird erstellt -->
+  <div class="screen" data-anim="plan"><div class="phone">
+    <div class="sb"><b>9:41</b><span class="island"></span><svg><use href="#status"/></svg></div>
+    <div class="scr"><div class="small">KW 45 · 3.–9. Nov</div><div class="t1">Deine Woche</div></div>
+    <div class="scrim"></div>
+    <div class="sheet" style="top:90px">
+      <div class="row between"><div class="t2">Wochenplan</div><span class="x"><svg class="i"><use href="#i-x"/></svg></span></div>
+      <div class="potld" style="margin-top:34px">
+        <svg class="steam" viewBox="0 0 60 70"><path d="M12 66c-8-10 8-16 0-28s8-16 0-28"/><path d="M30 60c-8-10 8-16 0-28s8-14 0-24"/><path d="M48 66c-8-10 8-16 0-28s8-16 0-28"/></svg>
+        <img class="in" src="ill-v7/tomato.webp" style="--n:0" alt=""><img class="in" src="ill-v7/garlic.webp" style="--n:1" alt=""><img class="in" src="ill-v7/basil.webp" style="--n:2" alt=""><img class="in" src="ill-v7/pasta.webp" style="--n:3" alt="">
+        <img class="body" src="ill-v7/pot-body.webp" alt=""><img class="lid" src="ill-v7/pot-lid.webp" alt="">
+      </div>
+      <div class="a0-step t2" style="text-align:center;margin-top:30px;min-height:58px;transition:opacity .25s">Angebote auswerten …</div>
+      <div class="a0-sub small" style="text-align:center;font-size:14px;margin-top:2px">128 Angebote bei Rewe und Lidl</div>
+      <div class="potdays" style="margin-top:28px"><i class="now">Mo</i><i>Di</i><i>Mi</i><i>Do</i><i>Fr</i><i>Sa</i><i>So</i></div>
+      <div class="small" style="text-align:center;font-size:13px;margin-top:26px">Dauert meist unter einer Minute</div>
+    </div>
+    <div class="homebar" style="z-index:20"></div></div>
+    <div class="caption"><b>Plan wird erstellt</b>Tomate, Knoblauch, Basilikum und Spaghetti hüpfen abwechselnd von links und rechts im Bogen in den Topf; beim Aufprall hebt sich der Deckel und der Topf federt. Jeder fertig geplante Tag springt schwarz auf, der Schritt-Text wechselt. Zum Schluss: „Dein Plan steht“ mit Preis.</div></div>
+
+  <!-- Knopf lädt -->
+  <div class="screen" data-anim="button"><div class="phone">
+    <div class="sb"><b>9:41</b><span class="island"></span><svg><use href="#status"/></svg></div>
+    <div class="blob" style="left:190px;top:-80px;width:300px;height:300px;background:var(--rose)"></div>
+    <div class="scr">
+      <div class="small">Diese Woche</div><div class="t1">Budget</div>
+      <div class="stat" style="margin-top:40px"><span class="lbl">Über Budget</span><span class="num" style="font-size:56px;color:var(--deal)">3,20 €</span></div>
+      <div class="t2" style="margin-top:28px">Günstigere Alternative für Donnerstag?</div>
+      <div class="irow" style="margin-top:14px;height:76px"><div class="plate" style="width:54px;height:54px;background-image:url(../../../ios/Sources/Essenapp/Resources/hero/bowl.jpg)"></div><div style="flex:1"><div class="a0-dish" style="font-family:'DM Serif Display',serif;font-size:19px;transition:opacity .25s">Lachs-Bowl</div><div class="a0-cost small" style="font-size:13px">6,20 € · 30 min</div></div></div>
+      <div class="a0-btn btn" style="margin-top:22px;transition:background .25s">Günstiger würfeln</div>
+    </div>
+    <div class="toast a0-toast" style="opacity:0;transition:opacity .3s">Donnerstag: Linsen-Dal · 2,80 €</div>
+    <div class="nav" data-on="0"></div>
+    <div class="homebar"></div></div>
+    <div class="caption"><b>Knopf wartet</b>Für kurze Aktionen (Würfeln, Ideen suchen, Importieren): der Knopf wird blau und drei Zutaten hüpfen nacheinander darin – wie drei Punkte, nur gezeichnet. Danach wechselt das Gericht weich, die rote Zahl zählt herunter.</div></div>
+
+  <!-- Nav-Mulde -->
+  <div class="screen" data-anim="nav"><div class="phone">
+    <div class="sb"><b>9:41</b><span class="island"></span><svg><use href="#status"/></svg></div>
+    <div class="scr"><div class="small a0-k">Hey Jona,</div><div class="t1 a0-t">Was kochen<br>wir heute?</div></div>
+    <img class="ill a0-ill" src="ill-v7/table.webp" style="position:absolute;left:40px;top:260px;width:320px;transition:opacity .25s" alt="">
+    <div class="mnav" style="--x:39px"><div class="mbar"></div>
+      <span class="t on" style="left:39px"><svg class="i"><use href="#i-home"/></svg></span><span class="t" style="left:117px"><svg class="i"><use href="#i-cal"/></svg></span><span class="t" style="left:195px"><svg class="i"><use href="#i-tag"/></svg></span><span class="t" style="left:273px"><svg class="i"><use href="#i-bag"/></svg></span><span class="t" style="left:351px"><svg class="i"><use href="#i-book"/></svg></span>
+      <span class="ball"><svg class="i"><use href="#i-home"/></svg></span></div>
+    <div class="homebar"></div></div>
+    <div class="caption"><b>Nav: Mulde wandert</b>Antippen: die Mulde gleitet mit leichtem Nachfedern zum neuen Symbol, der blaue Kreis reitet darin mit; das Symbol schrumpft weg und wächst neu. Der Screen-Inhalt blendet in 0,2 s über. Haptik: leichtes Tippen.</div></div>
+
+</div>
+<script>
+ANIM.plan = p => loop(p, async () => {
+  const days = [...p.querySelectorAll('.potdays i')], step = p.querySelector('.a0-step'), sub = p.querySelector('.a0-sub'), pot = p.querySelector('.potld');
+  const steps = [['Angebote auswerten …', '128 Angebote bei Rewe und Lidl'], ['Lieblingsrezepte prüfen …', '3 Lieblinge sind diese Woche günstig'], ['Gerichte planen …', 'Abwechslung: max. 1× Pasta'], ['Preise & Nährwerte rechnen …', 'für Jona und Mia']];
+  days.forEach(d => d.className = ''); pot.style.opacity = 1; step.textContent = steps[0][0]; sub.textContent = steps[0][1];
+  for (let i = 0; i < 7 && p.isConnected; i++) {
+    days[i].className = 'now'; await wait(1250);
+    days[i].className = 'on';
+    const s = steps[Math.min(3, Math.floor((i + 1) / 2))];
+    if (step.textContent !== s[0]) { step.style.opacity = 0; await wait(250); step.textContent = s[0]; sub.textContent = s[1]; step.style.opacity = 1; }
+  }
+  pot.style.transition = 'opacity .4s'; pot.style.opacity = .25;
+  step.style.opacity = 0; await wait(250); step.textContent = 'Dein Plan steht!'; sub.textContent = '13 Gerichte · 38,20 € · 12,40 € gespart'; step.style.opacity = 1;
+  await wait(2600);
+});
+ANIM.button = p => loop(p, async () => {
+  const b = p.querySelector('.a0-btn'), dish = p.querySelector('.a0-dish'), cost = p.querySelector('.a0-cost'), num = p.querySelector('.num'), toast = p.querySelector('.a0-toast');
+  b.className = 'a0-btn btn'; b.textContent = 'Günstiger würfeln'; dish.textContent = 'Lachs-Bowl'; cost.textContent = '6,20 € · 30 min'; num.textContent = '3,20 €'; num.style.color = 'var(--deal)';
+  await wait(1200); const r = b.getBoundingClientRect(), pr = p.getBoundingClientRect(), z = pr.width / p.offsetWidth;
+  tap(p, (r.left - pr.left) / z + b.offsetWidth / 2, (r.top - pr.top) / z + 28); await wait(150);
+  b.className = 'a0-btn btn blue'; b.innerHTML = '<span class="hop3"><img src="ill-v7/tomato.webp"><img src="ill-v7/garlic.webp"><img src="ill-v7/basil.webp"></span>';
+  await wait(2400);
+  dish.style.opacity = 0; await wait(250); dish.textContent = 'Linsen-Dal'; cost.textContent = '2,80 € · 25 min'; dish.style.opacity = 1;
+  b.className = 'a0-btn btn'; b.textContent = 'Erledigt';
+  for (let v = 320; v >= 0; v -= 20) { num.textContent = (v / 100).toFixed(2).replace('.', ',') + ' €'; await wait(28); }
+  num.style.color = 'var(--ink)'; toast.style.opacity = 1; await wait(1800); toast.style.opacity = 0; await wait(900);
+});
+ANIM.nav = p => {
+  const nav = p.querySelector('.mnav'), ts = [...nav.querySelectorAll('.t')], ball = nav.querySelector('.ball');
+  const icons = ['i-home', 'i-cal', 'i-tag', 'i-bag', 'i-book'], k = ['Hey Jona,', 'KW 45', '10115 · 6 Läden', 'Rewe · 4 offen', '24 gespeichert'], t = ['Was kochen<br>wir heute?', 'Deine<br>Woche', 'Angebote', 'Einkauf', 'Meine<br>Rezepte'], ill = ['table', 'pot', 'binoculars', 'shopper', 'cookbook'];
+  let on = 0;
+  loop(p, async () => {
+    await wait(1500); if (!p.isConnected) return;
+    const next = [2, 3, 1, 4, 0][on], x = 39 + 78 * next;
+    tap(p, x, 802); ts[on].classList.remove('on'); ts[next].classList.add('on');
+    nav.style.setProperty('--x', x + 'px'); ball.classList.add('swap');
+    const fade = p.querySelectorAll('.a0-k,.a0-t,.a0-ill'); fade.forEach(e => { e.style.transition = 'opacity .2s'; e.style.opacity = 0; });
+    await wait(250);
+    ball.querySelector('use').setAttribute('href', '#' + icons[next]); ball.classList.remove('swap');
+    p.querySelector('.a0-k').textContent = k[next]; p.querySelector('.a0-t').innerHTML = t[next]; p.querySelector('.a0-ill').src = `ill-v7/${ill[next]}.webp`;
+    fade.forEach(e => e.style.opacity = 1); on = next;
+  });
+};
+</script>
+<style>
+/* Teil anim1: Im Alltag */
+.a1-now,.a1-now *{transition:none!important;animation:none!important}
+.a1-av{width:44px;height:44px;border-radius:50%;background:var(--sand);display:grid;place-items:center;font-family:"DM Serif Display",serif;font-size:20px;flex:none}
+.a1-act{width:34px;height:34px;border-radius:50%;box-shadow:inset 0 0 0 1.5px var(--line);display:grid;place-items:center;flex:none;transition:background .2s,color .2s}
+.a1-act svg{width:17px;height:17px}
+.a1-act.on{background:var(--ink);color:#fff;box-shadow:none}
+.a1-acts{display:grid;grid-template-columns:34px 34px;gap:6px;flex:none}
+@keyframes a1-pop{0%{transform:scale(.7)}60%{transform:scale(1.15)}100%{transform:none}}
+/* 1 Tag wechseln */
+.a1-wk .day.on .d{opacity:0}
+.a1-dot{position:absolute;left:25px;width:19px;height:19px;border-radius:50%;background:var(--ink);box-shadow:0 0 0 5px var(--bg);transition:top .45s cubic-bezier(.3,1.4,.5,1)}
+.a1-link{position:absolute;left:0;top:0;width:390px;height:844px;fill:none;stroke:var(--ink);stroke-width:1.5;stroke-linecap:round;pointer-events:none}
+.a1-link path{stroke-dasharray:1;transition:stroke-dashoffset .3s ease-out}
+.a1-fd{transition:opacity .2s}
+/* 2 Abhaken */
+.a1-list{position:relative;height:360px;margin-top:28px}
+.a1-list .irow{position:absolute;left:0;right:0;transition:top .45s cubic-bezier(.3,1.4,.5,1)}
+.a1-list .irow>:not(.ck){transition:opacity .25s}
+.a1-list .done>:not(.ck){opacity:.4}
+.a1-ck{transition:background .2s,border-color .2s}
+.a1-ck.on{background:var(--ink);border-color:var(--ink);color:#fff}
+.a1-ck.pop{animation:a1-pop .35s cubic-bezier(.3,1.4,.5,1)}
+.a1-ck path{stroke-dasharray:1;stroke-dashoffset:1;transition:stroke-dashoffset .25s ease-out .12s}
+.a1-ck.on path{stroke-dashoffset:0}
+.a1-nm{position:relative;display:inline-block;font-weight:700}
+.a1-strike{position:absolute;left:-3px;top:50%;width:calc(100% + 6px);height:10px;margin-top:-5px;overflow:visible;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round}
+.a1-strike path{vector-effect:non-scaling-stroke;stroke-dasharray:1;stroke-dashoffset:1;transition:stroke-dashoffset .3s ease-in-out}
+.st .a1-strike path{stroke-dashoffset:0}
+/* 3 Auf die Liste */
+.a1-plus{position:absolute;left:194px;top:46px;width:44px;height:44px;z-index:2;transition:background .2s}
+.a1-plus.pop{animation:a1-pop .35s cubic-bezier(.3,1.4,.5,1)}
+.a1-tom{transition:opacity .2s,transform .4s cubic-bezier(.3,1.4,.5,1)}
+.a1-tom.gone{opacity:0;transform:scale(.6)}
+.a1-fly{position:absolute;z-index:25;pointer-events:none}
+.a1-gulp{animation:a1-gulp .5s ease-out}
+@keyframes a1-gulp{30%{transform:scale(1.25,.85)}55%{transform:rotate(-10deg) scale(1.05)}78%{transform:rotate(6deg)}}
+.a1-badge{position:absolute;right:7px;top:8px;width:9px;height:9px;border-radius:50%;background:var(--deal);box-shadow:0 0 0 2px #fff;animation:a1-pop .35s cubic-bezier(.3,1.4,.5,1)}
+.a1-toast{opacity:0;transform:translate(-50%,12px);transition:opacity .25s,transform .4s cubic-bezier(.3,1.4,.5,1)}
+.a1-toast.in{opacity:1;transform:translateX(-50%)}
+/* 4 Würfeln */
+.a1-dw{position:relative;width:64px;height:64px;flex:none}
+.a1-dp{width:64px;height:64px}
+.a1-dh{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%) scale(.9);opacity:0;transition:opacity .15s}
+.a1-roll svg{animation:a1-tumble .55s ease-in-out}
+@keyframes a1-tumble{50%{transform:translateY(-7px) rotate(90deg)}100%{transform:rotate(180deg)}}
+/* 5 Favorit */
+.a1-hw{position:relative;display:grid;place-items:center}
+.a1-heart .fl{fill:var(--rose);stroke:none}
+.a1-hf{transform:translateY(24px);transition:transform .35s cubic-bezier(.3,1,.5,1)}
+.on>.a1-heart .a1-hf{transform:none}
+.a1-heart.pop{animation:a1-hpop .4s cubic-bezier(.3,1.4,.5,1)}
+@keyframes a1-hpop{40%{transform:scale(1.3)}}
+.a1-spark{position:absolute;left:50%;top:50%;width:64px;height:64px;margin:-32px 0 0 -32px;overflow:visible;fill:none;stroke:var(--ink);stroke-width:2;stroke-linecap:round;pointer-events:none}
+.a1-spark path{stroke-dasharray:1;stroke-dashoffset:1}
+.a1-spark.go path{animation:a1-spark .45s ease-out forwards}
+@keyframes a1-spark{50%{stroke-dashoffset:0}100%{stroke-dashoffset:-1}}
+/* 6 Große Zahlen */
+.a1-blob{transform-origin:100% 50%;transition:transform .6s cubic-bezier(.3,1.25,.5,1)}
+.a1-blob.out{transform:scale(0)}
+.a1-in{transition:opacity .35s,transform .45s cubic-bezier(.3,1.4,.5,1)}
+.a1-in.out{opacity:0;transform:translateY(14px)}
+.a1-st{position:relative;border-top-color:transparent!important}
+.a1-st::before{content:"";position:absolute;left:0;right:0;top:-1.5px;height:1.5px;background:var(--ink);transform-origin:left;transition:transform .5s cubic-bezier(.3,1,.5,1)}
+.a1-st.mute::before{background:var(--ink3)}
+.a1-st.out::before{transform:scaleX(0)}
+.a1-od{display:inline-block;height:.92em;line-height:.92em;overflow:hidden;vertical-align:top}
+.a1-od i{display:block;font-style:normal;transition:transform .6s cubic-bezier(.3,1.25,.5,1)}
+@media (prefers-reduced-motion:reduce){[class*="a1-"],[class*="a1-"] *{animation:none!important;transition-property:opacity!important}}
+</style>
+
+<section class="sec"><h2>Im Alltag</h2><p>Die kleinen Bewegungen, die jeden Tag vorkommen: Tag wechseln, abhaken, merken, neu würfeln, Favorit, Zahlen beim Öffnen. Die Zeichnungen und Teller spielen mit, Tinten-Striche werden gezeichnet.</p></section>
+<div class="screens">
+
+  <!-- 1 Tag wechseln -->
+  <div class="screen" data-anim="a1-day"><div class="phone a1-wk">
+    <div class="sb"><b>9:41</b><span class="island"></span><svg><use href="#status"/></svg></div>
+    <div class="blob" style="left:140px;top:180px;width:500px;height:500px;background:var(--blue)"></div>
+    <div class="scr">
+      <div class="row between" style="align-items:flex-end"><div><div class="small">KW 45 · 3.–9. Nov</div><div class="t1">Deine Woche</div></div><div class="num" style="font-size:30px">6<span style="color:var(--ink3)">/7</span></div></div>
+    </div>
+    <div class="tl"></div>
+    <div class="day has" data-k="Mo" style="top:236px"><i class="d"></i><div><b>Mo</b><span>Linsen-Dal</span></div></div>
+    <div class="day has on" data-k="Di" style="top:308px"><i class="d"></i><div><b>Dienstag</b><span>4. Nov</span></div></div>
+    <div class="day has" data-k="Mi" style="top:380px"><i class="d"></i><div><b>Mi</b><span>Ofenhähnchen</span></div></div>
+    <div class="day has" style="top:452px"><i class="d"></i><div><b>Do</b><span>Curry</span></div></div>
+    <div class="day has" style="top:524px"><i class="d"></i><div><b>Fr</b><span>Pizza</span></div></div>
+    <div class="day" style="top:596px"><i class="d"></i><div><b>Sa</b><span>frei</span></div></div>
+    <div class="day has" style="top:668px"><i class="d"></i><div><b>So</b><span>Braten</span></div></div>
+    <i class="a1-dot" style="top:301px"></i>
+    <svg class="a1-link"><path pathLength="1" d="M140 317H182"/></svg>
+    <div class="plate ph-pasta a1-pl" style="position:absolute;left:182px;top:232px;width:190px;height:190px"></div>
+    <div style="position:absolute;left:182px;right:20px;top:446px">
+      <div class="lbl a1-fd a1-lb" style="color:var(--ink)">ABEND · 25 MIN</div>
+      <div class="t2 a1-fd a1-nm2" style="margin-top:4px">Spaghetti Pomodoro</div>
+      <div class="row between" style="margin-top:12px;align-items:flex-end">
+        <div><div class="num a1-pr" style="font-size:44px">2,10 €</div><div class="small a1-fd a1-of" style="font-size:12px;margin-top:4px;color:var(--ink)">p. P. · <span style="color:var(--deal)">2 im Angebot</span></div></div>
+        <span class="circle" style="width:50px;height:50px"><svg class="i" style="width:18px"><use href="#i-play"/></svg></span>
+      </div>
+    </div>
+    <div class="nav" data-on="1"></div>
+    <div class="homebar"></div></div>
+    <div class="caption"><b>Tag wechseln</b>Tipp auf einen Tag am Zeitstrahl. Der schwarze Punkt gleitet am Strahl entlang (0,45 s, federt leicht nach). Die Verbindungslinie zieht sich zurück und zeichnet sich in 0,3 s neu zum Teller. Der alte Teller rollt mit einer halben Drehung nach unten aus dem Bild (0,4 s), der neue rollt von oben herein und federt aus (0,55 s). Bei einem früheren Tag ist die Richtung umgekehrt. Name und Label blenden über (0,2 s), der Preis zählt um. Haptik: Auswahl-Tick. Bewegung reduzieren: Punkt springt, Teller und Text blenden nur über.</div></div>
+
+  <!-- 2 Abhaken -->
+  <div class="screen" data-anim="a1-shop"><div class="phone">
+    <div class="sb"><b>9:41</b><span class="island"></span><svg><use href="#status"/></svg></div>
+    <div class="leaf" style="right:0;top:0;width:166px;height:270px;border-bottom-left-radius:110px;background:var(--blue)"></div>
+    <img class="ill" src="ill-v7/shopper.webp" style="position:absolute;left:240px;top:44px;width:144px" alt="">
+    <div class="scr">
+      <div class="row" style="gap:2px;margin-left:-6px"><svg class="i"><use href="#i-back"/></svg><span class="small" style="color:var(--ink)">Einkauf</span></div>
+      <div class="small" style="margin-top:12px"><span class="a1-n">3</span> offen · Jona, Mia</div><div class="t1">Rewe</div>
+      <div style="width:190px;margin-top:16px">
+        <div class="stat"><span class="lbl">Offen</span><span class="num a1-sum" style="font-size:40px">11,47 €</span></div>
+        <div class="stat mute" style="margin-top:10px"><span class="lbl">Gespart</span><span class="num" style="font-size:28px">2,50 €</span></div>
+      </div>
+      <div class="row" style="margin-top:28px;gap:10px">
+        <div class="btn2" style="height:40px;padding:0 16px;font-size:14px"><svg class="i" style="width:16px"><use href="#i-play"/></svg>Einkauf starten</div>
+        <span class="soft" style="height:40px;padding:0 14px;font-size:13px"><svg class="i" style="width:15px;height:15px"><use href="#i-barcode"/></svg>2 Coupons<svg class="i" style="width:14px;height:14px"><use href="#i-chev"/></svg></span>
+      </div>
+      <div class="a1-list">
+        <div class="irow" data-c="149"><span class="ck a1-ck"><svg class="i" viewBox="0 0 24 24" style="width:15px"><path pathLength="1" stroke-width="2.6" d="M5 12.5 9.5 17 19 7"/></svg></span><div style="flex:1"><span class="a1-nm">Basmatireis<svg class="a1-strike" viewBox="0 0 100 10" preserveAspectRatio="none"><path pathLength="1" d="M0 6Q25 3 50 5.5T100 4.5"/></svg></span><div class="small" style="font-size:12px">1 kg · Vorratskauf</div></div><span class="deal">−25 %</span></div>
+        <div class="irow" data-c="499"><span class="ck a1-ck"><svg class="i" viewBox="0 0 24 24" style="width:15px"><path pathLength="1" stroke-width="2.6" d="M5 12.5 9.5 17 19 7"/></svg></span><div style="flex:1"><span class="a1-nm">Kaffee<svg class="a1-strike" viewBox="0 0 100 10" preserveAspectRatio="none"><path pathLength="1" d="M0 5Q25 7 50 4.5T100 5.5"/></svg></span><div class="small" style="font-size:12px">500 g</div></div><span class="soft"><svg class="i" style="width:12px;height:12px"><use href="#i-barcode"/></svg>10fach</span></div>
+        <div class="irow" data-c="499"><span class="ck a1-ck"><svg class="i" viewBox="0 0 24 24" style="width:15px"><path pathLength="1" stroke-width="2.6" d="M5 12.5 9.5 17 19 7"/></svg></span><div style="flex:1"><span class="a1-nm">Olivenöl<svg class="a1-strike" viewBox="0 0 100 10" preserveAspectRatio="none"><path pathLength="1" d="M0 6Q25 3 50 5.5T100 4.5"/></svg></span><div class="small" style="font-size:12px">1 Flasche</div></div><span class="soft">bald leer</span></div>
+        <div class="irow" style="color:var(--ink3)"><svg class="i"><use href="#i-plus"/></svg><span style="flex:1">Artikel hinzufügen …</span><svg class="i" style="color:var(--ink)"><use href="#i-mic"/></svg></div>
+        <div class="irow st done" data-done><span class="ck a1-ck on"><svg class="i" viewBox="0 0 24 24" style="width:15px"><path pathLength="1" stroke-width="2.6" d="M5 12.5 9.5 17 19 7"/></svg></span><div style="flex:1"><span class="a1-nm">Basilikum<svg class="a1-strike" viewBox="0 0 100 10" preserveAspectRatio="none"><path pathLength="1" d="M0 5Q25 7 50 4.5T100 5.5"/></svg></span></div></div>
+        <div class="irow" style="color:var(--ink2)"><svg class="i"><use href="#i-cal"/></svg><span style="flex:1;font-weight:700">Nächste Woche</span><span class="small" style="font-size:13px">1 Artikel</span><svg class="i" style="width:18px"><use href="#i-chev"/></svg></div>
+      </div>
+    </div>
+    <div class="homebar"></div></div>
+    <div class="caption"><b>Abhaken</b>Tipp auf den Kreis: er füllt sich schwarz und ploppt kurz (0,35 s), das Häkchen wird gezeichnet (0,25 s). Dann zieht sich ein Tinten-Strich durch den Namen (0,3 s), die Zeile wird grau und rutscht ans Ende zu den erledigten (0,45 s, federt); die anderen rücken nach. „Offen“ und die Anzahl oben zählen herunter. Haptik: leichtes Tippen beim Haken, weich beim Einsortieren. Bewegung reduzieren: Haken und Strich erscheinen, die Zeile springt ohne Gleiten.</div></div>
+
+  <!-- 3 Auf die Einkaufsliste -->
+  <div class="screen" data-anim="a1-add"><div class="phone">
+    <div class="sb"><b>9:41</b><span class="island"></span><svg><use href="#status"/></svg></div>
+    <div class="leaf" style="right:0;top:0;width:240px;height:290px;background:var(--blue1)"></div>
+    <img class="ill" src="ill-v7/binoculars.webp" style="position:absolute;left:200px;top:56px;width:200px" alt="">
+    <div class="scr">
+      <div class="small">10115 · 6 Läden</div><div class="t1">Angebote</div>
+      <div style="width:170px;margin-top:22px">
+        <div class="stat"><span class="lbl">Diese<br>Woche</span><span class="num" style="font-size:64px">128</span></div>
+      </div>
+      <div class="chips" style="margin-top:40px"><span class="chip on">Alle</span><span class="chip">Merkliste 3</span><span class="chip">Gemüse</span><span class="chip">Kühlung</span></div>
+      <div style="margin-top:16px">
+        <div class="offer"><div class="tab" style="background:var(--rose)"><img class="a1-tom" src="ill-v7/tomato.webp" alt=""></div><span class="circle a1-plus"><svg class="i" style="width:20px"><use href="#i-plus"/></svg></span>
+          <span class="deal">−30 %</span><div class="t2" style="margin-top:6px">Tomaten</div><div class="small" style="font-size:13px">Lidl · 1 kg</div><div class="num" style="font-size:34px;margin-top:8px">1,99 €</div></div>
+        <div class="offer"><div class="tab" style="background:var(--sand)"><img src="ill-v7/garlic.webp" alt=""></div><span class="circle a1-plus"><svg class="i" style="width:20px"><use href="#i-plus"/></svg></span>
+          <span class="deal">−20 %</span><div class="t2" style="margin-top:6px">Knoblauch</div><div class="small" style="font-size:13px">Rewe · 3 Stück</div><div class="num" style="font-size:34px;margin-top:8px">0,79 €</div></div>
+        <div class="offer"><div class="tab" style="background:var(--sage)"><img src="ill-v7/basil.webp" alt=""></div>
+          <span class="deal">−25 %</span><div class="t2" style="margin-top:6px">Basilikum</div></div>
+      </div>
+    </div>
+    <div class="toast a1-toast">Tomaten auf der Liste</div>
+    <div class="nav" data-on="2"></div>
+    <div class="homebar"></div></div>
+    <div class="caption"><b>Auf die Einkaufsliste</b>Tipp auf „+“ an der Lasche: die Tomate springt im Bogen hinunter zum Einkauf-Symbol und wird dabei kleiner (0,6 s, leichte Drehung). Das Symbol schluckt sie mit einem Wackler (0,5 s), ein roter Punkt ploppt auf. In der Lasche wächst die Tomate nach, das „+“ wird zum Haken. Toast „Tomaten auf der Liste“ für 1,8 s. Haptik: Erfolg beim Schlucken. Bewegung reduzieren: kein Flug, Haken, Punkt und Toast blenden ein.</div></div>
+
+  <!-- 4 Neu würfeln -->
+  <div class="screen" data-anim="a1-dice"><div class="phone">
+    <div class="sb"><b>9:41</b><span class="island"></span><svg><use href="#status"/></svg></div>
+    <div class="blob" style="left:-110px;top:150px;width:220px;height:220px;background:var(--blue1)"></div>
+    <div class="scr">
+      <div class="row between" style="align-items:flex-end"><div><div class="small">KW 45 · 4. Nov</div><div class="t1">Dienstag</div></div><span class="soft ok" style="height:30px;font-size:13px;margin-bottom:4px"><svg class="i" style="width:15px"><use href="#i-check"/></svg>Abwechslung</span></div>
+
+      <div class="lbl" style="margin-top:30px;color:var(--ink)">MITTAG</div>
+      <div class="row" style="margin-top:10px;gap:12px">
+        <div class="a1-dw"><div class="plate a1-dp" style="background-image:url(../../../ios/Sources/Essenapp/Resources/hero/bowl.jpg)"></div><span class="hop3 a1-dh"><img src="ill-v7/tomato.webp" alt=""><img src="ill-v7/garlic.webp" alt=""><img src="ill-v7/basil.webp" alt=""></span></div>
+        <div style="flex:1"><div class="t2 a1-fd a1-dn" style="font-size:17px;white-space:nowrap">Lachs-Bowl</div><div class="small" style="font-size:13px;margin-top:2px"><span class="a1-dc">3,40 €</span><span class="a1-fd a1-dr"> · Rest von Mo</span></div></div>
+        <div class="a1-acts"><span class="a1-act on"><svg class="i"><use href="#i-heart"/></svg></span><span class="a1-act"><svg class="i"><use href="#i-swap"/></svg></span><span class="a1-act"><svg class="i"><use href="#i-lock"/></svg></span><span class="a1-act a1-die"><svg class="i"><use href="#i-dice"/></svg></span></div>
+      </div>
+
+      <div class="lbl" style="margin-top:28px;color:var(--ink)">ABEND</div>
+      <div class="row" style="margin-top:10px;gap:12px">
+        <div class="plate ph-pasta" style="width:64px;height:64px"></div>
+        <div style="flex:1"><div class="t2" style="font-size:17px;white-space:nowrap">Spaghetti Pomodoro</div><div class="small" style="font-size:13px;margin-top:2px">2,10 € · +2 Gäste</div></div>
+        <div class="a1-acts"><span class="a1-act"><svg class="i"><use href="#i-heart"/></svg></span><span class="a1-act"><svg class="i"><use href="#i-swap"/></svg></span><span class="a1-act on"><svg class="i"><use href="#i-lock"/></svg></span><span class="a1-act"><svg class="i"><use href="#i-dice"/></svg></span></div>
+      </div>
+
+      <div class="row between" style="margin-top:36px"><span class="lbl">TAGESWERTE</span><span class="small" style="font-size:13px;color:var(--ink)">Für: Jona ▾</span></div>
+      <div class="row" style="margin-top:14px;gap:22px;align-items:flex-start">
+        <div class="row" style="gap:10px;align-items:flex-end;flex:none">
+          <div style="text-align:center"><svg width="76" height="76" viewBox="0 0 88 88" style="display:block"><circle cx="44" cy="44" r="44" fill="var(--blue1)"/><g fill="none" stroke-width="7" stroke-linecap="round" transform="rotate(-90 44 44)"><circle cx="44" cy="44" r="36" stroke="var(--line)"/><circle cx="44" cy="44" r="36" stroke="var(--ink)" stroke-dasharray="179 227"/><circle cx="44" cy="44" r="26" stroke="var(--line)"/><circle cx="44" cy="44" r="26" stroke="var(--blue3)" stroke-dasharray="121 164"/></g><text x="44" y="51" text-anchor="middle" font-family="DM Serif Display" font-size="20">J</text></svg><div style="font-size:12px;font-weight:800;margin-top:4px">Jona</div></div>
+          <div style="text-align:center"><svg width="50" height="50" viewBox="0 0 88 88" style="display:block"><g fill="none" stroke-width="8" stroke-linecap="round" transform="rotate(-90 44 44)"><circle cx="44" cy="44" r="36" stroke="var(--line)"/><circle cx="44" cy="44" r="36" stroke="var(--ink)" stroke-dasharray="188 227"/><circle cx="44" cy="44" r="25" stroke="var(--line)"/><circle cx="44" cy="44" r="25" stroke="var(--blue3)" stroke-dasharray="122 157"/></g><text x="44" y="53" text-anchor="middle" font-family="DM Serif Display" font-size="26">M</text></svg><div style="font-size:12px;font-weight:800;margin-top:4px;color:var(--ink2)">Mia</div></div>
+        </div>
+        <div style="flex:1">
+          <div class="stat"><span class="lbl">kcal</span><span class="num" style="font-size:30px">1980<span style="color:var(--ink3);font-size:17px"> /2500</span></span></div>
+          <div class="stat" style="margin-top:12px"><span class="lbl">Protein</span><span class="num" style="font-size:30px">104<span style="color:var(--ink3);font-size:17px"> /140 g</span></span></div>
+        </div>
+      </div>
+      <div class="small" style="font-size:13px;margin-top:12px">KH 231 g · Fett 62 g</div>
+      <div class="btn2" style="margin-top:28px">Keine Lust?</div>
+    </div>
+    <div class="nav" data-on="1"></div>
+    <div class="homebar"></div></div>
+    <div class="caption"><b>Neu würfeln</b>Tipp auf den Würfel: er hüpft und kippt zweimal über die Kante (2 × 90°, 0,55 s) und wird kurz schwarz. Der Teller fliegt nach links aus dem Bild (0,35 s), an seiner Stelle hüpfen Tomate, Knoblauch und Basilikum, solange gesucht wird. Dann rollt der neue Teller von links herein und federt aus (0,55 s); Name blendet über, der Preis zählt herunter, „Rest von Mo“ und das Herz fallen weg. Haptik: mittel beim Tipp, Erfolg bei der Landung. Bewegung reduzieren: Würfel ruht, Teller und Text blenden über, die drei Zutaten stehen still.</div></div>
+
+  <!-- 5 Favorit -->
+  <div class="screen" data-anim="a1-fav"><div class="phone">
+    <div class="sb"><b>9:41</b><span class="island"></span><svg><use href="#status"/></svg></div>
+    <div class="blob" style="left:-60px;top:-80px;width:430px;height:430px;background:var(--blue)"></div>
+    <div class="scr">
+      <div class="row between"><svg class="i"><use href="#i-back"/></svg><div class="row" style="gap:18px">
+        <span class="a1-hw"><svg class="i a1-heart" viewBox="0 0 24 24"><clipPath id="a1-hc"><rect class="a1-hf" width="24" height="24"/></clipPath><path class="fl" clip-path="url(#a1-hc)" d="M12 19.6S4.6 15 4.6 9.6A3.9 3.9 0 0 1 12 7.6a3.9 3.9 0 0 1 7.4 2C19.4 15 12 19.6 12 19.6z"/><path d="M12 19.6S4.6 15 4.6 9.6A3.9 3.9 0 0 1 12 7.6a3.9 3.9 0 0 1 7.4 2C19.4 15 12 19.6 12 19.6z"/></svg>
+          <svg class="a1-spark" viewBox="0 0 64 64"><path pathLength="1" d="M32 15V7"/><path pathLength="1" d="M32 15V7" transform="rotate(60 32 32)"/><path pathLength="1" d="M32 15V7" transform="rotate(120 32 32)"/><path pathLength="1" d="M32 15V7" transform="rotate(180 32 32)"/><path pathLength="1" d="M32 15V7" transform="rotate(240 32 32)"/><path pathLength="1" d="M32 15V7" transform="rotate(300 32 32)"/></svg></span>
+        <svg class="i"><use href="#i-dots"/></svg><svg class="i"><use href="#i-share"/></svg></div></div>
+      <div class="t1" style="margin-top:16px;font-size:38px">Spaghetti<br>Pomodoro</div>
+      <div class="plate ph-pasta" style="position:absolute;right:-50px;top:200px;width:230px;height:230px"></div>
+      <div style="width:140px;margin-top:30px">
+        <div class="stat"><span class="lbl">Zeit</span><span class="num" style="font-size:34px">25′</span></div>
+        <div class="stat" style="margin-top:10px"><span class="lbl">p. P.</span><span class="num" style="font-size:34px">2,10</span></div>
+        <div class="stat" style="margin-top:10px"><span class="lbl">kcal</span><span class="num" style="font-size:34px">540</span></div>
+      </div>
+      <div class="row between" style="margin-top:34px;margin-bottom:6px"><span style="font-weight:800">Zutaten</span><span class="small" style="font-size:13px">für 2 · 6 Stück</span></div>
+      <div class="irow"><span class="c" style="background:var(--rose)"><img src="ill-v7/tomato.webp" alt=""></span><span class="nm">Tomaten</span><span class="deal">−30 %</span><b>400 g</b></div>
+      <div class="irow"><span class="c" style="background:var(--sage)"><img src="ill-v7/basil.webp" alt=""></span><span class="nm">Basilikum</span><b>1 Bund</b></div>
+      <div class="irow"><span class="c" style="background:var(--blue1)"><img src="ill-v7/pasta.webp" alt=""></span><span class="nm">Spaghetti</span><b>250 g</b></div>
+      <div class="irow"><span class="c" style="background:var(--sand)"><img src="ill-v7/garlic.webp" alt=""></span><span class="nm">Knoblauch</span><b>2 Zehen</b></div>
+    </div>
+    <div style="position:absolute;left:24px;right:24px;bottom:30px" class="row between"><div><div style="font-weight:800">Kochmodus</div><div class="small" style="font-size:13px">5 Schritte</div></div><span class="circle" style="width:64px;height:64px"><svg class="i" style="width:22px"><use href="#i-play"/></svg></span></div>
+    <div class="homebar"></div></div>
+    <div class="caption"><b>Favorit</b>Tipp aufs Herz: es füllt sich von unten mit Rosé (0,35 s) und ploppt auf 1,3-fach und zurück (0,4 s, federt). Gleichzeitig springen sechs kleine Tinten-Striche aus dem Herz heraus, wachsen und verschwinden (0,45 s). Erneuter Tipp: die Farbe läuft nach unten ab, ohne Funken. Haptik: Erfolg beim Merken, leicht beim Entfernen. Bewegung reduzieren: Herz ist sofort gefüllt, keine Funken, kein Ploppen.</div></div>
+
+  <!-- 6 Große Zahlen -->
+  <div class="screen" data-anim="a1-num"><div class="phone">
+    <div class="sb"><b>9:41</b><span class="island"></span><svg><use href="#status"/></svg></div>
+    <div class="blob a1-blob" style="left:130px;top:150px;width:400px;height:400px;background:var(--blue1)"></div>
+    <img class="ill a1-in" src="ill-v7/table.webp" style="position:absolute;left:150px;top:190px;width:250px" alt="">
+    <div class="row" style="position:absolute;right:24px;top:66px;gap:10px;z-index:2"><span class="a1-av">J</span><span class="circle" style="width:44px;height:44px"><svg class="i" style="width:22px"><use href="#i-plus"/></svg></span></div>
+    <div class="scr">
+      <div class="small">Hey Jona,</div><div class="t1" style="margin-top:2px">Was kochen<br>wir heute?</div>
+      <div class="a1-in" style="position:absolute;left:24px;top:380px;width:190px">
+        <div class="lbl" style="color:var(--blue3)">HEUTE ABEND</div>
+        <div class="t2" style="margin-top:4px;font-size:28px">Spaghetti Pomodoro</div>
+        <div class="small" style="font-size:13px;margin-top:4px">25 min · 2,10 € p. P.</div>
+        <div class="row" style="margin-top:14px;gap:10px"><span class="circle" style="width:56px;height:56px"><svg class="i" style="width:20px"><use href="#i-play"/></svg></span><span class="btn2" style="height:44px;font-size:14px;padding:0 16px">Keine Lust?</span></div>
+      </div>
+      <div style="position:absolute;left:24px;right:24px;top:578px">
+        <div class="stat a1-st"><span class="lbl">Diese Woche</span><span class="num" style="font-size:52px">38,20 €</span></div>
+        <div class="stat mute a1-st" style="margin-top:12px"><span class="lbl">Gespart</span><span class="num" style="font-size:40px;color:var(--deal)">12,40 €</span></div>
+      </div>
+    </div>
+    <div class="nav" data-on="0"></div>
+    <div class="homebar"></div></div>
+    <div class="caption"><b>Große Zahlen erscheinen</b>Beim Öffnen des Starts: der blaue Kreis wächst aus dem rechten Rand (0,6 s, federt), Tisch-Szene und Gericht steigen weich auf. Die Haarlinie zieht sich von links nach rechts (0,5 s), die Zahl rollt Ziffer für Ziffer von unten ein wie ein Zählwerk (je 0,6 s, 60 ms versetzt). Die graue Vergleichszahl folgt 0,15 s später. Keine Haptik. Bewegung reduzieren: alles blendet in 0,3 s ein, Zahlen stehen sofort.</div></div>
+
+</div>
+<script>
+// Helfer für anim1: Lage eines Elements im Phone, Zurücksetzen ohne Übergang, Euro-Zähler
+function a1r(p, el) { const r = el.getBoundingClientRect(), pr = p.getBoundingClientRect(); return { x: r.left - pr.left, y: r.top - pr.top, w: r.width, h: r.height }; }
+const a1c = (p, el) => { const r = a1r(p, el); return [r.x + r.w / 2, r.y + r.h / 2]; };
+function a1reset(p, fn) { p.classList.add('a1-now'); fn(); p.offsetWidth; p.classList.remove('a1-now'); }
+const a1eur = c => (c / 100).toFixed(2).replace('.', ',') + ' €';
+async function a1count(el, from, to) { for (let i = 1; i <= 12; i++) { el.textContent = a1eur(Math.round(from + (to - from) * i / 12)); await wait(30); } }
+const a1calm = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const a1img = n => `url(../../../ios/Sources/Essenapp/Resources/hero/${n}.jpg)`;
+
+ANIM['a1-day'] = p => {
+  const D = {
+    Mo: { top: 236, long: 'Montag', date: '3. Nov', dish: 'Linsen-Dal', name: 'Linsen-Dal', img: 'bowl', c: 140, lb: 'ABEND · 25 MIN', of: '1 im Angebot' },
+    Di: { top: 308, long: 'Dienstag', date: '4. Nov', dish: 'Pomodoro', name: 'Spaghetti Pomodoro', img: 'pasta', c: 210, lb: 'ABEND · 25 MIN', of: '2 im Angebot' },
+    Mi: { top: 380, long: 'Mittwoch', date: '5. Nov', dish: 'Ofenhähnchen', name: 'Ofenhähnchen', img: 'table', c: 240, lb: 'ABEND · 50 MIN', of: '1 im Angebot' } };
+  const q = s => p.querySelector(s), dot = q('.a1-dot'), link = q('.a1-link path'), pl = q('.a1-pl'), pr = q('.a1-pr'), fade = p.querySelectorAll('.a1-fd');
+  const label = (k, on) => { const e = q(`.day[data-k="${k}"]`); e.classList.toggle('on', on); e.querySelector('b').textContent = on ? D[k].long : k; e.querySelector('span').textContent = on ? D[k].date : D[k].dish; };
+  const draw = k => { const r = a1r(p, q(`.day[data-k="${k}"] b`)), x = r.x + r.w + 8, y = D[k].top + 9; link.setAttribute('d', `M${x} ${y}C${x + 26} ${y} 156 327 182 327`); };
+  let cur = 'Di';
+  draw(cur);
+  loop(p, async () => {
+    await wait(1500);
+    const k = { Di: 'Mi', Mi: 'Mo', Mo: 'Di' }[cur], d = D[k], down = d.top > D[cur].top, s = down ? 1 : -1;
+    tap(p, 70, d.top + 6);
+    link.style.transition = 'stroke-dashoffset .15s ease-in'; link.style.strokeDashoffset = 1;
+    label(cur, false); label(k, true); dot.style.top = d.top - 7 + 'px';
+    pl.style.transition = 'transform .4s cubic-bezier(.5,0,.9,.5)'; pl.style.transform = `translateY(${s * 640}px) rotate(${s * 180}deg)`;
+    fade.forEach(e => e.style.opacity = 0);
+    a1count(pr, D[cur].c, d.c);
+    await wait(400);
+    draw(k); link.style.transition = ''; link.style.strokeDashoffset = 0;
+    pl.style.transition = 'none'; pl.style.backgroundImage = a1img(d.img); pl.style.transform = `translateY(${-s * 520}px) rotate(${-s * 180}deg)`; pl.offsetWidth;
+    pl.style.transition = 'transform .55s cubic-bezier(.3,1.4,.5,1)'; pl.style.transform = '';
+    q('.a1-lb').textContent = d.lb; q('.a1-nm2').textContent = d.name; q('.a1-of span').textContent = d.of;
+    fade.forEach(e => e.style.opacity = 1);
+    cur = k;
+  });
+};
+
+ANIM['a1-shop'] = p => loop(p, async () => {
+  const list = p.querySelector('.a1-list'), rows = [...list.children], sum = p.querySelector('.a1-sum'), n = p.querySelector('.a1-n');
+  let order = rows.slice(), total = 1147, open = 3;
+  const place = () => order.forEach((r, i) => r.style.top = i * 60 + 'px');
+  a1reset(p, () => {
+    rows.forEach(r => { if (!('done' in r.dataset) && r.dataset.c) { r.classList.remove('st', 'done'); r.querySelector('.ck').classList.remove('on', 'pop'); } r.style.zIndex = ''; });
+    place(); sum.textContent = a1eur(total); n.textContent = open;
+  });
+  for (let i = 0; i < 2; i++) {
+    await wait(i ? 900 : 1300);
+    const r = order[0], ck = r.querySelector('.ck');
+    tap(p, ...a1c(p, ck));
+    ck.classList.add('on', 'pop');
+    await wait(180); r.classList.add('st');
+    await wait(320); r.classList.add('done');
+    n.textContent = --open; a1count(sum, total, total -= +r.dataset.c);
+    await wait(200);
+    r.style.zIndex = 1;
+    order.splice(0, 1); order.splice(order.length - 1, 0, r); place();
+  }
+  await wait(2400);
+});
+
+ANIM['a1-add'] = p => loop(p, async () => {
+  const plus = p.querySelector('.a1-plus'), tom = p.querySelector('.a1-tom'), toast = p.querySelector('.a1-toast'), bag = p.querySelectorAll('.nav .t')[3];
+  a1reset(p, () => {
+    plus.querySelector('use').setAttribute('href', '#i-plus'); plus.classList.remove('pop'); plus.style.background = '';
+    tom.classList.remove('gone'); toast.classList.remove('in'); bag.classList.remove('a1-gulp'); bag.querySelector('.a1-badge')?.remove();
+  });
+  await wait(1400);
+  tap(p, ...a1c(p, plus));
+  plus.querySelector('use').setAttribute('href', '#i-check'); plus.classList.add('pop');
+  if (!a1calm) {
+    const r = a1r(p, tom), [bx, by] = a1c(p, bag), fly = tom.cloneNode();
+    fly.className = 'a1-fly'; Object.assign(fly.style, { left: r.x + 'px', top: r.y + 'px', width: r.w + 'px' });
+    p.appendChild(fly); tom.classList.add('gone');
+    // Bogen: quadratische Bézierkurve von der Lasche über einen Hochpunkt zum Einkauf-Symbol
+    const x0 = r.x + r.w / 2, y0 = r.y + r.h / 2, cx = x0 + 10, cy = y0 - 320, frames = [];
+    for (let i = 0; i <= 16; i++) {
+      const t = i / 16, x = (1 - t) ** 2 * x0 + 2 * (1 - t) * t * cx + t * t * bx, y = (1 - t) ** 2 * y0 + 2 * (1 - t) * t * cy + t * t * by;
+      frames.push({ transform: `translate(${x - x0}px,${y - y0}px) rotate(${-220 * t}deg) scale(${1 - .78 * t})` });
+    }
+    await fly.animate(frames, { duration: 600, easing: 'cubic-bezier(.35,0,.65,1)', fill: 'forwards' }).finished;
+    fly.remove();
+  }
+  bag.classList.add('a1-gulp'); bag.insertAdjacentHTML('beforeend', '<i class="a1-badge"></i>');
+  tom.classList.remove('gone'); toast.classList.add('in');
+  await wait(1800); toast.classList.remove('in'); await wait(1200);
+});
+
+ANIM['a1-dice'] = p => loop(p, async () => {
+  const die = p.querySelector('.a1-die'), pl = p.querySelector('.a1-dp'), hop = p.querySelector('.a1-dh'), nm = p.querySelector('.a1-dn'), c = p.querySelector('.a1-dc'), rest = p.querySelector('.a1-dr'), heart = p.querySelector('.a1-act');
+  a1reset(p, () => {
+    die.classList.remove('a1-roll', 'on'); pl.style.transform = ''; pl.style.opacity = ''; pl.style.backgroundImage = a1img('bowl');
+    hop.style.opacity = 0; nm.textContent = 'Lachs-Bowl'; c.textContent = '3,40 €'; rest.style.opacity = 1; heart.classList.add('on');
+  });
+  await wait(1400);
+  tap(p, ...a1c(p, die));
+  die.classList.add('a1-roll', 'on');
+  pl.style.transition = 'transform .35s cubic-bezier(.5,0,.9,.5),opacity .35s'; pl.style.transform = 'translateX(-130px) rotate(-120deg)'; pl.style.opacity = 0;
+  nm.style.opacity = 0; rest.style.opacity = 0; heart.classList.remove('on');
+  await wait(300); hop.style.opacity = 1;
+  await wait(1250); hop.style.opacity = 0; die.classList.remove('on');
+  pl.style.transition = 'none'; pl.style.backgroundImage = a1img('grill'); pl.style.transform = 'translateX(-120px) rotate(-240deg)'; pl.style.opacity = 1; pl.offsetWidth;
+  pl.style.transition = 'transform .55s cubic-bezier(.3,1.25,.5,1)'; pl.style.transform = '';
+  nm.textContent = 'Forelle vom Grill'; nm.style.opacity = 1; a1count(c, 340, 290);
+  await wait(2600); die.classList.remove('a1-roll');
+});
+
+ANIM['a1-fav'] = p => loop(p, async () => {
+  const hw = p.querySelector('.a1-hw'), heart = hw.querySelector('.a1-heart'), sp = hw.querySelector('.a1-spark');
+  a1reset(p, () => { hw.classList.remove('on'); heart.classList.remove('pop'); sp.classList.remove('go'); });
+  await wait(1300);
+  tap(p, ...a1c(p, heart));
+  hw.classList.add('on'); heart.classList.add('pop'); sp.classList.add('go');
+  await wait(2000);
+  tap(p, ...a1c(p, heart));
+  heart.classList.remove('pop'); sp.classList.remove('go');
+  heart.querySelector('.a1-hf').style.transition = 'transform .25s ease-in'; hw.classList.remove('on');
+  await wait(400); heart.querySelector('.a1-hf').style.transition = '';
+  await wait(900);
+});
+
+ANIM['a1-num'] = p => {
+  // Zahlen in Spalten zerlegen: Ziffern als Streifen 0–9, andere Zeichen als Einzelstreifen
+  const nums = [...p.querySelectorAll('.a1-st .num')].map(el => {
+    const cols = [...el.textContent].map(ch => {
+      const d = /\d/.test(ch), s = document.createElement('span'); s.className = 'a1-od';
+      s.innerHTML = `<i>${d ? [...'0123456789'].join('<br>') : ch === ' ' ? '&nbsp;' : ch}</i>`;
+      return { i: s.firstChild, to: d ? -ch : 0 };
+    });
+    el.replaceChildren(...cols.map(c => c.i.parentNode));
+    return cols;
+  });
+  const sts = p.querySelectorAll('.a1-st'), ins = p.querySelectorAll('.a1-in'), blob = p.querySelector('.a1-blob');
+  loop(p, async () => {
+    a1reset(p, () => {
+      blob.classList.add('out'); ins.forEach(e => e.classList.add('out')); sts.forEach(e => e.classList.add('out'));
+      nums.flat().forEach(c => { c.i.style.transitionDelay = ''; c.i.style.transform = 'translateY(1.1em)'; });
+    });
+    await wait(700);
+    tap(p, 39, 792);
+    await wait(150);
+    blob.classList.remove('out');
+    await wait(200); ins.forEach(e => e.classList.remove('out'));
+    await wait(150);
+    nums.forEach((cols, k) => {
+      setTimeout(() => sts[k].classList.remove('out'), k * 150);
+      cols.forEach((c, j) => { c.i.style.transitionDelay = k * .15 + j * .06 + 's'; c.i.style.transform = `translateY(${c.to * .92}em)`; });
+    });
+    await wait(3600);
+  });
+};
+</script>
+<style>
+/* Übergänge & Momente (anim2): alles mit Präfix a2- */
+.a2-in{position:relative;opacity:0;transform:translateY(26px);transition:opacity .2s,transform .25s}
+.a2-m.on .a2-in{opacity:1;transform:none;transition:opacity .3s calc(.18s + var(--i,0) * .05s),transform .5s cubic-bezier(.3,1.4,.5,1) calc(.18s + var(--i,0) * .05s)}
+.a2-finger{position:absolute;width:44px;height:44px;margin:-22px 0 0 -22px;border-radius:50%;background:rgba(21,21,21,.18);z-index:30;pointer-events:none}
+.a2-veil{position:absolute;inset:0;background:var(--bg);z-index:19;opacity:0;transition:opacity .3s}
+.a2-still,.a2-still *{transition:none!important}
+.a2-av{width:44px;height:44px;border-radius:50%;background:var(--sand);display:grid;place-items:center;font-family:"DM Serif Display",serif;font-size:20px;flex:none}
+/* 1 Gericht öffnen */
+.a2-open .a2-blob{left:140px;top:180px;width:500px;height:500px;background:var(--blue);transition:left .6s cubic-bezier(.3,1.2,.5,1),top .6s cubic-bezier(.3,1.2,.5,1),width .6s cubic-bezier(.3,1.2,.5,1),height .6s cubic-bezier(.3,1.2,.5,1)}
+.a2-open.on .a2-blob{left:-60px;top:-80px;width:430px;height:430px}
+.a2-plate{position:absolute;left:182px;top:232px;width:190px;height:190px;z-index:2;transition:left .55s cubic-bezier(.3,1.3,.5,1),top .55s cubic-bezier(.3,1.3,.5,1),width .55s cubic-bezier(.3,1.3,.5,1),height .55s cubic-bezier(.3,1.3,.5,1)}
+.a2-open.on .a2-plate{left:210px;top:200px;width:230px;height:230px}
+.a2-wk{position:absolute;inset:0;transition:opacity .3s .25s,transform .4s cubic-bezier(.3,1.3,.5,1) .25s}
+.a2-open.on .a2-wk{opacity:0;transform:translateX(-24px);transition:opacity .2s,transform .3s}
+.a2-open .nav{transition:transform .4s cubic-bezier(.3,1.2,.5,1) .2s}
+.a2-open.on .nav{transform:translateY(130px);transition:transform .3s}
+.a2-rec{z-index:3;pointer-events:none}
+/* 2 Sheet */
+.a2-sh{background:#000}
+.a2-bg{position:absolute;inset:0;background:var(--bg);border-radius:54px;overflow:hidden;transition:transform .35s ease-out}
+.a2-sh.on .a2-bg{transform:scale(.96);transition:transform .5s cubic-bezier(.3,1.2,.5,1)}
+.a2-sh .scrim{opacity:0;transition:opacity .3s}
+.a2-sh.on .scrim{opacity:1}
+.a2-sh .sheet{bottom:-40px;padding-bottom:80px;transform:translateY(105%);transition:transform .3s cubic-bezier(.4,0,.8,.6)}
+.a2-sh.on .sheet{transform:none;transition:transform .55s cubic-bezier(.3,1.15,.5,1)}
+.a2-sh .quarter{transform:scale(0);transform-origin:top right;transition:transform .2s}
+.a2-sh.on .quarter{transform:none;transition:transform .55s cubic-bezier(.3,1.4,.5,1) .15s}
+/* 3 Neuer Erfolg */
+.a2-wblob{transform:translateY(430px) scale(.2);transition:transform .7s cubic-bezier(.3,1.2,.5,1)}
+.a2-win.go .a2-wblob{transform:none}
+.a2-med{position:absolute;left:110px;top:280px;width:170px;height:170px;border-radius:50%;display:grid;place-items:center;background:var(--sage);box-shadow:inset 0 0 0 9px rgba(255,255,255,.6),0 18px 36px rgba(40,30,20,.16);opacity:0;z-index:2}
+.a2-win.go .a2-med{opacity:1;animation:a2-drop .8s .25s both}
+@keyframes a2-drop{0%{transform:translateY(-480px) rotate(-160deg);animation-timing-function:cubic-bezier(.5,0,.9,.5)}55%{transform:translateY(0) rotate(10deg);animation-timing-function:ease-out}72%{transform:translateY(-22px) rotate(-4deg);animation-timing-function:ease-in}86%{transform:translateY(0) rotate(2deg)}100%{transform:none}}
+.a2-cf i{position:absolute;left:195px;top:365px;display:block;opacity:0;z-index:1}
+.a2-win.on .a2-cf i{animation:a2-burst 2.4s cubic-bezier(.2,.8,.3,1) both}
+@keyframes a2-burst{0%{transform:translate(0,0) scale(.2);opacity:0}8%{opacity:1}40%{transform:translate(var(--dx),var(--dy)) rotate(var(--r,24deg));opacity:1;animation-timing-function:ease-in-out}100%{transform:translate(var(--dx),calc(var(--dy) + 140px));opacity:0}}
+.a2-ci{border-radius:50%}.a2-ar{border-radius:999px 999px 0 0}.a2-lf{border-radius:0 0 0 12px}.a2-qu{border-radius:0 0 0 100%}
+/* 4 Leer-Zustand */
+.a2-lie{transform-origin:50% 85%;animation:a2-breathe 4s ease-in-out infinite}
+@keyframes a2-breathe{50%{transform:scale(1.012,1.025)}}
+.a2-z{position:absolute;font:400 24px "DM Serif Display",serif;opacity:0;animation:a2-z 4.5s ease-out infinite}
+.a2-z+.a2-z{font-size:18px;animation-delay:2.25s}
+@keyframes a2-z{0%{transform:translate(0,0) scale(.6);opacity:0}15%{opacity:1}70%{opacity:.7}100%{transform:translate(26px,-72px) scale(1.1);opacity:0}}
+.a2-nudge{animation:a2-nudge .6s cubic-bezier(.3,1.4,.5,1)}
+.a2-nudge svg{animation:a2-arrow .6s ease-out}
+@keyframes a2-nudge{30%{transform:translateY(-10px) scale(1.04)}60%{transform:translateY(2px)}100%{transform:none}}
+@keyframes a2-arrow{40%{transform:translateX(5px)}}
+/* 5 Ziehen zum Aktualisieren */
+.a2-list{position:absolute;inset:0;transition:transform .45s cubic-bezier(.3,1.25,.5,1)}
+.a2-pull.pull .a2-list{transform:translateY(140px);transition:transform .5s ease-in-out}
+.a2-pull.load .a2-list{transform:translateY(120px);transition:transform .35s cubic-bezier(.3,1.4,.5,1)}
+.a2-peek{position:absolute;left:159px;top:56px;width:72px;height:72px;border-radius:50%;background:var(--blue);overflow:hidden;z-index:5;transform:translateY(-140px) scale(.6);transition:transform .4s cubic-bezier(.5,0,.6,1)}
+.a2-pull.pull .a2-peek{transform:none;transition:transform .5s ease-in-out}
+.a2-pull.load .a2-peek{transform:translateY(-8px);transition:transform .35s cubic-bezier(.3,1.4,.5,1)}
+.a2-peek img{position:absolute;left:-50px;top:3px;width:170px;transform:translateY(60px);transform-origin:50% 92%;transition:transform .45s cubic-bezier(.3,1.4,.5,1)}
+.a2-pull.load .a2-peek img{transform:none;animation:a2-sway 1.3s ease-in-out .4s infinite}
+@keyframes a2-sway{25%{transform:rotate(-7deg)}75%{transform:rotate(7deg)}}
+.a2-look{transition:opacity .3s,transform .5s cubic-bezier(.3,1.4,.5,1)}
+.a2-pull.pull .a2-look{opacity:0;transform:translateY(-24px)}
+.a2-new{height:0!important;padding-top:0!important;border-top-width:0!important;opacity:0;transform:scale(.85);transform-origin:left center;transition:height .35s cubic-bezier(.3,1.2,.5,1),padding .35s,opacity .25s .1s,transform .5s cubic-bezier(.3,1.4,.5,1) .1s}
+.a2-new.in{height:138px!important;padding-top:12px!important;border-top-width:1.5px!important;opacity:1;transform:none}
+.a2-bump{animation:a2-bump .35s cubic-bezier(.3,1.4,.5,1)}
+@keyframes a2-bump{40%{transform:scale(1.12)}}
+/* 6 Kühlschrank-Foto */
+.a2-shot{position:absolute;inset:0;transform-origin:290px 330px;transition:transform .5s cubic-bezier(.5,0,.3,1),opacity .2s .3s}
+.a2-fr.shot .a2-shot{transform:translate(34px,-178px) scale(.183);opacity:0}
+.a2-fr .a2-fade{transition:opacity .2s}
+.a2-fr.shot .a2-fade{opacity:0}
+.a2-head{opacity:0;transition:opacity .3s}
+.a2-fr.shot .a2-head{opacity:1;transition:opacity .3s .45s}
+.a2-thumb{position:absolute;left:282px;top:110px;width:84px;height:84px;border-radius:50%;background:var(--sage);display:grid;place-items:center;transform:scale(0);z-index:3;transition:transform .2s}
+.a2-thumb img{width:58px}
+.a2-fr.shot .a2-thumb{transform:none;transition:transform .5s cubic-bezier(.3,1.5,.5,1) .4s}
+.a2-thumb.kick{animation:a2-kick .3s ease-out}
+@keyframes a2-kick{40%{transform:scale(1.1) rotate(-6deg)}}
+.a2-row{display:flex;align-items:center;gap:14px;padding:10px 0;border-top:1.5px solid var(--line);opacity:0;transform:translateX(-14px);transition:opacity .2s,transform .45s cubic-bezier(.3,1.4,.5,1)}
+.a2-row.in{opacity:1;transform:none}
+.a2-row .c{width:48px;height:48px;border-radius:50%;display:grid;place-items:center;flex:none}
+.a2-row .c img{width:56px}
+.a2-row .c img,.a2-row.in .c img{opacity:0}.a2-row.got .c img{opacity:1}
+.a2-fly{position:absolute;width:90px;z-index:6;pointer-events:none}
+.a2-flash{position:absolute;inset:0;background:#fff;opacity:0;z-index:25;pointer-events:none}
+.a2-done{opacity:0;transform:translateY(16px);transition:opacity .3s,transform .45s cubic-bezier(.3,1.4,.5,1)}
+.a2-done.in{opacity:1;transform:none}
+/* Bewegung reduzieren: nur Überblenden */
+@media (prefers-reduced-motion:reduce){.a2-m,.a2-m *{transition-property:opacity!important;transition-delay:0s!important;animation:none!important}}
+</style>
+
+<section class="sec"><h2>Übergänge &amp; Momente</h2><p>Wie Screens ineinander übergehen und wie die Zeichnungen kleine Momente begleiten: Formen wandern und wachsen aus dem Rand, Figuren atmen, schauen und springen.</p></section>
+<div class="screens">
+
+  <!-- 1 Gericht öffnen -->
+  <div class="screen" data-anim="a2-open"><div class="phone a2-m a2-open">
+    <div class="sb"><b>9:41</b><span class="island"></span><svg><use href="#status"/></svg></div>
+    <div class="blob a2-blob"></div>
+    <div class="a2-wk">
+      <div class="scr"><div class="row between" style="align-items:flex-end"><div><div class="small">KW 45 · 3.–9. Nov</div><div class="t1">Deine Woche</div></div><div class="num" style="font-size:30px">6<span style="color:var(--ink3)">/7</span></div></div></div>
+      <div class="tl"></div>
+      <div class="day has" style="top:236px"><i class="d"></i><div><b>Mo</b><span>Linsen-Dal</span></div></div>
+      <div class="day on" style="top:308px"><i class="d"></i><div><b>Dienstag</b><span>4. Nov</span></div></div>
+      <div class="day has" style="top:380px"><i class="d"></i><div><b>Mi</b><span>Ofengemüse</span></div></div>
+      <div class="day has" style="top:452px"><i class="d"></i><div><b>Do</b><span>Curry</span></div></div>
+      <div class="day has" style="top:524px"><i class="d"></i><div><b>Fr</b><span>Pizza</span></div></div>
+      <div class="day" style="top:596px"><i class="d"></i><div><b>Sa</b><span>frei</span></div></div>
+      <div class="day has" style="top:668px"><i class="d"></i><div><b>So</b><span>Braten</span></div></div>
+      <div style="position:absolute;left:140px;top:317px;width:42px;height:1.5px;background:var(--ink)"></div>
+      <div style="position:absolute;left:182px;right:20px;top:446px">
+        <div class="lbl" style="color:var(--ink)">ABEND · 25 MIN</div>
+        <div class="t2" style="margin-top:4px">Spaghetti Pomodoro</div>
+        <div class="row between" style="margin-top:12px;align-items:flex-end">
+          <div><div class="num" style="font-size:44px">2,10 €</div><div class="small" style="font-size:12px;margin-top:4px;color:var(--ink)">p. P. · <span style="color:var(--deal)">2 im Angebot</span></div></div>
+          <span class="circle" style="width:50px;height:50px"><svg class="i" style="width:18px"><use href="#i-play"/></svg></span>
+        </div>
+      </div>
+    </div>
+    <div class="plate ph-pasta a2-plate"></div>
+    <div class="scr a2-rec">
+      <div class="row between a2-in" style="--i:0"><span class="small" style="color:var(--ink)">Rezepte · <b>Pasta</b></span><svg class="i"><use href="#i-back"/></svg></div>
+      <div class="t1 a2-in" style="--i:1;margin-top:18px;font-size:38px">Spaghetti<br>Pomodoro</div>
+      <div class="a2-in" style="--i:2;width:140px;margin-top:30px">
+        <div class="stat"><span class="lbl">Zeit</span><span class="num" style="font-size:34px">25′</span></div>
+        <div class="stat" style="margin-top:10px"><span class="lbl">p. P.</span><span class="num" style="font-size:34px">2,10</span></div>
+        <div class="stat" style="margin-top:10px"><span class="lbl">kcal</span><span class="num" style="font-size:34px">540</span></div>
+      </div>
+      <div class="row between a2-in" style="--i:3;margin-top:34px;margin-bottom:6px"><span style="font-weight:800">Zutaten</span><span class="small" style="font-size:13px">für 2 · 6 Stück</span></div>
+      <div class="irow a2-in" style="--i:4"><span class="c" style="background:var(--rose)"><img src="ill-v7/tomato.webp" alt=""></span><span class="nm">Tomaten</span><span class="deal">−30 %</span><b>400 g</b></div>
+      <div class="irow a2-in" style="--i:5"><span class="c" style="background:var(--sage)"><img src="ill-v7/basil.webp" alt=""></span><span class="nm">Basilikum</span><b>1 Bund</b></div>
+      <div class="irow a2-in" style="--i:6"><span class="c" style="background:var(--blue1)"><img src="ill-v7/pasta.webp" alt=""></span><span class="nm">Spaghetti</span><b>250 g</b></div>
+      <div class="irow a2-in" style="--i:7"><span class="c" style="background:var(--sand)"><img src="ill-v7/garlic.webp" alt=""></span><span class="nm">Knoblauch</span><b>2 Zehen</b></div>
+      <div class="row between a2-in" style="--i:8;position:absolute;left:24px;right:24px;bottom:30px"><div><div style="font-weight:800">Kochmodus</div><div class="small" style="font-size:13px">5 Schritte</div></div><span class="circle" style="width:64px;height:64px"><svg class="i" style="width:22px"><use href="#i-play"/></svg></span></div>
+    </div>
+    <div class="nav" data-on="1"></div>
+    <div class="homebar"></div></div>
+    <div class="caption"><b>Gericht öffnen</b>Tipp auf den Teller: der blaue Halbkreis rechts wandert und wird zum großen Kreis oben links, der Teller gleitet und wächst an seinen Platz im Rezept (0,55 s, leichtes Nachfedern). Zeitstrahl und Nav weichen in 0,2 s aus, dann gleiten Kopf, Titel, Zahlen und Zutaten-Zeilen im Abstand von 50 ms von unten herein. Zurück (Pfeil oder Wischen vom Rand): alles rückwärts, Inhalte gehen ohne Staffel. Haptik: leichtes Tippen. Bewegung reduzieren: Kreis und Teller stehen sofort am Ziel, Inhalte blenden über.</div></div>
+
+  <!-- 2 Sheet öffnet -->
+  <div class="screen" data-anim="a2-sheet"><div class="phone a2-m a2-sh">
+    <div class="a2-bg">
+      <div class="blob" style="left:130px;top:150px;width:400px;height:400px;background:var(--blue1)"></div>
+      <img class="ill" src="ill-v7/table.webp" style="position:absolute;left:150px;top:190px;width:250px" alt="">
+      <div class="row" style="position:absolute;right:24px;top:66px;gap:10px;z-index:2"><span class="a2-av">J</span><span class="circle" style="width:44px;height:44px"><svg class="i" style="width:22px"><use href="#i-plus"/></svg></span></div>
+      <div class="scr">
+        <div class="small">Hey Jona,</div><div class="t1" style="margin-top:2px">Was kochen<br>wir heute?</div>
+        <div style="position:absolute;left:24px;top:380px;width:190px">
+          <div class="lbl" style="color:var(--blue3)">HEUTE ABEND</div>
+          <div class="t2" style="margin-top:4px;font-size:28px">Spaghetti Pomodoro</div>
+          <div class="small" style="font-size:13px;margin-top:4px">25 min · 2,10 € p. P.</div>
+        </div>
+        <div style="position:absolute;left:24px;right:24px;top:578px">
+          <div class="stat"><span class="lbl">Diese Woche</span><span class="num" style="font-size:52px">38,20 €</span></div>
+          <div class="stat mute" style="margin-top:12px"><span class="lbl">Gespart</span><span class="num" style="font-size:40px;color:var(--deal)">12,40 €</span></div>
+        </div>
+      </div>
+      <div class="nav" data-on="0"></div>
+    </div>
+    <div class="sb"><b>9:41</b><span class="island"></span><svg><use href="#status"/></svg></div>
+    <div class="scrim"></div>
+    <div class="sheet">
+      <div class="quarter" style="right:0;top:0;width:150px;height:150px;background:var(--sand)"></div>
+      <div class="row between a2-in" style="--i:0"><div class="t2">Schnell-Aktionen</div><span class="x"><svg class="i"><use href="#i-x"/></svg></span></div>
+      <div style="margin-top:14px">
+        <div class="irow a2-in" style="--i:1"><span class="c" style="background:var(--blue1)"><svg class="i"><use href="#i-sparkle"/></svg></span><span class="nm">Wochenplan erstellen</span><svg class="i" style="width:18px;color:var(--ink3)"><use href="#i-chev"/></svg></div>
+        <div class="irow a2-in" style="--i:2"><span class="c" style="background:var(--blue1)"><svg class="i"><use href="#i-barcode"/></svg></span><span class="nm">Barcode scannen</span><svg class="i" style="width:18px;color:var(--ink3)"><use href="#i-chev"/></svg></div>
+        <div class="irow a2-in" style="--i:3"><span class="c" style="background:var(--blue1)"><svg class="i"><use href="#i-bag"/></svg></span><span class="nm">Zur Einkaufsliste</span><svg class="i" style="width:18px;color:var(--ink3)"><use href="#i-chev"/></svg></div>
+        <div class="irow a2-in" style="--i:4"><span class="c" style="background:var(--blue1)"><svg class="i"><use href="#i-edit"/></svg></span><span class="nm">Rezept anlegen</span><svg class="i" style="width:18px;color:var(--ink3)"><use href="#i-chev"/></svg></div>
+      </div>
+      <div class="btn a2-in" style="--i:5;margin-top:18px"><svg class="i"><use href="#i-cam"/></svg>Kühlschrank scannen</div>
+    </div>
+    <div class="homebar" style="z-index:20"></div></div>
+    <div class="caption"><b>Sheet öffnet</b>Tipp auf „+“: der Screen dahinter dunkelt ab und schrumpft auf 96 %, das Sheet federt von unten hoch (0,55 s, kleines Überschwingen). Der Viertelkreis wächst aus der Ecke oben rechts, Kopf und Zeilen gleiten gestaffelt (50 ms) herein. Nach unten wischen: das Sheet folgt dem Finger und gleitet beim Loslassen hinaus (0,3 s), der Screen wird wieder groß. Haptik: leichtes Tippen beim Öffnen. Bewegung reduzieren: Abdunkeln und Sheet blenden nur über, nichts schrumpft.</div></div>
+
+  <!-- 3 Neuer Erfolg -->
+  <div class="screen" data-anim="a2-win"><div class="phone a2-m a2-win">
+    <div class="sb"><b>9:41</b><span class="island"></span><svg><use href="#status"/></svg></div>
+    <div class="blob a2-wblob" style="left:-110px;top:190px;width:610px;height:610px;background:var(--blue)"></div>
+    <div class="a2-cf">
+      <i class="a2-ci" style="--dx:-130px;--dy:-120px;width:12px;height:12px;background:var(--ink)"></i>
+      <i class="a2-ar" style="--dx:120px;--dy:-140px;--r:-30deg;width:18px;height:9px;background:var(--rose)"></i>
+      <i class="a2-lf" style="--dx:150px;--dy:-30px;width:16px;height:12px;background:var(--sage)"></i>
+      <i class="a2-ci" style="--dx:-160px;--dy:10px;width:16px;height:16px;background:var(--sand)"></i>
+      <i class="a2-qu" style="--dx:-90px;--dy:-170px;--r:-20deg;width:14px;height:14px;background:var(--card)"></i>
+      <i class="a2-ci" style="--dx:60px;--dy:-180px;width:8px;height:8px;background:var(--card)"></i>
+      <i class="a2-ar" style="--dx:-150px;--dy:90px;width:20px;height:10px;background:var(--sage)"></i>
+      <i class="a2-lf" style="--dx:140px;--dy:80px;--r:-24deg;width:18px;height:14px;background:var(--rose)"></i>
+      <i class="a2-ci" style="--dx:100px;--dy:150px;width:10px;height:10px;background:var(--ink)"></i>
+      <i class="a2-qu" style="--dx:-70px;--dy:150px;width:16px;height:16px;background:var(--rose)"></i>
+      <i class="a2-ar" style="--dx:30px;--dy:-200px;--r:-18deg;width:16px;height:8px;background:var(--sand)"></i>
+      <i class="a2-ci" style="--dx:165px;--dy:-100px;width:12px;height:12px;background:var(--sage)"></i>
+    </div>
+    <div class="a2-med"><svg class="i" style="width:72px;height:72px;stroke-width:1.5"><use href="#i-leaf"/></svg></div>
+    <div class="scr">
+      <div class="small a2-in" style="margin-top:30px">Glückwunsch, Jona</div><div class="t1 a2-type" style="font-size:42px;min-height:47px"></div>
+      <div style="position:absolute;left:24px;right:24px;top:560px;text-align:center">
+        <div class="lbl a2-in" style="--i:8;color:var(--ink)">GESUNDHEIT · JONA</div>
+        <div class="t1 a2-in" style="--i:9;margin-top:6px">30 Pflanzen</div>
+        <div class="a2-in" style="--i:10;font-size:15px;margin-top:6px">30 verschiedene Pflanzen in einer Woche</div>
+      </div>
+    </div>
+    <div class="btn a2-in" style="--i:13;position:absolute;left:24px;right:24px;bottom:40px">Weiter (1/2)</div>
+    <div class="homebar"></div></div>
+    <div class="caption"><b>Neuer Erfolg</b>Erscheint nach dem Kochen oder Abhaken. Der große blaue Kreis wächst von unten aus dem Rand (0,7 s), die Medaille fällt von oben mit einer halben Drehung, landet gerade und federt zweimal nach (0,8 s). Beim Aufprall fliegen kleine Pastell-Formen – Kreise, Bögen, Blätter, Viertelkreise – heraus und fallen sanft (2,4 s); „Neuer Erfolg!“ tippt sich ein, Gruppe, Name und „Weiter“ gleiten herein. Haptik: Erfolg (doppeltes Tippen) beim Aufprall. Bewegung reduzieren: kein Fallen, kein Konfetti – Kreis, Medaille und Text blenden über.</div></div>
+
+  <!-- 4 Leer-Zustand -->
+  <div class="screen" data-anim="a2-empty"><div class="phone a2-m">
+    <div class="sb"><b>9:41</b><span class="island"></span><svg><use href="#status"/></svg></div>
+    <div class="blob" style="left:-60px;top:470px;width:510px;height:510px;background:var(--blue1)"></div>
+    <img class="ill a2-lie" src="ill-v7/lying.webp" style="position:absolute;left:14px;top:330px;width:360px" alt="">
+    <span class="a2-z" style="left:300px;top:458px">z</span><span class="a2-z" style="left:304px;top:466px">z</span>
+    <div class="row" style="position:absolute;right:24px;top:66px;gap:10px;z-index:2"><span class="a2-av">J</span><span class="circle" style="width:44px;height:44px"><svg class="i" style="width:22px"><use href="#i-plus"/></svg></span></div>
+    <div class="scr">
+      <div class="t1" style="margin-top:40px;font-size:42px">Noch nichts<br>geplant.</div>
+      <div style="color:var(--ink2);font-size:17px;margin-top:8px">Kein Stress – in 30 Sekunden steht dein Plan.</div>
+    </div>
+    <div style="position:absolute;left:24px;right:24px;bottom:124px" class="row between"><span style="font-weight:800;font-size:17px">Plan erstellen</span><span class="circle a2-go" style="width:72px;height:72px"><svg class="i"><use href="#i-arrow"/></svg></span></div>
+    <div class="nav" data-on="0"></div>
+    <div class="homebar"></div></div>
+    <div class="caption"><b>Leer-Zustand lebt</b>Ohne Auslöser, solange der Screen offen ist: die liegende Figur atmet (Höhe +2,5 %, 4 s pro Atemzug), über dem Kopf steigt alle gut 2 s ein kleines „z“ schräg auf und verblasst. Der Knopf „Plan erstellen“ stupst sich alle 4 s einmal an: kleiner Hüpfer, der Pfeil zuckt nach rechts (0,6 s, federnd). Keine Haptik. Bewegung reduzieren: alles steht still, kein „z“.</div></div>
+
+  <!-- 5 Ziehen zum Aktualisieren -->
+  <div class="screen" data-anim="a2-pull"><div class="phone a2-m a2-pull">
+    <div class="sb"><b>9:41</b><span class="island"></span><svg><use href="#status"/></svg></div>
+    <div class="a2-peek"><img src="ill-v7/binoculars.webp" alt=""></div>
+    <div class="a2-list">
+      <div class="leaf" style="right:0;top:0;width:240px;height:290px;background:var(--blue1)"></div>
+      <img class="ill a2-look" src="ill-v7/binoculars.webp" style="position:absolute;left:200px;top:56px;width:200px" alt="">
+      <div class="scr">
+        <div class="small">10115 · 6 Läden</div><div class="t1">Angebote</div>
+        <div style="width:170px;margin-top:22px">
+          <div class="stat"><span class="lbl">Diese<br>Woche</span><span class="num a2-count" style="font-size:64px;transform-origin:right center">128</span></div>
+        </div>
+        <div class="chips" style="margin-top:40px"><span class="chip on">Alle</span><span class="chip">Merkliste 3</span><span class="chip">Gemüse</span><span class="chip">Kühlung</span></div>
+        <div style="margin-top:16px">
+          <div class="offer a2-new"><div class="tab" style="background:var(--blue1)"><img src="ill-v7/pasta.webp" alt=""></div>
+            <span class="deal">−35 %</span> <span class="soft">neu</span><div class="t2" style="margin-top:6px">Spaghetti</div><div class="small" style="font-size:13px">Aldi · 500 g</div><div class="num" style="font-size:34px;margin-top:8px">0,59 €</div></div>
+          <div class="offer a2-new"><div class="tab" style="background:var(--sand)"><img src="ill-v7/bag.webp" alt=""></div>
+            <span class="deal">−25 %</span> <span class="soft">neu</span><div class="t2" style="margin-top:6px">Basmatireis</div><div class="small" style="font-size:13px">Rewe · 1 kg</div><div class="num" style="font-size:34px;margin-top:8px">2,29 €</div></div>
+          <div class="offer a2-new"><div class="tab" style="background:var(--rose)"><img src="ill-v7/tomato.webp" alt=""></div>
+            <span class="deal">−40 %</span> <span class="soft">neu</span><div class="t2" style="margin-top:6px">Kirschtomaten</div><div class="small" style="font-size:13px">Lidl · 250 g</div><div class="num" style="font-size:34px;margin-top:8px">0,89 €</div></div>
+          <div class="offer"><div class="tab" style="background:var(--rose)"><img src="ill-v7/tomato.webp" alt=""></div>
+            <span class="deal">−30 %</span><div class="t2" style="margin-top:6px">Tomaten</div><div class="small" style="font-size:13px">Lidl · 1 kg</div><div class="num" style="font-size:34px;margin-top:8px">1,99 €</div></div>
+          <div class="offer"><div class="tab" style="background:var(--sand)"><img src="ill-v7/garlic.webp" alt=""></div>
+            <span class="deal">−20 %</span><div class="t2" style="margin-top:6px">Knoblauch</div><div class="small" style="font-size:13px">Rewe · 3 Stück</div><div class="num" style="font-size:34px;margin-top:8px">0,79 €</div></div>
+          <div class="offer"><div class="tab" style="background:var(--sage)"><img src="ill-v7/basil.webp" alt=""></div>
+            <span class="deal">−25 %</span><div class="t2" style="margin-top:6px">Basilikum</div></div>
+        </div>
+      </div>
+    </div>
+    <div class="nav" data-on="2"></div>
+    <div class="homebar"></div></div>
+    <div class="caption"><b>Ziehen zum Aktualisieren</b>Liste nach unten ziehen: die Fernglas-Figur verlässt ihr Blatt, oben wächst ein Kreis mit ihr heraus. Ab 120 pt (Haptik: leichtes Tippen) lässt man los, die Liste federt auf 120 pt zurück, die Figur taucht auf und schwenkt das Fernglas hin und her, solange geladen wird. Dann rutscht der Kreis nach oben weg, die Liste federt hoch (0,45 s) und die neuen Angebote poppen im Abstand von 0,3 s ein, „128“ zählt auf „131“; die Figur hüpft zurück ins Blatt. Bewegung reduzieren: nur ein ruhiger Kreis mit der Figur, neue Zeilen blenden ein.</div></div>
+
+  <!-- 6 Kühlschrank-Foto wird gelesen -->
+  <div class="screen" data-anim="a2-fridge"><div class="phone a2-m a2-fr">
+    <div class="sb"><b>9:41</b><span class="island"></span><svg><use href="#status"/></svg></div>
+    <div class="a2-shot">
+      <div class="blob" style="left:60px;top:100px;width:460px;height:460px;background:var(--sage)"></div>
+      <img class="ill" src="ill-v7/fridge.webp" style="position:absolute;left:40px;top:130px;width:310px" alt="">
+    </div>
+    <div class="scr">
+      <div class="row between"><span class="x"><svg class="i"><use href="#i-x"/></svg></span><span class="num a2-fade" style="font-size:30px">1<span style="color:var(--ink3)">/3</span></span></div>
+      <div class="a2-fade" style="position:absolute;left:24px;right:24px;top:560px">
+        <div class="t1">Was ist im Kühlschrank?</div>
+        <div style="font-size:16px;line-height:1.5;color:var(--ink2);margin-top:8px">Mach 1–5 Fotos. Wir füllen den Vorrat und schlagen Gerichte vor.</div>
+      </div>
+      <div style="position:absolute;left:24px;right:24px;top:118px">
+        <div class="row a2-head" style="gap:10px;align-items:baseline"><span class="num a2-count" style="font-size:72px;transform-origin:left center">0</span><span class="t2">erkannt</span></div>
+        <div style="margin-top:22px">
+          <div class="a2-row" data-n="tomato"><span class="ck on"><svg class="i" style="width:15px"><use href="#i-check"/></svg></span><span class="c" style="background:var(--rose)"><img src="ill-v7/tomato.webp" alt=""></span><div style="flex:1"><div class="row" style="gap:8px"><span class="t2" style="font-size:18px">Tomaten</span><span class="soft ok" style="height:20px;font-size:11px">sicher</span></div><div class="small" style="font-size:12px;margin-top:3px">6 Stück · Kühlschrank</div></div></div>
+          <div class="a2-row" data-n="garlic"><span class="ck on"><svg class="i" style="width:15px"><use href="#i-check"/></svg></span><span class="c" style="background:var(--sand)"><img src="ill-v7/garlic.webp" alt=""></span><div style="flex:1"><div class="row" style="gap:8px"><span class="t2" style="font-size:18px">Knoblauch</span><span class="soft ok" style="height:20px;font-size:11px">sicher</span></div><div class="small" style="font-size:12px;margin-top:3px">3 Zehen · Vorrat</div></div></div>
+          <div class="a2-row" data-n="basil"><span class="ck on"><svg class="i" style="width:15px"><use href="#i-check"/></svg></span><span class="c" style="background:var(--sage)"><img src="ill-v7/basil.webp" alt=""></span><div style="flex:1"><div class="row" style="gap:8px"><span class="t2" style="font-size:18px">Basilikum</span><span class="soft" style="height:20px;font-size:11px;background:none;box-shadow:inset 0 0 0 1.5px var(--line);color:var(--ink2)">ziemlich sicher</span></div><div class="small" style="font-size:12px;margin-top:3px">1 Bund · Kühlschrank</div></div></div>
+          <div class="a2-row" data-n="pasta"><span class="ck on"><svg class="i" style="width:15px"><use href="#i-check"/></svg></span><span class="c" style="background:var(--blue1)"><img src="ill-v7/pasta.webp" alt=""></span><div style="flex:1"><div class="row" style="gap:8px"><span class="t2" style="font-size:18px">Spaghetti</span><span class="soft ok" style="height:20px;font-size:11px">sicher</span></div><div class="small" style="font-size:12px;margin-top:3px">500 g · Vorrat</div></div></div>
+        </div>
+      </div>
+    </div>
+    <span class="a2-thumb"><img src="ill-v7/fridge.webp" alt=""></span>
+    <div class="row between a2-fade" style="position:absolute;left:24px;right:24px;bottom:40px"><span style="font-weight:800;font-size:17px">Foto machen</span><span class="circle" style="width:72px;height:72px"><svg class="i" style="width:28px;height:28px"><use href="#i-cam"/></svg></span></div>
+    <div class="btn a2-done" style="position:absolute;left:24px;right:24px;bottom:30px">4 in den Vorrat übernehmen</div>
+    <div class="a2-flash"></div>
+    <div class="homebar"></div></div>
+    <div class="caption"><b>Kühlschrank-Foto wird gelesen</b>Tipp auf den Auslöser: kurzer weißer Blitz (0,4 s, Haptik: mittleres Tippen). Der Kühlschrank im Kreis schrumpft in 0,5 s zum Vorschau-Kreislein oben rechts, das federnd aufploppt; „0 erkannt“ blendet ein. Dann springen nacheinander Tomate, Knoblauch, Basilikum und Spaghetti im Bogen aus dem Kreislein (0,65 s, der Kreis zuckt bei jedem Sprung) und landen im Farb-Kreis ihrer Zeile, die von links hereinfedert; die Zahl zählt mit. Zum Schluss gleitet „4 in den Vorrat übernehmen“ herein. Bewegung reduzieren: Blitz entfällt, keine Sprünge – Vorschau und Zeilen blenden nacheinander ein.</div></div>
+
+</div>
+<script>
+// Hilfen für anim2 (Präfix a2, damit nichts mit anim0/anim1 kollidiert)
+const a2calm = matchMedia('(prefers-reduced-motion: reduce)').matches;
+function a2drag(p, x, y1, y2, ms) {
+  const f = document.createElement('i'); f.className = 'a2-finger'; f.style.left = x + 'px'; f.style.top = y1 + 'px'; p.appendChild(f);
+  requestAnimationFrame(() => requestAnimationFrame(() => { f.style.transition = `top ${ms}ms ease-in-out,opacity .2s ${ms}ms`; f.style.top = y2 + 'px'; f.style.opacity = 0; }));
+  setTimeout(() => f.remove(), ms + 300);
+}
+// Ende der Schleife: Inhalt kurz abdecken, ohne Übergänge zurücksetzen, wieder aufdecken
+async function a2reset(p, fn) {
+  const v = document.createElement('i'); v.className = 'a2-veil'; p.appendChild(v);
+  await wait(30); v.style.opacity = 1; await wait(320);
+  p.classList.add('a2-still'); fn(); p.offsetWidth; p.classList.remove('a2-still');
+  v.style.opacity = 0; await wait(320); v.remove();
+}
+function a2bump(el) { el.classList.remove('a2-bump'); el.offsetWidth; el.classList.add('a2-bump'); }
+
+ANIM['a2-open'] = p => loop(p, async () => {
+  await wait(1400); tap(p, 277, 327); await wait(120); p.classList.add('on');
+  await wait(2800); tap(p, 354, 78); await wait(120); p.classList.remove('on');
+  await wait(1400);
+});
+
+ANIM['a2-sheet'] = p => loop(p, async () => {
+  const sh = p.querySelector('.sheet');
+  await wait(1200); tap(p, 344, 88); await wait(120); p.classList.add('on');
+  await wait(2400);
+  const top = p.offsetHeight - sh.offsetHeight + 40;
+  a2drag(p, 195, top + 18, top + 238, 450);
+  sh.style.transition = 'transform .45s ease-in-out'; sh.style.transform = 'translateY(220px)';
+  await wait(450); sh.style.transition = sh.style.transform = ''; p.classList.remove('on');
+  await wait(900);
+});
+
+ANIM['a2-win'] = p => loop(p, async () => {
+  const t = p.querySelector('.a2-type');
+  await wait(600); p.classList.add('go');
+  await wait(690); p.classList.add('on');
+  for (const ch of 'Neuer Erfolg!') { t.textContent += ch; await wait(55); }
+  await wait(2600); tap(p, 195, 776); await wait(150);
+  await a2reset(p, () => { p.classList.remove('go', 'on'); t.textContent = ''; });
+});
+
+ANIM['a2-empty'] = p => loop(p, async () => {
+  const b = p.querySelector('.a2-go');
+  await wait(3400); b.classList.add('a2-nudge'); await wait(650); b.classList.remove('a2-nudge');
+});
+
+ANIM['a2-pull'] = p => loop(p, async () => {
+  const news = p.querySelectorAll('.a2-new'), n = p.querySelector('.a2-count');
+  await wait(1200);
+  a2drag(p, 195, 300, 430, 500); p.classList.add('pull');
+  await wait(520); p.classList.add('load');
+  await wait(2200); p.classList.remove('load', 'pull');
+  await wait(380);
+  for (let i = 0; i < news.length; i++) { news[i].classList.add('in'); n.textContent = 129 + i; a2bump(n); await wait(300); }
+  await wait(2600);
+  await a2reset(p, () => { news.forEach(e => e.classList.remove('in')); n.textContent = 128; });
+});
+
+ANIM['a2-fridge'] = p => loop(p, async () => {
+  const flash = p.querySelector('.a2-flash'), thumb = p.querySelector('.a2-thumb'), n = p.querySelector('.a2-count'), rows = [...p.querySelectorAll('.a2-row')];
+  await wait(1200); tap(p, 330, 768); await wait(100);
+  if (!a2calm) { flash.style.transition = 'none'; flash.style.opacity = 1; flash.offsetWidth; flash.style.transition = 'opacity .4s'; flash.style.opacity = 0; }
+  await wait(150); p.classList.add('shot');
+  await wait(1100);
+  const pr = p.getBoundingClientRect(), z = pr.width / p.offsetWidth, pos = el => { const r = el.getBoundingClientRect(); return [(r.left - pr.left + r.width / 2) / z, (r.top - pr.top + r.height / 2) / z]; };
+  for (const [i, row] of rows.entries()) {
+    const [x0, y0] = pos(thumb), [x1, y1] = pos(row.querySelector('.c'));
+    if (!a2calm) {
+      const f = new Image(); f.src = `ill-v7/${row.dataset.n}.webp`; f.className = 'a2-fly'; f.style.left = x0 - 45 + 'px'; f.style.top = y0 - 45 + 'px'; p.appendChild(f);
+      thumb.classList.remove('kick'); thumb.offsetWidth; thumb.classList.add('kick');
+      const dx = x1 + 14 - x0, dy = y1 - y0; // +14: Zeile gleitet noch von links herein
+      f.animate([
+        { transform: 'translate(0,0) scale(.3)', opacity: 0 },
+        { transform: `translate(${dx * .3}px,${dy * .15 - 70}px) rotate(-25deg) scale(.8)`, opacity: 1, offset: .4 },
+        { transform: `translate(${dx}px,${dy}px) scale(.62)`, opacity: 1 }
+      ], { duration: 650, easing: 'cubic-bezier(.35,.1,.45,1)', fill: 'forwards' });
+      await wait(650); // nicht .finished: hängt in Hintergrund-Tabs
+      f.remove();
+    }
+    row.classList.add('in', 'got'); n.textContent = i + 1; a2bump(n);
+    await wait(a2calm ? 400 : 250);
+  }
+  await wait(200); p.querySelector('.a2-done').classList.add('in');
+  await wait(2600);
+  await a2reset(p, () => { p.classList.remove('shot'); rows.forEach(r => r.classList.remove('in', 'got')); n.textContent = 0; p.querySelector('.a2-done').classList.remove('in'); thumb.classList.remove('kick'); });
+});
+</script>
+<script>
+// Nav-Leiste mit Mulde unter dem aktiven Symbol (Kreis-Mitte = Mulden-Mitte)
+const TABS = ['i-home', 'i-cal', 'i-tag', 'i-bag', 'i-book'], T = 34, R = 38;
+document.querySelectorAll('.nav').forEach(n => {
+  const on = +n.dataset.on, x = i => 39 + 78 * i, c = x(on);
+  const d = `M0 ${T}H${c - R - 16}Q${c - R} ${T} ${c - R} ${T + 12}A${R} ${R} 0 0 0 ${c + R} ${T + 12}Q${c + R} ${T} ${c + R + 16} ${T}H390V120H0Z`;
+  n.innerHTML = `<svg class="bar" viewBox="0 0 390 120"><path d="${d}" fill="#fff"/></svg>` +
+    TABS.map((t, i) => `<span class="t${i === on ? ' on' : ''}" style="left:${x(i)}px;top:${i === on ? T + 12 : T + 34}px"><svg class="i"><use href="#${t}"/></svg></span>`).join('');
+});
+</script>
+</body>
+</html>

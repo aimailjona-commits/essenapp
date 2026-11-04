@@ -14,7 +14,7 @@
 .b-caret{display:inline-block;width:2px;height:22px;background:var(--blue3);vertical-align:-4px;margin-left:1px}
 .b-lvl{display:inline-flex;align-items:center;gap:2px;height:16px}.b-lvl i{width:3px;border-radius:2px;background:var(--ink)}
 .b-step{display:flex;gap:14px;align-items:flex-start;padding:12px 0;border-top:1.5px solid var(--line)}
-.b-step .num{font-size:30px;width:42px;flex:none}
+.b-step .num{font-size:22px;width:34px;flex:none;color:var(--ink2);padding-top:1px}
 .b-dig{width:46px;text-align:center;border-bottom:2px solid var(--ink3);padding-bottom:6px;height:62px}
 </style>
 <svg width="0" height="0" style="position:absolute">
@@ -39,28 +39,21 @@
       <div class="row between"><span class="small">Rezepte</span><div class="row" style="gap:10px"><span class="circle" style="width:44px;height:44px;background:var(--card);color:var(--ink);box-shadow:inset 0 0 0 1.5px var(--line)"><svg class="i" style="width:20px"><use href="#i-link"/></svg></span><span class="circle" style="width:44px;height:44px"><svg class="i" style="width:20px"><use href="#i-plus"/></svg></span></div></div>
       <div class="t1" style="margin-top:4px">Meine<br>Rezepte</div>
       <div style="width:170px;margin-top:14px"><div class="stat"><span class="lbl">Gespeichert</span><span class="num" style="font-size:56px">24</span></div></div>
-      <div class="field" style="margin-top:22px;position:relative"><svg class="i" style="width:20px"><use href="#i-search"/></svg>Rezept oder Tag suchen</div>
+      <div class="field" style="margin-top:28px"><svg class="i" style="width:20px"><use href="#i-search"/></svg>Rezept oder Tag suchen</div>
       <div class="chips" style="margin:12px -24px 0 0"><span class="chip on">Alle 24</span><span class="chip"><svg class="i" style="width:16px"><use href="#i-heart"/></svg>6</span><span class="chip">Eigene 9</span><span class="chip">Importiert 15</span><span class="chip">Im Angebot 5</span></div>
-      <div class="sec2" style="margin-top:20px">IM ANGEBOT DIESE WOCHE</div>
-      <div class="row" style="gap:12px;margin:8px -24px 0 0;overflow:hidden">
-        <div class="row" style="gap:10px;flex:none"><div class="plate b-grill" style="width:50px;height:50px;box-shadow:0 0 0 4px var(--card)"></div><div style="width:100px"><div style="font-family:'DM Serif Display',serif;font-size:17px">Ofen-Lachs</div><div class="row" style="gap:6px;margin-top:3px"><b style="font-size:14px">3,90 €</b><span class="deal">−30 %</span></div></div></div>
-        <div class="row" style="gap:10px;flex:none"><div class="plate b-chef" style="width:50px;height:50px;box-shadow:0 0 0 4px var(--card)"></div><div style="width:100px"><div style="font-family:'DM Serif Display',serif;font-size:17px">Ofengemüse</div><div class="row" style="gap:6px;margin-top:3px"><b style="font-size:14px">2,40 €</b><span class="deal">−20 %</span></div></div></div>
-        <div class="plate b-table" style="width:50px;height:50px;box-shadow:0 0 0 4px var(--card)"></div>
-      </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:22px;margin-top:20px">
-        <div><div style="position:relative;width:104px;height:104px;margin-left:6px"><div class="plate ph-pasta" style="width:104px;height:104px"></div><span class="circle" style="position:absolute;right:-10px;top:-4px;width:34px;height:34px"><svg class="i" style="width:16px;fill:#fff"><use href="#i-heart"/></svg></span></div>
-          <div style="font-family:'DM Serif Display',serif;font-size:16px;margin-top:12px">Spaghetti Pomodoro</div>
-          <div class="row" style="gap:6px;margin-top:3px"><svg class="b-st"><use href="#b-s4"/></svg><span style="font-size:12px;color:var(--ink2)">4,5</span></div>
-          <div class="row" style="gap:6px;margin-top:4px"><span class="num" style="font-size:22px">2,10 €</span><span class="deal">im Angebot</span></div></div>
-        <div><div style="position:relative;width:104px;height:104px;margin-left:6px"><div class="plate b-bowl" style="width:104px;height:104px"></div><span class="circle" style="position:absolute;right:-10px;top:-4px;width:34px;height:34px;background:var(--card);color:var(--ink);box-shadow:inset 0 0 0 1.5px var(--line)"><svg class="i" style="width:16px"><use href="#i-heart"/></svg></span></div>
-          <div style="font-family:'DM Serif Display',serif;font-size:16px;margin-top:12px">Bunte Linsen-Bowl</div>
-          <div style="font-size:12px;color:var(--ink2);margin-top:3px;height:14px">noch nicht bewertet</div>
-          <div class="row" style="gap:6px;margin-top:4px"><span class="num" style="font-size:22px">3,40 €</span><span class="soft">Instagram</span></div></div>
+      <div class="irow" style="margin-top:28px;border-bottom:1.5px solid var(--line)"><span class="row" style="gap:0;flex:none"><span class="plate b-grill" style="width:34px;height:34px;box-shadow:0 0 0 3px var(--bg)"></span><span class="plate b-chef" style="width:34px;height:34px;margin-left:-10px;box-shadow:0 0 0 3px var(--bg)"></span><span class="plate b-table" style="width:34px;height:34px;margin-left:-10px;box-shadow:0 0 0 3px var(--bg)"></span></span><span style="flex:1;font-weight:800">3 Rezepte im Angebot</span><svg class="i" style="width:20px;color:var(--ink2)"><use href="#i-chev"/></svg></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:22px;margin-top:24px">
+        <div><div style="position:relative;width:110px;height:110px;margin-left:6px"><div class="plate ph-pasta" style="width:110px;height:110px"></div><span class="circle" style="position:absolute;right:-10px;top:-4px;width:34px;height:34px"><svg class="i" style="width:16px;fill:#fff"><use href="#i-heart"/></svg></span><span class="deal" style="position:absolute;left:-6px;bottom:-4px">im Angebot</span></div>
+          <div style="font-family:'DM Serif Display',serif;font-size:16px;margin-top:14px">Spaghetti Pomodoro</div>
+          <div class="row" style="gap:6px;margin-top:3px;font-size:13px;color:var(--ink2)"><b style="color:var(--ink);font-size:15px">2,10 €</b>·<svg class="i" style="width:13px;height:13px;fill:currentColor"><use href="#i-star"/></svg>4,5</div></div>
+        <div><div style="position:relative;width:110px;height:110px;margin-left:6px"><div class="plate b-bowl" style="width:110px;height:110px"></div><span class="circle" style="position:absolute;right:-10px;top:-4px;width:34px;height:34px;background:var(--card);color:var(--ink);box-shadow:inset 0 0 0 1.5px var(--line)"><svg class="i" style="width:16px"><use href="#i-heart"/></svg></span><span class="soft" style="position:absolute;left:-6px;bottom:-4px">Instagram</span></div>
+          <div style="font-family:'DM Serif Display',serif;font-size:16px;margin-top:14px">Bunte Linsen-Bowl</div>
+          <div class="row" style="gap:6px;margin-top:3px;font-size:13px;color:var(--ink2)"><b style="color:var(--ink);font-size:15px;white-space:nowrap">3,40 €</b>· nicht bewertet</div></div>
       </div>
     </div>
     <div class="nav" data-on="4"></div>
     <div class="homebar"></div></div>
-    <div class="caption"><b>Meine Rezepte (S12)</b>Anzahl als große Zahl, Kochbuch im Kreis rechts. Suche, Filter mit Anzahl, Angebots-Rezepte waagerecht, darunter Rezepte als runde Teller in zwei Spalten.</div></div>
+    <div class="caption"><b>Meine Rezepte (S12)</b>Drei Abschnitte: Kopf mit Anzahl, Suche mit Filtern, Rezepte. Die Angebots-Rezepte sind eine Zeile „3 Rezepte im Angebot ›“ mit drei kleinen Tellern. Rezepte als runde Teller, Badge am Teller, darunter Name und Preis.</div></div>
 
   <!-- S3 Rezeptdetail (aus v8) -->
   <div class="screen"><div class="phone">
@@ -90,16 +83,15 @@
     <div class="sb"><b>9:41</b><span class="island"></span><svg><use href="#status"/></svg></div>
     <div class="scr">
       <div class="row between"><svg class="i"><use href="#i-back"/></svg><span style="font-weight:800">Spaghetti Pomodoro</span><div class="row" style="gap:16px"><svg class="i"><use href="#i-heart"/></svg><svg class="i"><use href="#i-share"/></svg></div></div>
-      <div class="row" style="margin-top:24px"><span class="lbl" style="color:var(--ink);margin-right:6px">FÜR</span><span class="chip on">Jona</span><span class="chip">Mia</span></div>
-      <div class="small" style="font-size:13px;margin-top:8px">Deine Portion: 1,2 × · 310 g</div>
-      <div class="sec2">NÄHRWERTE PRO PORTION</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px 24px;margin-top:8px">
+      <div class="row" style="margin-top:28px"><span style="font-weight:800;margin-right:6px">Für</span><span class="chip on">Jona</span><span class="chip">Mia</span></div>
+      <div class="small" style="font-size:13px;margin-top:8px">Pro Portion · deine Portion 1,2 × · 310 g</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px 24px;margin-top:16px">
         <div class="stat"><span class="lbl">kcal</span><span class="num" style="font-size:40px">648</span></div>
         <div class="stat"><span class="lbl">Protein</span><span class="num" style="font-size:40px">21<span style="font-size:20px;color:var(--ink2)"> g</span></span></div>
         <div class="stat"><span class="lbl">KH</span><span class="num" style="font-size:40px">98<span style="font-size:20px;color:var(--ink2)"> g</span></span></div>
         <div class="stat"><span class="lbl">Fett</span><span class="num" style="font-size:40px">17<span style="font-size:20px;color:var(--ink2)"> g</span></span></div>
       </div>
-      <div class="sec2" style="margin-top:26px">ZUSAMMENSETZUNG</div>
+      <div style="font-weight:800;margin-top:32px">Zusammensetzung</div>
       <div style="position:relative;height:290px;margin-top:6px">
         <svg width="342" height="290" viewBox="0 0 342 290" style="position:absolute;left:0;top:0;overflow:visible">
           <g transform="translate(171 180)">
@@ -121,33 +113,32 @@
     <div class="b-fade"></div>
     <div class="b-fix row" style="gap:10px"><span class="circle" style="width:56px;height:56px;background:var(--blue);color:var(--ink)"><svg class="i" style="width:20px"><use href="#i-play"/></svg></span><span class="btn" style="flex:1"><svg class="i" style="width:18px"><use href="#i-star"/></svg>Gekocht – bewerten</span></div>
     <div class="homebar"></div></div>
-    <div class="caption"><b>Rezeptdetail, Nährwerte (S3)</b>Weiter unten: Person wählen, vier Nährwerte als große Zahlen, Zusammensetzung als Blüte um den Teller (Blatt-Länge = Anteil am Gewicht) – die Blätter bringen hier die Farbe, darum keine Form. Unten fest: Kochen starten und „Gekocht – bewerten“.</div></div>
+    <div class="caption"><b>Rezeptdetail, Nährwerte (S3)</b>Drei Abschnitte mit viel Luft: Person wählen, vier Nährwerte als große Zahlen (echte Zahlen-Ansicht), Zusammensetzung als Blüte um den Teller (Blatt-Länge = Anteil am Gewicht) – die Blätter bringen hier die Farbe, darum keine Form. Unten fest: Kochen starten und „Gekocht – bewerten“.</div></div>
 
   <!-- S3 noch weiter unten: Portionen, Zubereitung, Bewertungen -->
   <div class="screen"><div class="phone">
     <div class="sb"><b>9:41</b><span class="island"></span><svg><use href="#status"/></svg></div>
     <div class="scr">
       <div class="row between"><svg class="i"><use href="#i-back"/></svg><span style="font-weight:800">Spaghetti Pomodoro</span><div class="row" style="gap:16px"><svg class="i"><use href="#i-heart"/></svg><svg class="i"><use href="#i-share"/></svg></div></div>
-      <div class="irow" style="margin-top:22px;border-bottom:1.5px solid var(--line)"><div style="flex:1"><div style="font-weight:800">Portionen</div><div class="small" style="font-size:12px">Mengen passen sich an</div></div><span class="stepper"><i>−</i>2<i>+</i></span></div>
-      <div class="sec2">ZUBEREITUNG</div>
+      <div class="irow" style="margin-top:28px;border-bottom:1.5px solid var(--line)"><div style="flex:1"><div style="font-weight:800">Portionen</div><div class="small" style="font-size:12px">Mengen passen sich an</div></div><span class="stepper"><i>−</i>2<i>+</i></span></div>
+      <div style="font-weight:800;margin:32px 0 8px">Zubereitung</div>
       <div class="b-step"><span class="num">01</span><span style="font-size:15px;line-height:1.45">Wasser aufsetzen, kräftig salzen. Knoblauch fein hacken.</span></div>
       <div class="b-step"><span class="num">02</span><span style="font-size:15px;line-height:1.45">Knoblauch in Olivenöl anschwitzen, Tomaten dazu, 8 Minuten köcheln.</span></div>
       <div class="b-step"><span class="num">03</span><span style="font-size:15px;line-height:1.45">Spaghetti 10 Minuten kochen, abgießen und unterheben.</span></div>
-      <div class="row between" style="margin-top:22px;align-items:flex-end"><span class="sec2" style="margin:0">BEWERTUNGEN</span><div class="row" style="gap:8px"><svg class="b-st"><use href="#b-s4"/></svg><span class="num" style="font-size:30px">4,5</span></div></div>
-      <div style="border-top:1.5px solid var(--line);padding:12px 0;margin-top:8px">
-        <div class="row between"><b>Jona</b><div class="row" style="gap:10px"><svg class="b-st"><use href="#b-s5"/></svg><span class="small" style="font-size:12px">2. Nov</span></div></div>
-        <div class="row" style="margin-top:6px;gap:8px"><span class="soft ok">Wieder kochen: Bald</span></div>
-        <div style="font-size:14px;color:var(--ink2);margin-top:6px">Mit extra Chili perfekt.</div>
+      <div class="row between" style="margin-top:32px;align-items:flex-end"><span style="font-weight:800">Bewertungen</span><div class="row" style="gap:8px"><svg class="b-st"><use href="#b-s4"/></svg><span class="num" style="font-size:34px">4,5</span></div></div>
+      <div style="border-top:1.5px solid var(--line);padding:12px 0;margin-top:10px">
+        <div class="row between"><b>Jona</b><svg class="b-st"><use href="#b-s5"/></svg></div>
+        <div class="small" style="font-size:13px;margin-top:4px">2. Nov · Bald wieder · Mit extra Chili perfekt.</div>
       </div>
       <div style="border-top:1.5px solid var(--line);padding:12px 0">
-        <div class="row between"><b>Mia</b><div class="row" style="gap:10px"><svg class="b-st"><use href="#b-s4"/></svg><span class="small" style="font-size:12px">2. Nov</span></div></div>
-        <div class="row" style="margin-top:6px;gap:8px"><span class="soft">Wieder kochen: Irgendwann</span></div>
+        <div class="row between"><b>Mia</b><svg class="b-st"><use href="#b-s4"/></svg></div>
+        <div class="small" style="font-size:13px;margin-top:4px">2. Nov · Irgendwann wieder</div>
       </div>
     </div>
     <div class="b-fade"></div>
     <div class="b-fix row" style="gap:10px"><span class="circle" style="width:56px;height:56px;background:var(--blue);color:var(--ink)"><svg class="i" style="width:20px"><use href="#i-play"/></svg></span><span class="btn" style="flex:1"><svg class="i" style="width:18px"><use href="#i-star"/></svg>Gekocht – bewerten</span></div>
     <div class="homebar"></div></div>
-    <div class="caption"><b>Rezeptdetail, Zubereitung (S3)</b>Portionen-Stepper, nummerierte Schritte mit großen Ziffern, Bewertungen als Zeilen mit „Wieder kochen“. Ruhige Seite ohne Farbform.</div></div>
+    <div class="caption"><b>Rezeptdetail, Zubereitung (S3)</b>Drei Abschnitte: Portionen, nummerierte Schritte, Bewertungen. Nur der Schnitt 4,5 ist groß; jede Bewertung hat zwei Zeilen (Name und Sterne, darunter Datum, „wieder kochen“ und Notiz). Ruhige Seite ohne Farbform.</div></div>
 
   <!-- S3 importiertes Rezept -->
   <div class="screen"><div class="phone">
@@ -157,21 +148,20 @@
       <div class="row between"><svg class="i"><use href="#i-back"/></svg><div class="row" style="gap:18px"><svg class="i"><use href="#i-heart"/></svg><svg class="i"><use href="#i-dots"/></svg><svg class="i"><use href="#i-share"/></svg></div></div>
       <div class="t1" style="margin-top:16px;font-size:38px">Bunte<br>Linsen-Bowl</div>
       <div class="row" style="margin-top:14px;gap:8px"><span class="chip" style="background:var(--card)">Instagram · @gruenegabel</span><span class="pill"><svg class="i" style="width:14px"><use href="#i-play"/></svg>Original-Reel</span></div>
-      <div class="plate b-bowl" style="position:absolute;right:-46px;top:252px;width:186px;height:186px"></div>
-      <div style="width:140px;margin-top:28px">
-        <div class="stat"><span class="lbl">Zeit</span><span class="num" style="font-size:34px">30′</span></div>
-        <div class="stat" style="margin-top:10px"><span class="lbl">p. P.<br><span style="color:var(--blue3)">heute</span></span><span class="num" style="font-size:34px">3,40</span></div>
-        <div class="stat" style="margin-top:10px"><span class="lbl">kcal</span><span class="num" style="font-size:34px">610</span></div>
+      <div class="plate b-bowl" style="position:absolute;right:-40px;top:246px;width:166px;height:166px"></div>
+      <div style="width:150px;margin-top:32px">
+        <div class="stat"><span class="lbl">p. P.<br><span style="color:var(--blue3)">heute</span></span><span class="num" style="font-size:44px">3,40</span></div>
+        <div class="small" style="font-size:13px;margin-top:8px">30 min · 610 kcal</div>
       </div>
-      <div class="row between" style="margin-top:46px;margin-bottom:6px"><span style="font-weight:800">Zutaten</span><span class="small" style="font-size:13px">für 2 · 8 Stück</span></div>
-      <div class="irow"><span class="c" style="background:var(--sand)"><img src="ill-v7/pasta.webp" alt=""></span><span class="nm">Linsen</span><span class="deal">−25 %</span><b>200 g</b></div>
-      <div class="irow"><span class="c" style="background:var(--rose)"><img src="ill-v7/tomato.webp" alt=""></span><span class="nm">Tomaten</span><b>250 g</b></div>
-      <div class="irow"><span class="c" style="background:var(--sage)"><img src="ill-v7/basil.webp" alt=""></span><span class="nm">Kräuter</span><span class="soft warn">Menge geschätzt</span><b>1 Bund</b></div>
+      <div class="row between" style="margin-top:68px;margin-bottom:6px"><span style="font-weight:800">Zutaten</span><span class="small" style="font-size:13px">für 2 · 8 Stück</span></div>
+      <div class="irow"><span class="c" style="background:var(--sand)"><img src="ill-v7/pasta.webp" alt=""></span><div style="flex:1"><div class="nm">Linsen</div><div class="small" style="font-size:13px">200 g</div></div><span class="deal">−25 %</span></div>
+      <div class="irow"><span class="c" style="background:var(--rose)"><img src="ill-v7/tomato.webp" alt=""></span><div style="flex:1"><div class="nm">Tomaten</div><div class="small" style="font-size:13px">250 g</div></div></div>
+      <div class="irow"><span class="c" style="background:var(--sage)"><img src="ill-v7/basil.webp" alt=""></span><div style="flex:1"><div class="nm">Kräuter</div><div class="small" style="font-size:13px">1 Bund</div></div><span class="soft warn">Menge geschätzt</span></div>
     </div>
     <div class="b-fade" style="height:120px"></div>
     <div class="b-fix row" style="gap:10px"><span class="btn2" style="flex:1">Diese Woche einplanen</span><span class="circle" style="width:56px;height:56px"><svg class="i" style="width:20px"><use href="#i-play"/></svg></span></div>
     <div class="homebar"></div></div>
-    <div class="caption"><b>Importiertes Rezept (S3)</b>Quelle als Chip unter dem Namen, daneben die schwarze Pille zum Original-Reel. Preis live aus den Angeboten; geschätzte Mengen gelb markiert. Unten „Diese Woche einplanen“.</div></div>
+    <div class="caption"><b>Importiertes Rezept (S3)</b>Quelle als Chip unter dem Namen, daneben die schwarze Pille zum Original-Reel. Nur der Live-Preis ist groß, Zeit und kcal stehen klein darunter. Zutaten mit Menge als zweite Zeile und höchstens einem Badge rechts. Unten „Diese Woche einplanen“.</div></div>
 
 </div>
 
@@ -190,23 +180,20 @@
         <div class="row between"><div class="t2">Neues Rezept</div><span class="x"><svg class="i"><use href="#i-x"/></svg></span></div>
         <div class="prog" style="margin-top:14px"><i class="on"></i><i></i><i></i><i></i></div>
         <div class="small" style="font-size:13px;margin-top:8px">Schritt 1 von 4 · Das Rezept</div>
-        <div class="row" style="margin-top:22px;gap:26px">
-          <div class="plate b-chef" style="width:140px;height:140px"></div>
+        <div class="row" style="margin-top:28px;gap:26px">
+          <div class="plate b-chef" style="width:130px;height:130px"></div>
           <div style="flex:1;display:grid;gap:10px"><span class="btn2"><svg class="i" style="width:20px"><use href="#i-cam"/></svg>Kamera</span><span class="btn2"><svg class="i" style="width:20px"><use href="#i-photo"/></svg>Fotos</span></div>
         </div>
-        <div class="lbl" style="margin-top:22px">TITEL</div>
-        <div class="field" style="margin-top:8px;color:var(--ink)">Ofengemüse mit Hähnchen</div>
-        <div class="irow" style="margin-top:14px"><span style="flex:1;font-weight:800">Portionen</span><span class="stepper"><i>−</i>4<i>+</i></span></div>
+        <div class="field" style="margin-top:30px;color:var(--ink)">Ofengemüse mit Hähnchen</div>
+        <div class="irow" style="margin-top:12px"><span style="flex:1;font-weight:800">Portionen</span><span class="stepper"><i>−</i>4<i>+</i></span></div>
         <div class="irow"><span style="flex:1;font-weight:800">Zeit</span><span class="stepper"><i>−</i>45 min<i>+</i></span></div>
-        <div class="lbl" style="margin-top:14px">MAHLZEIT</div>
-        <div class="chips" style="margin-top:8px"><span class="chip">Frühstück</span><span class="chip">Mittag</span><span class="chip on">Abend</span></div>
-        <div class="lbl" style="margin-top:16px">KÜCHE · OPTIONAL</div>
-        <div class="chips" style="margin-top:8px"><span class="chip on">Deutsch</span><span class="chip">Italienisch</span><span class="chip">Asiatisch</span></div>
+        <div class="chips" style="margin-top:30px"><span class="chip">Frühstück</span><span class="chip">Mittag</span><span class="chip on">Abend</span></div>
+        <div class="irow" style="margin-top:14px;border-bottom:1.5px solid var(--line)"><span style="flex:1;font-weight:800">Küche <span style="color:var(--ink3);font-weight:600">· optional</span></span><span style="color:var(--ink2)">Deutsch</span><svg class="i" style="width:20px;color:var(--ink2)"><use href="#i-chev"/></svg></div>
       </div>
       <div class="btn" style="position:absolute;left:24px;right:24px;bottom:34px">Weiter</div>
     </div>
     <div class="homebar"></div></div>
-    <div class="caption"><b>Rezept-Formular, Seite 1 (S17)</b>Sheet über Meine Rezepte: vier Striche als Fortschritt, rundes Foto im Kreis, Kamera und Fotos, Titel, Portionen und Zeit als Stepper, Mahlzeit und Küche als Chips.</div></div>
+    <div class="caption"><b>Rezept-Formular, Seite 1 (S17)</b>Sheet über Meine Rezepte: vier Striche als Fortschritt. Drei Abschnitte: Foto mit Kamera und Fotos, Titel mit Portionen und Zeit, Mahlzeit als Chips. Die optionale Küche ist nur noch eine Zeile „Küche · Deutsch ›“ (Auswahl dahinter).</div></div>
 
   <!-- S17 Seite 2 -->
   <div class="screen"><div class="phone">
@@ -218,19 +205,19 @@
       <div class="row between"><div class="t2">Neues Rezept</div><span class="x"><svg class="i"><use href="#i-x"/></svg></span></div>
       <div class="prog" style="margin-top:14px"><i class="on"></i><i class="on"></i><i></i><i></i></div>
       <div class="small" style="font-size:13px;margin-top:8px">Schritt 2 von 4 · Zutaten</div>
-      <div style="margin-top:18px">
-        <div class="irow"><span class="nm" style="font-size:18px">Hähnchenbrust</span><span class="b-amt">400</span><span class="b-amt" style="min-width:84px">g<svg class="i" style="width:14px;transform:rotate(90deg)"><use href="#i-chev"/></svg></span><svg class="i" style="width:18px;color:var(--ink3)"><use href="#i-x"/></svg></div>
-        <div class="irow"><span class="nm" style="font-size:18px">Karotten</span><span class="b-amt">3</span><span class="b-amt" style="min-width:84px">Stück<svg class="i" style="width:14px;transform:rotate(90deg)"><use href="#i-chev"/></svg></span><svg class="i" style="width:18px;color:var(--ink3)"><use href="#i-x"/></svg></div>
-        <div class="irow"><span class="nm" style="font-size:18px">Zucchini</span><span class="b-amt">1</span><span class="b-amt" style="min-width:84px">Stück<svg class="i" style="width:14px;transform:rotate(90deg)"><use href="#i-chev"/></svg></span><svg class="i" style="width:18px;color:var(--ink3)"><use href="#i-x"/></svg></div>
-        <div class="irow" style="border-top-color:var(--ink)"><span class="nm" style="font-size:18px">Kart<span class="b-caret"></span></span><span class="b-amt" style="color:var(--ink3)">0</span><span class="b-amt" style="min-width:84px">g<svg class="i" style="width:14px;transform:rotate(90deg)"><use href="#i-chev"/></svg></span><svg class="i" style="width:18px;color:var(--ink3)"><use href="#i-x"/></svg></div>
+      <div style="margin-top:28px">
+        <div class="irow"><span class="nm" style="font-size:18px">Hähnchenbrust</span><span class="b-amt" style="min-width:104px">400 g<svg class="i" style="width:14px;transform:rotate(90deg)"><use href="#i-chev"/></svg></span></div>
+        <div class="irow"><span class="nm" style="font-size:18px">Karotten</span><span class="b-amt" style="min-width:104px">3 Stück<svg class="i" style="width:14px;transform:rotate(90deg)"><use href="#i-chev"/></svg></span></div>
+        <div class="irow"><span class="nm" style="font-size:18px">Zucchini</span><span class="b-amt" style="min-width:104px">1 Stück<svg class="i" style="width:14px;transform:rotate(90deg)"><use href="#i-chev"/></svg></span></div>
+        <div class="irow" style="border-top-color:var(--ink)"><span class="nm" style="font-size:18px">Kart<span class="b-caret"></span></span><span class="b-amt" style="min-width:104px;color:var(--ink3)">Menge<svg class="i" style="width:14px;transform:rotate(90deg)"><use href="#i-chev"/></svg></span></div>
         <div class="small" style="font-size:12px;margin-top:2px">Aus Plan und Vorrat</div>
         <div class="chips" style="margin-top:8px"><span class="chip" style="background:var(--blue1);box-shadow:none;color:var(--ink)">Kartoffeln</span><span class="chip">Süßkartoffeln</span></div>
-        <div class="irow" style="margin-top:18px;color:var(--ink2)"><svg class="i"><use href="#i-plus"/></svg><span style="flex:1;font-weight:800">Zutat hinzufügen</span></div>
+        <div class="irow" style="margin-top:28px;color:var(--ink2)"><svg class="i"><use href="#i-plus"/></svg><span style="flex:1;font-weight:800">Zutat hinzufügen</span></div>
       </div>
       <div class="row" style="position:absolute;left:24px;right:24px;bottom:34px;gap:10px"><span class="btn2" style="flex:1">Zurück</span><span class="btn" style="flex:1.4">Weiter</span></div>
     </div>
     <div class="homebar"></div></div>
-    <div class="caption"><b>Rezept-Formular, Zutaten (S17)</b>Jede Zutat eine Zeile mit Menge und Einheit (Menü), Entfernen rechts. Unter der aktiven Zeile Vorschläge aus Plan und Vorrat als Chips.</div></div>
+    <div class="caption"><b>Rezept-Formular, Zutaten (S17)</b>Jede Zutat eine Zeile mit einer Pille rechts: Menge tippen, Einheit im Menü. Entfernen per Wischen nach links. Unter der aktiven Zeile Vorschläge aus Plan und Vorrat als Chips.</div></div>
 
   <!-- S22 Link einfügen -->
   <div class="screen"><div class="phone">
@@ -251,19 +238,19 @@
   <!-- S22 Import läuft -->
   <div class="screen"><div class="phone">
     <div class="sb"><b>9:41</b><span class="island"></span><svg><use href="#status"/></svg></div>
-    <div class="scr"><div class="t1" style="margin-top:44px">Meine<br>Rezepte</div></div>
+    <div class="scr"><div class="t1">Meine Rezepte</div></div>
     <div class="scrim"></div>
-    <div class="sheet" style="top:196px">
-      <div class="blob" style="left:-120px;top:20px;width:320px;height:320px;background:var(--blue1)"></div>
-      <span class="x" style="position:absolute;right:24px;top:30px"><svg class="i"><use href="#i-x"/></svg></span>
+    <div class="sheet" style="top:118px">
+      <span class="x" style="position:absolute;right:24px;top:30px;z-index:5"><svg class="i"><use href="#i-x"/></svg></span>
       <div style="position:relative">
-        <div style="position:relative;width:176px;height:176px;margin:4px auto 0">
-          <svg width="176" height="176" viewBox="0 0 176 176" style="position:absolute;inset:0"><circle cx="88" cy="88" r="85" fill="none" stroke="var(--line)" stroke-width="3"/><circle cx="88" cy="88" r="85" fill="none" stroke="var(--ink)" stroke-width="3" stroke-linecap="round" stroke-dasharray="130 404" transform="rotate(-90 88 88)"/></svg>
-          <div class="circle" style="position:absolute;left:13px;top:13px;width:150px;height:150px;background:var(--card);overflow:hidden"><img src="ill-v7/pot.webp" style="position:absolute;left:50%;top:50%;width:230px;transform:translate(-50%,-50%)" alt=""></div>
+        <div class="potld" style="margin-top:14px">
+          <svg class="steam" viewBox="0 0 60 70"><path d="M12 66c-8-10 8-16 0-28s8-16 0-28"/><path d="M30 60c-8-10 8-16 0-28s8-14 0-24"/><path d="M48 66c-8-10 8-16 0-28s8-16 0-28"/></svg>
+          <img class="in" src="ill-v7/tomato.webp" style="--n:0" alt=""><img class="in" src="ill-v7/garlic.webp" style="--n:1" alt=""><img class="in" src="ill-v7/basil.webp" style="--n:2" alt=""><img class="in" src="ill-v7/pasta.webp" style="--n:3" alt="">
+          <img class="body" src="ill-v7/pot-body.webp" alt=""><img class="lid" src="ill-v7/pot-lid.webp" alt="">
         </div>
-        <div class="t2" style="text-align:center;margin-top:18px">Rezept wird gelesen …</div>
+        <div class="t2" style="text-align:center;margin-top:28px">Rezept wird gelesen …</div>
         <div class="small" style="text-align:center;font-size:13px;margin-top:4px">instagram.com</div>
-        <div style="margin-top:18px">
+        <div style="margin-top:28px">
           <div class="irow" style="height:52px"><span class="ck on"><svg class="i" style="width:15px"><use href="#i-check"/></svg></span><span style="font-weight:700">Link öffnen</span></div>
           <div class="irow" style="height:52px"><span class="ck" style="border-color:var(--ink);border-right-color:var(--line)"></span><span style="font-weight:800">Rezept wird gelesen …</span></div>
           <div class="irow" style="height:52px;color:var(--ink3)"><span class="ck"></span><span style="font-weight:700">Zutaten &amp; Mengen ordnen</span></div>
@@ -273,7 +260,7 @@
       <div class="btn2" style="position:absolute;left:24px;right:24px;bottom:34px">Abbrechen</div>
     </div>
     <div class="homebar"></div></div>
-    <div class="caption"><b>Import läuft (S22)</b>Der Topf dreht im weißen Kreis, ein Ring läuft herum. Darunter die vier Schritte, alle 2,5 s ein Haken.</div></div>
+    <div class="caption"><b>Import läuft (S22)</b>Der neue Lader: Zutaten hüpfen in den Topf, der Deckel hebt sich, Dampf steigt. Darunter die vier Schritte, alle 2,5 s ein Haken.</div></div>
 
   <!-- S22 Ergebnis -->
   <div class="screen"><div class="phone">
@@ -286,18 +273,14 @@
       <div style="position:relative;text-align:center">
         <div class="plate b-bowl" style="width:150px;height:150px;margin:20px auto 0"></div>
         <div class="t2" style="margin-top:22px">Bunte Linsen-Bowl</div>
-        <div class="small" style="font-size:13px;margin-top:4px">Instagram · @gruenegabel</div>
-        <div class="row" style="justify-content:center;margin-top:14px"><span class="chip">8 Zutaten</span><span class="chip">5 Schritte</span></div>
-        <div style="margin-top:14px"><span class="soft ok" style="height:30px;padding:0 14px;font-size:13px"><svg class="i" style="width:14px"><use href="#i-check"/></svg>In Meine Rezepte gespeichert</span></div>
+        <div class="small" style="font-size:13px;margin-top:4px">Instagram · @gruenegabel · 8 Zutaten · 5 Schritte</div>
+        <div style="margin-top:16px"><span class="soft ok" style="height:30px;padding:0 14px;font-size:13px"><svg class="i" style="width:14px"><use href="#i-check"/></svg>In Meine Rezepte gespeichert</span></div>
       </div>
-      <div class="hr" style="margin-top:22px;padding-top:14px;position:relative">
-        <div class="row" style="gap:10px"><span class="soft warn">3 Mengen geschätzt</span><span class="small" style="font-size:13px">Kräuter, Öl, Salz</span></div>
-        <div class="small" style="font-size:13px;margin-top:6px">Bitte beim Kochen prüfen.</div>
-      </div>
+      <div class="irow" style="margin-top:28px;position:relative;border-bottom:1.5px solid var(--line)"><div style="flex:1"><div style="font-weight:800">Mengen geschätzt</div><div class="small" style="font-size:13px">Kräuter, Öl, Salz – bitte beim Kochen prüfen</div></div><span class="soft warn">3</span></div>
       <div style="position:absolute;left:24px;right:24px;bottom:34px;display:grid;gap:10px"><span class="btn2">Diese Woche einplanen</span><span class="btn">Rezept ansehen</span></div>
     </div>
     <div class="homebar"></div></div>
-    <div class="caption"><b>Import fertig (S22)</b>Rundes Foto vor einem Kreis, Name und Quelle, Anzahl Zutaten und Schritte, grüne Pille „gespeichert“. Geschätzte Mengen gelb, darunter Einplanen und Rezept ansehen.</div></div>
+    <div class="caption"><b>Import fertig (S22)</b>Rundes Foto vor einem Kreis, Name, darunter eine Zeile mit Quelle, Zutaten und Schritten, grüne Pille „gespeichert“. Geschätzte Mengen als eine Zeile mit gelbem Zähler, darunter Einplanen und Rezept ansehen.</div></div>
 
   <!-- S20 Koppeln -->
   <div class="screen"><div class="phone">
@@ -316,14 +299,14 @@
         <div class="b-dig num" style="font-size:52px;border-color:var(--ink)">8</div>
         <div class="b-dig num" style="font-size:52px;border-color:var(--ink)">2</div>
         <div class="b-dig num" style="font-size:52px;border-color:var(--ink)">9</div>
-        <div class="b-dig" style="border-bottom:4px solid var(--blue3);display:grid;place-items:center"><span class="b-caret" style="height:40px"></span></div>
-        <div class="b-dig"></div>
+        <div class="b-dig num" style="font-size:52px;border-color:var(--ink)">1</div>
+        <div class="b-dig num" style="font-size:52px;border-color:var(--ink)">3</div>
       </div>
       <div class="small" style="font-size:13px;margin-top:14px">Bei 6 Ziffern koppeln wir automatisch.</div>
-      <div class="btn off" style="position:absolute;left:24px;right:24px;bottom:34px">Koppeln</div>
+      <div class="btn blue" style="position:absolute;left:24px;right:24px;bottom:34px"><span class="hop3"><img src="ill-v7/tomato.webp" alt=""><img src="ill-v7/garlic.webp" alt=""><img src="ill-v7/basil.webp" alt=""></span></div>
     </div>
     <div class="homebar"></div></div>
-    <div class="caption"><b>Teilen-Erweiterung: Koppeln (S20)</b>System-Sheet über dem Reel: Server-Adresse, sechs große Ziffern auf Unterstrichen, der aktive in Blau. „Koppeln“ wird bei 6 Ziffern aktiv.</div></div>
+    <div class="caption"><b>Teilen-Erweiterung: Koppeln (S20)</b>System-Sheet über dem Reel: Server-Adresse, sechs große Ziffern auf Unterstrichen. Alle 6 sind eingegeben, „Koppeln“ wartet: blauer Knopf mit drei hüpfenden Zutaten. Vorher ist der Knopf grau und der aktive Strich blau.</div></div>
 
 </div>
 
@@ -337,20 +320,20 @@
     <div class="scr">
       <div class="row between"><span class="x" style="background:var(--bg)"><svg class="i"><use href="#i-x"/></svg></span><span class="circle" style="width:44px;height:44px;background:var(--card);color:var(--ink);box-shadow:inset 0 0 0 1.5px var(--line)"><svg class="i" style="width:20px"><use href="#i-mic"/></svg></span></div>
       <div class="stat" style="margin-top:20px"><span class="lbl">Vorbereitung</span><span class="num" style="font-size:104px">3<span style="color:var(--ink3);font-size:40px;letter-spacing:-.02em;margin-left:10px">von 6</span></span></div>
-      <div class="t2" style="margin-top:18px">Erst alles bereitlegen.</div>
-      <div class="small" style="font-size:13px;margin-top:4px">für 2 Portionen · grau: deine Portion</div>
-      <div style="margin-top:12px">
-        <div class="irow"><span class="ck on"><svg class="i" style="width:15px"><use href="#i-check"/></svg></span><span style="flex:1;font-weight:700;color:var(--ink3);text-decoration:line-through">Spaghetti</span><b>250 g</b><span style="color:var(--ink3);width:52px;text-align:right">150 g</span></div>
-        <div class="irow"><span class="ck on"><svg class="i" style="width:15px"><use href="#i-check"/></svg></span><span style="flex:1;font-weight:700;color:var(--ink3);text-decoration:line-through">Tomaten</span><b>400 g</b><span style="color:var(--ink3);width:52px;text-align:right">240 g</span></div>
-        <div class="irow"><span class="ck on"><svg class="i" style="width:15px"><use href="#i-check"/></svg></span><span style="flex:1;font-weight:700;color:var(--ink3);text-decoration:line-through">Knoblauch</span><b>2 Zehen</b><span style="color:var(--ink3);width:52px;text-align:right">1</span></div>
-        <div class="irow"><span class="ck"></span><span style="flex:1;font-weight:700">Basilikum</span><b>1 Bund</b><span style="color:var(--ink3);width:52px;text-align:right">½</span></div>
-        <div class="irow"><span class="ck"></span><span style="flex:1;font-weight:700">Olivenöl</span><b>2 EL</b><span style="color:var(--ink3);width:52px;text-align:right">1 EL</span></div>
-        <div class="irow"><span class="ck"></span><span style="flex:1;font-weight:700">Parmesan</span><b>40 g</b><span style="color:var(--ink3);width:52px;text-align:right">25 g</span></div>
+      <div class="t2" style="margin-top:28px">Erst alles bereitlegen.</div>
+      <div class="small" style="font-size:13px;margin-top:4px">für 2 Portionen</div>
+      <div style="margin-top:20px">
+        <div class="irow"><span class="ck on"><svg class="i" style="width:15px"><use href="#i-check"/></svg></span><div style="flex:1"><div style="font-weight:700;color:var(--ink3);text-decoration:line-through">Spaghetti</div><div class="small" style="font-size:12px">du: 150 g</div></div><b>250 g</b></div>
+        <div class="irow"><span class="ck on"><svg class="i" style="width:15px"><use href="#i-check"/></svg></span><div style="flex:1"><div style="font-weight:700;color:var(--ink3);text-decoration:line-through">Tomaten</div><div class="small" style="font-size:12px">du: 240 g</div></div><b>400 g</b></div>
+        <div class="irow"><span class="ck on"><svg class="i" style="width:15px"><use href="#i-check"/></svg></span><div style="flex:1"><div style="font-weight:700;color:var(--ink3);text-decoration:line-through">Knoblauch</div><div class="small" style="font-size:12px">du: 1</div></div><b>2 Zehen</b></div>
+        <div class="irow"><span class="ck"></span><div style="flex:1"><div style="font-weight:700;">Basilikum</div><div class="small" style="font-size:12px">du: ½</div></div><b>1 Bund</b></div>
+        <div class="irow"><span class="ck"></span><div style="flex:1"><div style="font-weight:700;">Olivenöl</div><div class="small" style="font-size:12px">du: 1 EL</div></div><b>2 EL</b></div>
+        <div class="irow"><span class="ck"></span><div style="flex:1"><div style="font-weight:700;">Parmesan</div><div class="small" style="font-size:12px">du: 25 g</div></div><b>40 g</b></div>
       </div>
     </div>
     <div style="position:absolute;right:24px;bottom:34px" class="row"><span style="font-weight:800;margin-right:14px">Los geht's</span><span class="circle" style="width:72px;height:72px"><svg class="i"><use href="#i-arrow"/></svg></span></div>
     <div class="homebar"></div></div>
-    <div class="caption"><b>Kochmodus, Vorbereitung (S18)</b>Zähler „3 von 6“ groß im grünen Kreis. Zutaten zum Abhaken, rechts grau die eigene Portion. Lange drücken öffnet „Ersatz finden“.</div></div>
+    <div class="caption"><b>Kochmodus, Vorbereitung (S18)</b>Zähler „3 von 6“ groß im grünen Kreis. Zutaten zum Abhaken: Menge rechts, die eigene Portion als zweite Zeile. Lange drücken öffnet „Ersatz finden“.</div></div>
 
   <!-- S18 Schritt (aus v8) -->
   <div class="screen"><div class="phone">
@@ -376,18 +359,16 @@
       <div class="stat" style="margin-top:22px"><span class="lbl">Schritt</span><span class="num" style="font-size:112px">03<span style="color:var(--ink3);font-size:48px">/05</span></span></div>
       <div class="t1" style="margin-top:22px">Spaghetti ins kochende Wasser.</div>
       <div style="font-size:17px;line-height:1.5;color:var(--ink2);margin-top:10px">Salzen, umrühren und <b style="color:var(--ink)">10 Minuten</b> kochen.</div>
-      <div class="chips" style="margin-top:16px"><span class="chip">Spaghetti · 250 g</span><span class="chip">Salz</span></div>
+      <div class="chips" style="margin-top:28px"><span class="chip">Spaghetti · 250 g</span><span class="chip">Salz</span></div>
     </div>
     <div class="row" style="position:absolute;left:24px;right:24px;bottom:124px;height:68px;padding:0 10px;gap:10px;border-radius:999px;background:var(--card);box-shadow:inset 0 0 0 1.5px var(--line),0 12px 26px rgba(40,30,20,.12);z-index:5">
-      <svg width="48" height="48" viewBox="0 0 48 48" style="flex:none"><circle cx="24" cy="24" r="20" fill="none" stroke="var(--line)" stroke-width="4"/><circle cx="24" cy="24" r="20" fill="none" stroke="var(--blue3)" stroke-width="4" stroke-linecap="round" stroke-dasharray="105 126" transform="rotate(-90 24 24)"/></svg>
+      <span style="position:relative;width:48px;height:48px;flex:none;display:grid;place-items:center"><svg width="48" height="48" viewBox="0 0 48 48" style="position:absolute;inset:0"><circle cx="24" cy="24" r="20" fill="none" stroke="var(--line)" stroke-width="4"/><circle cx="24" cy="24" r="20" fill="none" stroke="var(--blue3)" stroke-width="4" stroke-linecap="round" stroke-dasharray="105 126" transform="rotate(-90 24 24)"/></svg><svg class="i" style="width:16px"><use href="#i-pause"/></svg></span>
       <div style="flex:1"><div style="font-size:13px;font-weight:800">Nudeln</div><div class="num" style="font-size:26px">08:24</div></div>
-      <span class="chip" style="height:32px;padding:0 10px;font-size:13px">+1 min</span>
-      <span class="circle" style="width:40px;height:40px"><svg class="i" style="width:18px"><use href="#i-pause"/></svg></span>
-      <span class="x"><svg class="i"><use href="#i-x"/></svg></span>
+      <span class="x"><svg class="i"><use href="#i-dots"/></svg></span>
     </div>
     <div style="position:absolute;right:24px;bottom:34px" class="row"><span class="circle" style="width:60px;height:60px;background:var(--blue);color:var(--ink)"><svg class="i"><use href="#i-mic"/></svg></span><span class="circle" style="width:72px;height:72px;margin-left:8px"><svg class="i"><use href="#i-arrow"/></svg></span></div>
     <div class="homebar"></div></div>
-    <div class="caption"><b>Kochmodus mit Timer und Sprache (S18)</b>Oben die Pille „hört zu …“ mit Pegel, Mikro unten blau = an. Über den Knöpfen die Timer-Kapsel vor dem leeren Tor-Bogen mit Ring, Restzeit, +1 min, Pause und Stopp.</div></div>
+    <div class="caption"><b>Kochmodus mit Timer und Sprache (S18)</b>Oben die Pille „hört zu …“ mit Pegel, Mikro unten blau = an. Über den Knöpfen die Timer-Kapsel vor dem leeren Tor-Bogen: Ring mit Pause darin, Name und Restzeit, „…“ für +1 min und Stopp.</div></div>
 
   <!-- S18 Fertig -->
   <div class="screen"><div class="phone">
@@ -416,27 +397,18 @@
     <div class="scr"><div class="t1" style="margin-top:44px;font-size:38px">Bunte<br>Linsen-Bowl</div></div>
     <div class="plate b-bowl" style="position:absolute;right:-50px;top:150px;width:200px;height:200px"></div>
     <div class="scrim"></div>
-    <div class="sheet" style="top:246px">
+    <div class="sheet" style="top:400px">
       <div class="row between"><div class="t2">Ersatz für Joghurt</div><span class="x"><svg class="i"><use href="#i-x"/></svg></span></div>
       <div class="small" style="font-size:13px;margin-top:4px">150 g im Rezept · aus unserer Ersatz-Tabelle</div>
-      <div style="margin-top:14px">
-        <div class="row" style="gap:12px;padding:14px 0;border-top:1.5px solid var(--line);align-items:flex-start">
-          <div style="flex:1"><div style="font-family:'DM Serif Display',serif;font-size:20px">Skyr statt Joghurt</div><div style="font-weight:800;color:var(--blue3);margin-top:2px">130 g Skyr + 20 ml Wasser</div><div class="small" style="font-size:13px;margin-top:2px">Mehr Eiweiß, genauso cremig</div>
-            <div class="row" style="gap:6px;margin-top:8px"><span class="soft ok">Wasser im Vorrat</span><span class="deal">im Angebot 1,29 €</span><img src="https://upload.wikimedia.org/wikipedia/commons/thumb/9/91/Lidl-Logo.svg/250px-Lidl-Logo.svg.png" height="20" alt="Lidl"></div></div>
-          <span class="x"><svg class="i"><use href="#i-swap"/></svg></span></div>
-        <div class="row" style="gap:12px;padding:14px 0;border-top:1.5px solid var(--line);align-items:flex-start">
-          <div style="flex:1"><div style="font-family:'DM Serif Display',serif;font-size:20px">Schmand statt Joghurt</div><div style="font-weight:800;color:var(--blue3);margin-top:2px">100 g Schmand + 50 ml Milch</div><div class="small" style="font-size:13px;margin-top:2px">Reichhaltiger, etwas mehr Fett</div>
-            <div class="row" style="gap:6px;margin-top:8px"><span class="soft ok">im Vorrat</span></div></div>
-          <span class="x"><svg class="i"><use href="#i-swap"/></svg></span></div>
-        <div class="row" style="gap:12px;padding:14px 0;border-top:1.5px solid var(--line);align-items:flex-start">
-          <div style="flex:1"><div style="font-family:'DM Serif Display',serif;font-size:20px">Quark statt Joghurt</div><div style="font-weight:800;color:var(--blue3);margin-top:2px">120 g Magerquark + 30 ml Milch</div><div class="small" style="font-size:13px;margin-top:2px">Fettarm, leicht säuerlich</div>
-            <div class="row" style="gap:6px;margin-top:8px"><span class="deal">im Angebot 0,79 €</span><img src="https://upload.wikimedia.org/wikipedia/commons/thumb/4/4c/Logo_REWE.svg/250px-Logo_REWE.svg.png" height="13" alt="Rewe"></div></div>
-          <span class="x"><svg class="i"><use href="#i-swap"/></svg></span></div>
+      <div style="margin-top:28px">
+        <div class="irow" style="height:72px"><div style="flex:1"><div><span style="font-family:'DM Serif Display',serif;font-size:20px">Skyr</span><span class="small" style="font-size:13px"> · mehr Eiweiß, genauso cremig</span></div><div style="font-weight:800;color:var(--blue3);margin-top:2px">130 g Skyr + 20 ml Wasser</div></div><span class="deal">Lidl 1,29 €</span></div>
+        <div class="irow" style="height:72px"><div style="flex:1"><div><span style="font-family:'DM Serif Display',serif;font-size:20px">Schmand</span><span class="small" style="font-size:13px"> · reichhaltiger</span></div><div style="font-weight:800;color:var(--blue3);margin-top:2px">100 g Schmand + 50 ml Milch</div></div><span class="soft ok">im Vorrat</span></div>
+        <div class="irow" style="height:72px"><div style="flex:1"><div><span style="font-family:'DM Serif Display',serif;font-size:20px">Quark</span><span class="small" style="font-size:13px"> · fettarm, leicht säuerlich</span></div><div style="font-weight:800;color:var(--blue3);margin-top:2px">120 g Magerquark + 30 ml Milch</div></div><span class="deal">Rewe 0,79 €</span></div>
       </div>
-      <div class="small hr" style="font-size:13px;line-height:1.5;padding-top:12px">Antippen ersetzt die Zutat nur in diesem Rezept – Nährwerte und Kosten werden neu berechnet.</div>
+      <div class="small hr" style="font-size:13px;line-height:1.5;padding-top:12px;margin-top:0">Antippen ersetzt die Zutat nur in diesem Rezept – Nährwerte und Kosten werden neu berechnet.</div>
     </div>
     <div class="homebar"></div></div>
-    <div class="caption"><b>Ersatz finden (S26)</b>Sheet aus Rezept oder Kochmodus: drei Ersatz-Zeilen mit Mengen in Blau, Wirkung grau, Badges „im Vorrat“ und „im Angebot“ mit Laden. Rechts der Tausch-Knopf.</div></div>
+    <div class="caption"><b>Ersatz finden (S26)</b>Sheet aus Rezept oder Kochmodus: drei Ersatz-Zeilen mit zwei Zeilen (Name mit Wirkung, Mengen in Blau) und einem Badge rechts: Angebot mit Laden und Preis oder „im Vorrat“. Die ganze Zeile antippen ersetzt.</div></div>
 
 </div>
 
@@ -474,7 +446,7 @@
         <div class="row" style="margin-top:10px;gap:10px"><span class="chip"><svg class="i" style="width:18px"><use href="#i-users"/></svg>von Familie Müller</span></div>
         <div class="small" style="font-size:13px;margin-top:8px">25 min · 2 Portionen · 3 Schritte</div>
         <div style="font-size:15px;line-height:1.5;color:var(--ink2);margin-top:8px">Lachs mit Zitrone im Ofen, dazu Salat, Avocado und Tomaten.</div>
-        <div class="sec2" style="margin-top:18px">ZUTATEN</div>
+        <div style="font-weight:800;margin:28px 0 6px">Zutaten</div>
         <div class="irow" style="height:50px"><span style="flex:1;font-weight:700">Lachsfilet</span><span style="color:var(--ink2)">300 g</span></div>
         <div class="irow" style="height:50px"><span style="flex:1;font-weight:700">Avocado</span><span style="color:var(--ink2)">1 Stück</span></div>
         <div class="irow" style="height:50px"><span style="flex:1;font-weight:700">Kirschtomaten</span><span style="color:var(--ink2)">200 g</span></div>

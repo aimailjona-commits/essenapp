@@ -28,6 +28,43 @@
 .ok{background:var(--sage)}.warn{background:#F6E2B8}
 .hr{border-top:1.5px solid var(--line)}
 .sec2{font-weight:800;font-size:13px;letter-spacing:.06em;color:var(--ink2);margin:22px 0 4px}
+/* Lade-Animation „Topf“: Zutaten hüpfen nacheinander in den Topf, Deckel klappert, Dampf steigt.
+   Markup: <div class="potld"><svg class="steam">…</svg><img class="in" src="ill-v7/tomato.webp" style="--n:0">…(--n 0–3)<img class="body" src="ill-v7/pot-body.webp"><img class="lid" src="ill-v7/pot-lid.webp"></div> */
+.potld{position:relative;width:240px;height:240px;margin:0 auto}
+.potld::before{content:"";position:absolute;inset:0;border-radius:50%;background:var(--blue1);animation:potld-breathe 3s ease-in-out infinite}
+.potld img{position:absolute;display:block}
+.potld .body,.potld .lid{left:0;top:16px;width:240px}
+.potld .body{z-index:2;animation:potld-squash 1.25s infinite}
+.potld .lid{z-index:3;transform-origin:30% 50%;animation:potld-lid 1.25s infinite}
+.potld .in{left:50px;top:6px;width:140px;z-index:1;opacity:0;animation:potld-hop 5s linear infinite;animation-delay:calc(var(--n) * 1.25s)}
+.potld .in:nth-of-type(even){--s:-1}.potld .in:nth-of-type(odd){--s:1}
+.potld .steam{position:absolute;left:150px;top:20px;width:60px;height:70px;z-index:4;fill:none;stroke:var(--ink);stroke-width:2.4;stroke-linecap:round}
+.potld .steam path{stroke-dasharray:60;stroke-dashoffset:60;animation:potld-steam 2.4s ease-in-out infinite}
+.potld .steam path:nth-child(2){animation-delay:.8s}.potld .steam path:nth-child(3){animation-delay:1.6s}
+@keyframes potld-breathe{50%{transform:scale(1.04)}}
+@keyframes potld-hop{
+  0%{transform:translate(calc(var(--s) * -150px),60px) rotate(0) scale(.9);opacity:0;animation-timing-function:cubic-bezier(.2,.7,.4,1)}
+  4%{opacity:1}
+  20%{transform:translate(calc(var(--s) * -55px),-95px) rotate(calc(var(--s) * 140deg)) scale(1);opacity:1;animation-timing-function:cubic-bezier(.6,0,.9,.6)}
+  34%{transform:translate(0,10px) rotate(calc(var(--s) * 260deg)) scale(.85);opacity:1}
+  40%{transform:translate(0,60px) rotate(calc(var(--s) * 280deg)) scale(.6);opacity:1}
+  41%,100%{transform:translate(0,60px) scale(.6);opacity:0}}
+@keyframes potld-lid{0%,26%,52%,100%{transform:none}34%{transform:translateY(-26px) rotate(-12deg)}44%{transform:translateY(0)}48%{transform:translateY(-7px) rotate(-3deg)}}
+@keyframes potld-squash{0%,38%,62%,100%{transform:none}46%{transform:scale(1.05,.95) translateY(5px)}54%{transform:scale(.98,1.03)}}
+@keyframes potld-steam{0%{stroke-dashoffset:60;opacity:0}30%{opacity:1}100%{stroke-dashoffset:-60;opacity:0}}
+/* Tage füllen sich beim Plan-Erstellen: <div class="potdays"><i class="on">Mo</i>…<i class="now">Do</i><i>Fr</i>…</div> */
+.potdays{display:flex;justify-content:center;gap:8px}
+.potdays i{width:38px;height:38px;border-radius:50%;display:grid;place-items:center;font-style:normal;font-size:13px;font-weight:800;color:var(--ink3);box-shadow:inset 0 0 0 1.5px var(--line)}
+.potdays i.on{background:var(--ink);color:#fff;box-shadow:none;animation:potdays-pop .5s cubic-bezier(.3,1.6,.5,1) backwards}
+.potdays i.now{color:var(--ink);box-shadow:inset 0 0 0 2px var(--ink);animation:potdays-wait 1.25s ease-in-out infinite}
+@keyframes potdays-pop{from{transform:scale(.4)}}
+@keyframes potdays-wait{50%{transform:scale(1.12)}}
+/* Kleiner Lader für Knöpfe und Zeilen: drei Zutaten hüpfen nacheinander. <span class="hop3"><img src="ill-v7/tomato.webp"><img src="ill-v7/garlic.webp"><img src="ill-v7/basil.webp"></span> */
+.hop3{display:inline-flex;align-items:flex-end;height:30px}
+.hop3 img{width:62px;margin:-19px -16px -12px;animation:hop3 1.1s ease-in-out infinite}
+.hop3 img:nth-child(2){animation-delay:.15s}.hop3 img:nth-child(3){animation-delay:.3s}
+@keyframes hop3{0%,60%,100%{transform:none}25%{transform:translateY(-12px) rotate(-14deg)}}
+@media (prefers-reduced-motion:reduce){.potld *,.potld::before,.potdays i,.hop3 img{animation:none!important}.potld .in{opacity:0}}
 </style>
 <svg width="0" height="0" style="position:absolute">
   <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></symbol>

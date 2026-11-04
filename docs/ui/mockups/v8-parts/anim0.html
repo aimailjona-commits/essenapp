@@ -1,0 +1,130 @@
+<style>
+/* Animations-Seite: Abspieler + Nav-Mulde, die wandert */
+.screen .replay{margin-top:10px;display:inline-flex;align-items:center;gap:6px;height:32px;padding:0 14px;border-radius:999px;border:0;background:var(--ink);color:#fff;font:700 13px Manrope,sans-serif;cursor:pointer}
+.tap{position:absolute;width:44px;height:44px;margin:-22px 0 0 -22px;border-radius:50%;background:rgba(21,21,21,.18);z-index:30;pointer-events:none;opacity:0}
+.tap.go{animation:tap .5s ease-out}
+@keyframes tap{0%{transform:scale(.4);opacity:1}100%{transform:scale(1.4);opacity:0}}
+@property --x{syntax:'<length>';inherits:true;initial-value:39px}
+.mnav{position:absolute;left:0;bottom:0;width:390px;height:120px;z-index:15;filter:drop-shadow(0 -6px 14px rgba(40,30,20,.07));transition:--x .55s cubic-bezier(.3,1.25,.5,1)}
+.mnav .mbar{position:absolute;left:0;right:0;top:34px;bottom:0;background:#fff;-webkit-mask:radial-gradient(circle 39px at var(--x) 12px,transparent 38px,#000 39.5px);mask:radial-gradient(circle 39px at var(--x) 12px,transparent 38px,#000 39.5px)}
+.mnav .t{position:absolute;top:68px;width:44px;height:44px;margin:-22px 0 0 -22px;display:grid;place-items:center;color:var(--ink3);transition:opacity .2s,transform .3s}
+.mnav .t.on{opacity:0;transform:translateY(8px)}
+.mnav .ball{position:absolute;left:var(--x);top:46px;width:58px;height:58px;margin:-29px 0 0 -29px;border-radius:50%;background:var(--blue);display:grid;place-items:center;color:var(--ink)}
+.mnav .ball svg{transition:transform .25s}
+.mnav .ball.swap svg{transform:scale(0)}
+</style>
+<script>
+// Abspieler: jeder Screen mit data-anim bekommt „Nochmal“; ANIM[name](phone) startet die Animation, Schleifen laufen, solange phone im DOM hängt.
+window.ANIM = {};
+const wait = ms => new Promise(r => setTimeout(r, ms));
+async function loop(el, fn) { while (el.isConnected) { await fn(); } }
+function tap(phone, x, y) {
+  const t = document.createElement('i'); t.className = 'tap'; t.style.left = x + 'px'; t.style.top = y + 'px';
+  phone.appendChild(t); requestAnimationFrame(() => t.classList.add('go')); setTimeout(() => t.remove(), 600);
+}
+window.addEventListener('load', () => {
+  document.querySelectorAll('.screen[data-anim]').forEach(s => {
+    const tpl = s.querySelector('.phone').cloneNode(true), name = s.dataset.anim;
+    const b = document.createElement('button'); b.className = 'replay'; b.textContent = '↻ Nochmal';
+    s.querySelector('.caption').appendChild(b);
+    b.onclick = () => { const p = tpl.cloneNode(true); s.querySelector('.phone').replaceWith(p); ANIM[name] && ANIM[name](p); };
+    ANIM[name] && ANIM[name](s.querySelector('.phone'));
+  });
+});
+</script>
+
+<section class="sec"><h2>Warten</h2><p>Statt eines drehenden Kreises: Zutaten hüpfen in den Topf, der Deckel klappert, Dampf steigt. Beim Plan füllen sich dazu die Wochentage.</p></section>
+<div class="screens">
+
+  <!-- Plan wird erstellt -->
+  <div class="screen" data-anim="plan"><div class="phone">
+    <div class="sb"><b>9:41</b><span class="island"></span><svg><use href="#status"/></svg></div>
+    <div class="scr"><div class="small">KW 45 · 3.–9. Nov</div><div class="t1">Deine Woche</div></div>
+    <div class="scrim"></div>
+    <div class="sheet" style="top:90px">
+      <div class="row between"><div class="t2">Wochenplan</div><span class="x"><svg class="i"><use href="#i-x"/></svg></span></div>
+      <div class="potld" style="margin-top:34px">
+        <svg class="steam" viewBox="0 0 60 70"><path d="M12 66c-8-10 8-16 0-28s8-16 0-28"/><path d="M30 60c-8-10 8-16 0-28s8-14 0-24"/><path d="M48 66c-8-10 8-16 0-28s8-16 0-28"/></svg>
+        <img class="in" src="ill-v7/tomato.webp" style="--n:0" alt=""><img class="in" src="ill-v7/garlic.webp" style="--n:1" alt=""><img class="in" src="ill-v7/basil.webp" style="--n:2" alt=""><img class="in" src="ill-v7/pasta.webp" style="--n:3" alt="">
+        <img class="body" src="ill-v7/pot-body.webp" alt=""><img class="lid" src="ill-v7/pot-lid.webp" alt="">
+      </div>
+      <div class="a0-step t2" style="text-align:center;margin-top:30px;min-height:58px;transition:opacity .25s">Angebote auswerten …</div>
+      <div class="a0-sub small" style="text-align:center;font-size:14px;margin-top:2px">128 Angebote bei Rewe und Lidl</div>
+      <div class="potdays" style="margin-top:28px"><i class="now">Mo</i><i>Di</i><i>Mi</i><i>Do</i><i>Fr</i><i>Sa</i><i>So</i></div>
+      <div class="small" style="text-align:center;font-size:13px;margin-top:26px">Dauert meist unter einer Minute</div>
+    </div>
+    <div class="homebar" style="z-index:20"></div></div>
+    <div class="caption"><b>Plan wird erstellt</b>Tomate, Knoblauch, Basilikum und Spaghetti hüpfen abwechselnd von links und rechts im Bogen in den Topf; beim Aufprall hebt sich der Deckel und der Topf federt. Jeder fertig geplante Tag springt schwarz auf, der Schritt-Text wechselt. Zum Schluss: „Dein Plan steht“ mit Preis.</div></div>
+
+  <!-- Knopf lädt -->
+  <div class="screen" data-anim="button"><div class="phone">
+    <div class="sb"><b>9:41</b><span class="island"></span><svg><use href="#status"/></svg></div>
+    <div class="blob" style="left:190px;top:-80px;width:300px;height:300px;background:var(--rose)"></div>
+    <div class="scr">
+      <div class="small">Diese Woche</div><div class="t1">Budget</div>
+      <div class="stat" style="margin-top:40px"><span class="lbl">Über Budget</span><span class="num" style="font-size:56px;color:var(--deal)">3,20 €</span></div>
+      <div class="t2" style="margin-top:28px">Günstigere Alternative für Donnerstag?</div>
+      <div class="irow" style="margin-top:14px;height:76px"><div class="plate" style="width:54px;height:54px;background-image:url(../../../ios/Sources/Essenapp/Resources/hero/bowl.jpg)"></div><div style="flex:1"><div class="a0-dish" style="font-family:'DM Serif Display',serif;font-size:19px;transition:opacity .25s">Lachs-Bowl</div><div class="a0-cost small" style="font-size:13px">6,20 € · 30 min</div></div></div>
+      <div class="a0-btn btn" style="margin-top:22px;transition:background .25s">Günstiger würfeln</div>
+    </div>
+    <div class="toast a0-toast" style="opacity:0;transition:opacity .3s">Donnerstag: Linsen-Dal · 2,80 €</div>
+    <div class="nav" data-on="0"></div>
+    <div class="homebar"></div></div>
+    <div class="caption"><b>Knopf wartet</b>Für kurze Aktionen (Würfeln, Ideen suchen, Importieren): der Knopf wird blau und drei Zutaten hüpfen nacheinander darin – wie drei Punkte, nur gezeichnet. Danach wechselt das Gericht weich, die rote Zahl zählt herunter.</div></div>
+
+  <!-- Nav-Mulde -->
+  <div class="screen" data-anim="nav"><div class="phone">
+    <div class="sb"><b>9:41</b><span class="island"></span><svg><use href="#status"/></svg></div>
+    <div class="scr"><div class="small a0-k">Hey Jona,</div><div class="t1 a0-t">Was kochen<br>wir heute?</div></div>
+    <img class="ill a0-ill" src="ill-v7/table.webp" style="position:absolute;left:40px;top:260px;width:320px;transition:opacity .25s" alt="">
+    <div class="mnav" style="--x:39px"><div class="mbar"></div>
+      <span class="t on" style="left:39px"><svg class="i"><use href="#i-home"/></svg></span><span class="t" style="left:117px"><svg class="i"><use href="#i-cal"/></svg></span><span class="t" style="left:195px"><svg class="i"><use href="#i-tag"/></svg></span><span class="t" style="left:273px"><svg class="i"><use href="#i-bag"/></svg></span><span class="t" style="left:351px"><svg class="i"><use href="#i-book"/></svg></span>
+      <span class="ball"><svg class="i"><use href="#i-home"/></svg></span></div>
+    <div class="homebar"></div></div>
+    <div class="caption"><b>Nav: Mulde wandert</b>Antippen: die Mulde gleitet mit leichtem Nachfedern zum neuen Symbol, der blaue Kreis reitet darin mit; das Symbol schrumpft weg und wächst neu. Der Screen-Inhalt blendet in 0,2 s über. Haptik: leichtes Tippen.</div></div>
+
+</div>
+<script>
+ANIM.plan = p => loop(p, async () => {
+  const days = [...p.querySelectorAll('.potdays i')], step = p.querySelector('.a0-step'), sub = p.querySelector('.a0-sub'), pot = p.querySelector('.potld');
+  const steps = [['Angebote auswerten …', '128 Angebote bei Rewe und Lidl'], ['Lieblingsrezepte prüfen …', '3 Lieblinge sind diese Woche günstig'], ['Gerichte planen …', 'Abwechslung: max. 1× Pasta'], ['Preise & Nährwerte rechnen …', 'für Jona und Mia']];
+  days.forEach(d => d.className = ''); pot.style.opacity = 1; step.textContent = steps[0][0]; sub.textContent = steps[0][1];
+  for (let i = 0; i < 7 && p.isConnected; i++) {
+    days[i].className = 'now'; await wait(1250);
+    days[i].className = 'on';
+    const s = steps[Math.min(3, Math.floor((i + 1) / 2))];
+    if (step.textContent !== s[0]) { step.style.opacity = 0; await wait(250); step.textContent = s[0]; sub.textContent = s[1]; step.style.opacity = 1; }
+  }
+  pot.style.transition = 'opacity .4s'; pot.style.opacity = .25;
+  step.style.opacity = 0; await wait(250); step.textContent = 'Dein Plan steht!'; sub.textContent = '13 Gerichte · 38,20 € · 12,40 € gespart'; step.style.opacity = 1;
+  await wait(2600);
+});
+ANIM.button = p => loop(p, async () => {
+  const b = p.querySelector('.a0-btn'), dish = p.querySelector('.a0-dish'), cost = p.querySelector('.a0-cost'), num = p.querySelector('.num'), toast = p.querySelector('.a0-toast');
+  b.className = 'a0-btn btn'; b.textContent = 'Günstiger würfeln'; dish.textContent = 'Lachs-Bowl'; cost.textContent = '6,20 € · 30 min'; num.textContent = '3,20 €'; num.style.color = 'var(--deal)';
+  await wait(1200); const r = b.getBoundingClientRect(), pr = p.getBoundingClientRect(), z = pr.width / p.offsetWidth;
+  tap(p, (r.left - pr.left) / z + b.offsetWidth / 2, (r.top - pr.top) / z + 28); await wait(150);
+  b.className = 'a0-btn btn blue'; b.innerHTML = '<span class="hop3"><img src="ill-v7/tomato.webp"><img src="ill-v7/garlic.webp"><img src="ill-v7/basil.webp"></span>';
+  await wait(2400);
+  dish.style.opacity = 0; await wait(250); dish.textContent = 'Linsen-Dal'; cost.textContent = '2,80 € · 25 min'; dish.style.opacity = 1;
+  b.className = 'a0-btn btn'; b.textContent = 'Erledigt';
+  for (let v = 320; v >= 0; v -= 20) { num.textContent = (v / 100).toFixed(2).replace('.', ',') + ' €'; await wait(28); }
+  num.style.color = 'var(--ink)'; toast.style.opacity = 1; await wait(1800); toast.style.opacity = 0; await wait(900);
+});
+ANIM.nav = p => {
+  const nav = p.querySelector('.mnav'), ts = [...nav.querySelectorAll('.t')], ball = nav.querySelector('.ball');
+  const icons = ['i-home', 'i-cal', 'i-tag', 'i-bag', 'i-book'], k = ['Hey Jona,', 'KW 45', '10115 · 6 Läden', 'Rewe · 4 offen', '24 gespeichert'], t = ['Was kochen<br>wir heute?', 'Deine<br>Woche', 'Angebote', 'Einkauf', 'Meine<br>Rezepte'], ill = ['table', 'pot', 'binoculars', 'shopper', 'cookbook'];
+  let on = 0;
+  loop(p, async () => {
+    await wait(1500); if (!p.isConnected) return;
+    const next = [2, 3, 1, 4, 0][on], x = 39 + 78 * next;
+    tap(p, x, 802); ts[on].classList.remove('on'); ts[next].classList.add('on');
+    nav.style.setProperty('--x', x + 'px'); ball.classList.add('swap');
+    const fade = p.querySelectorAll('.a0-k,.a0-t,.a0-ill'); fade.forEach(e => { e.style.transition = 'opacity .2s'; e.style.opacity = 0; });
+    await wait(250);
+    ball.querySelector('use').setAttribute('href', '#' + icons[next]); ball.classList.remove('swap');
+    p.querySelector('.a0-k').textContent = k[next]; p.querySelector('.a0-t').innerHTML = t[next]; p.querySelector('.a0-ill').src = `ill-v7/${ill[next]}.webp`;
+    fade.forEach(e => e.style.opacity = 1); on = next;
+  });
+};
+</script>
