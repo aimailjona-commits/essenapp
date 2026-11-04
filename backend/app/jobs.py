@@ -14,7 +14,7 @@ from sqlalchemy.orm import Session, object_session
 from app.core.config import settings
 from app.core.db import SessionLocal
 from app.models import Coupon, Household, JobRun, MealPlan, Member, Offer, Product, PushOutbox, WatchItem
-from app.services import bonus, labels, motivation, prices, push, watch
+from app.services import bonus, labels, motivation, prices, pro, push, watch
 from app.services.offers_import import refresh_household
 
 log = logging.getLogger(__name__)
@@ -194,6 +194,23 @@ def coupon_expiry(db: Session, now: datetime) -> str:
     return f"{len(coupons)} Coupons, {sent} Pushes"
 
 
+def trial_reminder(db: Session, now: datetime) -> str:
+    """Testphase endet in höchstens 2 Tagen (R10): einmal Push an alle Mitglieder mit Preis und Kündigen-Weg."""
+    households = list(db.scalars(select(Household).where(
+        Household.pro_trial_reminded.is_(False), Household.pro_trial_until > utc(now),
+        Household.pro_trial_until <= utc(now + timedelta(days=2)))))
+    sent = 0
+    for h in households:
+        end = h.pro_trial_until.replace(tzinfo=UTC).astimezone(BERLIN)
+        for m in h.members:
+            sent += notify(m, now, "Kochpilot Pro", f"Deine Testphase endet am {end:%d.%m.} um {end:%H:%M} Uhr. Danach "
+                           f"kostet Pro {pro.PRICE}. Kündigen: Einstellungen › dein Name › Abonnements.",
+                           click_url="https://apps.apple.com/account/subscriptions", thread_id="pro")
+        h.pro_trial_reminded = True
+    db.commit()
+    return f"{len(households)} Haushalte, {sent} Pushes"
+
+
 def week_review(db: Session, now: datetime) -> str:
     """Wochenrückblick (55) So 19:00: für jeden Haushalt (neu) rechnen und melden."""
     from app.api import week_review as build  # spät: api importiert jobs nicht
@@ -327,6 +344,7 @@ JOBS = {  # name: (Zeitplan oder None, Funktion(db, now) -> Info); Zeitpläne pe
     "watch_rhythm": ("täglich 08:00", watch_rhythm),  # Verbrauchsrhythmus (58)
     "plan_prompt": (None, lambda db, now: f"{sum(send_plan_prompt(m, now) for m in prompt_members(db))} gesendet"),
     "coupon_expiry": ("täglich 09:00", coupon_expiry),  # 38a
+    "trial_reminder": ("täglich 09:05", trial_reminder),  # 19.8 (R10)
     "week_review": ("So 19:00", week_review),  # 55
     "achievements": ("täglich 03:00", achievements),  # 54
     "reinstall_reminder": (None, reinstall_reminder),  # Termin aus reinstall_slot()

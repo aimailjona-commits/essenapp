@@ -272,6 +272,22 @@ class GuestSlot(BaseModel):
     count: int = Field(ge=0, le=20)
 
 
+class ProOut(BaseModel):
+    """Pro-Stand des Haushalts (19.8). paywall false = alles frei (Familie/privat)."""
+    paywall: bool
+    pro: bool
+    until: datetime | None = None
+    trial_until: datetime | None = None
+    ad_credits: int = 0
+    free_plans_left: int
+    price: str  # „3 € im Monat“ (Anzeige; den echten Preis liefert StoreKit)
+    features: dict[str, str]  # Schlüssel aus der 402-Meldung → Text für die Paywall
+
+
+class AppleIn(BaseModel):
+    original_transaction_id: str = Field(pattern=r"^\d{1,40}$")
+
+
 class PlanJobOut(BaseModel):
     """Stand der Plan-Erstellung im Hintergrund (19.6)."""
     state: Literal["none", "running", "done", "error"]

@@ -20,6 +20,13 @@ class Settings(BaseSettings):
     apns_key_id: str = ""
     apns_team_id: str = ""
     apns_topic: str = "de.jsenf.essenapp"  # Bundle-ID der App
+    # Pro (19.8, E95): aus = alles frei (Familie/privat); an = Gratis-Grenzen, Abo bzw. Werbung schaltet frei
+    paywall: bool = False
+    # App Store Server API: In-App-Purchase-Key (.p8) aus App Store Connect › Benutzer und Zugriff › Integrationen
+    appstore_key_path: str = ""
+    appstore_key_id: str = ""
+    appstore_issuer_id: str = ""
+    appstore_bundle_id: str = "de.jsenf.essenapp"
     # Scheduler (E47) läuft bis zum VPS als Thread im lokalen API-Prozess.
     scheduler: bool = False  # SCHEDULER=1 startet die Job-Schleife beim App-Start (dev.sh serve)
     reinstall_base: date | None = None  # letzte Installation der iOS-App (7-Tage-Signatur), z.B. 2026-11-02

@@ -1,6 +1,6 @@
 from datetime import date, datetime
 
-from sqlalchemy import JSON, ForeignKey, String, UniqueConstraint, func, true
+from sqlalchemy import JSON, ForeignKey, String, UniqueConstraint, false, func, true
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.db import Base
@@ -36,6 +36,13 @@ class Household(Base):
     max_cook_minutes: Mapped[int] = mapped_column(default=45)
     radius_km: Mapped[int] = mapped_column(default=5, server_default="5")  # Umkreis für die Ladensuche
     step_images: Mapped[bool] = mapped_column(default=True, server_default=true())  # KI-Schritt-Bilder (9), nur mit FAL_KEY
+    # Pro (19.8, E95): Abo gilt für den ganzen Haushalt; Ablauf laut App Store Server API (UTC ohne Zeitzone)
+    pro_until: Mapped[datetime | None]
+    pro_trial_until: Mapped[datetime | None]  # Ende der Testphase → Erinnerung 2 Tage vorher (R10)
+    pro_trial_reminded: Mapped[bool] = mapped_column(default=False, server_default=false())
+    pro_checked_at: Mapped[datetime | None]  # letzte Abfrage bei Apple
+    apple_transaction_id: Mapped[str | None] = mapped_column(String(40), unique=True)  # originalTransactionId
+    ad_credits: Mapped[int] = mapped_column(default=0, server_default="0")  # je angesehenem Werbevideo eine Pro-Nutzung
     variety: Mapped[dict] = mapped_column(JSON, default=dict, server_default="{}")  # Abwechslungsregeln (12), fehlende Schlüssel = VARIETY_DEFAULT
     storage_space: Mapped[str] = mapped_column(String(10), default="mittel", server_default="mittel")  # Vorratsplatz (31): klein|mittel|gross
     created_at: Mapped[datetime] = mapped_column(server_default=func.now())
@@ -356,6 +363,16 @@ class ShoppingItem(Base):
     checked_by: Mapped[str] = mapped_column(String(50), default="")
     source: Mapped[str] = mapped_column(String(10), default="manual")  # plan | manual | basics | stockup | rhythm
     defer_week: Mapped[str | None] = mapped_column(String(8))  # „Nächste Woche“-Gruppe (30) bis zu dieser ISO-Woche
+    created_at: Mapped[datetime] = mapped_column(server_default=func.now())
+
+
+class AdReward(Base):
+    """Angesehenes Werbevideo (AdMob-Server-Prüfung, 19.8); transaction_id verhindert doppelte Gutschrift."""
+    __tablename__ = "ad_reward"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    household_id: Mapped[int] = mapped_column(ForeignKey("household.id"), index=True)
+    transaction_id: Mapped[str] = mapped_column(String(100), unique=True)
     created_at: Mapped[datetime] = mapped_column(server_default=func.now())
 
 

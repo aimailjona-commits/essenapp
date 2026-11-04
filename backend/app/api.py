@@ -20,7 +20,7 @@ from sqlalchemy.orm import Session, object_session
 from app.core.auth import current_member, new_token
 from app.core.config import settings
 from app.core.db import get_db
-from app.models import (Achievement, AiCost, BonusEntry, Coupon, Household, HouseholdStore, Invite, MealPlan,
+from app.models import (Achievement, AdReward, AiCost, BonusEntry, Coupon, Household, HouseholdStore, Invite, MealPlan,
                         JobRun, MealPlanEntry, Member, MemberProfile, MemberToken, Offer, PairingCode, PantryItem, PricePoint,
                         Product, PushDevice, Rating, Recipe, RecipeFavorite, ShoppingItem, ShoppingList, WatchItem,
                         WeekReview, WeeklyBasic)
@@ -29,7 +29,7 @@ from app.schemas import (ConsumeIn, CookIdeaOut, DeviceIn, EntryUpdate, Favorite
                          ItemPatchOut, ItemUpdate, JoinIn, ListCreate, ListOut, ListSummary, MemberOut,
                          MemberProfileOut, NearbyStoreOut, OfferHistoryOut, OfferNutritionOut, OfferOut,
                          PairedTokenOut, PairIn, PairingCodeOut, PairOut, PantryIn, PantryOut, PantryUpdate,
-                         PlanJobOut, PlanNutritionOut, PlanOptions, PlanOut, ProfileOut, ProfileUpdate, PushSettings,
+                         PlanJobOut, PlanNutritionOut, ProOut, AppleIn, PlanOptions, PlanOut, ProfileOut, ProfileUpdate, PushSettings,
                          PushSettingsUpdate, RatingIn, RatingOut, RecipeCard, RecipeCostOut, RecipeDetail, RecipeIn,
                          RecipeOut, RecipePatch, ReplaceIn, ScanOut, ShareOut, StepImagesOut, UsageOut,
                          EntryLeftover, GeneratorOut, GuestsIn, NoMoodIn, PostponeIn, SpecialsOut, SubstituteIn,
@@ -38,7 +38,7 @@ from app.schemas import (ConsumeIn, CookIdeaOut, DeviceIn, EntryUpdate, Favorite
                          StockupOut, StoreComboOut, WatchIn, WatchOut, WatchUpdate, AchievementOut, BonusAccountOut,
                          BonusIn, CouponIn, CouponOut, CouponScanOut, CouponUpdate, RecipeShareOut, ReviewSummary,
                          SeenIn, SharedRecipeOut, SpendingOut, WeekReviewOut)
-from app.services import (bonus, food_map, labels, motivation, nearby_stores, nutrition, offers_import, pantry_ai,
+from app.services import (bonus, food_map, pro, labels, motivation, nearby_stores, nutrition, offers_import, pantry_ai,
                           planner, prices, push, recipe_images, recipe_import, recipes, seasons, spending, stockup,
                           store_split, substitutes, variety, watch)
 from app.services.matching import Matcher
@@ -386,6 +386,7 @@ def create_plan(options: PlanOptions | None = None, member: Member = Depends(cur
         opts.pop("next_week", None)
     prefs = _prefs(household, opts)
     extra_slots, hint = [], ""
+    pro.require(db, household, "plan")
     if (single := opts.get("single_store")) and single not in {s.chain for s in household.stores if s.enabled}:
         raise HTTPException(422, "Laden ist nicht ausgewählt")
     if key := opts.get("special"):
@@ -473,6 +474,7 @@ def start_plan_job(options: PlanOptions | None = None, member: Member = Depends(
     row = plan_job_row(db, member.household_id)
     if plan_job_state(row)["state"] == "running":
         return plan_job_state(row)
+    pro.require(db, member.household, "plan", spend=False)  # 402 sofort; abgebucht wird im Lauf
     row = JobRun(name=f"plan:{member.household_id}", ran_at=datetime.now(UTC).replace(tzinfo=None), info="läuft")
     db.add(row)
     db.commit()
@@ -509,6 +511,59 @@ def _fill_image(bind, recipe_id: int, query: str) -> None:
 @router.get("/plans/job", response_model=PlanJobOut)
 def plan_job(member: Member = Depends(current_member), db: Session = Depends(get_db)):
     return plan_job_state(plan_job_row(db, member.household_id))
+
+
+def pro_out(db: Session, h: Household) -> dict:
+    return {"paywall": settings.paywall, "pro": pro.is_pro(h), "until": h.pro_until, "trial_until": h.pro_trial_until,
+            "ad_credits": h.ad_credits, "free_plans_left": pro.free_plans_left(db, h), "price": pro.PRICE,
+            "features": pro.FEATURES}
+
+
+@router.get("/pro", response_model=ProOut)
+def get_pro(member: Member = Depends(current_member), db: Session = Depends(get_db)):
+    """Pro-Stand (19.8); ein abgelaufenes Abo wird höchstens alle 6 h bei Apple nachgesehen (Verlängerung)."""
+    pro.refresh(member.household)
+    db.commit()
+    return pro_out(db, member.household)
+
+
+@router.post("/pro/apple", response_model=ProOut)
+def pro_apple(body: AppleIn, member: Member = Depends(current_member), db: Session = Depends(get_db)):
+    """Kauf/Wiederherstellen in der App: originalTransactionId → Server fragt Apple und schaltet den ganzen Haushalt
+    frei (R11). Dieselbe Transaktion gehört nur zu einem Haushalt."""
+    if not pro.apple_configured():
+        raise HTTPException(503, "Abo-Prüfung nicht eingerichtet")
+    other = db.scalar(select(Household).where(Household.apple_transaction_id == body.original_transaction_id,
+                                              Household.id != member.household_id))
+    if other is not None:
+        raise HTTPException(409, "Dieses Abo gehört schon zu einem anderen Haushalt")
+    try:
+        status = pro.apple_status(body.original_transaction_id)
+    except httpx.HTTPError as e:
+        raise HTTPException(502, f"App Store nicht erreichbar: {e}")
+    if status is None:
+        raise HTTPException(404, "Kein Abo gefunden")
+    member.household.apple_transaction_id = body.original_transaction_id
+    pro.apply(member.household, status)
+    db.commit()
+    return pro_out(db, member.household)
+
+
+@router.get("/pro/admob", status_code=200)
+def pro_admob(request: Request, db: Session = Depends(get_db)):
+    """AdMob-Prämie (Server-Prüfung, kein Login): Google ruft das nach einem ganz angesehenen Video auf; user_id =
+    Haushalt. Gültige Signatur → eine Pro-Nutzung gutschreiben, jede transaction_id nur einmal."""
+    params = pro.admob_verified(request.url.query)
+    if params is None:
+        raise HTTPException(403, "Signatur ungültig")
+    household = db.get(Household, int(params["user_id"])) if params.get("user_id", "").isdigit() else None
+    if household is None:
+        return {"ok": True}  # Testaufruf aus der AdMob-Konsole hat keinen Haushalt
+    if db.scalar(select(AdReward).where(AdReward.transaction_id == params.get("transaction_id", ""))) is None:
+        db.add(AdReward(household_id=household.id, transaction_id=params.get("transaction_id", "")[:100]))
+        household.ad_credits += 1
+        db.commit()
+    return {"ok": True}
 
 
 @router.get("/usage", response_model=UsageOut)
@@ -582,6 +637,8 @@ def reroll_entry(entry_id: int, body: RerollIn | None = None, member: Member = D
     entry = _entry(plan, entry_id)
     if entry.locked:
         raise HTTPException(409, "Gericht ist fixiert")
+    if body and (body.direction or body.wish.strip()):
+        pro.require(db, household, "reroll_direction")
     offers = plan_offers(db, household, plan)
     others = [e.recipe.title for e in plan.entries if e is not entry]
     opts = (plan.params or {}).get("options", {})
@@ -1312,6 +1369,7 @@ def pantry_scan(files: list[UploadFile] = File(...),
     gefrierfach → erkannte Lebensmittel. Speichert nichts; übernehmen über POST /pantry/bulk nach dem Prüf-Bildschirm."""
     if not 1 <= len(files) <= MAX_SCAN_IMAGES:
         raise HTTPException(422, "1 bis 5 Fotos")
+    pro.require(db, member.household, "scan")
     images = [f.file.read(MAX_SCAN_BYTES + 1) for f in files]
     if any(len(i) > MAX_SCAN_BYTES or not i.startswith(b"\xff\xd8\xff") for i in images):
         raise HTTPException(422, "Fotos müssen JPEGs bis 5 MB sein")
@@ -1385,6 +1443,7 @@ def no_mood(body: NoMoodIn | None = None, member: Member = Depends(current_membe
     Code geprüft). exclude = schon gezeigte Titel („Wischen für weitere 3“). Auswahl → POST …/entries/{id}/replace,
     danach „Auf morgen verschieben?“ → POST /plans/current/postpone mit dem ursprünglichen Rezept."""
     household = member.household
+    pro.require(db, household, "no_mood")
     bought = [PantryItem(name=i.name, ingredient_key=ingredient_key(i.name), unit=unit, amount=amount, is_basic=False)
               for i in household_list(db, household.id).items if i.checked
               for amount, unit in [base_unit(i.amount, i.unit) if i.unit else (i.amount, "")]]
@@ -1567,7 +1626,7 @@ def recipe_detail(db: Session, member: Member, recipe: Recipe) -> dict:
 def start_step_images(member: Member, recipe: Recipe) -> bool:
     """Fehlende Schritt-Bilder im Hintergrund erzeugen (9), wenn FAL_KEY gesetzt und eingeschaltet; True = läuft."""
     todo = [*(recipe.step_images or []), *[""] * len(recipe.steps)][:len(recipe.steps)]
-    if settings.fal_key and member.household.step_images and not all(todo):
+    if settings.fal_key and member.household.step_images and pro.allowed(member.household) and not all(todo):
         recipe_images.step_images_later(recipe.id, MEDIA)
     return recipe_images.steps_pending(recipe.id)
 
@@ -1588,6 +1647,7 @@ def step_images(recipe_id: int, member: Member = Depends(current_member), db: Se
         raise HTTPException(422, "Schritt-Bilder nicht eingerichtet (FAL_KEY fehlt)")
     if not member.household.step_images:
         raise HTTPException(422, "Schritt-Bilder sind in den Einstellungen ausgeschaltet")
+    pro.require(db, member.household, "step_images", spend=False)  # Bilder bleiben am Rezept, kein Verbrauch je Abruf
     pending = start_step_images(member, recipe)
     return {"step_images": RecipeOut.model_validate(recipe).step_images, "pending": pending}
 
@@ -1597,6 +1657,7 @@ def import_recipe(body: ImportIn, response: Response, member: Member = Depends(c
                   db: Session = Depends(get_db)):
     """Rezept-Import (5) aus Instagram-Beitrag/Reel oder Webseite. Gleiche URL schon importiert → dieses Rezept (200).
     422 „Kein Rezept gefunden“, 502 Seite/KI nicht erreichbar."""
+    pro.require(db, member.household, "import")
     url = recipe_import.canonical(str(body.url))
     existing = db.scalar(select(Recipe).where(Recipe.household_id == member.household_id, Recipe.source_url == url,
                                               Recipe.source.in_(("instagram", "web"))).limit(1))
@@ -2021,6 +2082,7 @@ def get_substitutes(recipe_id: int, index: int, member: Member = Depends(current
                     db: Session = Depends(get_db)):
     """„Ersatz finden“: 2–4 Alternativen mit umgerechneter Menge und Wirkung, markiert im Vorrat / im Angebot.
     Erst Tabelle (ohne KI), sonst Haiku; Allergien und Ernährungsform des Haushalts + aller Profile prüft der Code."""
+    pro.require(db, member.household, "substitutes")
     recipe = household_recipe(db, member, recipe_id)
     ing = recipe_ingredient(recipe, index)
     prefs = _prefs(member.household, {})
@@ -2118,6 +2180,8 @@ def get_watch(member: Member = Depends(current_member), db: Session = Depends(ge
 def create_watch(body: WatchIn, member: Member = Depends(current_member), db: Session = Depends(get_db)):
     """Herz am Angebot (offer_id), Barcode (ean), Freitext oder „+ Zutat“ (kind zutat). Drogerie/Haushalt bekommen
     „Hält ca. X Wochen“ als Vorschlag (58)."""
+    if body.kind == "zutat" or body.max_price_cents or body.max_base_price_cents:
+        pro.require(db, member.household, "price_alert")
     data = body.model_dump(exclude={"offer_id"})
     if body.offer_id is not None:
         o = db.get(Offer, body.offer_id)
@@ -2138,6 +2202,8 @@ def create_watch(body: WatchIn, member: Member = Depends(current_member), db: Se
 def patch_watch(watch_id: int, body: WatchUpdate, member: Member = Depends(current_member),
                 db: Session = Depends(get_db)):
     item = member_watch(db, member, watch_id)
+    if body.max_price_cents or body.max_base_price_cents:
+        pro.require(db, member.household, "price_alert")
     nullable = ("max_price_cents", "max_base_price_cents", "lasts_weeks", "last_bought")
     for key, value in body.model_dump(exclude_unset=True).items():
         if value is not None or key in nullable:
