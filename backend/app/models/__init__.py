@@ -348,6 +348,7 @@ class ShoppingItem(Base):
     name: Mapped[str] = mapped_column(String(100))
     amount: Mapped[float | None]
     unit: Mapped[str] = mapped_column(String(10), default="")
+    pack_amount: Mapped[float | None]  # Plan-Einträge (19.5): Packungsgröße des Angebots bzw. der Schätzung, Einheit = unit
     chain: Mapped[str] = mapped_column(String(30), default="")
     offer_id: Mapped[int | None]  # kein FK: alte Angebote dürfen gelöscht werden
     checked: Mapped[bool] = mapped_column(default=False)

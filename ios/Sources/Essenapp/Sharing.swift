@@ -16,6 +16,21 @@ struct ListItemDTO: Codable, Identifiable, Hashable {
     var deferWeek: String? = nil  // ISO-Woche der Gruppe „Nächste Woche“ (30)
     var nextWeek: Bool? = nil  // in der Gruppe „Nächste Woche“ (Backend rechnet)
     var coupon: CouponBadgeDTO? = nil  // passender aktiver Coupon (38c/59): „🎟 10fach“
+    var packAmount: Double? = nil  // Packungsgröße (19.5), Einheit = unit
+    var packs: Int? = nil  // zu kaufende Packungen (Backend rechnet)
+
+    /// „1 × 1,1 kg · 900 g gebraucht“; ohne Packung nur die Menge.
+    var amountText: String {
+        guard let amount else { return "" }
+        guard let packs, let packAmount else { return packSize(amount, unit) }
+        return "\(packs) × \(packSize(packAmount, unit)) · \(packSize(amount, unit)) gebraucht"
+    }
+}
+
+/// 1100 g → „1,1 kg“, 2 stk → „2 Stück“, el → „EL“.
+func packSize(_ v: Double, _ unit: String) -> String {
+    if v >= 1000, unit == "g" || unit == "ml" { return "\(num(v / 1000, 0...2)) \(unit == "g" ? "kg" : "l")" }
+    return "\(num(v, 0...2)) \(Labels.unit(unit))"
 }
 
 struct ListDTO: Codable {
@@ -271,7 +286,7 @@ struct ItemRow: View {
                 Text(offer?.title ?? item.name).font(.system(.body, weight: .semibold)).strikethrough(item.checked)
                     .foregroundStyle(item.checked ? Theme.C.text3 : Theme.C.text1)
                 let who = item.checked && !item.checkedBy.isEmpty ? "✓ \(item.checkedBy)" : (item.source == "manual" && !item.addedBy.isEmpty ? "von \(item.addedBy)" : "")
-                let amount = item.amount.map { "\(num($0, 0...2)) \(item.unit == "stk" ? "Stück" : item.unit)" } ?? ""
+                let amount = item.amountText
                 if !(amount + who).isEmpty {
                     Text([amount, who].filter { !$0.isEmpty }.joined(separator: " · ")).font(Theme.F.micro).foregroundStyle(Theme.C.text2)
                 }

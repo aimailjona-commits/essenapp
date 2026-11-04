@@ -390,7 +390,7 @@ enum Demo {
         item(2, "Basmatireis", 480, "g", "rewe", 7, checked: true, by: "Malina"),
         item(11, "Kaffee", 500, "g", "rewe", nil, source: "manual", added: "Jona",
              coupon: CouponBadgeDTO(id: 1, text: "🎟 10fach", program: "payback", partner: "REWE")),  // Coupon-Badge (38c)
-        item(3, "Rispentomaten", 700, "g", "lidl", 3),
+        item(3, "Rispentomaten", 700, "g", "lidl", 3, pack: 500),  // 2 × 500 g (19.5)
         item(4, "Feta", 200, "g", "lidl", 8),
         item(5, "Lachsfilet", 250, "g", "lidl", 4),
         item(6, "Avocado", 1, "stk", "aldi_sued", 2),
@@ -407,8 +407,9 @@ enum Demo {
 
     static func item(_ id: Int, _ name: String, _ amount: Double?, _ unit: String, _ chain: String, _ offer: Int?,
                      checked: Bool = false, by: String = "", source: String = "plan", added: String = "",
-                     next: Bool = false, coupon: CouponBadgeDTO? = nil) -> ListItemDTO {
+                     next: Bool = false, coupon: CouponBadgeDTO? = nil, pack: Double? = nil) -> ListItemDTO {
         ListItemDTO(id: id, name: name, amount: amount, unit: unit, chain: chain, offerId: offer, checked: checked,
-                    addedBy: added, checkedBy: by, source: source, deferWeek: next ? "2026-W46" : nil, nextWeek: next, coupon: coupon)
+                    addedBy: added, checkedBy: by, source: source, deferWeek: next ? "2026-W46" : nil, nextWeek: next, coupon: coupon,
+                    packAmount: pack, packs: pack.map { Int((amount ?? 0) / $0 + 0.999) })
     }
 }

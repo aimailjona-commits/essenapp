@@ -42,7 +42,7 @@ from app.services import (bonus, food_map, labels, motivation, nearby_stores, nu
                           store_split, substitutes, variety, watch)
 from app.services.matching import Matcher
 from app.services.normalize import base_unit, cents, ingredient_key
-from app.services.pricing import PANTRY_WORDS, Stock
+from app.services.pricing import PANTRY_WORDS, Stock, pack_amount, stock_key
 
 router = APIRouter()
 
@@ -866,7 +866,7 @@ def sync_plan(db: Session, household_id: int) -> ShoppingList:
                      .order_by(MealPlan.active_at.desc(), MealPlan.id.desc()).limit(1))
 
     def key_of(name: str, unit: str, offer_id: int | None) -> tuple:
-        return ("offer", offer_id) if offer_id else ("name", name.strip().lower(), unit)
+        return ("offer", offer_id) if offer_id else ("name", stock_key(name), unit)  # Zwiebel = Zwiebeln (19.5)
 
     entries = plan.entries if plan else []
     single = ((plan.params or {}).get("options") or {}).get("single_store") if plan else None
@@ -877,10 +877,15 @@ def sync_plan(db: Session, household_id: int) -> ShoppingList:
         for ing in entry_ingredients(entry):
             if "offer_id" not in ing:  # eingesetztes Rezept (ohne KI-Zuordnung): Angebot über den Namen
                 ing["offer_id"] = match.line(ing).offer_id
-            unit, offer_id = ing.get("unit", ""), ing.get("offer_id")
+            amount, unit = base_unit(ing.get("amount") or 0, ing.get("unit", ""))  # 1 kg + 500 g = 1500 g
+            if not unit:  # EL, TL, Prise bleiben wie im Rezept
+                amount, unit = ing.get("amount") or 0, ing.get("unit", "")
+            offer_id = ing.get("offer_id")
             row = needed.setdefault(key_of(ing["name"], unit, offer_id), {"name": ing["name"][:100], "amount": 0.0,
-                                    "unit": unit, "offer_id": offer_id, "in_pantry": True})
-            row["amount"] += ing.get("amount") or 0
+                                    "unit": unit, "offer_id": offer_id, "in_pantry": True, "pack": None})
+            row["amount"] += amount
+            if ing.get("pack_amount") and ing.get("unit") == unit:  # Schätzung der KI, Einheit wie amount
+                row["pack"] = pack_amount(ing["name"], unit, ing["pack_amount"])
             row["in_pantry"] &= bool(ing.get("in_pantry"))
     stock = Stock(plan_stock(db, household_id))  # nur fehlende Mengen auf die Liste (60), Wochen-Basics (23)
     for key, row in list(needed.items()):
@@ -890,7 +895,7 @@ def sync_plan(db: Session, household_id: int) -> ShoppingList:
         else:
             row["amount"] -= have
     offer_ids = [r["offer_id"] for r in needed.values() if r["offer_id"]]
-    chains = dict(db.execute(select(Offer.id, Offer.chain).where(Offer.id.in_(offer_ids))).all())
+    offers = {o.id: o for o in db.scalars(select(Offer).where(Offer.id.in_(offer_ids)))}
 
     existing = {key_of(i.name, i.unit, i.offer_id): i for i in lst.items if i.source == "plan"}
     for key, item in existing.items():
@@ -903,7 +908,10 @@ def sync_plan(db: Session, household_id: int) -> ShoppingList:
             lst.items.append(item)
         item.name, item.unit, item.offer_id = row["name"], row["unit"], row["offer_id"]
         item.amount = row["amount"] or None
-        item.chain = single or chains.get(row["offer_id"], "")  # Ein-Laden-Modus (41): alles bei diesem Laden
+        o = offers.get(row["offer_id"])
+        item.chain = single or (o.chain if o else "")  # Ein-Laden-Modus (41): alles bei diesem Laden
+        # Packung des Angebots (Einheit passend), sonst die Normalpreis-Schätzung der KI (19.5)
+        item.pack_amount = o.amount if o and o.amount and o.unit == row["unit"] else row["pack"]
     db.flush()
     return lst
 
@@ -1034,7 +1042,9 @@ def item_next_week(item_id: int, body: NextWeekIn | None = None, member: Member 
 def item_to_pantry(item_id: int, member: Member = Depends(current_member), db: Session = Depends(get_db)):
     """Abgehakten Artikel in den Vorrat: gleiche Zutat+Einheit wird aufaddiert, ein Basic gilt wieder als vorhanden."""
     item = member_item(db, member, item_id)
-    amount, unit = base_unit(item.amount, item.unit)
+    # ganze Packungen gekauft: der Rest über den Bedarf hinaus liegt danach im Vorrat (19.5)
+    packs = ItemOut.model_validate(item).packs
+    amount, unit = base_unit(packs * item.pack_amount if packs else item.amount, item.unit)
     pantry = add_pantry(db, member.household_id, item.name, amount, unit, "list")
     db.commit()
     return pantry

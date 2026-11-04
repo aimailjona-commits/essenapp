@@ -69,11 +69,11 @@ Status: **aktiv** (2026-11-04). UI ohne Mockup-Freigabe direkt mit v3-Bausteinen
 
 ## 19.5 Einkaufsliste = Rezept, in Packungen des Ladens
 
-- [ ] Zusammenführen über den normalisierten Zutatenschlüssel (Singular/Plural, Einheiten umrechnen)
-- [ ] Prüfung: jede in den Schritten genannte Zutat steht in der Zutatenliste (KI-Ausgabe im Code prüfen, sonst nachfordern) (R1)
-- [ ] Liste zeigt **Packungen** des gewählten Ladens („1 × 1,1 kg Hähnchenschenkel, 900 g gebraucht“), Rest geht in den Vorrat (R2)
-- [ ] Plan-Kosten = Packungspreise, nicht anteilige Preise (R3)
-- [ ] Einheiten überall deutsch: TL, EL, Prise, Bund, Dose; nie tsp/tbsp
+- [x] Zusammenführen über den normalisierten Zutatenschlüssel (Singular/Plural, Einheiten umrechnen) – `stock_key`, kg/l → g/ml (E93)
+- [x] Prüfung: jede in den Schritten genannte Zutat steht in der Zutatenliste (KI-Ausgabe im Code prüfen, sonst nachfordern) (R1) – `planner.unlisted`, an 120 echten Rezepten: 2 echte Lücken, 1 Fehlalarm
+- [x] Liste zeigt **Packungen** des gewählten Ladens („1 × 1,1 kg Hähnchenschenkel, 900 g gebraucht“), Rest geht in den Vorrat (R2) – iOS + Web
+- [x] Plan-Kosten = Packungspreise, nicht anteilige Preise (R3) – war schon so; doppelte Packungen durch „Zwiebel/Zwiebeln“ behoben
+- [x] Einheiten überall deutsch: TL, EL, Prise, Bund, Dose; nie tsp/tbsp – Schemas lassen nur deutsche Einheiten zu; Web zeigte „el“, jetzt „EL“
 - [ ] (optional) Export in Apple Erinnerungen per EventKit (R14) – 👤 sagen, ob gewünscht
 - Abnahme: 3 echte Pläne nachgezählt, keine fehlende Zutat, Packungen passen zum Laden
 

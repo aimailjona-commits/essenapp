@@ -13,7 +13,7 @@ from app.api import (add_item, household_list, import_shared, join_household, li
 from app.core.auth import hash_token
 from app.core.db import get_db
 from app.models import Household, MealPlan, Member, ShoppingList
-from app.schemas import ItemCreate, ItemUpdate
+from app.schemas import ItemCreate, ItemOut, ItemUpdate
 
 COOKIE = "essen_token"
 DIR = Path(__file__).parent
@@ -26,10 +26,26 @@ DAYS = ["Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag", "S
 MEALS = {"fruehstueck": "Frühstück", "mittag": "Mittag", "abend": "Abend"}
 
 templates.env.filters["euro"] = lambda cents: f"{(cents or 0) / 100:.2f} €".replace(".", ",")
-templates.env.filters["ing"] = lambda i: (f"{i['amount']:g} {'Stk' if i.get('unit') == 'stk' else i.get('unit', '')}"
-                                          .strip() if i.get("amount") else "")
-templates.env.filters["qty"] = lambda i: (f"{i.amount:g} {'Stk' if i.unit == 'stk' else i.unit}".strip()
-                                          if i.amount else "")
+UNITS = {"stk": "Stk", "el": "EL", "tl": "TL", "prise": "Prise"}
+
+
+def size(amount: float, unit: str) -> str:
+    """1100 g → „1,1 kg“, 2 el → „2 EL“."""
+    if amount >= 1000 and unit in ("g", "ml"):
+        amount, unit = amount / 1000, "kg" if unit == "g" else "l"
+    return f"{round(amount, 2):g} {UNITS.get(unit, unit)}".replace(".", ",").strip()
+
+
+def qty(i) -> str:
+    """Listeneintrag: „2 × 500 g · 700 g gebraucht“ (19.5), sonst die Menge."""
+    if not i.amount:
+        return ""
+    packs = ItemOut.model_validate(i).packs
+    return f"{packs} × {size(i.pack_amount, i.unit)} · {size(i.amount, i.unit)} gebraucht" if packs else size(i.amount, i.unit)
+
+
+templates.env.filters["ing"] = lambda i: size(i["amount"], i.get("unit", "")) if i.get("amount") else ""
+templates.env.filters["qty"] = qty
 
 
 def cookie_member(request: Request, db: Session = Depends(get_db)) -> Member | None:

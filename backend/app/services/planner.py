@@ -14,9 +14,10 @@ from pydantic import BaseModel, ConfigDict
 from app.core.config import settings
 from app.models import AiCost, Household, MemberProfile, Offer, PantryItem
 from app.services import recipe_images, variety
-from app.services.matching import fits, is_a
+from app.services.matching import fits, is_a, stem
 from app.services.normalize import cents
-from app.services.pricing import Pack, Stock, cost_line, pack_amount, shelf_days
+from app.services.pricing import Pack, Stock, cost_line, pack_amount, shelf_days, stock_key
+from app.sources.kaufda import SUBCATEGORIES, TRAPS
 
 logger = logging.getLogger(__name__)
 
@@ -79,6 +80,8 @@ Regeln:
   Großpackung (z.B. 2 kg Obst, 1 kg Fleisch), wenn die Woche sie nicht verbraucht.
 - Ernährungsform, Allergien und Ausschlüsse sind harte Regeln. Kochzeit nicht überschreiten.
 - Alle Texte auf Deutsch. Schritte kurz und konkret, 3–8 Schritte.
+- Jede Zutat, die in den Schritten vorkommt, steht in ingredients (außer Wasser); eine Zutat, die mehrfach gebraucht
+  wird, nur einmal mit der Gesamtmenge.
 - image_query: 2–4 englische Suchbegriffe für ein Foto des Gerichts, z.B. "chicken tikka masala".
 - side = Hauptbeilage (pasta, reis, kartoffel, brot, andere); protein = fisch, rot (Rind, Schwein, Lamm, Wild),
   gefluegel, vegetarisch oder vegan.
@@ -252,6 +255,26 @@ def violations(meals: list[PlannedMeal], forbid: Callable[[str], bool] | None) -
             for bad in [next((i.name for i in m.ingredients if forbid(i.name)), None)] if bad]
 
 
+# 19.5: Stichwörter der Angebots-Kategorien, die in Schritten auf eine Zutat zeigen; Oberbegriffe zählen nicht
+GENERIC = ("wasser", "sauce", "soße", "fleisch", "käse", "nudel", "brot", "creme", "öl", "dressing", "gemüse",
+           "salat", "teig", "brühe", "fond", "saft")
+FOOD_WORDS = sorted({w.strip() for _, _, ws in SUBCATEGORIES for w in ws if len(w.strip()) >= 4} - set(GENERIC))
+
+
+def unlisted(meal: PlannedMeal) -> list[str]:
+    """Substantive aus den Schritten, die nach Lebensmittel klingen, aber in keiner Zutat stecken (R1: „Wraps füllen“
+    ohne Wraps in der Liste)."""
+    have = " ".join(i.name for i in meal.ingredients).lower().replace("-", "").replace("porree", "porree lauch")
+    out = []
+    for w in sorted({m.lower() for m in re.findall(r"(?<!\w)[A-ZÄÖÜ][a-zäöüß]{3,}", " ".join(meal.steps))}):
+        if w.startswith(GENERIC) or w.endswith(GENERIC):
+            continue
+        kws = [k for k in FOOD_WORDS if (w.startswith(k) or w.endswith(k)) and not (k in TRAPS and TRAPS[k].search(w))]
+        if kws and stem(w) not in have and not any(k in have for k in kws):
+            out.append(w)
+    return out
+
+
 def slot_key(day: int, meal_type: str) -> str:
     return f"{day}|{meal_type}"
 
@@ -276,7 +299,8 @@ def price(draft: PlanDraft, offers_by_id: dict[int, Offer], pantry: list[PantryI
             if ing.offer_id in offers_by_id and not fits(ing.name, offers_by_id[ing.offer_id]):
                 logger.info("Angebot passt nicht zur Zutat: %s ≠ %s", ing.name, offers_by_id[ing.offer_id].title)
                 ing.offer_id = None  # 19.1: KI hat z.B. Käse für Joghurt gewählt → Normalpreis-Schätzung
-            key = ("offer", ing.offer_id) if ing.offer_id in offers_by_id else ("est", ing.name.lower().strip(), ing.unit)
+            # 19.5: „Zwiebel“/„Zwiebeln“ = eine Zeile, eine Packung
+            key = ("offer", ing.offer_id) if ing.offer_id in offers_by_id else ("est", stock_key(ing.name), ing.unit)
             needs.setdefault(key, []).append((i, ing))
 
     meal_costs = [0] * len(draft.meals)
@@ -374,11 +398,12 @@ def make_plan(household: Household, offers: list[Offer], slots: list[tuple[int, 
         planned = price(draft, offers_by_id, stock)
         bad = violations(draft.meals, forbid)
         banned = banned_meals(draft, [*never, *recent]) + bad
-        key = (len(banned), planned.total_cents)  # erst Regeln, dann Preis
+        missing = [f"{m.title}: {', '.join(u)}" for m in draft.meals if (u := unlisted(m))]
+        key = (len(banned), len(missing), planned.total_cents)  # erst Regeln, dann vollständige Liste, dann Preis
         if best is None or key < best_key:
             best, best_key = planned, key
         over = planned.total_cents > household.budget_food_week_cents
-        if not over and not banned:
+        if not over and not banned and not missing:
             break
         note = "Korrektur zum vorigen Entwurf:"
         if over:
@@ -389,6 +414,8 @@ def make_plan(household: Household, offers: list[Offer], slots: list[tuple[int, 
                      f"{repeat_weeks} Wochen.")
         if bad:
             note += f" Ersetze {', '.join(bad)} – die Zutat verletzt Allergie, Ernährungsform oder „Mag nicht“."
+        if missing:
+            note += f" In den Schritten verwendet, aber nicht in den Zutaten – mit Menge ergänzen: {'; '.join(missing)}."
     if rules is not None:
         best, usage = second_pass(best, usage, household, offers_by_id, slots, stock, rules, fish_ok, recent, never,
                                   lambda todo, note: ask(prompt(todo, note)), forbid)

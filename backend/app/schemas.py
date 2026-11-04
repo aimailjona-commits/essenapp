@@ -1,4 +1,5 @@
 """API-Vertrag. Die Swift-Modelle (Codable) in ios/ richten sich nach diesen Klassen."""
+import math
 from datetime import date, datetime
 from typing import Annotated, Literal
 
@@ -384,6 +385,7 @@ class ItemOut(BaseModel):
     source: str  # plan | manual | basics | stockup (Badge „Vorratskauf“) | rhythm („bald leer“, 58)
     defer_week: str | None = None  # ISO-Woche der Gruppe „Nächste Woche“ (30)
     coupon: CouponBadge | None = None  # passender aktiver Coupon (38c/59)
+    pack_amount: float | None = None  # Packungsgröße (19.5), Einheit = unit
 
     @computed_field
     @property
@@ -391,6 +393,12 @@ class ItemOut(BaseModel):
         """In der Gruppe „Nächste Woche“; ab dieser Woche wieder normal."""
         year, week, _ = date.today().isocalendar()
         return bool(self.defer_week) and self.defer_week > f"{year}-W{week:02d}"
+
+    @computed_field
+    @property
+    def packs(self) -> int | None:
+        """Zu kaufende Packungen („1 × 1,1 kg, 900 g gebraucht“)."""
+        return math.ceil(self.amount / self.pack_amount - 1e-9) if self.amount and self.pack_amount else None
 
 
 class ListOut(BaseModel):

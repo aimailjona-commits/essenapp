@@ -19,7 +19,7 @@
     <h2>Zutaten für {{ e.recipe.servings }}</h2>
     <ul>
       {% for i in e.recipe.ingredients %}
-      <li>{% if i.amount %}{{ "%g"|format(i.amount) }} {{ "Stk" if i.unit == "stk" else i.unit }} {% endif %}{{ i.name }}</li>
+      <li>{{ i|ing }} {{ i.name }}</li>
       {% endfor %}
     </ul>
     <h2>Zubereitung</h2>

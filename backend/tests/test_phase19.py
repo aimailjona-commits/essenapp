@@ -117,3 +117,52 @@ def test_reroll_direction_and_undo_entry_and_plan(client, auth, db, monkeypatch)
     lists = client.get("/lists", headers=auth).json()
     items = client.get(f"/lists/{lists[0]['id']}", headers=auth).json()["items"]
     assert "Kartoffeln" not in {i["name"] for i in items}
+
+
+def test_unlisted_finds_step_ingredients_missing_from_the_list():
+    m = meal(0, "Hähnchenwraps", [ing("Hähnchen-Filetstreifen", 300), ing("Porree", 1, unit="stk")])
+    m.steps = ["Hähnchen anbraten und Lauch hacken.", "Wraps mit Paprikastreifen füllen, mit Wasser abschmecken."]
+    assert planner.unlisted(m) == ["paprikastreifen", "wraps"]  # Lauch = Porree, Verben und Wasser zählen nicht
+
+
+def test_make_plan_asks_again_for_unlisted_ingredients():
+    from types import SimpleNamespace
+    h = SimpleNamespace(persons=2, diet="alles", allergies=[], excluded_ingredients=[], cuisines=[],
+                        nutrition_goal="ausgewogen", max_cook_minutes=30, budget_food_week_cents=10000,
+                        product_rules=[], plan_days=[0], meal_types=["abend"])
+    bad = meal(0, "Wraps", [ing("Hähnchen", 300)], "abend")
+    bad.steps = ["Wraps füllen."]
+    good = meal(0, "Wraps", [ing("Hähnchen", 300), ing("Tortilla-Wraps", 4, unit="stk")], "abend")
+    drafts, notes = iter([planner.PlanDraft(meals=[bad]), planner.PlanDraft(meals=[good])]), []
+
+    def ask(prompt):
+        notes.append(prompt[-1]["text"])
+        return next(drafts), {}
+    p = planner.make_plan(h, [], [(0, "abend")], [], ask=ask)
+    assert len(p.draft.meals[0].ingredients) == 2 and "Wraps: wraps" in notes[1]
+
+
+def test_list_merges_plural_and_shows_packs(client, auth, db, monkeypatch):
+    from tests.test_planner import test_plan_endpoint
+    test_plan_endpoint(client, auth, db, monkeypatch)  # Hähnchen-Angebot id 1: 400 g
+    monkeypatch.setattr(planner, "ask_claude", lambda p: (planner.PlanDraft(meals=[
+        meal(0, "Curry", [ing("Hähnchen", 300, offer_id=1), ing("Zwiebel", 1, unit="stk", pack=3)]),
+        meal(1, "Dal", [ing("Zwiebeln", 2, unit="stk", pack=3), ing("Linsen", 600)])]), {}))
+    assert client.post("/plans", headers=auth).status_code == 201
+    plan = client.get("/plans/current", headers=auth).json()
+    lst = client.get("/lists", headers=auth).json()[0]
+    items = {i["name"]: i for i in client.get(f"/lists/{lst['id']}", headers=auth).json()["items"]}
+    got = {n: (i["amount"], i["pack_amount"], i["packs"]) for n, i in items.items()}
+    assert got == {"Hähnchen": (300, 400, 1), "Zwiebel": (3, 3, 1), "Linsen": (600, 500, 2)}
+    assert plan["total_cents"] == 399 + 200 + 2 * 200  # ganze Packungen, Zwiebeln nur einmal
+    # 2 × 500 g gekauft, 600 g gebraucht: alles in den Vorrat, der Plan verbraucht seinen Teil
+    assert client.post(f"/items/{items['Linsen']['id']}/to-pantry", headers=auth).json()["amount"] == 1000
+
+
+def test_web_list_shows_packs_and_german_units():
+    from types import SimpleNamespace
+    from app.web import qty, size
+    item = SimpleNamespace(id=1, name="Tomaten", amount=700.0, unit="g", pack_amount=500.0, chain="", offer_id=None,
+                           checked=False, added_by="", checked_by="", source="plan", defer_week=None)
+    assert qty(item) == "2 × 500 g · 700 g gebraucht"
+    assert size(1100, "g") == "1,1 kg" and size(2, "el") == "2 EL"
