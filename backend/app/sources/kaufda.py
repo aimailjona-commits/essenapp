@@ -15,25 +15,57 @@ CHAINS = {  # kaufDA-Händlername (klein) -> unser chain-Schlüssel
 }
 SEARCH_QUERIES = {"aldi_sued": "ALDI", "dm": "dm-drogerie markt"}  # Prospekt nur über die Suche erreichbar
 
-# Erste passende Kategorie gewinnt (Reihenfolge zählt).
-CATEGORIES = [
-    ("getraenke", ("getränk", "saft", "wasser", "bier", "pils", "wein", "sekt", "cola", "limo", "drink", "schorle", "pfand")),
-    ("fleisch_fisch", ("fleisch", "schwein", "hack", "schnitzel", "gulasch", "wurst", "steak", "hähnchen", "chicken", "schinken", "salami", "lachs", "fisch")),
-    ("obst_gemuese", ("obst", "gemüse", "apfel", "äpfel", "banane", "tomate", "kartoffel", "zwiebel", "salat", "paprika", "gurke", "möhre", "clementine", "trauben")),
-    ("kuehlung", ("milch", "joghurt", "käse", "quark", "butter", "sahne", "pudding", "dessert", "gekühlt", "tiefgefroren", "pizza", "eier")),
-    ("vorrat", ("nudel", "pasta", "mehl", "zucker", "sauce", "soße", "müsli", "kaffee", "schokolade", "keks", "chips", "brot", "konserve")),
-    ("drogerie", ("shampoo", "dusch", "creme", "pflege", "zahn", "deo", "windel", "schaumbad", "kosmetik")),
-    ("haushalt", ("wasch", "spülmittel", "reiniger", "küchenrolle", "toilettenpapier", "müllbeutel", "duft", "kerze", "deko", "vase", "lampe")),
+# Feine Kategorie (19.1) -> grobe Kategorie. Erste passende gewinnt: Spezielles vor Allgemeinem
+# („Milchschokolade“ ist Süßes, „Tomatensauce“ Sauce, „Kartoffelchips“ Snack, „Pizza Salami“ Tiefkühl).
+SUBCATEGORIES = [
+    ("getraenke", "getraenke", ("getränk", "saft", "wasser", "bier", "pils", "wein", "sekt", "cola", "limo", "drink",
+                                "schorle", "pfand", "hefeweizen", "spirituose", "likör", "whisky", "wodka", "smoothie")),
+    ("suesses", "vorrat", ("schoko", "praline", "keks", "gummi", "bonbon", "riegel", "waffel", "lebkuchen", "kuchen",
+                           "marzipan", "spekulatius", "stollen", "dominostein", "eiscreme", "speiseeis", "eis am stiel", "nougat",
+                           "creme kugeln", "pistaziencreme", "nusscreme", "nuss-nougat")),
+    ("snacks", "vorrat", ("chips", "flips", "cracker", "salzstang", "erdnuss", "nüsse", "nusskerne", "mandeln",
+                          "cashew", "studentenfutter", "popcorn")),
+    ("saucen", "vorrat", ("sauce", "soße", "ketchup", "mayonnaise", "senf", "dressing", "pesto", "brühe", "fond")),
+    ("tiefkuehl", "kuehlung", ("tiefgefroren", "tiefkühl", "pizza", "pommes", "fischstäbchen", "rahmspinat")),
+    ("kaese", "kuehlung", ("käse", "gouda", "mozzarella", "feta", "parmesan", "camembert", "emmentaler", "cheddar",
+                           "brie", "mascarpone", "ricotta", "halloumi", "grana padano", "burrata")),
+    ("joghurt", "kuehlung", ("joghurt", "jogurt", "skyr", "quark", "pudding", "dessert", "kefir", "ayran")),
+    ("molkerei", "kuehlung", ("milch", "butter", "sahne", "schmand", "crème fraîche", "margarine", "eier", "gekühlt")),
+    ("wurst", "fleisch_fisch", ("wurst", "schinken", "salami", "aufschnitt", "bacon", "speck", "leberkäse")),
+    ("fisch", "fleisch_fisch", ("lachs", "fisch", "garnele", "shrimp", "forelle", "hering", "kabeljau", "seelachs",
+                                "thunfisch", "matjes")),
+    ("fleisch", "fleisch_fisch", ("fleisch", "schwein", "hack", "schnitzel", "gulasch", "steak", "hähnchen",
+                                  "chicken", "pute", "rind", "lamm", "braten", "filet", "kotelett", "geschnetzeltes")),
+    ("obst", "obst_gemuese", ("obst", "apfel", "äpfel", "banane", "clementine", "mandarine", "orange", "trauben",
+                              "birne", "beeren", "kiwi", "mango", "ananas", "zitrone", "limette", "melone")),
+    ("gemuese", "obst_gemuese", ("gemüse", "tomate", "kartoffel", "zwiebel", "salat", "paprika", "gurke", "möhre",
+                                 "karotte", "zucchini", "brokkoli", "blumenkohl", "kohl", "lauch", "pilz",
+                                 "champignon", "spinat", "aubergine", "kürbis", "avocado", "rucola")),
+    ("fruehstueck", "vorrat", ("müsli", "cornflakes", "haferflocken", "marmelade", "konfitüre", "honig", "aufstrich")),
+    ("brot", "vorrat", ("brot", "brötchen", "toast", "baguette", "croissant", "wraps", "tortilla")),
+    ("nudeln_reis", "vorrat", ("nudel", "pasta", "spaghetti", "penne", "fusilli", "reis", "couscous", "bulgur",
+                               "gnocchi", "maultasche")),
+    ("kaffee_tee", "vorrat", ("kaffee", "espresso", "tee", "cappuccino")),
+    ("backen", "vorrat", ("mehl", "zucker", "backpulver", "hefe")),
+    ("konserven", "vorrat", ("konserve", "dose", "bohnen", "linsen", "kichererbsen", "mais", "passata",
+                             "kokosmilch", "olivenöl", "rapsöl", "sonnenblumenöl", "speiseöl", "essig")),
+    ("drogerie", "drogerie", ("shampoo", "dusch", "creme", "pflege", "zahn", "deo", "windel", "schaumbad",
+                              "kosmetik")),
+    ("haushalt", "haushalt", ("wasch", "spülmittel", "reiniger", "küchenrolle", "toilettenpapier", "müllbeutel",
+                              "duft", "kerze", "teelicht", "deko", "vase", "lampe")),
 ]
 # Teilwort-Abgleich, damit Komposita treffen („Rotwein“, „Thunfisch“, „Colorwaschmittel“); reiner Wortanfang verlöre
 # die. Stattdessen Wörter, in denen ein Stichwort nur zufällig steckt (gefunden in echten Prospekten 11/2026):
 TRAPS = {k: re.compile(v) for k, v in {
-    "wein": r"schwein|weinkocher", "bier": r"bier(?=schinken|wurst|käse)", "cola": r"chocola|rucola|piccola",
+    "wein": r"schwein|weinkocher|weintraube|weinbeere|weinessig", "bier": r"bier(?=schinken|wurst|käse)", "cola": r"chocola|rucola|piccola",
     "deo": r"video", "eier": r"freier", "obst": r"grobst", "sekt": r"insekt", "tomate": r"automat",
-    "lachs": r"flachs", "hack": r"gehackt", "fleisch": r"zahnfleisch|fruchtfleisch", "pasta": r"zahnpasta",
-    "saft": r"hustensaft", "wasser": r"spritzwasser|mizellenwasser|meerwasser", "wasch": r"waschbar",
-    "kaffee": r"kaffee(?:vollautomat|maschine|becher)",
+    "lachs": r"flachs|lachs(?=braten|schinken|kotelett|steak)|lamm-?lachs", "hack": r"gehackt", "fleisch": r"zahnfleisch|fruchtfleisch", "pasta": r"zahnpasta",
+    "saft": r"hustensaft|saftig|saftschinken", "wasser": r"spritzwasser|mizellenwasser|meerwasser|wassermelone", "wasch": r"waschbar",
+    "kaffee": r"kaffee(?:vollautomat|maschine|becher)", "tee": r"teelicht|steel|tee(?=löffel)",
     "creme": r"(?:eis|nuss|pistazien|gebäck|koch|nougat|schoko)creme",
+    "rind": r"rinde", "pute": r"computer", "dose": r"dosier", "kohl": r"kohle", "fond": r"fondue|fondant",
+    "lamm": r"flamm", "reis": r"preis|kreis|reise", "käse": r"leberkäse", "milch": r"kokosmilch",
+    "eier": r"freier|eier(?=nudel|teig|spätzle)",
 }.items()}
 _BASE = re.compile(  # "(1 kg = 2.98 €)", "1 l = € 1.38", "12.99/kg", "EUR 2,83 / 1 l", "kg-Preis 4.48"
     r"\b1\s*(?:kg|l|liter)\s*=\s*(?:ab\s*)?€?\s*(\d+[.,]\d+)"
@@ -54,13 +86,36 @@ def chain_of(publisher_name: str | None) -> str | None:
     return CHAINS.get((publisher_name or "").strip().lower())
 
 
-def category_of(chain: str, text: str) -> str:
+# Oberste kaufDA-Produktkategorie (products[].categoryPaths[0]); nur hier stecken Lebensmittel. Ohne Pfad (Suche,
+# einzelne Angebote) entscheiden die Stichwörter.
+FOOD_PATHS = {"Lebensmittel und Getränke", "Marken", "Saison und Events", ""}
+DROGERIE_PATH = "Drogerie und Haushalt"
+
+
+def _match(text: str) -> tuple[str, str] | None:
     text = text.lower()
-    found = next((cat for cat, words in CATEGORIES
-                  if any(w in (TRAPS[w].sub(" ", text) if w in TRAPS else text) for w in words)), "sonstiges")
-    if chain in ("dm", "rossmann"):
-        return "haushalt" if found == "haushalt" else "drogerie"
-    return found
+    return next(((sub, cat) for sub, cat, words in SUBCATEGORIES
+                 if any(w in (TRAPS[w].sub(" ", text) if w in TRAPS else text) for w in words)), None)
+
+
+def classify(chain: str, text: str, path: str = "", title: str = "") -> tuple[str, str]:
+    """(grobe Kategorie, feine Kategorie); ohne Treffer ("sonstiges", ""), Nicht-Lebensmittel ("nonfood", "").
+    Der Produktname (title) entscheidet vor der Beschreibung (text): „Kochschinken … mit Butter verfeinert“."""
+    sub, cat = (title and _match(title)) or _match(text) or ("", "sonstiges")
+    if chain in ("dm", "rossmann") or path == DROGERIE_PATH:
+        return ("haushalt", "haushalt") if cat == "haushalt" else ("drogerie", "drogerie")
+    if path not in FOOD_PATHS:  # Spielzeug, Möbel, Elektronik, Tierfutter …: „Kaffeemühle“ ist kein Kaffee
+        return "nonfood", ""
+    return cat, sub
+
+
+def top_path(product: dict) -> str:
+    paths = product.get("categoryPaths") or []
+    return (paths[0].get("name") or "") if paths else ""
+
+
+def category_of(chain: str, text: str) -> str:
+    return classify(chain, text)[0]
 
 
 def _day(ts: str) -> date:
@@ -69,7 +124,7 @@ def _day(ts: str) -> date:
 
 
 def _offer(chain, store_ref, source_id, title, brand, text, price_cents, regular_cents, base_text,
-           valid_from, valid_to, image_url, raw) -> dict:
+           valid_from, valid_to, image_url, raw, path: str = "") -> dict:
     qty = parse_quantity(text)
     amount, unit = qty if qty else (None, "")
     m = _BASE.search(base_text or "")
@@ -78,7 +133,8 @@ def _offer(chain, store_ref, source_id, title, brand, text, price_cents, regular
     base = euro_to_cents(next(g for g in m.groups() if g)) if m else base_price_cents(price_cents, amount, unit)
     return {
         "chain": chain, "store_ref": store_ref, "source_id": source_id,
-        "title": title[:200], "brand": (brand or "")[:100], "category": category_of(chain, text),
+        "title": title[:200], "brand": (brand or "")[:100],
+        **dict(zip(("category", "subcategory"), classify(chain, text, path, title))),
         "price_cents": price_cents,
         "regular_price_cents": regular_cents if regular_cents and regular_cents > price_cents else None,
         "amount": amount, "unit": unit, "base_price_cents": base, "ean": "",
@@ -158,7 +214,7 @@ def parse_pages(data: dict, chain: str, store_ref: str = "") -> list[dict]:
                     name, p.get("brandName"), f"{name} {desc}", price,
                     _pick(own, "REGULAR_PRICE", "RECOMMENDED_RETAIL_PRICE"), base_text,
                     valid_from, valid_to,
-                    images[0]["url"] if images else c.get("image"), c,
+                    images[0]["url"] if images else c.get("image"), c, top_path(p),
                 ) | {"bonus_cents": bonus_cents(deals, name, names) if chain == "rewe" else None})
     return out
 

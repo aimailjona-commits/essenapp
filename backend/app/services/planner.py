@@ -14,6 +14,7 @@ from pydantic import BaseModel, ConfigDict
 from app.core.config import settings
 from app.models import AiCost, Household, MemberProfile, Offer, PantryItem
 from app.services import recipe_images, variety
+from app.services.matching import fits
 from app.services.normalize import cents
 from app.services.pricing import Pack, Stock, cost_line, pack_amount, shelf_days
 
@@ -67,6 +68,7 @@ class PlanDraft(BaseModel):
 SYSTEM = """Du planst Wochengerichte für einen deutschen Haushalt, der sparen will.
 Regeln:
 - Baue die Gerichte so weit wie möglich aus den Angeboten der Woche. Für eine Zutat aus der Angebotsliste setze offer_id auf deren ID, sonst null.
+  offer_id nur, wenn das Produkt genau diese Zutat ist (Joghurt ≠ Käse, Milch ≠ Haferdrink, Käse ≠ Frischkäse).
 - pack_amount/pack_price_cents: übliche Packungsgröße und Preis in Cent. Bei Angeboten den Angebotspreis, sonst eine realistische Schätzung des deutschen Normalpreises (Discounter-Niveau).
 - in_pantry=true nur für Basics und typische Vorratszutaten (Salz, Pfeffer, Öl, Essig, Gewürze, Zucker, Mehl, Brühe).
 - Vorrat zuerst verwenden, bald ablaufende Sachen zuerst; gleiche Namen und Einheiten wie im Vorrat.
@@ -245,6 +247,9 @@ def price(draft: PlanDraft, offers_by_id: dict[int, Offer], pantry: list[PantryI
     needs: dict[tuple, list[tuple[int, PlannedIngredient]]] = {}
     for i in sorted(range(len(draft.meals)), key=lambda i: chrono(draft.meals[i])):
         for ing in draft.meals[i].ingredients:
+            if ing.offer_id in offers_by_id and not fits(ing.name, offers_by_id[ing.offer_id]):
+                logger.info("Angebot passt nicht zur Zutat: %s ≠ %s", ing.name, offers_by_id[ing.offer_id].title)
+                ing.offer_id = None  # 19.1: KI hat z.B. Käse für Joghurt gewählt → Normalpreis-Schätzung
             key = ("offer", ing.offer_id) if ing.offer_id in offers_by_id else ("est", ing.name.lower().strip(), ing.unit)
             needs.setdefault(key, []).append((i, ing))
 

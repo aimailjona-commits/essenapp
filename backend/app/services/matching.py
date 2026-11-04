@@ -4,6 +4,7 @@ Normalisiert, einfache Plural-Endungen, Komposita über das Wortende („Gemüse
 import re
 
 from app.models import Offer
+from app.sources.kaufda import classify
 
 FOOD = ("fleisch_fisch", "obst_gemuese", "kuehlung", "vorrat", "sonstiges")  # wie planner.FOOD_CATEGORIES
 IGNORE = {"frisch", "frische", "frischer", "frisches", "bio", "tk", "gehackt", "gehackte", "getrocknet",
@@ -22,6 +23,29 @@ SYNONYMS = {  # Zutat → weitere Bezeichnungen im Prospekt
     "paprika": ("paprikaschote",),
     "parmesan": ("grana padano", "hartkäse"),
 }
+
+
+# Komposita, die trotz passendem Wortende etwas anderes sind („Käse“ ist kein Frischkäse)
+NOT_A = {"käse": ("frischkäse", "schmelzkäse", "hüttenkäse", "streichkäse", "kräuterkäse"),
+         "butter": ("kräuterbutter", "erdnussbutter", "knoblauchbutter"),
+         "milch": ("kokosmilch", "buttermilch", "kondensmilch", "hafermilch", "sojamilch", "mandelmilch"),
+         "sahne": ("sprühsahne",), "zucker": ("puderzucker", "vanillezucker", "vanillinzucker")}
+# feine Kategorien, die sich gegenseitig vertreten dürfen (Dose/TK statt frisch, Wurst statt Fleisch)
+SIBLINGS = [{"gemuese", "obst", "konserven", "tiefkuehl"}, {"fleisch", "wurst", "tiefkuehl"},
+            {"fisch", "konserven", "tiefkuehl"}, {"nudeln_reis", "tiefkuehl"}, {"saucen", "konserven"},
+            {"backen", "fruehstueck"}]
+
+
+def fits(name: str, offer: Offer) -> bool:
+    """Angebot kann diese Zutat sein: Lebensmittel und keine widersprüchliche feine Kategorie (Joghurt ≠ Käse).
+    Unbekannte Kategorien auf einer Seite gelten als passend (19.1)."""
+    if offer.category in ("nonfood", "drogerie", "haushalt"):
+        return False
+    title = offer.title.lower()
+    if any(c in title and c not in name.lower() for c in NOT_A.get(name.lower().strip(), ())):
+        return False
+    mine, theirs = classify("", name)[1], offer.subcategory
+    return not mine or not theirs or mine == theirs or any({mine, theirs} <= s for s in SIBLINGS)
 
 
 def stem(word: str) -> str:
@@ -69,5 +93,5 @@ class Matcher:
         ids = self._hits(phrase)
         for alt in SYN.get(" ".join(phrase), ()):
             ids |= self._hits(alt)
-        return sorted((self.offers[i] for i in ids),
+        return sorted((self.offers[i] for i in ids if fits(name, self.offers[i])),
                       key=lambda o: (o.base_price_cents is None, o.base_price_cents or 0, o.price_cents))

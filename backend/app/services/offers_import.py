@@ -6,7 +6,7 @@ import httpx
 from sqlalchemy.orm import Session
 
 from app.models import Household
-from app.services.importer import upsert_offers
+from app.services.importer import classify_unknown, upsert_offers
 from app.sources import kaufda
 
 

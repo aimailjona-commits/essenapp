@@ -22,7 +22,8 @@
 | 15 | [Komfort](phase-15-komfort.md) | gebaut – Abnahme iPhone offen |
 | 16 | [Erweiterungen (Widget, Live-Aktivität)](phase-16-erweiterungen.md) | gebaut – Abnahme iPhone offen |
 | 17 | [Umzug auf IONOS-VPS](phase-17-vps.md) | Vorbereitung läuft – wartet auf 👤 IONOS-VPS + Domain |
-| 18 | [Redesign v3 „Küchen-Pinnwand“](phase-18-redesign-v3.md) | **aktiv** – Richtung freigegeben, Bau nach [`docs/ui/redesign-v3.md`](../ui/redesign-v3.md) |
+| 18 | [Redesign v3 „Küchen-Pinnwand“](phase-18-redesign-v3.md) | ruht (E91) – Design ändert sich noch, Bau nach [`docs/ui/redesign-v3.md`](../ui/redesign-v3.md) |
+| 19 | [Nutzerwünsche, Rezensions-Lehren, Paywall](phase-19-feedback-paywall.md) | **aktiv** – Entscheidungen E90/E91 |
 
 ## Wartet auf dich 👤
 
@@ -36,6 +37,7 @@
 | Selbst getroffene Entscheidungen prüfen (Playbook E78–E85) | optional | 11–16 |
 | IONOS-VPS (Ubuntu 24.04, ≥ 2 GB) + Domain anlegen | Umzug | 17 |
 | Download Fraunces + JetBrains Mono (OFL) freigeben; Mockup-Gruppen freigeben | Redesign v3 | 18 |
+| Anfrage beim gewählten Angebots-API-Anbieter; später App-Store-Connect (Abo-Produkt), AdMob-Konto | Kommerziell | 19 |
 
 ## Regeln
 

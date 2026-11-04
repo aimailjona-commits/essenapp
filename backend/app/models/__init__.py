@@ -210,6 +210,7 @@ class Offer(Base):
     title: Mapped[str] = mapped_column(String(200))
     brand: Mapped[str] = mapped_column(String(100), default="")
     category: Mapped[str] = mapped_column(String(30), default="sonstiges", index=True)
+    subcategory: Mapped[str] = mapped_column(String(30), default="")  # feine Kategorie (19.1), kaufda.SUBCATEGORIES
     price_cents: Mapped[int]
     regular_price_cents: Mapped[int | None]
     amount: Mapped[float | None]  # Menge in `unit`, z.B. 400 (g)

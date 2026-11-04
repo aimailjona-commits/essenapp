@@ -5,10 +5,10 @@ from sqlalchemy import func, select
 
 from app.models import Offer
 from app.services.importer import upsert_offers
-from app.sources.kaufda import bonus_cents, category_of, parse_pages, parse_search, parse_shelf, pick_brochures
+from app.sources.kaufda import bonus_cents, category_of, classify, parse_pages, parse_search, parse_shelf, pick_brochures
 
 FIX = Path(__file__).parent / "fixtures" / "sources" / "kaufda"
-FIELDS = {"chain", "store_ref", "source_id", "title", "brand", "category", "price_cents", "regular_price_cents",
+FIELDS = {"chain", "store_ref", "source_id", "title", "brand", "category", "subcategory", "price_cents", "regular_price_cents",
           "amount", "unit", "base_price_cents", "ean", "valid_from", "valid_to", "image_url", "ingredient_id", "raw",
           "bonus_cents"}
 
@@ -118,12 +118,30 @@ def test_category():
     for text, cat in [("Schweine-Hackfleisch", "fleisch_fisch"), ("Schweinefilet", "fleisch_fisch"),
                       ("Rotwein trocken", "getraenke"), ("Glühwein", "getraenke"), ("Mineralwasser", "getraenke"),
                       ("Bierschinken", "fleisch_fisch"), ("König Ludwig Bierkäse", "kuehlung"),
-                      ("Weißbier", "getraenke"), ("Rucola", "sonstiges"), ("Thunfisch", "fleisch_fisch"),
+                      ("Weißbier", "getraenke"), ("Rucola", "obst_gemuese"), ("Thunfisch", "fleisch_fisch"),
                       ("The Chocolate Block, Rotwein", "getraenke"), ("Vanilla & Chocolate Swirl", "sonstiges"),
-                      ("Zahnpasta mit Zahnfleischschutz", "drogerie"), ("Erdnusskerne gehackt", "sonstiges"),
-                      ("Pistaziencreme Kugeln", "sonstiges"), ("Handcreme", "drogerie"),
+                      ("Zahnpasta mit Zahnfleischschutz", "drogerie"), ("Erdnusskerne gehackt", "vorrat"),
+                      ("Pistaziencreme Kugeln", "vorrat"), ("Handcreme", "drogerie"),
                       ("Colorwaschmittel", "haushalt"), ("Kaffeevollautomat", "sonstiges")]:
         assert category_of("lidl", text) == cat, text
+
+
+def test_subcategory():
+    """Fehlgriffe der groben Stichwort-Reihenfolge (19.1): Joghurt ≠ Käse, Süßes/Saucen/Snacks/Tiefkühl vor Zutaten."""
+    for text, sub in [("Milchschokolade", "suesses"), ("Tomatensauce", "saucen"), ("Kartoffelchips", "snacks"),
+                      ("Pizza Salami", "tiefkuehl"), ("Cremiger Joghurt Kirsche", "joghurt"),
+                      ("Gouda jung", "kaese"), ("Bierkäse", "kaese"), ("Leberkäse", "wurst"),
+                      ("Speisequark 20 %", "joghurt"), ("Frische Vollmilch 3,5 %", "molkerei"),
+                      ("Brotaufstrich", "fruehstueck"), ("Weintrauben hell", "obst"), ("Eiernudeln", "nudeln_reis"),
+                      ("Langkornreis Aktionspreis", "nudeln_reis"), ("Kokosmilch", "konserven"),
+                      ("Lachsfilet", "fisch"), ("Schweine-Lachsbraten", "fleisch"), ("Lamm-Lachs", "fleisch"), ("Hähnchenbrustfilet", "fleisch"), ("Kaffeebohnen", "kaffee_tee"),
+                      ("Pfefferminztee", "kaffee_tee"), ("Teelichter", "haushalt"), ("Holzkugelbahn", "")]:
+        assert classify("lidl", text)[1] == sub, text
+    assert classify("dm", "Bio Haferflocken") == ("drogerie", "drogerie")
+    # Prospekt-Kategorie schlägt Stichwörter: Kaffeemühle ist Elektronik, Laufschuhe mit Gummisohle kein Süßes
+    assert classify("lidl", "Elektrische Kaffeemühle", "Elektronik und Technik") == ("nonfood", "")
+    assert classify("lidl", "Speisequark Magerstufe", "Lebensmittel und Getränke") == ("kuehlung", "joghurt")
+    assert classify("lidl", "Küchentücher XXL", "Drogerie und Haushalt") == ("drogerie", "drogerie")
 
 
 def test_upsert_offers(db):

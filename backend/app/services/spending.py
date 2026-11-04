@@ -32,7 +32,8 @@ def estimate(db: Session, item: ShoppingItem) -> tuple[int, str]:
     since = prices.iso_week(date.today() - timedelta(weeks=8))
     cands = [SimpleNamespace(title=products[pp.product_id].title, amount=products[pp.product_id].amount,
                              unit=products[pp.product_id].unit, price_cents=pp.regular_price_cents or pp.price_cents,
-                             base_price_cents=pp.base_price_cents, chain=pp.chain, category="", product_id=pp.product_id)
+                             base_price_cents=pp.base_price_cents, chain=pp.chain, category="", subcategory="",
+                             product_id=pp.product_id)
              for pp in db.scalars(select(PricePoint).where(PricePoint.product_id.in_(products), PricePoint.week >= since))]
     for chain in ([item.chain] if item.chain else []) + [None]:
         if found := Matcher([c for c in cands if not chain or c.chain == chain], False).find(item.name):
