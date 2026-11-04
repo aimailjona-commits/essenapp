@@ -288,6 +288,8 @@ class MealPlan(Base):
     saved_cents: Mapped[int] = mapped_column(default=0)
     params: Mapped[dict] = mapped_column(JSON, default=dict)  # Snapshot der Einstellungen
     created_at: Mapped[datetime] = mapped_column(server_default=func.now())
+    # aktueller Plan = zuletzt aktivierter (19.3: „Rückgängig“ holt den vorigen Plan zurück)
+    active_at: Mapped[datetime] = mapped_column(default=datetime.now, server_default=func.now())
 
     entries: Mapped[list["MealPlanEntry"]] = relationship(cascade="all, delete-orphan",
                                                           order_by="[MealPlanEntry.day, MealPlanEntry.id]")
@@ -309,8 +311,9 @@ class MealPlanEntry(Base):
     # Mengenfaktor für eingesetzte Rezepte (3): Zutatenmenge im Plan = Rezeptmenge × scale (KI-Gerichte: 1)
     scale: Mapped[float] = mapped_column(default=1, server_default="1")
     guests: Mapped[int] = mapped_column(default=0, server_default="0")  # Gäste (15), in portions_total enthalten
+    prev_recipe_id: Mapped[int | None] = mapped_column(ForeignKey("recipe.id"))  # vor dem Neu-Würfeln/Ersetzen (19.3)
 
-    recipe: Mapped[Recipe] = relationship()
+    recipe: Mapped[Recipe] = relationship(foreign_keys=[recipe_id])
 
 
 class Invite(Base):

@@ -460,7 +460,7 @@ def _recipe(household: Household, meal: planner.PlannedMeal, image: str = "") ->
 
 
 def _current(db: Session, household_id: int) -> MealPlan:
-    plan = db.scalar(select(MealPlan).where(MealPlan.household_id == household_id).order_by(MealPlan.id.desc()).limit(1))
+    plan = db.scalar(select(MealPlan).where(MealPlan.household_id == household_id).order_by(MealPlan.active_at.desc(), MealPlan.id.desc()).limit(1))
     if not plan:
         raise HTTPException(404, "Noch kein Wochenplan")
     return plan
@@ -531,6 +531,7 @@ def reroll_entry(entry_id: int, body: RerollIn | None = None, member: Member = D
                                                wish=body.wish if body else "", forbid=forbid_of(prefs), **memory)
     except RuntimeError as e:
         raise HTTPException(502, str(e))
+    entry.prev_recipe_id = entry.recipe_id
     entry.recipe = _recipe(household, meal, recipe_images.find_image(meal.image_query or meal.title))
     entry.portions, entry.portions_total, entry.scale = portions, total, 1
     plan.params = {**plan.params, "usage": planner.add_usage(plan.params.get("usage", {}), call_usage)}
@@ -539,6 +540,37 @@ def reroll_entry(entry_id: int, body: RerollIn | None = None, member: Member = D
     db.commit()
     food_map.map_later([i["name"] for i in entry.recipe.ingredients])
     return plan_out(db, plan)
+
+
+@router.post("/plans/current/entries/{entry_id}/undo", response_model=PlanOut)
+def undo_entry(entry_id: int, member: Member = Depends(current_member), db: Session = Depends(get_db)):
+    """Gericht vor dem letzten Neu-Würfeln/Ersetzen zurück (19.3); erneutes Rückgängig tauscht wieder."""
+    plan = _current(db, member.household_id)
+    entry = _entry(plan, entry_id)
+    if entry.prev_recipe_id is None:
+        raise HTTPException(409, "Nichts zum Rückgängigmachen")
+    old = db.get(Recipe, entry.prev_recipe_id)
+    target = entry.portions_total or entry.recipe.servings
+    entry.prev_recipe_id, entry.recipe = entry.recipe_id, old
+    entry.scale = 1 if old.source == "ai" else target / old.servings  # KI-Gerichte sind schon für den Slot gerechnet
+    reprice(db, plan, plan_offers(db, member.household, plan), household_pantry(db, member.household_id))
+    sync_plan(db, member.household_id)
+    db.commit()
+    return plan_out(db, plan)
+
+
+@router.post("/plans/current/undo", response_model=PlanOut)
+def undo_plan(member: Member = Depends(current_member), db: Session = Depends(get_db)):
+    """Vorigen Plan wieder aktiv machen (19.3, „Rückgängig“ nach einem neuen Plan); der neue bleibt gespeichert."""
+    plans = db.scalars(select(MealPlan).where(MealPlan.household_id == member.household_id)
+                       .order_by(MealPlan.active_at.desc(), MealPlan.id.desc()).limit(2)).all()
+    if len(plans) < 2:
+        raise HTTPException(409, "Kein vorheriger Plan")
+    plans[1].active_at = datetime.now()
+    db.flush()
+    sync_plan(db, member.household_id)
+    db.commit()
+    return plan_out(db, plans[1])
 
 
 def entry_ingredients(entry: MealPlanEntry) -> list[dict]:
@@ -577,6 +609,7 @@ def replace_entry(entry_id: int, body: ReplaceIn, member: Member = Depends(curre
     entry = _entry(plan, entry_id)
     recipe = household_recipe(db, member, body.recipe_id)
     target = entry.portions_total or entry.recipe.servings
+    entry.prev_recipe_id = entry.recipe_id
     entry.recipe, entry.scale = recipe, target / recipe.servings
     reprice(db, plan, plan_offers(db, household, plan), household_pantry(db, household.id))
     sync_plan(db, household.id)
@@ -830,7 +863,7 @@ def sync_plan(db: Session, household_id: int) -> ShoppingList:
     Plan-Einträge, die nicht mehr im Plan sind, entfernt. Manuelle Einträge bleiben unberührt."""
     lst = household_list(db, household_id)
     plan = db.scalar(select(MealPlan).where(MealPlan.household_id == household_id)
-                     .order_by(MealPlan.id.desc()).limit(1))
+                     .order_by(MealPlan.active_at.desc(), MealPlan.id.desc()).limit(1))
 
     def key_of(name: str, unit: str, offer_id: int | None) -> tuple:
         return ("offer", offer_id) if offer_id else ("name", name.strip().lower(), unit)
@@ -1860,7 +1893,7 @@ def apply_weekly_basics(db: Session, household: Household) -> ShoppingList:
     der eigenen Läden setzt Laden + Preis (offer_id). Offene Basics-Einträge werden aktualisiert, nicht verdoppelt."""
     lst = household_list(db, household.id)
     stock = Stock(household_pantry(db, household.id))
-    plan = db.scalar(select(MealPlan).where(MealPlan.household_id == household.id).order_by(MealPlan.id.desc()).limit(1))
+    plan = db.scalar(select(MealPlan).where(MealPlan.household_id == household.id).order_by(MealPlan.active_at.desc(), MealPlan.id.desc()).limit(1))
     single = ((plan.params or {}).get("options") or {}).get("single_store") if plan else None
     matcher = Matcher(household_offers(db, household, single))
     open_items = {ingredient_key(i.name): i for i in lst.items if i.source == "basics" and not i.checked}
@@ -1938,7 +1971,7 @@ def apply_substitute(recipe_id: int, index: int, body: SubstituteIn, member: Mem
     recipe = household_recipe(db, member, recipe_id)
     old = recipe_ingredient(recipe, index)
     plan = db.scalar(select(MealPlan).where(MealPlan.household_id == member.household_id)
-                     .order_by(MealPlan.id.desc()).limit(1))
+                     .order_by(MealPlan.active_at.desc(), MealPlan.id.desc()).limit(1))
     if recipe.household_id is None:
         copy = Recipe(**{c.key: getattr(recipe, c.key) for c in Recipe.__table__.columns
                          if c.key not in ("id", "created_at", "household_id")}, household_id=member.household_id)

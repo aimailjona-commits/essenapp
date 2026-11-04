@@ -86,3 +86,34 @@ def test_make_plan_replaces_meals_with_forbidden_ingredients():
     from app.services.substitutes import forbidden
     p = planner.make_plan(h, [], [(0, "abend")], [], ask=ask, forbid=lambda n: forbidden(n, h.allergies))
     assert p.draft.meals[0].title == "Curry" and "Satay (Erdnussbutter)" in notes[1]
+
+
+def test_reroll_direction_and_undo_entry_and_plan(client, auth, db, monkeypatch):
+    from tests.test_planner import test_plan_endpoint, text
+    test_plan_endpoint(client, auth, db, monkeypatch)
+    first = client.get("/plans/current", headers=auth).json()
+    curry = first["entries"][0]
+    seen = {}
+
+    def fake_ask(prompt):
+        seen["prompt"] = text(prompt)
+        return planner.PlanDraft(meals=[meal(0, "Gemüsepfanne", [ing("Zucchini", 400)])]), {"cost_cents": 0.1}
+    monkeypatch.setattr(planner, "ask_claude", fake_ask)
+    r = client.post(f"/plans/current/entries/{curry['id']}/reroll", headers=auth,
+                    json={"direction": "ohne_fleisch", "wish": "mit Reis"})
+    assert r.status_code == 200 and r.json()["entries"][0]["recipe"]["title"] == "Gemüsepfanne"
+    assert "Vegetarisch, ohne Fleisch" in seen["prompt"] and "Wunsch für dieses Gericht: mit Reis" in seen["prompt"]
+    r = client.post(f"/plans/current/entries/{curry['id']}/undo", headers=auth)
+    assert r.status_code == 200 and r.json()["entries"][0]["recipe"]["title"] == "Curry"
+    assert r.json()["total_cents"] == first["total_cents"]
+
+    # neuer Plan, dann „Rückgängig“: der vorige ist wieder aktuell, Einkaufsliste folgt
+    monkeypatch.setattr(planner, "ask_claude", lambda p: (planner.PlanDraft(meals=[
+        meal(0, "Suppe", [ing("Kartoffeln", 500)]), meal(1, "Salat", [ing("Gurke", 1, unit="stk")])]), {}))
+    assert client.post("/plans", headers=auth).status_code == 201
+    r = client.post("/plans/current/undo", headers=auth)
+    assert r.status_code == 200 and r.json()["id"] == first["id"]
+    assert client.get("/plans/current", headers=auth).json()["id"] == first["id"]
+    lists = client.get("/lists", headers=auth).json()
+    items = client.get(f"/lists/{lists[0]['id']}", headers=auth).json()["items"]
+    assert "Kartoffeln" not in {i["name"] for i in items}

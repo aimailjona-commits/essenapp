@@ -45,7 +45,7 @@ def require_member(member: Member | None = Depends(cookie_member)) -> Member:
 
 def current_plan(db: Session, household_id: int) -> MealPlan | None:
     return db.scalar(select(MealPlan).where(MealPlan.household_id == household_id)
-                     .order_by(MealPlan.id.desc()).limit(1))
+                     .order_by(MealPlan.active_at.desc(), MealPlan.id.desc()).limit(1))
 
 
 def plan_days(plan: MealPlan | None) -> list[tuple[str, list]]:

@@ -278,7 +278,7 @@ def lunchbox_job(member: Member):
     """„Lunchbox für morgen vorbereiten“ (24): nur wenn morgen im aktuellen Plan eine Lunchbox für das Mitglied steht."""
     def job(db, now):
         plan = db.scalar(select(MealPlan).where(MealPlan.household_id == member.household_id)
-                         .order_by(MealPlan.id.desc()).limit(1))
+                         .order_by(MealPlan.active_at.desc(), MealPlan.id.desc()).limit(1))
         tomorrow = (now + timedelta(days=1)).weekday()
         entry = next((e for e in (plan.entries if plan else []) if e.meal_type == "lunchbox" and e.day == tomorrow
                       and any(p["member_id"] == member.id for p in e.portions)), None)
