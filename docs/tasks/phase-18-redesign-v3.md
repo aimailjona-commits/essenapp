@@ -18,7 +18,7 @@ Regeln: nur Werte aus `redesign-v3.md`/Mockup. Was nicht gemockt ist, zuerst moc
 - [x] Shapes: `BurstShape`, `ReceiptShape`, `CouponShape`, `FolderShape`, `ScribbleShape`, `BumpBarShape` (geprüft per CI-Screenshot, kein Test-Target vorhanden)
 - [x] `PaperGrain` (Skript `ios/tools/make_grain.py`, PNG als Ressource, Overlay in `MainView`)
 - [x] `TabBar` v3 (schwarze Kapsel, gleitende weiße Pille, Limetten-Mitte, Zähler) – ersetzt Liquid Glass
-- [~] `TotalBar` (Baustein fertig) + Tab-Leiste auf Detail-Screens ausblenden (mit S3/S9/Liste)
+- [x] `TotalBar` + Tab-Leiste auf Detail-Screens ausblenden (`hidesTabBar()`)
 
 ## 18.3 Bausteine
 
@@ -28,17 +28,17 @@ Regeln: nur Werte aus `redesign-v3.md`/Mockup. Was nicht gemockt ist, zuerst moc
 
 ## 18.4 Gemockte Screens (1:1, `redesign-v3.md` 6.1)
 
-- [~] S1 Start (oberer Teil + „Diese Woche“) – gebaut, CI-Vergleich offen
-- [~] S2 Wochenplan (Kopf, Tagesleiste, Tageskarten) – gebaut, CI-Vergleich offen
-- [ ] S3 Rezeptdetail (Kopf bis Zutaten + Summen-Leiste)
-- [ ] S18 Kochmodus
-- [ ] S4 Angebote
-- [ ] S9 Angebotsdetail (oberer Teil + Summen-Leiste)
-- [ ] S5 Einkauf (Ordner mit Logos)
-- [ ] S5 Liste (Kassenbon)
-- [~] S12 Rezepte (Kachel-Wand) – gebaut, CI-Vergleich offen
-- [~] Schnell-Aktionen (Fächer + Wölbung, Animation) – gebaut, CI-Vergleich offen
-- [ ] S6 Onboarding Schritt 1
+- [x] S1 Start (oberer Teil + „Diese Woche“)
+- [x] S2 Wochenplan (Kopf, Tagesleiste, Tageskarten)
+- [x] S3 Rezeptdetail (Kopf bis Zutaten + Summen-Leiste)
+- [x] S18 Kochmodus
+- [x] S4 Angebote
+- [x] S9 Angebotsdetail (oberer Teil + Summen-Leiste)
+- [x] S5 Einkauf (Ordner mit Logos)
+- [x] S5 Liste (Kassenbon)
+- [x] S12 Rezepte (Kachel-Wand)
+- [x] Schnell-Aktionen (Fächer + Wölbung, Animation)
+- [x] S6 Onboarding Schritt 1
 
 ## 18.5 Restliche Screens (je Gruppe: Mockup → 👤 Freigabe → Bau → CI-Vergleich)
 
@@ -50,7 +50,7 @@ Regeln: nur Werte aus `redesign-v3.md`/Mockup. Was nicht gemockt ist, zuerst moc
 - [ ] F Motivation (`achievements`, `unlock`, `review`, `reviews`)
 - [ ] G Einstellungen & Onboarding 2–4 (`settings`, `profile`, `notifications`, `onboarding`)
 - [ ] H Erweiterungen (Teilen-Erweiterung `sharepair`/`shareimport`/`shareresult`, `widgetsetup`, `widget`, `liveactivity`)
-- [ ] I Dunkelmodus für alle Screens (`dark-*` in CI)
+- [~] I Dunkelmodus für alle Screens (`dark-*` in CI) – Tokens + gemockte Screens fertig, Rest mit den Gruppen A–H
 
 ## 18.6 Web-PWA
 
