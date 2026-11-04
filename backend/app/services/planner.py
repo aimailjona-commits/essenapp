@@ -387,14 +387,19 @@ def make_plan(household: Household, offers: list[Offer], slots: list[tuple[int, 
         return build_prompt(household, offers, todo, favorites, wishes, note, portions, pantry, never, recent, extra,
                             guests, repeat_weeks)
 
-    note, usage = "", {}
+    note, usage, todo = "", {}, slots
     best: PricedPlan | None = None
     best_key = None
+    draft = None
     for _ in range(max_repairs + 1):
-        draft, call_usage = ask(prompt(slots, note))
+        new, call_usage = ask(prompt(todo, note))
         usage = add_usage(usage, call_usage)
-        draft.meals = [m for m in draft.meals if (m.day, m.meal_type) in set(slots)]
-        apply_rules(draft.meals, getattr(household, "product_rules", None))
+        new.meals = [m for m in new.meals if (m.day, m.meal_type) in set(todo)]
+        apply_rules(new.meals, getattr(household, "product_rules", None))
+        if todo is not slots:  # 19.6: nur die beanstandeten Gerichte kamen neu, der Rest bleibt
+            got = {(m.day, m.meal_type): m for m in new.meals}
+            new = PlanDraft(meals=[got.pop((m.day, m.meal_type), m) for m in draft.meals] + list(got.values()))
+        draft = new
         planned = price(draft, offers_by_id, stock)
         bad = violations(draft.meals, forbid)
         banned = banned_meals(draft, [*never, *recent]) + bad
@@ -405,7 +410,17 @@ def make_plan(household: Household, offers: list[Offer], slots: list[tuple[int, 
         over = planned.total_cents > household.budget_food_week_cents
         if not over and not banned and not missing:
             break
+        have = {(m.day, m.meal_type) for m in draft.meals}
+        fix = [(m.day, m.meal_type) for m in draft.meals
+               if banned_meals(PlanDraft(meals=[m]), [*never, *recent]) or violations([m], forbid) or unlisted(m)]
+        fix += [s for s in slots if s not in have]
+        # Budget betrifft die ganze Woche; sonst nur die betroffenen Slots neu (weniger Ausgabe = schneller)
+        todo = slots if over or not fix else fix
         note = "Korrektur zum vorigen Entwurf:"
+        if todo is not slots:
+            note += (" Plane NUR diese Mahlzeiten neu, der Rest der Woche bleibt: "
+                     + "; ".join(f"{DAYS[m.day][:2]} {m.meal_type}: {m.title}" for m in draft.meals
+                                 if (m.day, m.meal_type) not in todo) + ".")
         if over:
             note += (f" Er kostet {planned.total_cents} ct, das Budget ist {household.budget_food_week_cents} ct. "
                      "Ersetze die teuersten Gerichte durch günstigere mit mehr Angeboten.")

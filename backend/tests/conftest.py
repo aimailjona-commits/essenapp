@@ -53,6 +53,13 @@ def auth(client):
 
 
 @pytest.fixture(autouse=True)
+def jobs_inline(monkeypatch):
+    """Hintergrund-Arbeit (Plan-Job, Fotos) läuft im Test sofort, auf derselben Test-Datenbank."""
+    from app import api
+    monkeypatch.setattr(api, "run_later", lambda target, *args: target(*args))
+
+
+@pytest.fixture(autouse=True)
 def no_image_lookup(monkeypatch, request):
     """API-Tests sollen keine echten Bildsuchen machen (test_recipe_images testet die Suche selbst)."""
     if request.module.__name__.endswith("test_recipe_images"):

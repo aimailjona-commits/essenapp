@@ -166,3 +166,42 @@ def test_web_list_shows_packs_and_german_units():
                            checked=False, added_by="", checked_by="", source="plan", defer_week=None)
     assert qty(item) == "2 × 500 g · 700 g gebraucht"
     assert size(1100, "g") == "1,1 kg" and size(2, "el") == "2 EL"
+
+
+def test_plan_job_runs_in_background_and_reports_state(client, auth, db, monkeypatch):
+    from tests.test_planner import test_plan_endpoint
+    test_plan_endpoint(client, auth, db, monkeypatch)
+    first = client.get("/plans/current", headers=auth).json()["id"]
+    assert client.post("/plans/job", headers=auth).status_code == 202
+    assert client.get("/plans/job", headers=auth).json() == {"state": "done", "error": ""}
+    assert client.get("/plans/current", headers=auth).json()["id"] != first
+    client.post("/plans/job", headers=auth, json={"single_store": "aldi_nord"})  # Laden nicht ausgewählt
+    assert client.get("/plans/job", headers=auth).json() == {"state": "error", "error": "Laden ist nicht ausgewählt"}
+
+
+def test_plan_job_left_running_counts_as_aborted(client, auth, db):
+    from datetime import UTC, datetime, timedelta
+    from app.models import JobRun
+    hid = client.get("/household", headers=auth).json()["id"]
+    db.add(JobRun(name=f"plan:{hid}", ran_at=datetime.now(UTC).replace(tzinfo=None) - timedelta(minutes=11), info="läuft"))
+    db.commit()
+    assert client.get("/plans/job", headers=auth).json()["state"] == "error"
+
+
+def test_repair_replans_only_the_bad_meal():
+    from types import SimpleNamespace
+    h = SimpleNamespace(persons=2, diet="alles", allergies=["Erdnüsse"], excluded_ingredients=[], cuisines=[],
+                        nutrition_goal="ausgewogen", max_cook_minutes=30, budget_food_week_cents=10000,
+                        product_rules=[], plan_days=[0, 1], meal_types=["abend"])
+    drafts = iter([planner.PlanDraft(meals=[meal(0, "Satay", [ing("Erdnussbutter", 50)], "abend"),
+                                            meal(1, "Suppe", [ing("Kartoffeln", 500)], "abend")]),
+                   planner.PlanDraft(meals=[meal(0, "Curry", [ing("Kichererbsen", 400)], "abend")])])
+    notes = []
+
+    def ask(prompt):
+        notes.append(prompt[-1]["text"])
+        return next(drafts), {}
+    from app.services.substitutes import forbidden
+    p = planner.make_plan(h, [], [(0, "abend"), (1, "abend")], [], ask=ask, forbid=lambda n: forbidden(n, h.allergies))
+    assert [m.title for m in p.draft.meals] == ["Curry", "Suppe"]
+    assert "NUR diese Mahlzeiten" in notes[1] and "Di abend: Suppe" in notes[1]

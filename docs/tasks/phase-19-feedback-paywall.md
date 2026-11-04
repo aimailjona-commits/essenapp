@@ -79,11 +79,11 @@ Status: **aktiv** (2026-11-04). UI ohne Mockup-Freigabe direkt mit v3-Bausteinen
 
 ## 19.6 Performance
 
-- [ ] App-Start: `loadAll` parallel statt ~10 Anfragen nacheinander; Cache sofort anzeigen
-- [ ] Plan erzeugen als Hintergrund-Job mit Fortschritt (Status abfragen), statt 1 Anfrage bis zu 300 s
-- [ ] Bildsuche nie im Anfrage-Pfad (auch beim Neu-Würfeln)
-- [ ] KI-Aufrufe zusammenlegen: Reparatur-/Zweit-Durchgang nur wenn nötig, Prompt-Cache besser nutzen
-- [ ] Messen vorher/nachher (Startzeit, Plan-Dauer) und im Playbook festhalten
+- [x] App-Start: `loadAll` parallel statt ~10 Anfragen nacheinander; Cache sofort anzeigen
+- [x] Plan erzeugen als Hintergrund-Job mit Fortschritt (Status abfragen), statt 1 Anfrage bis zu 300 s – `POST/GET /plans/job` (E94); Fortschritt = vorhandene Lade-Anzeige, keine Zwischenschritte
+- [x] Bildsuche nie im Anfrage-Pfad (auch beim Neu-Würfeln)
+- [x] KI-Aufrufe zusammenlegen: Reparatur-/Zweit-Durchgang nur wenn nötig, Prompt-Cache besser nutzen – liefen schon nur bei Bedarf, Angebote schon gecacht; neu: Nachbesserung nur für betroffene Slots
+- [ ] Messen vorher/nachher (Startzeit, Plan-Dauer) und im Playbook festhalten – vorher aus Tokens geschätzt (E94), nachher: `params.seconds` nach den nächsten echten Plänen ablesen
 - Abnahme: Start mit Cache < 1 s bis Inhalt, Plan < 30 s im Mittel
 
 ## 19.7 Besseres Onboarding

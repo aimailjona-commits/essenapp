@@ -1,11 +1,12 @@
 import base64
+import logging
 import secrets
 import shutil
 import threading
 import time
 from collections.abc import Callable
 from concurrent.futures import ThreadPoolExecutor, wait
-from datetime import date, datetime, timedelta
+from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -20,7 +21,7 @@ from app.core.auth import current_member, new_token
 from app.core.config import settings
 from app.core.db import get_db
 from app.models import (Achievement, AiCost, BonusEntry, Coupon, Household, HouseholdStore, Invite, MealPlan,
-                        MealPlanEntry, Member, MemberProfile, MemberToken, Offer, PairingCode, PantryItem, PricePoint,
+                        JobRun, MealPlanEntry, Member, MemberProfile, MemberToken, Offer, PairingCode, PantryItem, PricePoint,
                         Product, PushDevice, Rating, Recipe, RecipeFavorite, ShoppingItem, ShoppingList, WatchItem,
                         WeekReview, WeeklyBasic)
 from app.schemas import (ConsumeIn, CookIdeaOut, DeviceIn, EntryUpdate, FavoriteOut, HouseholdCreate,
@@ -28,7 +29,7 @@ from app.schemas import (ConsumeIn, CookIdeaOut, DeviceIn, EntryUpdate, Favorite
                          ItemPatchOut, ItemUpdate, JoinIn, ListCreate, ListOut, ListSummary, MemberOut,
                          MemberProfileOut, NearbyStoreOut, OfferHistoryOut, OfferNutritionOut, OfferOut,
                          PairedTokenOut, PairIn, PairingCodeOut, PairOut, PantryIn, PantryOut, PantryUpdate,
-                         PlanNutritionOut, PlanOptions, PlanOut, ProfileOut, ProfileUpdate, PushSettings,
+                         PlanJobOut, PlanNutritionOut, PlanOptions, PlanOut, ProfileOut, ProfileUpdate, PushSettings,
                          PushSettingsUpdate, RatingIn, RatingOut, RecipeCard, RecipeCostOut, RecipeDetail, RecipeIn,
                          RecipeOut, RecipePatch, ReplaceIn, ScanOut, ShareOut, StepImagesOut, UsageOut,
                          EntryLeftover, GeneratorOut, GuestsIn, NoMoodIn, PostponeIn, SpecialsOut, SubstituteIn,
@@ -45,6 +46,7 @@ from app.services.normalize import base_unit, cents, ingredient_key
 from app.services.pricing import PANTRY_WORDS, Stock, pack_amount, stock_key
 
 router = APIRouter()
+log = logging.getLogger(__name__)
 
 
 @router.post("/households", response_model=HouseholdCreated, status_code=201)
@@ -377,6 +379,7 @@ def create_plan(options: PlanOptions | None = None, member: Member = Depends(cur
     """Optionaler Body PlanOptions gilt nur für diesen Plan; save_as_default schreibt ihn (ohne wishes, Gäste,
     Special) in den Haushalt. Gäste (15) erhöhen die Portionen ihres Slots (Gast = 1 Portion), guest_budget_cents
     das Budget; special (25) fügt die Slots der Vorlage hinzu."""
+    started = time.monotonic()
     household = member.household
     opts = options.model_dump(exclude_none=True, exclude={"save_as_default"}) if options else {}
     if not opts.get("next_week"):
@@ -424,7 +427,7 @@ def create_plan(options: PlanOptions | None = None, member: Member = Depends(cur
     plan = MealPlan(household_id=household.id, week=prices.iso_week(monday or date.today()), total_cents=priced.total_cents,
                     saved_cents=priced.saved_cents,
                     params={"budget": prefs.budget_food_week_cents, "options": opts, "usage": priced.usage,
-                            "rests": priced.rests})
+                            "rests": priced.rests, "seconds": round(time.monotonic() - started)})  # 19.6: Dauer messen
     for meal, cost, image in zip(priced.draft.meals, priced.meal_costs, priced.images):
         slot = (meal.day, meal.meal_type)
         plan.entries.append(MealPlanEntry(day=meal.day, meal_type=meal.meal_type, recipe=_recipe(household, meal, image),
@@ -436,6 +439,76 @@ def create_plan(options: PlanOptions | None = None, member: Member = Depends(cur
     db.commit()
     food_map.map_later([i["name"] for e in plan.entries for i in e.recipe.ingredients])
     return plan_out(db, plan)
+
+
+PLAN_JOB_MINUTES = 10  # länger läuft kein Plan (KI-Timeout 300 s + Reparatur); älter und ohne Ergebnis = abgestürzt
+
+
+def plan_job_row(db: Session, household_id: int) -> JobRun | None:
+    return db.scalar(select(JobRun).where(JobRun.name == f"plan:{household_id}").order_by(JobRun.id.desc()).limit(1))
+
+
+def plan_job_state(row: JobRun | None) -> dict:
+    if row is None:
+        return {"state": "none", "error": ""}
+    if row.ok:
+        return {"state": "done", "error": ""}
+    if row.info != "läuft":
+        return {"state": "error", "error": row.info}
+    if row.ran_at > datetime.now(UTC).replace(tzinfo=None) - timedelta(minutes=PLAN_JOB_MINUTES):
+        return {"state": "running", "error": ""}
+    return {"state": "error", "error": "Abgebrochen, bitte erneut versuchen"}
+
+
+def run_later(target: Callable, *args) -> None:
+    threading.Thread(target=target, args=args, name="plan_job", daemon=True).start()
+
+
+@router.post("/plans/job", response_model=PlanJobOut, status_code=202)
+def start_plan_job(options: PlanOptions | None = None, member: Member = Depends(current_member),
+                   db: Session = Depends(get_db)):
+    """19.6: Plan im Hintergrund erstellen (wie POST /plans, dauert bis ~2 min). Stand über GET /plans/job, bei
+    „done“ GET /plans/current. Läuft schon einer für den Haushalt, wird kein zweiter gestartet. Der Stand liegt in
+    job_run, damit jeder uvicorn-Worker ihn kennt."""
+    row = plan_job_row(db, member.household_id)
+    if plan_job_state(row)["state"] == "running":
+        return plan_job_state(row)
+    row = JobRun(name=f"plan:{member.household_id}", ran_at=datetime.now(UTC).replace(tzinfo=None), info="läuft")
+    db.add(row)
+    db.commit()
+    run_later(_plan_job, db.get_bind(), row.id, member.id, options)
+    return plan_job_state(row)
+
+
+def _plan_job(bind, row_id: int, member_id: int, options: PlanOptions | None) -> None:
+    with Session(bind) as db:
+        try:
+            create_plan(options, db.get(Member, member_id), db)
+            ok, info = True, "fertig"
+        except HTTPException as e:
+            db.rollback()
+            ok, info = False, str(e.detail)
+        except Exception:
+            db.rollback()
+            log.exception("Plan im Hintergrund fehlgeschlagen")
+            ok, info = False, "Plan konnte nicht erstellt werden, bitte erneut versuchen"
+        row = db.get(JobRun, row_id)
+        row.ok, row.info = ok, info[:500]
+        db.commit()
+
+
+def _fill_image(bind, recipe_id: int, query: str) -> None:
+    """Foto nach der Antwort suchen (19.6): das neue Gericht erscheint sofort, das Bild beim nächsten Laden."""
+    image = recipe_images.find_image(query)
+    with Session(bind) as db:
+        if image and (recipe := db.get(Recipe, recipe_id)):
+            recipe.image_url = image[:500]
+            db.commit()
+
+
+@router.get("/plans/job", response_model=PlanJobOut)
+def plan_job(member: Member = Depends(current_member), db: Session = Depends(get_db)):
+    return plan_job_state(plan_job_row(db, member.household_id))
 
 
 @router.get("/usage", response_model=UsageOut)
@@ -532,12 +605,13 @@ def reroll_entry(entry_id: int, body: RerollIn | None = None, member: Member = D
     except RuntimeError as e:
         raise HTTPException(502, str(e))
     entry.prev_recipe_id = entry.recipe_id
-    entry.recipe = _recipe(household, meal, recipe_images.find_image(meal.image_query or meal.title))
+    entry.recipe = _recipe(household, meal)
     entry.portions, entry.portions_total, entry.scale = portions, total, 1
     plan.params = {**plan.params, "usage": planner.add_usage(plan.params.get("usage", {}), call_usage)}
     reprice(db, plan, offers, pantry)
     sync_plan(db, household.id)
     db.commit()
+    run_later(_fill_image, db.get_bind(), entry.recipe.id, meal.image_query or meal.title)
     food_map.map_later([i["name"] for i in entry.recipe.ingredients])
     return plan_out(db, plan)
 

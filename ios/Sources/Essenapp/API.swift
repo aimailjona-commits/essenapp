@@ -95,9 +95,11 @@ struct OfferDTO: Codable, Identifiable, Hashable {
 
 enum APIError: LocalizedError {
     case noServer, http(Int), queued
+    case server(String)  // Meldung des Servers, z. B. aus dem Plan-Job (19.6)
 
     var errorDescription: String? {
         switch self {
+        case .server(let message): message
         case .noServer: "Keine Server-Adresse eingestellt."
         case .queued: "Offline – wird später übertragen."
         case .http(401): "Nicht angemeldet."
@@ -757,16 +759,25 @@ final class AppStore {
 
     func loadAll() async {
         guard !demo else { return }
+        if household == nil {  // 19.6: erst der letzte Stand aus dem Cache, dann alles gleichzeitig vom Server
+            household = api.cached("/household")
+            offers = api.cached("/offers") ?? offers
+            plan = api.cached("/plans/current")
+        }
         await syncPending()
+        async let watch: () = loadWatch()
+        async let lists: () = loadLists()
+        async let profiles: () = loadProfiles()
+        async let pantry: ()? = try? loadPantry()
+        async let next: [OfferDTO]? = try? api.request("GET", "/offers?week=next")
+        async let current: PlanDTO? = try? api.request("GET", "/plans/current")
         do {
-            household = try await api.request("GET", "/household")
-            offers = try await api.request("GET", "/offers")
-            nextOffers = (try? await api.request("GET", "/offers?week=next")) ?? nextOffers
-            plan = try? await api.request("GET", "/plans/current")
-            await loadWatch()
-            await loadLists()
-            await loadProfiles()
-            try? await loadPantry()
+            async let h: HouseholdDTO = api.request("GET", "/household")
+            async let o: [OfferDTO] = api.request("GET", "/offers")
+            (household, offers) = try await (h, o)
+            nextOffers = await next ?? nextOffers
+            plan = await current
+            _ = await (watch, lists, profiles, pantry)
             error = nil
             await loadNutrition()
             await loadAchievements()  // schaltet Neues frei → Vollbild-Moment
@@ -790,9 +801,17 @@ final class AppStore {
     func generatePlan(_ options: PlanOptions? = nil) async {
         generating = true
         defer { generating = false }
+        struct Job: Decodable { var state: String; var error: String }
         do {
             let had = plan != nil
-            plan = try await api.request("POST", "/plans", body: options, timeout: 300)  // KI-Plan dauert bis ~2 min
+            // 19.6: Server plant im Hintergrund (bis ~2 min); kurze Abfragen statt einer langen Anfrage
+            var job: Job = try await api.request("POST", "/plans/job", body: options)
+            for _ in 0..<240 where job.state == "running" {
+                try await Task.sleep(for: .seconds(2))
+                job = try await api.request("GET", "/plans/job", cache: false)
+            }
+            guard job.state == "done" else { throw APIError.server(job.error.isEmpty ? "Plan dauert zu lange, bitte später nachsehen" : job.error) }
+            plan = try await api.request("GET", "/plans/current")
             await loadLists()  // Backend übernimmt die Zutaten in die Haushaltsliste
             error = nil
             if had { flash("Neuer Plan erstellt", action: ("Rückgängig", { Task { await self.undoPlan() } })) }  // 19.3

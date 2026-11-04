@@ -272,6 +272,12 @@ class GuestSlot(BaseModel):
     count: int = Field(ge=0, le=20)
 
 
+class PlanJobOut(BaseModel):
+    """Stand der Plan-Erstellung im Hintergrund (19.6)."""
+    state: Literal["none", "running", "done", "error"]
+    error: str = ""
+
+
 class PlanOptions(BaseModel):
     """Einstellungen nur für diesen Plan (POST /plans). Fehlende Felder = Werte des Haushalts."""
     cuisines: list[str] | None = None
