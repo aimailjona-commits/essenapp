@@ -22,9 +22,10 @@
 | 15 | [Komfort](phase-15-komfort.md) | gebaut – Abnahme iPhone offen |
 | 16 | [Erweiterungen (Widget, Live-Aktivität)](phase-16-erweiterungen.md) | gebaut – Abnahme iPhone offen |
 | 17 | [Umzug auf IONOS-VPS](phase-17-vps.md) | Vorbereitung läuft – wartet auf 👤 IONOS-VPS + Domain |
-| 18 | [Redesign v3 „Küchen-Pinnwand“](phase-18-redesign-v3.md) | ruht (E91) – Design ändert sich noch, Bau nach [`docs/ui/redesign-v3.md`](../ui/redesign-v3.md) |
+| 18 | [Redesign v3 „Küchen-Pinnwand“](phase-18-redesign-v3.md) | abgelöst durch Phase 21 (E98) |
 | 19 | [Nutzerwünsche, Rezensions-Lehren, Paywall](phase-19-feedback-paywall.md) | **aktiv** – Entscheidungen E90/E91 |
 | 20 | [Woche per Swipe planen](phase-20-swipe-planen.md) | **aktiv** (E97) – Mockup frei, Backend gebaut, iOS läuft |
+| 21 | [Redesign v8 „Tinte & Bogen“](phase-21-redesign-v8.md) | **aktiv** (E98) – ganzes UI 1:1 nach [`docs/ui/redesign-v8.md`](../ui/redesign-v8.md) |
 
 ## Wartet auf dich 👤
 
@@ -37,7 +38,7 @@
 | Entscheidung Payback-Umrechnung (Spec „10fach = 10 %“ vs. 1 °P/2 € = 5 %; umgesetzt 5 %) | Coupons | 13 |
 | Selbst getroffene Entscheidungen prüfen (Playbook E78–E85) | optional | 11–16 |
 | IONOS-VPS (Ubuntu 24.04, ≥ 2 GB) + Domain anlegen | Umzug | 17 |
-| Download Fraunces + JetBrains Mono (OFL) freigeben; Mockup-Gruppen freigeben | Redesign v3 | 18 |
+| Dunkel-Mockup v8 freigeben (kommt) | Dunkelmodus | 21 |
 | Anfragen an Shopfully / Bonial / marktguru abschicken (Texte: `docs/research/anfragen-angebotsdaten.md`) | Kommerziell | 19 |
 | App Store Connect: Abo `de.jsenf.essenapp.pro.monthly` (3 €/Monat, optional Testphase) anlegen; In-App-Purchase-Key (`.p8`) nach `backend/secrets/`, Key-ID + Issuer-ID nennen | Paywall | 19.8 |
 | Domain des VPS nennen (kommt als feste Server-Adresse in die App) | Onboarding | 19.7 |

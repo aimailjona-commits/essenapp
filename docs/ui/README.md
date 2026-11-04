@@ -9,12 +9,13 @@ Das UI ist verbindlich. Gebaut wird nur, was hier beschrieben und freigegeben is
 | [references/README.md](references/README.md) | Referenz-Screenshots und was wir davon übernehmen |
 | [design-system.md](design-system.md) | Farben, Schrift, Abstände, Radien, Schatten, Icons, Komponenten |
 | [screens.md](screens.md) | Navigation und jeder Screen: Inhalt, Aktionen, Zustände |
-| [redesign-v3.md](redesign-v3.md) | **Redesign v3 (E87): Bauanleitung 1:1 – gilt vor allen anderen Dateien, bis Phase 18 fertig ist** |
+| [redesign-v8.md](redesign-v8.md) | **Redesign v8 „Tinte & Bogen“ (E98): Bauanleitung 1:1 – gilt vor allen anderen Dateien** |
+| [redesign-v3.md](redesign-v3.md) | v3 (E87), abgelöst durch v8 |
 | `mockups/` | HTML-Mockups. Freigegebene Mockups sind die visuelle Vorlage (`redesign-v3.html` = v3; `kern-screens-v1.html`, `weitere-screens-v1.html` werden mit Phase 18 abgelöst) |
 
 ## Regeln für Claude
 
-- Werte nur aus `design-system.md` (während Phase 18: aus `redesign-v3.md`). Fehlt ein Wert: fragen, nicht erfinden.
+- Werte nur aus `redesign-v8.md` (danach `design-system.md`). Fehlt ein Wert: fragen, nicht erfinden.
 - Screens so bauen, wie in `screens.md` und dem freigegebenen Mockup. Abweichungen nur nach Rückfrage.
 - Neue Screens oder Komponenten: erst hier spezifizieren, Nutzer freigeben lassen, dann bauen.
 - iOS (`Theme.swift`) und Web-PWA (CSS-Variablen) nutzen dieselben Werte.
