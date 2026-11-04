@@ -425,8 +425,9 @@ struct SwipeCardFace: View {
                 Spacer()
                 VStack(alignment: .trailing, spacing: 0) {
                     Text(euro(card.costCents)).font(Theme.F.burst(26)).monospacedDigit()
-                    Text("pro Portion").font(Theme.F.caption).foregroundStyle(Theme.C.text2)
+                    Text("pro Portion").font(Theme.F.caption).opacity(0.6)
                 }
+                .foregroundStyle(Theme.C.onBright)  // steht auf dem Pastell-Kreis, auch dunkel
             }
             Plate(url: mediaURL(card.imageUrl), size: 200, seed: card.title).frame(maxWidth: .infinity).padding(.top, 2)
             Spacer(minLength: 10)
@@ -514,8 +515,9 @@ struct MatchView: View {
 
     var body: some View {
         ZStack {
-            Theme.C.sky.ignoresSafeArea()
-            Circle().fill(Theme.C.plate.opacity(0.45)).frame(width: 560, height: 560).offset(y: -90)
+            Theme.C.sky  // Kreis als Overlay: sprengt das Layout nicht
+                .overlay { Circle().fill(Theme.C.plate.opacity(0.45)).frame(width: 560, height: 560).offset(y: -90) }
+                .ignoresSafeArea()
             VStack(spacing: 12) {
                 Spacer()
                 Text(members.count > 2 ? "IHR ALLE WOLLT" : "IHR BEIDE WOLLT").font(Theme.F.micro).tracking(1.4)

@@ -1,7 +1,7 @@
 # Phase 20 – Woche per Swipe planen
 
 Stand: 2026-11-04 · Quelle: Nutzerwunsch („Gerichte nicht direkt schreiben lassen, sondern wie bei Tinder durchswipen“).
-Status: **aktiv** – Mockup freigegeben 2026-11-04, Backend (20.1/20.2) gebaut, iOS (20.3) als Nächstes.
+Status: **aktiv** – Mockup freigegeben, Backend + iOS (20.1–20.3) gebaut und auf VPS/iPhone (2026-11-04); offen: iPhone-Abnahme mit zwei Mitgliedern, 20.4 Vorlieben.
 
 ## Idee
 
@@ -64,12 +64,12 @@ entsteht erst für die gewählten Gerichte, parallel.
 
 ## 20.3 iOS
 
-- [ ] Stapel-Screen S41: Karten-Geste (rechts/links/oben, Schwelle + Haptik), Knöpfe ✗ / 👎 Mag ich nicht / ✓, Rückgängig, Fortschritt je Art, Art wechseln, „Überrasch mich“
-- [ ] Match S42: Animation + „Weiter swipen“
-- [ ] Auswahl S43 + Woche S44: Verteilen, Ziehen auf Tage, Reserve, „Plan übernehmen“ → Fortschritt wie heute (Abfrage `GET /plans/job`)
-- [ ] Einstieg: „Woche planen“ auf Start/Plan führt zum Stapel; läuft ein Deck, geht es dort weiter
-- [ ] VoiceOver: Aktionen „Diese Woche“, „Nicht“, „Nie wieder“ ohne Geste
-- [ ] Demo-Fälle in `Demo.swift` + `ios/tools/screenshots.sh` (`swipe`, `match`, `verteilen`)
+- [x] Stapel-Screen S41: Karten-Geste (rechts/links/oben, Schwelle + Haptik), Knöpfe ✗ / 👎 Mag ich nicht / ✓, Rückgängig, Fortschritt je Art, Art wechseln, „Überrasch mich“
+- [x] Match S42: Animation + „Weiter swipen“
+- [x] Auswahl S43 + Woche S44: Verteilen, Ziehen auf Tage, Reserve, „Plan übernehmen“ → Fortschritt wie heute (Abfrage `GET /plans/job`)
+- [x] Einstieg: „Woche planen“ auf Start/Plan führt zum Stapel; läuft ein Deck, geht es dort weiter
+- [x] VoiceOver: Aktionen „Diese Woche“, „Nicht“, „Nie wieder“ ohne Geste
+- [x] Demo-Fälle in `Demo.swift` + `ios/tools/screenshots.sh` (`swipe`, `match`, `auswahl`, `verteilen`; CI-Screenshots 2026-11-04 geprüft)
 - [ ] Push an die anderen Mitglieder „Jona plant die Woche – swipe mit“ (APNs, sobald verfügbar)
 
 ## 20.4 Vorlieben (Onboarding, Planer, Angebote)
