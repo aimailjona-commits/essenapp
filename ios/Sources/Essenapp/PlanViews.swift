@@ -169,8 +169,6 @@ struct DayCard: View {
     @State private var replacing = false  // „ersetzen durch eigenes Rezept“ → S19
     @State private var open = false
     @State private var choosing = false  // Würfel → Richtung wählen (19.3)
-    @State private var wishing = false
-    @State private var wish = ""
 
     /// Karten eines Tages: Tagesfarbe, dann die Farben der Folgetage; Dessert/Snack weiß.
     static func color(day: Int, index: Int, mealType: String) -> Color {
@@ -233,22 +231,7 @@ struct DayCard: View {
         .sheet(isPresented: $replacing) {
             PlanSlotSheet(entry: meal).presentationDetents([.medium, .large]).presentationCornerRadius(Theme.R.sheet)
         }
-        .confirmationDialog("Neues Gericht – wie soll es sein?", isPresented: $choosing, titleVisibility: .visible) {
-            Button("Einfach anders") { roll() }
-            ForEach(Labels.rerollDirections, id: \.0) { d in Button(d.1) { roll(direction: d.0) } }
-            Button("Eigener Wunsch …") { wish = ""; wishing = true }
-            Button("Mag ich nicht – nie wieder vorschlagen", role: .destructive) {
-                Task {
-                    if await store.rate(meal.recipe.id, stars: 1, again: "nie", note: "") { roll() }
-                }
-            }
-            Button("Abbrechen", role: .cancel) {}
-        }
-        .alert("Was hättest du gern?", isPresented: $wishing) {
-            TextField("z. B. mit Reis, etwas Asiatisches", text: $wish)
-            Button("Würfeln") { roll(wish: wish) }
-            Button("Abbrechen", role: .cancel) {}
-        }
+        .modifier(RerollDialog(meal: meal, isPresented: $choosing) { roll(direction: $0, wish: $1) })
     }
 
     private func roll(direction: String? = nil, wish: String = "") {
@@ -311,6 +294,8 @@ struct RecipeDetailView: View {
     @State private var imagesSettled = false  // Erzeugung fertig oder aus → leere Plätze ausblenden
     @State private var photoColor: Color?  // Verlaufsfarbe des Rezept-Kopfs (v3)
     @State private var replacingDish = false  // „Ersatz“: Gericht im Plan ersetzen (S19)
+    @State private var choosing = false  // „Würfeln“ im Plan-Gericht (19.3), wie auf der Tageskarte
+    @State private var rolling = false
     @Environment(\.openURL) private var openURL
 
     init(meal: MealDTO) { given = meal }
@@ -370,7 +355,11 @@ struct RecipeDetailView: View {
                     .padding(.top, 18)
                     HStack(spacing: 8) {
                         glassButton("bookmark", "Einplanen") { planIt = true }
-                        if meal.id != nil { glassButton("arrow.left.arrow.right", "Ersatz") { replacingDish = true } }
+                        // Plan-Gericht: „Ersatz“ steckt im Würfel-Dialog, damit drei Knöpfe in eine Zeile passen
+                        if meal.id != nil {
+                            glassButton(rolling ? "hourglass" : "dice", rolling ? "Würfelt …" : "Ändern") { choosing = true }
+                                .disabled(rolling)
+                        }
                         Menu {
                             Button("Als Bild teilen", systemImage: "photo") { shareCard = true }
                             Button("Als Link teilen", systemImage: "link") { shareLink = true }  // Feature 56
@@ -425,6 +414,16 @@ struct RecipeDetailView: View {
         }
         .ignoresSafeArea(edges: .top)
         .background(heroColor.ignoresSafeArea())
+        .modifier(RerollDialog(meal: meal, isPresented: $choosing, onReplace: { replacingDish = true }) { direction, wish in
+            rolling = true
+            Task {
+                await store.reroll(meal, direction: direction, wish: wish)
+                rolling = false
+            }
+        })
+        .onChange(of: recipe.id) {  // gewürfelt oder ersetzt: Daten des alten Rezepts verwerfen
+            info = nil; favorite = nil; stepImages = nil; imagesSettled = false
+        }
         .confirmationDialog("Was stimmt nicht?", isPresented: $reporting, titleVisibility: .visible) {
             ForEach(Self.reportKinds, id: \.0) { kind, label in Button(label) { reportKind = kind } }
         }
@@ -486,7 +485,7 @@ struct RecipeDetailView: View {
             PlanSlotSheet(entry: meal).presentationDetents([.medium, .large]).presentationCornerRadius(Theme.R.sheet)
         }
         .toolbar(.hidden, for: .navigationBar)
-        .task(id: store.recipesVersion) { await loadInfo() }
+        .task(id: "\(store.recipesVersion)-\(recipe.id)") { await loadInfo() }
         .task(id: recipe.id) { await pollStepImages() }
         .fullScreenCover(isPresented: $cooking, onDismiss: {
             if rateAfterCooking { rateAfterCooking = false; showRating = true }  // Abschluss → Bewertung + Vorrat (S8)
@@ -1060,4 +1059,38 @@ struct PlanGeneratorSheet: View {
 
 extension Array where Element: Hashable {
     func uniqued() -> [Element] { var seen = Set<Element>(); return filter { seen.insert($0).inserted } }
+}
+
+/// „Neues Gericht – wie soll es sein?“ (19.3): Richtung, eigener Wunsch oder „nie wieder“; Tageskarte und Rezeptdetail.
+struct RerollDialog: ViewModifier {
+    @Environment(AppStore.self) private var store
+    let meal: MealDTO
+    @Binding var isPresented: Bool
+    var onReplace: (() -> Void)?  // „Durch eigenes Rezept ersetzen“ (Rezeptdetail)
+    let roll: (_ direction: String?, _ wish: String) -> Void
+    @State private var wishing = false
+    @State private var wish = ""
+
+    func body(content: Content) -> some View {
+        content
+            .confirmationDialog("Neues Gericht – wie soll es sein?", isPresented: $isPresented, titleVisibility: .visible) {
+                if !meal.locked {
+                    Button("Einfach anders") { roll(nil, "") }
+                    ForEach(Labels.rerollDirections, id: \.0) { d in Button(d.1) { roll(d.0, "") } }
+                    Button("Eigener Wunsch …") { wish = ""; wishing = true }
+                }
+                if let onReplace { Button("Durch eigenes Rezept ersetzen", action: onReplace) }
+                Button("Mag ich nicht – nie wieder vorschlagen", role: .destructive) {
+                    Task {
+                        if await store.rate(meal.recipe.id, stars: 1, again: "nie", note: ""), !meal.locked { roll(nil, "") }
+                    }
+                }
+                Button("Abbrechen", role: .cancel) {}
+            }
+            .alert("Was hättest du gern?", isPresented: $wishing) {
+                TextField("z. B. mit Reis, etwas Asiatisches", text: $wish)
+                Button("Würfeln") { roll(nil, wish) }
+                Button("Abbrechen", role: .cancel) {}
+            }
+    }
 }
