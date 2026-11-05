@@ -95,7 +95,10 @@ private struct ShoppingOverview: View {
                 Text("KW \(week) · \(items.filter { !$0.checked }.count) offen").font(Theme.F.small).foregroundStyle(Theme.C.ink2).padding(.top, 16)
                 Text("Einkauf").font(Theme.F.t1).accessibilityAddTraits(.isHeader)
                 VStack(spacing: 10) {
-                    StatNumber(label: "Diese Woche\ngespart", value: euro(store.plan?.savedCents ?? 0), size: 40)
+                    NavigationLink { SavingsView() } label: {  // S11 Ersparnis
+                        StatNumber(label: "Diese Woche\ngespart", value: euro(store.plan?.savedCents ?? 0), size: 40)
+                    }
+                    .buttonStyle(PressableStyle())
                     if let lastWeekSaved { StatNumber(label: "Letzte Woche", value: euro(lastWeekSaved), size: 26, mute: true) }
                 }
                 .frame(width: 218)

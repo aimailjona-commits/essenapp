@@ -525,6 +525,7 @@ struct StateNote8: View {
 /// Entfernen: Farbe läuft ab (0,25 s), ohne Funken. Bewegung reduzieren: sofort, ohne Ploppen/Funken.
 struct PlateHeart: View {
     let on: Bool
+    var bare = false  // Kopf-Herz (S3, a1-fav): ohne Kreis, Icon 24, Füllung Rosé
     let action: () -> Void
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var pops = 0
@@ -535,15 +536,17 @@ struct PlateHeart: View {
             withAnimation(reduceMotion ? nil : on ? .easeIn(duration: 0.25) : .timingCurve(0.3, 1, 0.5, 1, duration: 0.35)) { action() }
         } label: {
             ZStack {
-                Circle().fill(on ? Theme.C.ink : Theme.C.card)
-                    .overlay { if !on { Circle().strokeBorder(Theme.C.line, lineWidth: Theme.S.hair) } }
+                if !bare {
+                    Circle().fill(on ? Theme.C.ink : Theme.C.card)
+                        .overlay { if !on { Circle().strokeBorder(Theme.C.line, lineWidth: Theme.S.hair) } }
+                }
                 ZStack {
-                    Icon8.heart.path(.stroke).fill(Theme.C.onInk)
+                    Icon8.heart.path(.stroke).fill(bare ? Theme.C.rose : Theme.C.onInk)
                         .frame(width: 24, height: 24)
                         .mask(alignment: .bottom) { Rectangle().frame(height: on ? 24 : 0) }
-                    Icon(.heart).foregroundStyle(on ? Theme.C.onInk : Theme.C.ink)
+                    Icon(.heart).foregroundStyle(on && !bare ? Theme.C.onInk : Theme.C.ink)
                 }
-                .scaleEffect(16 / 24)
+                .scaleEffect(bare ? 1 : 16 / 24)
                 .keyframeAnimator(initialValue: 1.0, trigger: pops) { v, s in v.scaleEffect(s) } keyframes: { _ in
                     CubicKeyframe(1.3, duration: 0.16)
                     CubicKeyframe(1, duration: 0.24)

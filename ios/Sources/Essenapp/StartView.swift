@@ -99,7 +99,10 @@ struct StartView: View {
                 VStack(spacing: 12) {
                     StatF(label: "Diese Woche", value: euro(plan.totalCents), size: 52, roll: 0.15)
                     if plan.savedCents > 0 {
-                        StatF(label: "Gespart", value: euro(plan.savedCents), size: 40, valueColor: Theme.C.deal, mute: true, roll: 0.3)
+                        NavigationLink { SavingsView() } label: {  // S11 Ersparnis
+                            StatF(label: "Gespart", value: euro(plan.savedCents), size: 40, valueColor: Theme.C.deal, mute: true, roll: 0.3)
+                        }
+                        .buttonStyle(PressableStyle())
                     }
                 }
                 .padding(.horizontal, Theme.pagePadding).padding(.top, K.statsTop)
