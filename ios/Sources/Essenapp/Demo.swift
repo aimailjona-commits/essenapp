@@ -6,7 +6,7 @@ import UIKit
 /// notifications, stores, empty, cooking (Kochmodus Schritt 2 mit Timer), sharecard (Bildkarte),
 /// recipes (Meine Rezepte), myrecipe (eigenes Rezept mit Bewertungen + Blüte), recipeform (Rezept-Formular, Seite Zutaten),
 /// imported (Instagram-Import mit Original-Reel, geschätzten Mengen, Schritt-Bildern), instagram (Teilen aus Instagram, S21),
-/// sharepair / shareimport / shareresult (Teilen-Erweiterung S20), importlink (Link einfügen S22),
+/// shareimport / shareresult (Teilen-Erweiterung S20), importlink (Link einfügen S22),
 /// fridgecam / fridgereview / cooknow (Kühlschrank-Foto S23–S25), offline (Einkauf mit Offline-Banner, 66),
 /// voiceadd (Einkauf mit Sprach-Eingabe, 45), storeask (Benachrichtigungen mit Erklär-Sheet Standort-Erinnerung, 36),
 /// substitute (Ersatz finden, 7), nomood („Keine Lust“, 16), guests (Gäste-Sheet über dem Wochenplan, 15),
@@ -17,7 +17,7 @@ import UIKit
 /// Phase 13: wallet (Einkauf › Coupons), bonus (Plus/Minus-Sheet Payback), coupon (Kassen-Vollbild), couponadd (Coupon prüfen
 /// nach Foto), spending (Monats-Dashboard). Phase 14: achievements (Erfolge), unlock (Vollbild-Moment), review (Wochenrückblick),
 /// reviews (Archiv), recipelink (Rezept als Link teilen), sharedrecipe (geteiltes Rezept übernehmen).
-/// Phase 16: widgetsetup (Widget einrichten S38), widget (Widget „Heute“ S39), liveactivity (Live-Aktivität S40).
+/// Phase 16: widgetsetup (Widget-Anleitung S38), widget (Widget „Heute“ S39), liveactivity (Live-Aktivität S40).
 /// Phase 20: swipe (Stapel S41), match (S42), auswahl (S43), verteilen (S44).
 /// Erscheinungsbild (68): zusätzlich `-demoAppearance dark|light` (überschreibt die Einstellung).
 enum Demo {

@@ -1,3 +1,4 @@
+import EssenappShareUI
 import Foundation
 import Network
 import SwiftUI
@@ -115,11 +116,12 @@ final class API {
     static let defaultServer = ""
     var paywall: String? = Demo.screen == "paywall" ? "Pro: Kühlschrank-Foto" : nil  // gesetzt = Paywall zeigen (Meldung der 402-Antwort, leer = aus den Einstellungen)
     var baseURL: String = UserDefaults.standard.string(forKey: "backendURL") ?? API.defaultServer {
-        didSet { UserDefaults.standard.set(baseURL, forKey: "backendURL") }
+        didSet { UserDefaults.standard.set(baseURL, forKey: "backendURL"); shareLogin() }
     }
     var token: String? = Keychain.read() {
         didSet {
             Keychain.write(token)
+            shareLogin()
             if token != oldValue { OfflineStore.clear(); pending = [] }  // anderer Haushalt: alter Cache und Warteschlange weg
         }
     }
@@ -143,11 +145,18 @@ final class API {
 
     init() {
         guard Demo.screen == nil else { return }
+        shareLogin()  // auch für Anmeldungen von vor E102
         monitor.pathUpdateHandler = { [weak self] path in
             let ok = path.status == .satisfied
             Task { @MainActor in self?.setPath(ok) }
         }
         monitor.start(queue: .main)
+    }
+
+    /// Teilen-Erweiterung und Widget nutzen die Anmeldung der App (App Group, E102); ohne Token wird sie dort gelöscht.
+    private func shareLogin() {
+        SharedLogin.save(ShareSession(server: baseURL, token: token ?? ""))
+        WidgetCenter.shared.reloadAllTimelines()
     }
 
     private func setPath(_ ok: Bool) {

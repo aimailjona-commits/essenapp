@@ -4,7 +4,7 @@ import UIKit
 import UniformTypeIdentifiers
 
 /// Teilen-Erweiterung „Essenapp“ (Feature 5): nimmt Link/Text aus Instagram & Co. und importiert das Rezept (S20).
-/// Anmeldung über Kopplungscode, Token im eigenen Schlüsselbund (keine App Group, E48).
+/// Anmeldung: Server + Token der App aus dem geteilten Schlüsselbund (App Group, E102).
 @objc(ShareViewController)
 final class ShareViewController: UIViewController {
     override func viewDidLoad() {
@@ -14,7 +14,7 @@ final class ShareViewController: UIViewController {
         Task { @MainActor [weak self] in
             guard let self else { return }
             let (url, text) = await sharedContent()
-            let root = ShareFlowView(input: ShareInput.parse(url: url, text: text), session: ShareKeychain.load(), persist: true) { [weak self] in
+            let root = ShareFlowView(input: ShareInput.parse(url: url, text: text), session: SharedLogin.load()) { [weak self] in
                 self?.extensionContext?.completeRequest(returningItems: nil)
             }
             let host = UIHostingController(rootView: root)

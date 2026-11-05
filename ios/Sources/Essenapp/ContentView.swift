@@ -118,7 +118,7 @@ struct MainView: View {
     }
 
     /// Demo-Screens, die in der App als Sheet bzw. in der Erweiterung ohne Tab-Leiste erscheinen.
-    private static let modalDemo = ["recipeform", "fridgecam", "fridgereview", "cooknow", "sharepair", "shareimport", "shareresult", "importlink",
+    private static let modalDemo = ["recipeform", "fridgecam", "fridgereview", "cooknow", "shareimport", "shareresult", "importlink",
                                     "nomood", "substitute", "leftovers", "couponadd", "widget", "widgetlock", "liveactivity", "fridgeintro",
                                     "rating", "planslot", "recipeform1", "cookprep", "cookvoice", "cookdone", "cooking"]
 
@@ -156,7 +156,6 @@ struct MainView: View {
                     case ("fridgeintro", _): FridgeScanSheet(stage: .intro)
                     case ("fridgereview", _): FridgeScanSheet(stage: .review)
                     case ("cooknow", _): FridgeScanSheet(stage: .cook)
-                    case ("sharepair", _): ShareFlowView(input: nil, session: nil, demo: .pair) {}
                     case ("shareimport", _): ShareFlowView(input: nil, session: nil, demo: .importing) {}
                     case ("shareresult", _): ShareFlowView(input: nil, session: nil, demo: .result) {}
                     case ("importlink", _): ShareFlowView(input: nil, session: nil, demo: .link, onOpen: { _ in }) {}

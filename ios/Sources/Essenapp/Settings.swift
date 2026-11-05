@@ -651,7 +651,7 @@ struct SettingsView: View {
             }
         }
         NavigationLink { InstagramShareView(widget: true) } label: {
-            ERow("Widget einrichten", value: "koppeln", lead: .icon(.widget), tint: Theme.C.blue1)
+            ERow("Widget einrichten", lead: .icon(.widget), tint: Theme.C.blue1)
         }
         .buttonStyle(.plain)
     }

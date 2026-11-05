@@ -1,0 +1,300 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kochpilot Onboarding v1</title>
+<link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:ital,wght@0,400;0,500;1,400&family=Inter+Tight:wght@500;600&family=Manrope:wght@500;600;700;800&display=swap" rel="stylesheet">
+<style>
+/* Onboarding v1 (Phase 23): Einladung + kürzeres Onboarding. Zwei Looks: A dunkel & edel, B hell im v9-Stil. Gleiche Abläufe, nur die Optik unterscheidet sich. Entwurf. */
+.A{--bg:#0D0D0C;--card:#191816;--ink:#F3EFE6;--ink2:#8F8A80;--ink3:#4A4741;--line:#2A2825;--acc:#D9C29A;--onacc:#14130F;--btn:#F3EFE6;--onbtn:#0D0D0C;--deal:#E0603F}
+.B{--bg:#FFFFFF;--card:#F5F5F3;--ink:#151515;--ink2:#7C776D;--ink3:#B9B3A7;--line:#DCD5C7;--acc:#151515;--onacc:#FFFFFF;--btn:#151515;--onbtn:#FFFFFF;--deal:#E0603F;--blue:#AFC4F2;--blue1:#DCE5F8;--sage:#CFE3D2;--sand:#E7DCC5}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:"Manrope",-apple-system,system-ui,sans-serif;font-weight:600;background:#E9E9E9;color:#151515;-webkit-font-smoothing:antialiased}
+svg.i{width:22px;height:22px;flex:none;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.head{max-width:1360px;margin:0 auto;padding:48px 24px 8px}
+.head h1{font-family:"Crimson Pro",serif;font-weight:500;font-size:46px;line-height:1.05}
+.head p{color:#5b574f;margin-top:12px;max-width:900px;line-height:1.6;font-size:15px}
+.open{margin-top:16px;background:#fff;border-radius:20px;padding:16px 20px;max-width:900px;font-size:14px;line-height:1.65}
+.open b{display:block;margin-bottom:4px}
+.open li{margin-left:18px}
+.tabs{display:flex;gap:8px;margin-top:22px}
+.tabs button{font:inherit;font-weight:700;font-size:14px;border:0;border-radius:999px;height:40px;padding:0 18px;background:#fff;color:#151515;cursor:pointer}
+.tabs button.on{background:#151515;color:#fff}
+.variant{max-width:1500px;margin:0 auto;padding:12px 16px 40px}
+.variant h2{font-family:"Crimson Pro",serif;font-weight:500;font-size:32px;padding:20px 8px 0;max-width:1360px;margin:0 auto}
+.variant>p{max-width:1360px;margin:6px auto 0;padding:0 8px;color:#5b574f;font-size:14px;line-height:1.6}
+.screens{display:flex;flex-wrap:wrap;gap:48px 36px;justify-content:center;padding:28px 0 40px}
+.screen{width:390px;max-width:100%}
+.caption{margin-top:18px;font-size:13px;color:#55524b;line-height:1.55}
+.caption b{display:block;color:#151515;font-family:"Crimson Pro",serif;font-weight:500;font-size:19px;margin-bottom:2px}
+.phone{position:relative;width:390px;max-width:100%;height:844px;background:var(--bg);color:var(--ink);border-radius:54px;overflow:hidden;box-shadow:0 30px 60px rgba(40,30,20,.16)}
+.sb{position:absolute;top:0;left:0;right:0;height:52px;display:flex;align-items:center;justify-content:space-between;padding:8px 34px 0;font-weight:800;font-size:16px;z-index:20}
+.sb .island{position:absolute;left:50%;top:11px;transform:translateX(-50%);width:122px;height:35px;background:#000;border-radius:20px}
+.sb .bat{width:26px;height:12px;border-radius:4px;border:1.5px solid currentColor;position:relative}.sb .bat::after{content:"";position:absolute;inset:1.5px;right:5px;background:currentColor;border-radius:2px}
+.homebar{position:absolute;bottom:8px;left:50%;transform:translateX(-50%);width:134px;height:5px;border-radius:3px;background:var(--ink);z-index:16}
+.scr{position:absolute;inset:0;padding:66px 24px 120px;display:flex;flex-direction:column}
+.small{font-size:15px;color:var(--ink2)}
+.lbl{font-size:11px;font-weight:800;letter-spacing:.1em;color:var(--ink2);text-transform:uppercase}
+.t0{font-family:"Crimson Pro",serif;font-weight:400;font-size:46px;line-height:1.02;letter-spacing:-.01em}
+.t1{font-family:"Crimson Pro",serif;font-weight:500;font-size:34px;line-height:1.1}
+.t2{font-family:"Crimson Pro",serif;font-weight:500;font-size:22px;line-height:1.15}
+.it{font-style:italic;font-weight:400}
+.num{font-family:"Inter Tight",sans-serif;font-weight:600;letter-spacing:-.05em;line-height:.92}
+.bottom{position:absolute;left:24px;right:24px;bottom:40px;display:flex;gap:12px;align-items:center;z-index:12}
+.btn{flex:1;height:58px;border-radius:999px;background:var(--btn);color:var(--onbtn);display:flex;align-items:center;justify-content:center;gap:8px;font-weight:800;font-size:16px}
+.btn.ghost{background:transparent;color:var(--ink);box-shadow:inset 0 0 0 1.5px var(--line)}
+.btn.off{opacity:.35}
+.cbtn{width:58px;height:58px;border-radius:50%;box-shadow:inset 0 0 0 1.5px var(--line);display:grid;place-items:center;flex:none}
+.link{font-size:14px;color:var(--ink2);text-align:center;font-weight:700}
+.link u{color:var(--ink);text-decoration-thickness:1.5px;text-underline-offset:3px}
+.bars{display:flex;gap:6px;width:140px}.bars i{flex:1;height:3px;border-radius:2px;background:var(--ink3)}.bars i.on{background:var(--ink)}
+.A .bars i.on{background:var(--acc)}
+.field{height:60px;border-radius:20px;background:var(--card);display:flex;align-items:center;gap:12px;padding:0 18px;font-size:18px;font-weight:700}
+.field .ph{color:var(--ink3)}
+.caret{display:inline-block;width:2px;height:24px;background:var(--ink);vertical-align:middle;margin-left:1px;animation:blink 1s steps(1) infinite}
+@keyframes blink{50%{opacity:0}}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{display:inline-flex;align-items:center;gap:6px;height:38px;padding:0 15px;border-radius:999px;font-weight:700;font-size:14px;color:var(--ink2);box-shadow:inset 0 0 0 1.5px var(--line)}
+.chip.on{background:var(--acc);color:var(--onacc);box-shadow:none}
+.chip.dash{box-shadow:none;border:1.5px dashed var(--ink3)}
+.row{display:flex;align-items:center;gap:12px}
+.between{justify-content:space-between}
+.store{display:flex;align-items:center;gap:14px;height:64px;border-top:1.5px solid var(--line)}
+.store .logo{width:40px;height:40px;border-radius:50%;display:grid;place-items:center;font-size:11px;font-weight:800;flex:none;color:#fff}
+.store .nm{flex:1;font-size:16px;font-weight:700}.store .nm span{display:block;font-size:12px;color:var(--ink2);font-weight:600;margin-top:2px}
+.tg{width:46px;height:28px;border-radius:999px;background:var(--ink3);position:relative;flex:none}
+.tg::after{content:"";position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;background:var(--bg)}
+.tg.on{background:var(--acc)}.tg.on::after{left:21px}
+.B .tg.on::after{background:#fff}
+.step{display:flex;align-items:center;gap:18px}
+.step .cbtn{width:48px;height:48px}
+/* Einladungskarte */
+.inv{position:relative;border-radius:28px;padding:24px 24px 22px;overflow:hidden}
+.A .inv{background:linear-gradient(150deg,#211f1a 0%,#121110 60%,#16140f 100%);box-shadow:inset 0 0 0 1px rgba(217,194,154,.42),0 34px 70px rgba(0,0,0,.7)}
+.A .inv::before{content:"";position:absolute;width:260px;height:260px;right:-90px;top:-120px;border-radius:50%;background:radial-gradient(circle,rgba(217,194,154,.22),transparent 65%)}
+.B .inv{background:#fff;box-shadow:0 0 0 1.5px var(--line),0 24px 50px rgba(40,30,20,.12)}
+.B .inv::before{content:"";position:absolute;width:210px;height:210px;right:-70px;top:-80px;border-radius:50%;background:var(--blue1)}
+.inv>*{position:relative}
+.foil{color:var(--acc)}
+.B .foil{color:var(--ink)}
+.seal{width:64px;height:64px;border-radius:50%;display:grid;place-items:center;flex:none}
+.A .seal{background:radial-gradient(circle at 35% 30%,#efdcb6,#b99a68 70%);color:#2a2116;box-shadow:0 8px 22px rgba(0,0,0,.5)}
+.B .seal{background:var(--ink);color:#fff}
+.code{display:flex;gap:6px;align-items:center;font-family:"Inter Tight",sans-serif;font-weight:600;font-size:26px;letter-spacing:.02em}
+.code .box{width:44px;height:56px;border-radius:14px;display:grid;place-items:center;background:var(--card)}
+.A .inv .code .box{background:rgba(255,255,255,.05);box-shadow:inset 0 0 0 1px rgba(217,194,154,.3)}
+.code .box.cur{box-shadow:inset 0 0 0 2px var(--ink)}
+.A .code .box.cur{box-shadow:inset 0 0 0 2px var(--acc)}
+.code .pre{color:var(--ink2);margin-right:2px}
+.perf{border-top:1.5px dashed var(--line);margin:18px -24px 0}
+.A .perf{border-color:rgba(217,194,154,.25)}
+/* Hintergrund: A Foto mit Verlauf, B Pastell-Kreis + Zeichnung */
+.photo{position:absolute;left:0;right:0;top:0;height:470px;background:url(../../../ios/Sources/Essenapp/Resources/hero/pasta.jpg) center/cover}
+.photo::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(13,13,12,.25) 0%,rgba(13,13,12,.55) 55%,#0D0D0C 100%)}
+.B .photo,.A .blob,.A .ill{display:none}
+.blob{position:absolute;border-radius:50%}
+.ill{position:absolute}
+.avatar{width:40px;height:40px;border-radius:50%;display:grid;place-items:center;font-weight:800;font-size:15px;flex:none}
+.A .avatar{background:var(--acc);color:var(--onacc)}
+.B .avatar{background:var(--sage);color:var(--ink)}
+.err{color:var(--deal);font-size:14px;font-weight:700}
+/* Budget */
+.slider{position:relative;height:28px;margin-top:10px}
+.slider .tr{position:absolute;left:0;right:0;top:12px;height:4px;border-radius:2px;background:var(--line)}
+.slider .fi{position:absolute;left:0;top:12px;height:4px;border-radius:2px;background:var(--ink)}
+.A .slider .fi{background:var(--acc)}
+.slider .kn{position:absolute;top:0;width:28px;height:28px;margin-left:-14px;border-radius:50%;background:var(--ink);box-shadow:0 4px 12px rgba(0,0,0,.25)}
+.A .slider .kn{background:var(--acc)}
+.range{position:absolute;top:10px;height:8px;border-radius:4px;background:var(--ink3);opacity:.5}
+/* Einladungen verwalten: Tickets */
+.ticket{display:flex;align-items:center;gap:14px;height:76px;border-radius:22px;padding:0 18px;background:var(--card);margin-top:10px}
+.ticket .k{font-family:"Inter Tight",sans-serif;font-weight:600;font-size:18px;letter-spacing:.03em;flex:1}
+.ticket .k span{display:block;font-family:"Manrope",sans-serif;font-size:12px;letter-spacing:0;color:var(--ink2);font-weight:600;margin-top:3px}
+.ticket.used{background:transparent;box-shadow:inset 0 0 0 1.5px var(--line)}
+.A .ticket.free{box-shadow:inset 0 0 0 1px rgba(217,194,154,.35)}
+.share{width:44px;height:44px;border-radius:50%;background:var(--btn);color:var(--onbtn);display:grid;place-items:center;flex:none}
+/* Web-Einladungsseite */
+.safari{position:absolute;left:0;right:0;bottom:0;height:86px;background:var(--card);display:flex;justify-content:center;padding-top:12px;z-index:11}
+.safari .url{height:40px;border-radius:12px;background:var(--bg);width:340px;display:grid;place-items:center;font-size:14px;font-weight:700;color:var(--ink2)}
+.done-ring{width:120px;height:120px;border-radius:50%;display:grid;place-items:center}
+.A .done-ring{box-shadow:inset 0 0 0 1px rgba(217,194,154,.5),0 0 60px rgba(217,194,154,.18);color:var(--acc)}
+.B .done-ring{background:var(--blue);color:var(--ink)}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute">
+  <symbol id="arrow" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></symbol>
+  <symbol id="back" viewBox="0 0 24 24"><path d="M19 12H5M11 6l-6 6 6 6"/></symbol>
+  <symbol id="check" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></symbol>
+  <symbol id="share" viewBox="0 0 24 24"><path d="M12 15V3M7.5 7.5 12 3l4.5 4.5M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"/></symbol>
+  <symbol id="plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="minus" viewBox="0 0 24 24"><path d="M5 12h14"/></symbol>
+  <symbol id="pin" viewBox="0 0 24 24"><path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></symbol>
+  <symbol id="fork" viewBox="0 0 24 24"><path d="M7 3v8a2 2 0 0 0 2 2v8M11 3v8a2 2 0 0 1-2 2M9 3v6M16 21V3c2.5 1.5 3.5 4 3.5 7s-1 4-3.5 4"/></symbol>
+  <symbol id="sparkle" viewBox="0 0 24 24"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/><path d="M19 16l.7 2 2 .7-2 .7-.7 2-.7-2-2-.7 2-.7z"/></symbol>
+  <symbol id="lock" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2.5"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></symbol>
+</svg>
+
+<header class="head">
+  <h1>Onboarding v1: nur mit Einladung</h1>
+  <p>Neuer Einstieg für Kochpilot: Man braucht eine Einladung (Link oder Code). Danach kommen nur noch vier kurze Schritte (Name, Läden, Haushalt, Budget), alles andere fragt die App später nebenbei. Jeder Nutzer hat 3 Einladungen zum Verschenken. Unten siehst du denselben Ablauf in zwei Looks. <b>Bitte einen Look wählen</b> und sagen, was du ändern möchtest.</p>
+  <div class="open">
+    <b>Was neu ist</b>
+    <ul>
+      <li><b style="display:inline">Einladung zuerst:</b> Ohne gültigen Code lässt sich kein Haushalt anlegen (auch nicht über die Web-Version). Wer schon dabei ist, bleibt dabei.</li>
+      <li><b style="display:inline">Weniger Fragen:</b> Vorher 10 Eingaben in 4 Schritten, jetzt 6. Weg aus dem Onboarding: Ziel, Mahlzeiten, Küchen, „Mag ich nicht“, Gewohnheiten. Die kommen später als Karte auf Start („Erzähl mir mehr“) und beim ersten Swipen.</li>
+      <li><b style="display:inline">Läden vorausgewählt:</b> Nach der PLZ sind alle Läden in der Nähe schon an, jeweils mit der nächsten Filiale. Man schaltet nur ab, was man nicht will.</li>
+      <li><b style="display:inline">Familie bleibt frei:</b> Ein Familien-Einladungslink (Einstellungen › Familie) zählt nicht gegen die 3 Einladungen und führt direkt in den Haushalt, ganz ohne Onboarding-Fragen.</li>
+    </ul>
+    <b style="margin-top:10px">Noch offen</b>
+    <ul>
+      <li>Der Preis-Satz auf dem ersten Screen ist ein Platzhalter, bis die Gratis/Pro-Aufteilung (Phase 19) entschieden ist.</li>
+      <li>Woher bekommt ein Eingeladener die App (TestFlight-Link oder App Store)? Die Einladungsseite zeigt dafür einen Knopf.</li>
+    </ul>
+  </div>
+  <div class="tabs"><button class="on" data-v="A">A · Dunkel &amp; edel</button><button data-v="B">B · Hell im v9-Stil</button><button data-v="AB">Beide</button></div>
+</header>
+
+<div id="out"></div>
+
+<script>
+const ic = (n, s = 22) => `<svg class="i" style="width:${s}px;height:${s}px"><use href="#${n}"/></svg>`;
+const sb = `<div class="sb"><b>9:41</b><span class="island"></span><span class="bat"></span></div>`;
+const bars = n => `<div class="bars">${[1,2,3,4].map(i => `<i class="${i <= n ? 'on' : ''}"></i>`).join('')}</div>`;
+const nav = (label = 'Weiter', on = true) => `<div class="bottom"><div class="cbtn">${ic('back')}</div><div class="btn ${on ? '' : 'off'}">${label} ${ic('arrow', 20)}</div></div>`;
+const backB = (blob, ill) => `<div class="blob" style="${blob}"></div><img class="ill" src="ill-v7/${ill[0]}.webp" style="${ill[1]}">`;
+
+const screens = [
+  ['Einladung (App ohne Link geöffnet)',
+   'Erster Screen nach der Installation. Code-Felder: „KOCH-“ steht fest, dann 4 Zeichen (keine leicht verwechselbaren wie 0/O, 1/I). Wird ein Code aus der Zwischenablage erkannt, steht er schon drin. Fehler unter den Feldern: „Diesen Code gibt es nicht“, „Diese Einladung ist abgelaufen“, „Diese Einladung wurde schon benutzt“. Nach 5 Fehlversuchen: „Zu viele Versuche – in 10 Minuten wieder.“ „Kein Code?“ öffnet ein kurzes Sheet: Kochpilot wächst gerade nur über Einladungen, frag jemanden, der es nutzt.',
+   `<div class="photo"></div>${backB('width:520px;height:520px;left:-150px;top:-200px;background:var(--blue)', ['shopper', 'width:250px;right:-20px;top:70px'])}
+    <div class="scr" style="justify-content:flex-end;padding-bottom:40px">
+      <div class="row lbl" style="gap:6px">${ic('lock', 14)} Nur mit Einladung</div>
+      <div class="t0" style="margin-top:12px">Kochen nach<br><span class="it">Angebot.</span></div>
+      <div class="small" style="margin-top:12px;line-height:1.5">Jede Woche ein Plan aus den Prospekten deiner Läden. Kochpilot wächst gerade nur über Einladungen.</div>
+      <div class="code" style="margin-top:26px"><span class="pre">KOCH –</span><span class="box">7</span><span class="box">F</span><span class="box cur"><span class="caret"></span></span><span class="box"></span></div>
+      <div class="btn off" style="flex:none;margin-top:22px">Einladung einlösen</div>
+      <div class="link" style="margin-top:18px">Kein Code? <u>So kommst du rein</u></div>
+      <div class="link" style="margin-top:10px;font-size:12px;font-weight:600">Grundfunktionen gratis · Pro 3 € im Monat (Platzhalter)</div>
+    </div>`],
+  ['Einladung per Link',
+   'Über den Link der Einladung öffnet sich die App direkt hier, der Code ist schon geprüft. Die Karte zeigt, wer einlädt (Vorname + Haushalt). Beim Tippen auf „Annehmen“ klappt die Karte an der Perforation auf und das Siegel springt kurz (eine Animation, sanft, mit leichtem Haptik-Tick). Gültig 14 Tage, steht klein unten.',
+   `${backB('width:420px;height:420px;right:-170px;top:-150px;background:var(--blue1)', ['table', 'width:150px;right:10px;top:70px'])}
+    <div class="scr" style="justify-content:center">
+      <div class="small" style="text-align:center">Du bist eingeladen.</div>
+      <div class="inv" style="margin-top:22px">
+        <div class="row between"><span class="lbl foil">Einladung · Nr. 0142</span><div class="seal">${ic('fork', 28)}</div></div>
+        <div class="t1" style="margin-top:14px">Lena lädt dich zu <span class="it foil">Kochpilot</span> ein.</div>
+        <div class="small" style="margin-top:8px;font-size:14px">„Wir sparen damit jede Woche 20 €. Probier's!“</div>
+        <div class="perf"></div>
+        <div class="row between" style="margin-top:16px"><div class="row" style="gap:10px"><div class="avatar">L</div><div style="font-size:13px;line-height:1.4">Lena<br><span style="color:var(--ink2)">Haushalt Berger</span></div></div><div class="num" style="font-size:22px;letter-spacing:.02em">KOCH-7F3Q</div></div>
+      </div>
+      <div class="small" style="text-align:center;font-size:12px;margin-top:16px">Gültig bis 19. November</div>
+    </div>
+    <div class="bottom"><div class="btn">Einladung annehmen</div></div>`],
+  ['1 · Name',
+   'Nur der Vorname, für Familie, Teilen und die persönliche Ansprache. Haushaltsname wird daraus gebildet („Haushalt Jona“), änderbar in den Einstellungen. Weiter erst mit mindestens einem Zeichen.',
+   `${backB('width:300px;height:300px;right:-120px;top:-110px;background:var(--sand)', ['cook', 'width:120px;right:10px;top:60px'])}
+    <div class="scr">
+      ${bars(1)}
+      <div class="small" style="margin-top:34px">Willkommen bei Kochpilot.</div>
+      <div class="t1" style="margin-top:6px">Wie dürfen wir<br>dich nennen?</div>
+      <div class="field" style="margin-top:28px">Jona<span class="caret"></span></div>
+      <div class="small" style="margin-top:10px;font-size:13px">Nur dein Vorname. Sehen nur deine Familie und Leute, mit denen du teilst.</div>
+    </div>
+    ${nav()}`],
+  ['2 · Läden',
+   'PLZ eingeben → Läden in der Nähe erscheinen, alle schon eingeschaltet, jeweils mit der nächsten Filiale (Antippen der Zeile wechselt die Filiale). Während der Suche drei Skelett-Zeilen. Keine Läden: „Für diese PLZ haben wir noch keine Angebote.“ Unten zählt mit, wie viele Angebote diese Woche schon da sind – erster Wert, bevor weiter gefragt wird.',
+   `<div class="scr">
+      ${bars(2)}
+      <div class="t1" style="margin-top:30px">Wo kaufst<br>du ein?</div>
+      <div class="field" style="margin-top:22px;width:200px">${ic('pin', 20)} 10115</div>
+      <div class="lbl" style="margin-top:24px;margin-bottom:6px">5 Läden in der Nähe</div>
+      ${[['REWE','#CC071E','Invalidenstr. 112 · 0,4 km',1],['ALDI','#00005F','Chausseestr. 30 · 0,7 km',1],['LIDL','#0050AA','Torstr. 72 · 0,9 km',1],['EDEKA','#FFD400','Brunnenstr. 9 · 1,2 km',1],['dm','#E30613','Friedrichstr. 140 · 1,0 km',0]]
+        .map(([n,c,a,on]) => `<div class="store"><div class="logo" style="background:${c};${n==='EDEKA'?'color:#1a3a8a':''}">${n.slice(0,4)}</div><div class="nm">${n[0]+n.slice(1).toLowerCase()}<span>${a}</span></div><div class="tg ${on?'on':''}"></div></div>`).join('')}
+      <div class="row" style="margin-top:18px;gap:8px;font-size:14px;font-weight:700">${ic('sparkle', 18)} 214 Angebote diese Woche</div>
+    </div>
+    ${nav()}`],
+  ['3 · Haushalt',
+   'Personen-Zähler (1–8), Ernährungsform (eine Wahl), Allergien (mehrere + „Eigene“ öffnet ein Textfeld). Allergien bleiben im Onboarding, weil schon der erste Plan sie kennen muss. „Mag ich nicht“ und Gewohnheiten kommen später.',
+   `${backB('width:300px;height:300px;right:-130px;top:-120px;background:var(--sage)', ['pasta', 'width:120px;right:12px;top:66px'])}
+    <div class="scr">
+      ${bars(3)}
+      <div class="t1" style="margin-top:30px">Wer isst<br>mit?</div>
+      <div class="row between" style="margin-top:22px;border-top:1.5px solid var(--line);padding-top:16px">
+        <div><div class="lbl">Personen</div><div class="small" style="font-size:13px;margin-top:4px">Mengen &amp; Budget richten sich danach</div></div>
+        <div class="step"><div class="cbtn">${ic('minus')}</div><div class="num" style="font-size:44px">2</div><div class="cbtn">${ic('plus')}</div></div>
+      </div>
+      <div class="lbl" style="margin-top:26px;margin-bottom:10px">Ernährung</div>
+      <div class="chips"><span class="chip on">Alles</span><span class="chip">Vegetarisch</span><span class="chip">Vegan</span><span class="chip">Pescetarisch</span><span class="chip">Halal</span></div>
+      <div class="lbl" style="margin-top:26px;margin-bottom:10px">Allergien</div>
+      <div class="chips"><span class="chip">Gluten</span><span class="chip on">Laktose</span><span class="chip">Nüsse</span><span class="chip">Erdnüsse</span><span class="chip">Ei</span><span class="chip">Soja</span><span class="chip">Fisch</span><span class="chip">Sellerie</span><span class="chip dash">${ic('plus', 16)} Eigene</span></div>
+    </div>
+    ${nav()}`],
+  ['4 · Budget',
+   'Betrag groß, Regler 10–200 € (Schritt 5 €). Der übliche Bereich für die gewählte Personenzahl ist als Band hinter dem Regler zu sehen (25–40 € je Person). Unter dem Band ehrlicher Hinweis statt Sperre. Knopf heißt hier „Fertig“.',
+   `${backB('width:200px;height:210px;right:0;top:0;border-radius:0 0 0 200px;background:var(--blue)', ['bag', 'width:110px;right:14px;top:56px'])}
+    <div class="scr">
+      ${bars(4)}
+      <div class="t1" style="margin-top:30px">Was darf's<br>kosten?</div>
+      <div class="lbl" style="margin-top:34px">Budget pro Woche</div>
+      <div class="row" style="align-items:flex-end;gap:6px;margin-top:8px"><div class="num" style="font-size:96px">70</div><div class="t2" style="padding-bottom:8px">€</div></div>
+      <div class="slider"><div class="tr"></div><div class="range" style="left:21%;width:16%"></div><div class="fi" style="width:31.5%"></div><div class="kn" style="left:31.5%"></div></div>
+      <div class="row between small" style="font-size:12px;margin-top:6px"><span>10 €</span><span>200 €</span></div>
+      <div class="small" style="margin-top:22px;font-size:14px;line-height:1.5">Für 2 Personen reichen meist <b style="color:var(--ink)">50–80 €</b>. Weniger geht auch, dann kocht der Plan einfacher.</div>
+    </div>
+    ${nav('Fertig')}`],
+  ['Fertig: Du bist dabei',
+   'Kurzer Abschluss mit derselben Animation wie beim Annehmen (Ring zieht sich zu, Haken). Zeigt die 3 Einladungen, die man jetzt selbst hat – Hinweis, nicht Pflicht. „Ersten Plan erstellen“ öffnet direkt das Swipen (Phase 20); dort kommen beim ersten Mal Ziel und Küchen als Fragekarte zwischen die Gerichte.',
+   `<div class="scr" style="align-items:center;text-align:center;justify-content:center;padding-bottom:200px">
+      <div class="done-ring">${ic('check', 48)}</div>
+      <div class="t0" style="margin-top:34px">Du bist dabei,<br><span class="it">Jona.</span></div>
+      <div class="small" style="margin-top:14px;line-height:1.5;max-width:290px">214 Angebote aus 4 Läden warten. Dein erster Plan dauert etwa eine Minute.</div>
+      <div class="row" style="margin-top:36px;gap:10px;padding:12px 16px;border-radius:999px;box-shadow:inset 0 0 0 1.5px var(--line);font-size:13px;font-weight:700">
+        <span class="foil">${ic('sparkle', 18)}</span> Du hast jetzt 3 Einladungen zum Verschenken</div>
+    </div>
+    <div class="bottom"><div class="btn">${ic('sparkle', 20)} Ersten Plan erstellen</div></div>`],
+  ['Einladungen verschenken (Einstellungen › Einladungen, auch aus „Alles“)',
+   'Drei Tickets. Frei: Code + Teilen-Knopf (iOS-Teilen-Sheet mit Link und kurzem Text, optional eigene Notiz, die auf der Karte erscheint). Verschickt: „Wartet auf Annahme“, nach 14 Tagen wieder frei. Angenommen: Name + Datum, das Ticket ist verbraucht. Familie läuft getrennt unter Einstellungen › Familie.',
+   `<div class="scr">
+      <div class="row between"><div class="cbtn" style="width:44px;height:44px">${ic('back')}</div></div>
+      <div class="t1" style="margin-top:22px">Einladungen</div>
+      <div class="small" style="margin-top:8px;font-size:14px;line-height:1.5">Kochpilot gibt's nur auf Einladung. Du hast 3 – verschenk sie an Leute, die gern sparen.</div>
+      <div class="lbl" style="margin-top:28px">1 frei · 1 unterwegs · 1 angenommen</div>
+      <div class="ticket free"><div class="k">KOCH-4MRX<span>Frei</span></div><div class="share">${ic('share', 20)}</div></div>
+      <div class="ticket"><div class="k">KOCH-9TQE<span>An Max geschickt · gültig bis 19. Nov.</span></div><div class="cbtn" style="width:44px;height:44px">${ic('share', 18)}</div></div>
+      <div class="ticket used"><div class="avatar" style="width:36px;height:36px;font-size:13px">S</div><div class="k" style="font-family:Manrope;font-size:15px;font-weight:700;letter-spacing:0">Sophie ist dabei<span>angenommen am 2. Nov.</span></div></div>
+      <div class="small" style="margin-top:24px;font-size:12px;line-height:1.5">Familie in deinen Haushalt holen? Das geht unter Einstellungen › Familie und zählt nicht mit.</div>
+    </div>`],
+  ['Einladungsseite im Browser (kochpilot…/i/KOCH-7F3Q)',
+   'Was der Link zeigt, wenn die App noch nicht installiert ist (gleicher Look wie die App, PWA-Seite vom Server). Knopf 1 öffnet die App mit dem Code (essenapp://invite/…), Knopf 2 führt zur Installation (TestFlight/App Store – offen). Der Code steht groß da, damit man ihn notfalls abtippt. Abgelaufen/benutzt: gleiche Seite mit Hinweis statt Knöpfen.',
+   `<div class="scr" style="padding-top:80px">
+      <div class="row" style="gap:10px"><div class="seal" style="width:40px;height:40px">${ic('fork', 20)}</div><div class="t2">Kochpilot</div></div>
+      <div class="inv" style="margin-top:30px">
+        <div class="lbl foil">Persönliche Einladung</div>
+        <div class="t1" style="margin-top:12px;font-size:30px">Lena lädt dich ein.</div>
+        <div class="small" style="margin-top:8px;font-size:14px;line-height:1.5">Kochpilot plant deine Woche aus den Angeboten deiner Läden. Nur mit Einladung.</div>
+        <div class="perf"></div>
+        <div class="lbl" style="margin-top:16px">Dein Code</div>
+        <div class="num" style="font-size:40px;letter-spacing:.03em;margin-top:6px">KOCH-7F3Q</div>
+      </div>
+      <div class="btn" style="flex:none;margin-top:24px">In Kochpilot öffnen</div>
+      <div class="btn ghost" style="flex:none;margin-top:10px">App installieren</div>
+    </div>
+    <div class="safari"><div class="url">kochpilot.de/i/KOCH-7F3Q</div></div>`],
+];
+
+const render = v => `<section class="variant"><h2>${v === 'A' ? 'A · Dunkel & edel' : 'B · Hell im v9-Stil'}</h2>
+  <p>${v === 'A'
+    ? 'Fast-Schwarz mit Champagner als einziger Akzentfarbe, Essensfoto mit Verlauf auf dem ersten Screen, Einladung als dunkle Karte mit Goldkante und Siegel. Gilt nur fürs Onboarding und die Einladungs-Screens – danach geht die App im normalen hellen v9-Look weiter (Übergang: Weiß blendet von unten ein).'
+    : 'Weiß mit Tinte wie die restliche App, Pastell-Kreise aus dem Rand und die bekannten Zeichnungen. Premium über Weißraum, große Crimson-Pro-Titel und die Einladung als Papierkarte mit schwarzem Siegel. Kein Bruch zur restlichen App.'}</p>
+  <div class="screens">${screens.map(([t, c, h]) => `<div class="screen"><div class="phone ${v}">${sb}${h}<div class="homebar"></div></div><div class="caption"><b>${t}</b>${c}</div></div>`).join('')}</div></section>`;
+
+const out = document.getElementById('out');
+const show = v => { out.innerHTML = [...v].map(render).join(''); document.querySelectorAll('.tabs button').forEach(b => b.classList.toggle('on', b.dataset.v === v)); };
+document.querySelectorAll('.tabs button').forEach(b => b.onclick = () => show(b.dataset.v));
+show('A');
+</script>
+</body>
+</html>

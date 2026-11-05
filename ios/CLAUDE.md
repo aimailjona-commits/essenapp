@@ -14,7 +14,7 @@ PonyTail `full` gilt (siehe Root-`CLAUDE.md`).
 
 - **Kein `.xcassets`.** Farben im Code (`Theme`), Bilder als SwiftPM-Ressourcen.
 - `xtool.yml`: nur bekannte Keys (E26). Tippfehler werden still ignoriert. Icon: `Icon.png` via `iconPath`, neu erzeugen mit `uv run --no-project --with pillow ios/tools/make_icon.py`.
-- Keine Push-, iCloud- oder App-Group-Entitlements (kostenlose Apple-ID).
+- Bezahlter Account: App Group `group.de.jsenf.essenapp` (xtool signiert sie als `group.XTL-<Team>.…`, E102) und Push; kein iCloud.
 - **Kein SwiftData** (geht unter xtool nicht, E25). Lokaler Cache = Codable-JSON-Dateien.
 - App Intents (Widget-Konfiguration, Live-Aktivitäts-Knöpfe) brauchen den Index `AppIntents/*/Metadata.appintents`: nach Änderungen an Intents `./build.sh build`, `python3 tools/appintents_index.py`, erneut bauen (E83). Widget-Target braucht `-u _main`.
 

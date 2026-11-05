@@ -26,7 +26,7 @@ let package = Package(
         ),
         // Oberfläche der Teilen-Erweiterung; die App nutzt sie für „Link einfügen“ und die Demo-Screenshots (E58).
         .target(name: "EssenappShareUI"),
-        // Teilen-Erweiterung (Instagram-Import, Feature 5). Ohne App Group – Login über Kopplungscode (A1).
+        // Teilen-Erweiterung (Instagram-Import, Feature 5). Anmeldung der App über die App Group (E102).
         // -ObjC: ShareViewController wird nur per Name (Info.plist) geladen; ohne das Flag wirft der Linker
         // den Code weg, die Erweiterung hat kein __text und zsign kann nicht signieren.
         .target(name: "EssenappShare", dependencies: ["EssenappShareUI"], linkerSettings: [.unsafeFlags(["-Xlinker", "-ObjC"])]),

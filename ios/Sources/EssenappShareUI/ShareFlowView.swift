@@ -2,7 +2,7 @@ import SwiftUI
 
 /// Demo-Zustände für die CI-Screenshots (die App rendert die Erweiterung als Vorschau, S20).
 public enum ShareDemo: Sendable {
-    case link, pair, importing, result
+    case link, importing, result
 }
 
 private let days = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"]
@@ -10,14 +10,11 @@ private let meals = ["fruehstueck": "Frühstück", "mittag": "Mittag", "abend": 
 
 @MainActor @Observable
 final class ShareModel {
-    enum Stage: Equatable { case link, pair, importing, result, plan, noRecipe, failed(String) }
+    enum Stage: Equatable { case link, signedOut, importing, result, plan, noRecipe, failed(String) }
 
     var stage: Stage = .link
     var link: String
     var text: String
-    var server: String
-    var code = ""
-    var pairError: String?
     var linkError: String?
     var busy = false
     var step = 0
@@ -27,19 +24,15 @@ final class ShareModel {
     var planError: String?
     var planned: String?
     var session: ShareSession?
-    let persist: Bool
     let demo: Bool
 
-    init(input: ShareInput?, session: ShareSession?, persist: Bool, demo: ShareDemo?) {
+    init(input: ShareInput?, session: ShareSession?, demo: ShareDemo?) {
         link = input?.url ?? ""
         text = input?.text ?? ""
         self.session = session
-        server = session?.server.isEmpty == false ? session!.server : "http://"
-        self.persist = persist
         self.demo = demo != nil
         switch demo {
         case .link: stage = .link
-        case .pair: stage = .pair; server = "http://192.168.0.224:8000"; code = "482913"; busy = true  // S20: wartet auf Kopplung
         case .importing: stage = .importing; step = 1; link = "https://www.instagram.com/reel/C9xYz12AbCd/"
         case .result: stage = .result; recipe = Self.demoRecipe; link = "https://www.instagram.com/reel/C9xYz12AbCd/"
         case nil:
@@ -57,36 +50,11 @@ final class ShareModel {
     var hasToken: Bool { !(session?.token ?? "").isEmpty }
     var validLink: Bool { URL(string: link).map { u in (u.scheme == "http" || u.scheme == "https") && u.host() != nil } ?? false }
 
-    /// Ohne Kopplung erst den Code, sonst direkt importieren.
+    /// Ohne Anmeldung der App (geteilter Schlüsselbund, E102) nur ein Hinweis, sonst direkt importieren.
     func start() {
         guard validLink else { linkError = "Das ist kein gültiger Link."; stage = .link; return }
         linkError = nil
-        if hasToken { Task { await runImport() } } else { withAnimation(ST.spring) { stage = .pair } }
-    }
-
-    func pair() async {
-        guard !demo, code.count == 6, !busy else { return }
-        busy = true
-        defer { busy = false }
-        do {
-            let body = ShareAPI.json(["code": code, "label": "Teilen-Erweiterung"])
-            let (out, _): (PairResult, Int) = try await ShareAPI.call("POST", server, "/pair", token: nil, body: body)
-            let s = ShareSession(server: server, token: out.token)
-            session = s
-            if persist { ShareKeychain.save(s) }
-            pairError = nil
-            start()
-        } catch let e as ShareError {
-            code = ""
-            pairError = switch e.status {
-            case 404: "Code ungültig – bitte in der App einen neuen Code erzeugen."
-            case 410: "\(e.detail) – bitte in der App einen neuen Code erzeugen."
-            case 429: "Zu viele Fehlversuche – bitte in 10 Minuten erneut versuchen."
-            default: e.detail
-            }
-        } catch {
-            pairError = error.localizedDescription
-        }
+        if hasToken { Task { await runImport() } } else { withAnimation(ST.spring) { stage = .signedOut } }
     }
 
     func runImport() async {
@@ -109,12 +77,8 @@ final class ShareModel {
             existed = status == 200
             withAnimation(ST.spring) { stage = .result }
         } catch let e as ShareError where e.status == 401 {
-            var s = session
-            s.token = ""
-            self.session = s
-            if persist { ShareKeychain.save(s) }
-            pairError = "Die Kopplung wurde widerrufen – bitte neu koppeln."
-            withAnimation(ST.spring) { stage = .pair }
+            self.session = nil
+            withAnimation(ST.spring) { stage = .signedOut }
         } catch let e as ShareError where e.status == 422 {
             withAnimation(ST.spring) { stage = .noRecipe }
         } catch {
@@ -156,31 +120,28 @@ final class ShareModel {
 }
 
 
-/// S20 Teilen-Erweiterung (Koppeln) und S22 „Link einfügen“ in der App: Link → ggf. Kopplung → Import → Ergebnis.
+/// S20 Teilen-Erweiterung und S22 „Link einfügen“ in der App: Link → Import → Ergebnis (Anmeldung kommt von der App, E102).
 public struct ShareFlowView: View {
     @State private var model: ShareModel
     private let onOpen: ((Int) -> Void)?
     private let onClose: () -> Void
-    @FocusState private var codeFocus: Bool
 
     // Mockup-Maße (b.html S20/S22)
     private let resultBlob = (x: CGFloat(190), y: CGFloat(-30), size: CGFloat(300))
     private let plateSize: CGFloat = 150
-    private let digitWidth: CGFloat = 46
-    private let digitHeight: CGFloat = 62
     private let stepRow: CGFloat = 52
 
-    /// `persist`: Kopplung im Schlüsselbund der Erweiterung speichern. `onOpen` (nur App): „Rezept ansehen“.
-    public init(input: ShareInput?, session: ShareSession?, persist: Bool = false, demo: ShareDemo? = nil,
+    /// `onOpen` (nur App): „Rezept ansehen“.
+    public init(input: ShareInput?, session: ShareSession?, demo: ShareDemo? = nil,
                 onOpen: ((Int) -> Void)? = nil, onClose: @escaping () -> Void) {
-        _model = State(initialValue: ShareModel(input: input, session: session, persist: persist, demo: demo))
+        _model = State(initialValue: ShareModel(input: input, session: session, demo: demo))
         self.onOpen = onOpen
         self.onClose = onClose
     }
 
     private var floatingClose: Bool {
         switch model.stage {
-        case .link, .pair: false
+        case .link: false
         default: true
         }
     }
@@ -233,7 +194,7 @@ public struct ShareFlowView: View {
     @ViewBuilder private var content: some View {
         switch model.stage {
         case .link: linkPage
-        case .pair: pairPage
+        case .signedOut: message("person.crop.circle", "Nicht angemeldet", "Öffne Kochpilot einmal und melde dich an.")
         case .importing: importingPage
         case .result: resultPage
         case .plan: planPage
@@ -275,74 +236,6 @@ public struct ShareFlowView: View {
                 .buttonStyle(STPrimary()).disabled(!model.validLink).opacity(model.validLink ? 1 : 0.35)
                 .padding(.top, 22)
         }
-    }
-
-    /// S20 Koppeln.
-    private var pairPage: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            HStack(spacing: 12) {
-                Group {
-                    if let ill = ShareArt.ill { ill("pot").frame(width: 70, height: 70) } else {
-                        Image(systemName: "fork.knife").font(.system(size: 18, weight: .medium))
-                    }
-                }
-                .frame(width: 44, height: 44).background(ST.blue1).clipShape(Circle())
-                Text("Kochpilot").font(ST.text(17, .extrabold))
-                Spacer()
-                closeButton
-            }
-            Text("Mit Kochpilot koppeln").font(ST.serif(28)).padding(.top, 26)
-            Text("Einmalig: In der App Einstellungen › Teilen aus Instagram einen Code erzeugen und hier eingeben.")
-                .font(ST.text(15)).lineSpacing(4).foregroundStyle(ST.ink2).padding(.top, 8)
-            Text("SERVER-ADRESSE").stLabel().padding(.top, 24)
-            TextField("http://192.168.0.10:8000", text: $model.server)
-                .keyboardType(.URL).textInputAutocapitalization(.never).autocorrectionDisabled()
-                .font(.system(size: 15, weight: .medium, design: .monospaced)).foregroundStyle(ST.ink)
-                .padding(.horizontal, 18).frame(minHeight: ST.field)
-                .background(ST.card, in: Capsule())
-                .overlay(Capsule().strokeBorder(ST.line, lineWidth: ST.hair))
-                .padding(.top, 8)
-            Text("CODE").stLabel().padding(.top, 26)
-            ZStack {
-                TextField("", text: $model.code)
-                    .keyboardType(.numberPad).textContentType(.oneTimeCode)
-                    .focused($codeFocus)
-                    .foregroundStyle(.clear).tint(.clear)
-                    .accessibilityLabel("Kopplungscode, 6 Ziffern")
-                HStack(spacing: 0) {
-                    ForEach(0..<6, id: \.self) { i in
-                        codeDigit(i)
-                        if i < 5 { Spacer(minLength: 4) }
-                    }
-                }
-                .allowsHitTesting(false)
-            }
-            .frame(height: digitHeight)
-            .contentShape(Rectangle())
-            .onTapGesture { codeFocus = true }
-            .onChange(of: model.code) { _, new in
-                let digits = String(new.filter(\.isNumber).prefix(6))
-                if digits != new { model.code = digits }
-                if digits.count == 6 { Task { await model.pair() } }
-            }
-            .padding(.top, 10)
-            Text("Bei 6 Ziffern koppeln wir automatisch.").font(ST.text(13)).foregroundStyle(ST.ink2).padding(.top, 14)
-            if let e = model.pairError { errorLine(e).padding(.top, 10).transition(.opacity) }
-        }
-        .onAppear { if !model.demo { codeFocus = true } }
-    }
-
-    private func codeDigit(_ i: Int) -> some View {
-        let chars = Array(model.code)
-        let active = codeFocus && i == min(chars.count, 5)
-        let filled = i < chars.count
-        let rule = active ? ST.blue3 : filled ? ST.ink : model.pairError != nil ? ST.deal : ST.ink3
-        return Text(filled ? String(chars[i]) : "")
-            .font(ST.num(52)).tracking(ST.numTracking(52))
-            .frame(width: digitWidth, height: digitHeight - 8)
-            .padding(.bottom, 6)
-            .overlay(alignment: .bottom) { Rectangle().fill(rule).frame(height: 2) }
-            .animation(ST.spring, value: active)
     }
 
     /// S22 Import läuft: Topf-Lader, vier Schritte, alle 2,5 s ein Haken.
@@ -497,18 +390,8 @@ public struct ShareFlowView: View {
         switch model.stage {
         case .link:
             EmptyView()  // „Importieren“ steht im Mockup direkt unter dem Feld
-        case .pair:
-            Button { Task { await model.pair() } } label: {
-                if model.busy {
-                    if let hop = ShareArt.hop { hop() } else { Text("Koppelt …") }
-                } else {
-                    Text("Koppeln")
-                }
-            }
-            .buttonStyle(STPrimary(color: ST.blue))
-            .disabled(model.code.count < 6 || model.busy)
-            .opacity(model.code.count < 6 ? 0.35 : 1)
-            .accessibilityLabel(model.busy ? "Koppelt" : "Koppeln")
+        case .signedOut:
+            Button("Schließen", action: onClose).buttonStyle(STPrimary())
         case .importing:
             Button("Abbrechen", action: onClose).buttonStyle(STSecondary())
         case .result:

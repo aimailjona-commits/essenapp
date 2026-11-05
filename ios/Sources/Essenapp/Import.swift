@@ -1,12 +1,7 @@
 import EssenappShareUI
 import SwiftUI
 
-// Rezept-Import (5): Kopplung der Teilen-Erweiterung (S21), „Link einfügen“ (S22); Schritt-Bilder (9); Angebots-Nährwerte (2).
-
-struct PairingCodeDTO: Decodable {
-    var code: String
-    var expiresAt: String  // Server-Ortszeit, ohne Zeitzone
-}
+// Rezept-Import (5): Teilen aus Instagram (S21), „Link einfügen“ (S22); Schritt-Bilder (9); Angebots-Nährwerte (2).
 
 struct PairedTokenDTO: Decodable, Identifiable, Hashable {
     var id: Int
@@ -41,11 +36,6 @@ extension OfferNutritionDTO {
 }
 
 extension AppStore {
-    func pairingCode() async throws -> PairingCodeDTO {
-        if demo { return PairingCodeDTO(code: "482913", expiresAt: Date.now.addingTimeInterval(9 * 60 + 12).formatted(.iso8601)) }
-        return try await api.request("POST", "/me/pairing-code")
-    }
-
     func pairedTokens() async throws -> [PairedTokenDTO] {
         demo ? Demo.pairedTokens : try await api.request("GET", "/me/tokens")
     }
@@ -108,31 +98,28 @@ struct StepImage: View {
     }
 }
 
-// MARK: S21 Teilen aus Instagram / S38 Widget einrichten (e.html) – gleiche Kopplung (E53/E83)
+// MARK: S21 Teilen aus Instagram / S38 Widget – Anleitung; Anmeldung kommt aus der App (App Group, E102)
 
 struct InstagramShareView: View {
     var widget = false
     @Environment(AppStore.self) private var store
     @Environment(\.dismiss) private var dismiss
     @Environment(\.scenePhase) private var scenePhase
-    @State private var code: PairingCodeDTO?
-    @State private var creating = false
     @State private var tokens: [PairedTokenDTO]?
     @State private var error: String?
     @State private var revoke: PairedTokenDTO?
     @State private var showDevices = false
 
     private static let steps = [
-        "Unten „Neuen Code erzeugen“ tippen.",
         "In Instagram Teilen › „Teilen über …“ › Essenapp – ggf. unter „Mehr“ einschalten.",
-        "Beim ersten Mal Server-Adresse und Code eintragen.",
         "Das Rezept landet in Meine Rezepte.",
+        "Keine Anmeldung nötig – Teilen nutzt die Anmeldung dieser App.",
     ]
     private static let widgetSteps = [
-        "„Code erzeugen“ tippen.",
         "Home-Bildschirm lange drücken › Bearbeiten › Widget hinzufügen › Essenapp.",
-        "Widget lange drücken › Widget bearbeiten › Server-Adresse und Code eintragen.",
-        "Lädt selbst etwa alle 30 Minuten; weitere Widgets brauchen nur die Adresse.",
+        "Größe wählen: klein, mittel oder Sperrbildschirm.",
+        "Keine Anmeldung nötig – das Widget nutzt die Anmeldung dieser App.",
+        "Lädt selbst etwa alle 30 Minuten.",
     ]
 
     var body: some View {
@@ -155,8 +142,6 @@ struct InstagramShareView: View {
                     .padding(.vertical, 7)
                     .overlay(alignment: .top) { Hairline() }
                 }
-                codeBlock
-                serverRow
                 devices.padding(.top, 28)
             }
             .foregroundStyle(Theme.C.ink)
@@ -177,10 +162,7 @@ struct InstagramShareView: View {
         }
         .toolbar(.hidden, for: .navigationBar)
         .refreshable { await loadTokens() }
-        .task {
-            if ["instagram", "widgetsetup"].contains(Demo.screen ?? "") && !widget { code = try? await store.pairingCode() }
-            await loadTokens()
-        }
+        .task { await loadTokens() }
         .onChange(of: scenePhase) { _, phase in if phase == .active { Task { await loadTokens() } } }  // zurück aus Instagram
         .confirmationDialog("Kopplung widerrufen?", isPresented: Binding(get: { revoke != nil }, set: { on in if !on { revoke = nil } }),
                             titleVisibility: .visible, presenting: revoke) { t in
@@ -190,63 +172,8 @@ struct InstagramShareView: View {
                 }
             }
         } message: { _ in
-            Text("Das Gerät muss sich danach mit einem neuen Code koppeln.")
+            Text("Das Gerät verliert danach den Zugang.")
         }
-    }
-
-    /// Mit Code: riesige Zahl mit Restzeit und „neu“ (S21); ohne: „Code erzeugen“ (S38).
-    @ViewBuilder private var codeBlock: some View {
-        if let code {
-            let expires = Self.date(code.expiresAt)
-            TimelineView(.periodic(from: .now, by: 1)) { context in
-                let left = Int(expires.timeIntervalSince(context.date))
-                VStack(spacing: 8) {
-                    StatNumber(label: "Kopplungs-\ncode", value: left > 0 ? "\(code.code.prefix(3)) \(code.code.suffix(3))" : "––– –––",
-                               size: 60, mute: left <= 0)
-                        .accessibilityLabel(left > 0 ? "Kopplungscode \(code.code.map(String.init).joined(separator: " "))" : "Code abgelaufen")
-                    HStack {
-                        Text(left > 0 ? "gültig noch \(left / 60):\(String(format: "%02d", left % 60)) · nur einmal benutzbar" : "Code abgelaufen")
-                            .font(Theme.F.text(13, .semibold, relativeTo: .footnote)).foregroundStyle(left > 0 ? Theme.C.ink2 : Theme.C.deal)
-                            .monospacedDigit()
-                        Spacer()
-                        if creating {
-                            Hop3().frame(width: 60)
-                        } else {
-                            CircleButton(icon: .refresh, label: "Neuen Code erzeugen") { Task { await create() } }
-                        }
-                    }
-                }
-            }
-            .padding(.top, 28)
-        } else {
-            PrimaryButton(title: creating ? "Erzeuge …" : "Code erzeugen", icon: .link, disabled: creating) { Task { await create() } }
-                .padding(.top, 28)
-        }
-    }
-
-    /// Die Erweiterung kennt die Server-Adresse der App nicht (kein geteilter Speicher, E48) → hier zum Abtippen/Kopieren.
-    private var serverRow: some View {
-        HStack(spacing: 12) {
-            VStack(alignment: .leading, spacing: 1) {
-                Text("Server-Adresse").font(Theme.F.text(15, .bold))
-                Text(store.api.baseURL.isEmpty ? "nicht eingestellt" : store.api.baseURL)
-                    .font(Theme.F.text(13, .semibold, relativeTo: .footnote)).foregroundStyle(Theme.C.ink2)
-                    .lineLimit(1).minimumScaleFactor(0.7)
-            }
-            Spacer()
-            Button {
-                UIPasteboard.general.string = store.api.baseURL
-                store.flash("Adresse kopiert")
-            } label: {
-                Pill8(text: "Kopieren", icon: .copy).frame(minHeight: 44).contentShape(Capsule())
-            }
-            .buttonStyle(PressableStyle())
-            .disabled(store.api.baseURL.isEmpty)
-        }
-        .padding(.vertical, 4)
-        .frame(minHeight: 42)
-        .overlay(alignment: .top) { Hairline() }
-        .padding(.top, 8)
     }
 
     /// „Gekoppelte Geräte“ als eine Zeile; aufgeklappt die Liste mit Widerrufen.
@@ -298,17 +225,6 @@ struct InstagramShareView: View {
         }
     }
 
-    private func create() async {
-        creating = true
-        defer { creating = false }
-        do {
-            let new = try await store.pairingCode()
-            withAnimation(Theme.spring) { code = new }
-        } catch {
-            store.flash("Kein Code: \(error.localizedDescription)")
-        }
-    }
-
     private func loadTokens() async {
         do {
             let found = try await store.pairedTokens()
@@ -317,15 +233,6 @@ struct InstagramShareView: View {
         } catch {
             self.error = error.localizedDescription
         }
-    }
-
-    /// „2026-11-02T18:30:00.123456“ (Server-Ortszeit) → Date; Fallback: 10 min ab jetzt.
-    static func date(_ iso: String) -> Date {
-        if let d = try? Date(iso, strategy: .iso8601) { return d }
-        let f = DateFormatter()
-        f.locale = Locale(identifier: "en_US_POSIX")
-        f.dateFormat = "yyyy-MM-dd'T'HH:mm:ss"
-        return f.date(from: String(iso.prefix(19))) ?? .now.addingTimeInterval(600)
     }
 }
 

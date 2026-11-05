@@ -188,10 +188,8 @@ struct STSoft: View {
     }
 }
 
-/// Bilder der App für Erweiterungs-Ansichten (Topf-Lader, Hop3, Illustrationen). Die App setzt sie beim Start;
+/// Bilder der App für Erweiterungs-Ansichten (Topf-Lader). Die App setzt sie beim Start;
 /// in den Erweiterungen bleiben sie leer (keine Ressourcen im Modul) und die Ansichten zeigen einen ruhigen Ersatz.
 @MainActor public enum ShareArt {
     public static var potLoader: (() -> AnyView)?
-    public static var hop: (() -> AnyView)?
-    public static var ill: ((String) -> AnyView)?
 }

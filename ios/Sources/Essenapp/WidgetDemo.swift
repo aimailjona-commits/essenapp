@@ -40,7 +40,7 @@ struct WidgetGallery: View {
         ZStack(alignment: .topLeading) {
             Color.clear.edgeForm(.circle, Theme.C.blue1, width: 560, height: 560, left: -160, top: 420)
             widget(TodayWidgetView(entry: entry, family: .systemSmall), width: tile).at(24, 70)
-            widget(TodayWidgetView(entry: TodayEntry(date: .now, state: .unpaired(nil), data: nil), family: .systemSmall), width: tile)
+            widget(TodayWidgetView(entry: TodayEntry(date: .now, state: .signedOut, data: nil), family: .systemSmall), width: tile)
                 .at(208, 70)
             widget(TodayWidgetView(entry: entry, family: .systemMedium), width: wide).at(24, 252)
             HStack(alignment: .top) {

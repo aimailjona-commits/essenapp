@@ -1,5 +1,4 @@
 import Foundation
-import Security
 import SwiftUI
 import UIKit
 import WidgetKit
@@ -92,7 +91,7 @@ public struct TodayData: Codable, Sendable {
 
 /// Ein Zeitpunkt der Timeline. `stale` = letzter Stand, weil der Server gerade nicht antwortet.
 public struct TodayEntry: TimelineEntry, Sendable {
-    public enum State: Sendable, Equatable { case unpaired(String?), ok, failed(String) }
+    public enum State: Sendable, Equatable { case signedOut, ok, failed(String) }
 
     public var date: Date
     public var state: State
@@ -114,40 +113,21 @@ public struct TodayEntry: TimelineEntry, Sendable {
 
 // MARK: - Laden (läuft in der Erweiterung)
 
-/// Holt Plan + Liste mit dem eigenen Token der Erweiterung. Ein Actor, damit zwei Widgets einen Code nicht doppelt einlösen.
+/// Holt Plan + Liste mit der Anmeldung der App (geteilter Schlüsselbund, E102).
 public actor TodayLoader {
     public static let shared = TodayLoader()
 
-    struct Pairing: Codable { var token: String; var code: String; var error: String? }
-
-    /// Konfiguration aus „Widget bearbeiten“ → Eintrag; Fehler → letzter Stand mit `stale`.
-    public func load(server raw: String?, code raw2: String?) async -> TodayEntry {
-        let server = (raw ?? "").trimmingCharacters(in: .whitespaces).trimmingCharacters(in: CharacterSet(charactersIn: "/"))
-        let code = (raw2 ?? "").filter(\.isNumber)
-        guard server.hasPrefix("http") else { return TodayEntry(date: .now, state: .unpaired(nil), data: nil) }
-        var pairing = Self.read(server)
-        if code.count == 6, pairing?.code != code {  // neuer Code eingetippt → koppeln
-            do {
-                let body = ShareAPI.json(["code": code, "label": "Widget"])
-                let (out, _): (PairResult, Int) = try await ShareAPI.call("POST", server, "/pair", token: nil, body: body)
-                pairing = Pairing(token: out.token, code: code)
-            } catch let e as ShareError {
-                if e.status == 0 { return cached(server, e.detail) }  // offline: später erneut versuchen
-                pairing = Pairing(token: "", code: code, error: e.detail)  // gleichen Code nicht erneut einlösen (429)
-            } catch {
-                pairing = Pairing(token: "", code: code, error: error.localizedDescription)
-            }
-            Self.write(server, pairing)
-        }
-        guard let token = pairing?.token, !token.isEmpty else { return TodayEntry(date: .now, state: .unpaired(pairing?.error), data: nil) }
+    /// Anmeldung der App → Eintrag; Fehler → letzter Stand mit `stale`.
+    public func load() async -> TodayEntry {
+        guard let session = SharedLogin.load() else { return TodayEntry(date: .now, state: .signedOut, data: nil) }
+        let server = session.server.trimmingCharacters(in: .whitespaces).trimmingCharacters(in: CharacterSet(charactersIn: "/"))
         do {
-            let data = try await fetch(server, token)
+            let data = try await fetch(server, session.token)
             let entry = TodayEntry(date: .now, state: .ok, data: data, images: await images(data, server))
             Self.save(entry, server)
             return entry
         } catch let e as ShareError where e.status == 401 {
-            Self.write(server, Pairing(token: "", code: code, error: "Die Kopplung wurde widerrufen – bitte neuen Code eingeben."))
-            return TodayEntry(date: .now, state: .unpaired("Die Kopplung wurde widerrufen – bitte neuen Code eingeben."), data: nil)
+            return TodayEntry(date: .now, state: .signedOut, data: nil)
         } catch {
             return cached(server, (error as? ShareError)?.detail ?? error.localizedDescription)
         }
@@ -207,27 +187,7 @@ public actor TodayLoader {
             .jpegData(compressionQuality: 0.7)
     }
 
-    // MARK: Ablage der Erweiterung (kein geteilter Speicher, E48)
-
-    private static func query(_ server: String) -> [String: Any] {
-        [kSecClass as String: kSecClassGenericPassword, kSecAttrService as String: "de.jsenf.essenapp.widget", kSecAttrAccount as String: server]
-    }
-
-    static func read(_ server: String) -> Pairing? {
-        var q = query(server)
-        q[kSecReturnData as String] = true
-        var item: CFTypeRef?
-        guard SecItemCopyMatching(q as CFDictionary, &item) == errSecSuccess, let data = item as? Data else { return nil }
-        return try? JSONDecoder().decode(Pairing.self, from: data)
-    }
-
-    static func write(_ server: String, _ pairing: Pairing?) {
-        SecItemDelete(query(server) as CFDictionary)
-        guard let pairing else { return }
-        var q = query(server)
-        q[kSecValueData as String] = try? JSONEncoder().encode(pairing)
-        SecItemAdd(q as CFDictionary, nil)
-    }
+    // MARK: Letzter Stand der Erweiterung
 
     private struct Saved: Codable { var server: String; var data: TodayData; var images: [Int: Data] }
     private static let file = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask)[0].appending(path: "today.json")
@@ -272,12 +232,12 @@ public struct TodayWidgetView: View {
         let pick: (hero: TodayDish?, next: TodayDish?) = entry.data?.pick(at: entry.date) ?? (nil, nil)
         switch (family, entry.state) {
         case (.accessoryInline, _):
-            Label(pick.hero.map { d in "\(d.title) · \(d.minutes) min" } ?? (entry.state == .ok ? "Kein Gericht geplant" : "Kochpilot koppeln"),
+            Label(pick.hero.map { d in "\(d.title) · \(d.minutes) min" } ?? (entry.state == .ok ? "Kein Gericht geplant" : "In Kochpilot anmelden"),
                   systemImage: "fork.knife")
         case (.accessoryRectangular, _):
             rectangular(pick.hero)
-        case (_, .unpaired(let error)):
-            message("link", "Widget bearbeiten → Code eingeben", error ?? "Code: Kochpilot › Einstellungen › Widget einrichten")
+        case (_, .signedOut):
+            message("person.crop.circle", "Nicht angemeldet", "Öffne Kochpilot einmal und melde dich an.")
         case (_, .failed(let error)):
             message("wifi.slash", "Gerade kein Stand", error)
         default:
@@ -388,13 +348,13 @@ public struct TodayWidgetView: View {
                 .font(ST.text(12, .bold))
             } else {
                 Text("Kochpilot").font(ST.text(15, .extrabold)).widgetAccentable()
-                Text(entry.state == .ok ? "Kein Gericht geplant" : "Widget bearbeiten → Code eingeben").font(ST.text(12, .bold)).lineLimit(2)
+                Text(entry.state == .ok ? "Kein Gericht geplant" : "Kochpilot öffnen und anmelden").font(ST.text(12, .bold)).lineLimit(2)
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 
-    /// Ungekoppelt, Fehler, leer: blauer Kreis mit Symbol, Satz, Hinweis.
+    /// Abgemeldet, Fehler, leer: blauer Kreis mit Symbol, Satz, Hinweis.
     private func message(_ symbol: String, _ title: String, _ text: String) -> some View {
         VStack(alignment: .leading, spacing: 0) {
             Image(systemName: symbol).font(.system(size: 15, weight: .medium)).foregroundStyle(ST.ink)

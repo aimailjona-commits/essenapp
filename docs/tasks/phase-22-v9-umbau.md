@@ -32,6 +32,10 @@ Mockups: [`docs/ui/mockups/redesign-v9-entwurf.html`](../ui/mockups/redesign-v9-
 - [x] Merkliste per Sprache (Suchbegriffe sprechen)
 - [x] Ein Sprach-Knopf in „Alles“: Ziel aus dem Satz („… in den Vorrat“, „merk dir …“, sonst Einkaufsliste), vor dem Hinzufügen umschaltbar
 
+## 22.4 Anmeldung ohne Code
+
+- [x] 22.4 Kopplungscode abgeschafft (E102)
+
 ## 22.3 Prüfen
 
 - [ ] Build, CI-Screenshots ↔ Mockup

@@ -1,10 +1,10 @@
 import Foundation
 import Security
 
-/// Anmeldung der Erweiterung: Server-Adresse + eigenes Token aus dem Kopplungscode (E48/E53).
+/// Anmeldung der App, die Teilen-Erweiterung und Widget mitbenutzen (E102).
 public struct ShareSession: Codable, Sendable, Equatable {
     public var server: String
-    public var token: String  // "" = noch nicht (oder nicht mehr) gekoppelt
+    public var token: String  // "" = nicht angemeldet
 
     public init(server: String, token: String) {
         self.server = server
@@ -39,23 +39,34 @@ public struct ShareInput: Sendable, Equatable {
     }
 }
 
-/// Eigener Schlüsselbund der Erweiterung (keine geteilte Gruppe, E48).
-public enum ShareKeychain {
-    private static var query: [String: Any] { [kSecClass as String: kSecClassGenericPassword,
-                                               kSecAttrService as String: "de.jsenf.essenapp.share"] }
+/// Geteilter Schlüsselbund über die App Group (E102): die App schreibt, Erweiterungen lesen.
+public enum SharedLogin {
+    // shortcut: Team-ID fest (xtool signiert die Gruppe um zu group.XTL-<Team>.…); bei Teamwechsel anpassen
+    public static let group: String? = ["group.XTL-UW22N583GV.de.jsenf.essenapp", "group.de.jsenf.essenapp"]
+        .first { id in FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: id) != nil }
+
+    private static func query(_ group: String) -> [String: Any] {
+        [kSecClass as String: kSecClassGenericPassword, kSecAttrService as String: "de.jsenf.essenapp.shared",
+         kSecAttrAccessGroup as String: group]
+    }
 
     public static func load() -> ShareSession? {
-        var q = query
+        guard let group else { return nil }
+        var q = query(group)
         q[kSecReturnData as String] = true
         var item: CFTypeRef?
         guard SecItemCopyMatching(q as CFDictionary, &item) == errSecSuccess, let data = item as? Data else { return nil }
         return try? JSONDecoder().decode(ShareSession.self, from: data)
     }
 
-    static func save(_ session: ShareSession) {
-        SecItemDelete(query as CFDictionary)
-        var q = query
+    /// Leeres Token = abgemeldet → Eintrag weg.
+    public static func save(_ session: ShareSession) {
+        guard let group else { return }
+        SecItemDelete(query(group) as CFDictionary)
+        guard !session.token.isEmpty else { return }
+        var q = query(group)
         q[kSecValueData as String] = try? JSONEncoder().encode(session)
+        q[kSecAttrAccessible as String] = kSecAttrAccessibleAfterFirstUnlock  // Widget lädt auch bei gesperrtem iPhone
         SecItemAdd(q as CFDictionary, nil)
     }
 }
@@ -90,11 +101,6 @@ struct SharePlan: Decodable, Sendable {
         var recipe: Recipe
     }
     var entries: [Entry]
-}
-
-struct PairResult: Decodable, Sendable {
-    var token: String
-    var memberName: String
 }
 
 struct ErrorDetail: Decodable { var detail: String }

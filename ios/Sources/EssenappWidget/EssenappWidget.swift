@@ -1,11 +1,10 @@
 import ActivityKit
-import AppIntents
 import EssenappShareUI
 import SwiftUI
 import WidgetKit
 
-/// Widget-Erweiterung (Features 65 + 37). Kein geteilter Speicher mit der App (E48): das Widget koppelt sich selbst
-/// über Server-Adresse + Kopplungscode aus „Widget bearbeiten“; die Live-Aktivität bekommt ihre Daten von der App.
+/// Widget-Erweiterung (Features 65 + 37). Das Widget nutzt die Anmeldung der App aus dem geteilten Schlüsselbund (E102);
+/// die Live-Aktivität bekommt ihre Daten von der App.
 @main
 struct EssenappWidgets: WidgetBundle {
     var body: some Widget {
@@ -14,40 +13,31 @@ struct EssenappWidgets: WidgetBundle {
     }
 }
 
-/// „Widget bearbeiten“: beide Werte stehen in der App unter Einstellungen › Widget einrichten.
-struct TodayIntent: WidgetConfigurationIntent {
-    static let title: LocalizedStringResource = "Kochpilot koppeln"
-    static let description = IntentDescription("Server-Adresse und Kopplungscode aus Kochpilot › Einstellungen › Widget einrichten.")
-
-    @Parameter(title: "Server-Adresse", description: "z. B. http://192.168.0.10:8000")
-    var server: String?
-
-    @Parameter(title: "Kopplungscode", description: "6 Ziffern, 10 Minuten gültig")
-    var code: String?
-}
-
-struct TodayProvider: AppIntentTimelineProvider {
+struct TodayProvider: TimelineProvider {
     func placeholder(in context: Context) -> TodayEntry { .demo }
 
-    func snapshot(for configuration: TodayIntent, in context: Context) async -> TodayEntry {
-        context.isPreview ? .demo : await TodayLoader.shared.load(server: configuration.server, code: configuration.code)
+    func getSnapshot(in context: Context, completion: @escaping @Sendable (TodayEntry) -> Void) {
+        if context.isPreview { return completion(.demo) }
+        Task { completion(await TodayLoader.shared.load()) }
     }
 
     /// Jetzt + jeder Mahlzeitwechsel (14 Uhr, 21 Uhr, Mitternacht) mit demselben Stand; neu laden nach ~30 min.
-    func timeline(for configuration: TodayIntent, in context: Context) async -> Timeline<TodayEntry> {
-        let entry = await TodayLoader.shared.load(server: configuration.server, code: configuration.code)
-        let later = TodayData.switches(after: entry.date).map { t in
-            var e = entry
-            e.date = t
-            return e
+    func getTimeline(in context: Context, completion: @escaping @Sendable (Timeline<TodayEntry>) -> Void) {
+        Task {
+            let entry = await TodayLoader.shared.load()
+            let later = TodayData.switches(after: entry.date).map { t in
+                var e = entry
+                e.date = t
+                return e
+            }
+            completion(Timeline(entries: [entry] + later, policy: .after(.now.addingTimeInterval(30 * 60))))
         }
-        return Timeline(entries: [entry] + later, policy: .after(.now.addingTimeInterval(30 * 60)))
     }
 }
 
 struct TodayWidget: Widget {
     var body: some WidgetConfiguration {
-        AppIntentConfiguration(kind: "today", intent: TodayIntent.self, provider: TodayProvider()) { entry in
+        StaticConfiguration(kind: "today", provider: TodayProvider()) { entry in
             TodayContent(entry: entry)
         }
         .configurationDisplayName("Heute")

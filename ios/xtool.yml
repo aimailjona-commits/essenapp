@@ -3,13 +3,16 @@ bundleID: de.jsenf.essenapp
 product: Essenapp
 infoPath: Info.plist
 iconPath: Icon.png
+entitlementsPath: Essenapp.entitlements
 # App-Intents-Index (Metadata.appintents), den xtool nicht erzeugt: ios/tools/appintents_index.py (E83)
 resources:
   - AppIntents/Essenapp/Metadata.appintents
 extensions:
   - product: EssenappShare
     infoPath: EssenappShare-Info.plist
+    entitlementsPath: EssenappExt.entitlements
   - product: EssenappWidget
     infoPath: EssenappWidget-Info.plist
+    entitlementsPath: EssenappExt.entitlements
     resources:
       - AppIntents/EssenappWidget/Metadata.appintents
