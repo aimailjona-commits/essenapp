@@ -65,21 +65,28 @@ struct ContentView: View {
     }
 }
 
-/// Glas-Banner oben, solange kein Netz bzw. Server nicht erreichbar ist (66).
+/// Glas-Banner oben, solange kein Netz bzw. Server nicht erreichbar ist (66, v8 d.html): Radius 26, wifioff 22, zwei Zeilen.
 struct OfflineBanner: View {
     var body: some View {
-        let label = Label("Offline – Änderungen werden später übertragen", systemImage: "wifi.slash")
-            .font(.system(.footnote, weight: .semibold))
-            .foregroundStyle(Theme.C.text1)
-            .padding(.horizontal, 16).frame(minHeight: 40)
-        Group {
-            if #available(iOS 26.0, *) {
-                label.glassEffect(.regular, in: Capsule())
-            } else {
-                label.background(.ultraThinMaterial, in: Capsule()).overlay(Capsule().strokeBorder(Theme.C.line, lineWidth: 0.5))
+        let label = HStack(spacing: 12) {
+            Icon(.wifioff, size: 22)
+            VStack(alignment: .leading, spacing: 1) {
+                Text("Offline").font(Theme.F.text(14, .extrabold))
+                Text("Änderungen werden später übertragen").font(Theme.F.small).foregroundStyle(Theme.C.ink2)
             }
         }
-        .accessibilityAddTraits(.isStaticText)
+        .foregroundStyle(Theme.C.ink)
+        .padding(.horizontal, 18).padding(.vertical, 12)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        Group {
+            if #available(iOS 26.0, *) {
+                label.glassEffect(.regular, in: RoundedRectangle(cornerRadius: 26, style: .continuous))
+            } else {
+                label.background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 26, style: .continuous))
+            }
+        }
+        .padding(.horizontal, Theme.pagePadding)
+        .accessibilityElement(children: .combine)
     }
 }
 
@@ -93,7 +100,7 @@ struct MainView: View {
     @State private var resetToken = 0  // erneutes Tippen auf den aktiven Tab → zurück zum Anfang
     @Environment(\.requestReview) private var requestReview
     @State private var quickOpen = Demo.screen == "quick"
-    @State private var showGenerator = ["generator", "generating", "singlestore"].contains(Demo.screen ?? "")  // „Überrasch mich“
+    @State private var showGenerator = ["generator", "generating", "singlestore", "generatorMore"].contains(Demo.screen ?? "")  // „Überrasch mich“
     @State private var planWeek = ["swipe", "match", "auswahl", "verteilen"].contains(Demo.screen ?? "")  // Swipe-Stapel (20)
     @State private var showRecipeForm = false  // Schnell-Aktion „Rezept anlegen“ (S17)
     @State private var deepAchievements = false  // Push „Neuer Erfolg“ (54)
@@ -101,9 +108,9 @@ struct MainView: View {
 
     private static var demoTab: AppTab {
         switch Demo.screen {
-        case "offers", "offer", "stores", "watch", "scanner", "nextweek", "offerstock": .angebote
-        case "plan", "guests": .woche
-        case "recipe", "cooking", "sharecard", "recipes", "myrecipe", "recipeform", "imported", "importlink": .rezepte
+        case "offers", "offer", "stores", "watch", "scanner", "nextweek", "offerstock", "drogerie", "offersfilter", "offersempty", "watchedit", "watchsearch": .angebote
+        case "plan", "guests", "dayDetail": .woche
+        case "recipe", "cooking", "cookprep", "cookvoice", "cookdone", "sharecard", "recipes", "myrecipe", "recipeform", "imported", "importlink": .rezepte
         case "shopping", "list", "pantry", "fridgecam", "fridgereview", "cooknow", "offline", "voiceadd", "wallet", "bonus", "coupon": .einkauf
         default: .start
         }
@@ -111,7 +118,8 @@ struct MainView: View {
 
     /// Demo-Screens, die in der App als Sheet bzw. in der Erweiterung ohne Tab-Leiste erscheinen.
     private static let modalDemo = ["recipeform", "fridgecam", "fridgereview", "cooknow", "sharepair", "shareimport", "shareresult", "importlink",
-                                    "nomood", "substitute", "leftovers", "couponadd", "widget", "liveactivity"]
+                                    "nomood", "substitute", "leftovers", "couponadd", "widget", "widgetlock", "liveactivity", "fridgeintro",
+                                    "rating", "planslot", "recipeform1", "cookprep", "cookvoice", "cookdone", "cooking"]
 
     @ViewBuilder private var tabContent: some View {
         switch tab {
@@ -130,15 +138,21 @@ struct MainView: View {
             NavigationStack {
                 Group {
                     switch (Demo.screen, tab) {
-                    case ("recipe", _), ("cooking", _), ("sharecard", _): RecipeDetailView(meal: Demo.plan.entries[2])
+                    case ("recipe", _), ("cooking", _), ("cookprep", _), ("cookvoice", _), ("cookdone", _), ("sharecard", _): RecipeDetailView(meal: Demo.plan.entries[2])
                     case ("myrecipe", _): SavedRecipeView(recipeId: Demo.savedRecipe.id)
                     case ("recipeform", _): RecipeFormSheet(editing: Demo.savedRecipe, page: 1)
+                    case ("recipeform1", _): RecipeFormSheet(editing: Demo.savedRecipe, page: 0)
+                    case ("planslot", _): PlanSlotSheet(recipeId: Demo.savedRecipe.id, title: Demo.savedRecipe.title)
+                    case ("rating", _): RatingSheet(meal: Demo.plan.entries[2])
+                    case ("ersparnis", _): SavingsView()
                     case ("imported", _): SavedRecipeView(recipeId: Demo.importedRecipe.id)
                     case ("instagram", _): InstagramShareView()
                     case ("widgetsetup", _): InstagramShareView(widget: true)
                     case ("widget", _): WidgetGallery()
+                    case ("widgetlock", _): WidgetGallery(lock: true)
                     case ("liveactivity", _): LiveActivityGallery()
                     case ("fridgecam", _): FridgeScanSheet()
+                    case ("fridgeintro", _): FridgeScanSheet(stage: .intro)
                     case ("fridgereview", _): FridgeScanSheet(stage: .review)
                     case ("cooknow", _): FridgeScanSheet(stage: .cook)
                     case ("sharepair", _): ShareFlowView(input: nil, session: nil, demo: .pair) {}
@@ -156,7 +170,7 @@ struct MainView: View {
                     case ("substitute", _): SubstituteSheet(meal: Demo.plan.entries[2], index: 3)
                     case ("leftovers", _): RatingSheet(meal: Demo.plan.entries[2], demoRests: true)
                     case ("basics", _): WeeklyBasicsView()
-                    case ("variety", _): PreferencesView()
+                    case ("variety", _): VarietyView()
                     case ("couponadd", _): CouponAddSheet()
                     case ("spending", _): SpendingView()
                     case ("achievements", _), ("unlock", _): AchievementsView()
@@ -181,28 +195,8 @@ struct MainView: View {
             }
             .id("\(tab)-\(resetToken)")  // Tab-Wechsel schließt offene Detailseiten
             .animation(.easeInOut(duration: 0.2), value: tab)
-            .blur(radius: quickOpen ? 7 : 0)
 
-            if quickOpen {
-                LinearGradient(stops: [.init(color: Theme.C.ink.opacity(0.6), location: 0), .init(color: Theme.C.ink.opacity(0.94), location: 0.55)],
-                               startPoint: .top, endPoint: .bottom)
-                    .ignoresSafeArea()
-                    .onTapGesture { withAnimation(Theme.spring) { quickOpen = false } }
-                    .transition(.opacity)
-                QuickActions(name: store.profile?.name ?? "") { action in
-                    withAnimation(Theme.spring) { quickOpen = false }
-                    switch action {
-                    case .plan: planWeek = true
-                    case .list: tab = .einkauf
-                    case .barcode: store.barcode = true
-                    case .recipe: showRecipeForm = true
-                    case .scan: store.scanning = true
-                    }
-                }
-                .transition(.opacity)
-            }
-
-            if !Self.modalDemo.contains(Demo.screen ?? ""), store.tabBarHiders == 0, !quickOpen {
+            if !Self.modalDemo.contains(Demo.screen ?? ""), store.tabBarHiders == 0 {
                 NotchTabBar(selected: $tab, badges: [.angebote: store.watchHits]) { resetToken += 1 }
                     .ignoresSafeArea(edges: .bottom)
                     .transition(.move(edge: .bottom))
@@ -213,6 +207,19 @@ struct MainView: View {
             FridgeScanSheet().presentationDetents([.large]).presentationCornerRadius(Theme.R.sheet)
         }
         .fullScreenCover(isPresented: Binding(get: { store.barcode }, set: { on in store.barcode = on })) { BarcodeScanView() }
+        .sheet(isPresented: $quickOpen) {
+            QuickActionsSheet { action in
+                quickOpen = false
+                switch action {
+                case .plan: planWeek = true
+                case .list: tab = .einkauf
+                case .barcode: store.barcode = true
+                case .recipe: showRecipeForm = true
+                case .scan: store.scanning = true
+                }
+            }
+            .presentationDetents([.height(460)]).presentationCornerRadius(Theme.R.sheet)
+        }
         .sheet(isPresented: $showGenerator) { PlanGeneratorSheet().presentationDetents([.large]) }
         .fullScreenCover(isPresented: $planWeek) { SwipeView() }
         .sheet(isPresented: $showRecipeForm) { RecipeFormSheet().presentationDetents([.large]).presentationCornerRadius(Theme.R.sheet) }
@@ -310,77 +317,7 @@ struct MainView: View {
     }
 }
 
-/// Schnell-Aktionen hinter dem Mittel-Knopf (E14), v3: Fächer im Bogen über der Wölbung (redesign-v3.md 6.1).
-struct QuickActions: View {
+/// Schnell-Aktionen (E14): Ziele für `QuickActionsSheet` (StartView).
+enum QuickActions {
     enum Action { case plan, barcode, list, recipe, scan }
-    var name = ""
-    let select: (Action) -> Void
-    @State private var shown = false
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
-
-    private struct Item {
-        let action: Action
-        let symbol: String?
-        let emoji: String?
-        let title: String
-        let color: Color
-        let angle: Double
-    }
-
-    private let items = [
-        Item(action: .barcode, symbol: "barcode.viewfinder", emoji: nil, title: "Barcode\nscannen", color: Theme.C.sky, angle: 150),
-        Item(action: .list, symbol: "bag", emoji: nil, title: "Zur Liste", color: Theme.C.sun, angle: 120),
-        Item(action: .plan, symbol: "sparkle", emoji: nil, title: "Wochenplan\nerstellen", color: Theme.C.lime, angle: 90),
-        Item(action: .recipe, symbol: "book.closed", emoji: nil, title: "Rezept\nanlegen", color: Theme.C.lav, angle: 60),
-        Item(action: .scan, symbol: nil, emoji: "📸", title: "Kühlschrank\nscannen", color: Theme.C.tomato, angle: 30),
-    ]
-
-    var body: some View {
-        GeometryReader { geo in
-            // Bogen um einen Punkt 23 pt über der Tab-Leiste, Radius 180
-            let center = CGPoint(x: geo.size.width / 2, y: geo.size.height - Theme.S.tabBar - 23)
-            ZStack(alignment: .topLeading) {
-                DisplayHeader(line1: "Was jetzt,", line2: name.isEmpty ? "" : "\(name)?", size: 44, onDark: true)
-                    .padding(.horizontal, 24).padding(.top, 58)
-                    .opacity(shown ? 1 : 0)
-                Path { p in p.addArc(center: center, radius: 180, startAngle: .degrees(-150), endAngle: .degrees(-30), clockwise: false) }
-                    .stroke(.white.opacity(0.18), style: StrokeStyle(lineWidth: 1.5, dash: [3, 7]))
-                    .opacity(shown ? 1 : 0)
-                ForEach(Array(items.enumerated()), id: \.offset) { i, item in
-                    let a = item.angle * .pi / 180
-                    let pos = CGPoint(x: center.x + 180 * cos(a), y: center.y - 180 * sin(a))
-                    button(item)
-                        .position(shown ? pos : center)
-                        .scaleEffect(shown ? 1 : 0.3)
-                        .opacity(shown ? 1 : 0)
-                        .animation(reduceMotion ? nil : Theme.spring.delay(Double(i) * 0.04), value: shown)
-                }
-            }
-        }
-        .onAppear { shown = true }
-    }
-
-    private func button(_ item: Item) -> some View {
-        let main = item.action == .plan
-        let size: CGFloat = main ? 88 : 64
-        return Button { select(item.action) } label: {
-            VStack(spacing: 8) {
-                Group {
-                    if let symbol = item.symbol { Image(systemName: symbol).font(.system(size: 24, weight: .semibold)) }
-                    else { Text(item.emoji ?? "").font(.system(size: 28)) }
-                }
-                .foregroundStyle(Theme.C.ink)
-                .frame(width: size, height: size)
-                .background(item.color, in: Circle())
-                .background(Circle().fill(Theme.C.lime.opacity(main ? 0.22 : 0)).padding(-6))
-                .shadow(color: .black.opacity(0.35), radius: 12, y: 10)
-                Text(item.title).font(.system(main ? .footnote : .caption, weight: .bold)).foregroundStyle(.white)
-                    .multilineTextAlignment(.center).lineLimit(2).fixedSize()
-            }
-            // Kreis-Mittelpunkt liegt auf dem Bogen, Beschriftung darunter
-            .offset(y: (size + 8 + 30) / 2 - size / 2)
-        }
-        .buttonStyle(PressableStyle())
-        .accessibilityLabel(item.title.replacingOccurrences(of: "\n", with: " "))
-    }
 }

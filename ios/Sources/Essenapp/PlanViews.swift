@@ -209,7 +209,7 @@ private struct WeekPlanView: View {
     @State private var day = Demo.screen != nil ? 1 : (Calendar(identifier: .iso8601).component(.weekday, from: .now) + 5) % 7
     @State private var dir: CGFloat = 1  // 1 = Tag weiter unten gewählt
     @State private var link: CGFloat = 1
-    @State private var detail = false
+    @State private var detail = Demo.screen == "dayDetail"
     @State private var guestsFor: MealDTO? = Demo.screen == "guests" ? Demo.plan.entries[3] : nil  // „Gäste hinzufügen“ (15)
 
     // Maße aus dem Mockup (Bildschirm-Oberkante = 0)
@@ -707,7 +707,7 @@ struct RecipeDetailView: View {
     @State private var person: Int?  // Mitglied für „Deine Portion“ (48), nil = ich
     @State private var done: Set<Int> = []
     @State private var spin = false
-    @State private var cooking = Demo.screen == "cooking"
+    @State private var cooking = ["cooking", "cookprep", "cookvoice", "cookdone"].contains(Demo.screen ?? "")
     @State private var rateAfterCooking = false
     @State private var shareCard = Demo.screen == "sharecard"
     @State private var shareLink = false  // „Als Link teilen“ (56)
@@ -1412,7 +1412,7 @@ struct PlanGeneratorSheet: View {
     @State private var guestEuro: Double?
     @State private var nextWeek = Demo.screen == "singlestore"  // „Plan für nächste Woche“ (30)
     @State private var singleStore: String? = Demo.screen == "singlestore" ? "lidl" : nil  // „Nur ein Laden“ (41)
-    @State private var page: Page? = Demo.screen == "singlestore" ? .stores : nil
+    @State private var page: Page? = Demo.screen == "singlestore" ? .stores : Demo.screen == "generatorMore" ? .more : nil
 
     private enum Page { case stores, kitchen, more }
 

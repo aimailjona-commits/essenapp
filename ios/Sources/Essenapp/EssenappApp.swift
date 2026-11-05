@@ -7,6 +7,9 @@ struct EssenappApp: App {
 
     init() {
         Theme.registerFonts()
+        ShareArt.potLoader = { AnyView(PotLoader()) }  // v8-Zeichnungen für EssenappShareUI (in der App)
+        ShareArt.hop = { AnyView(Hop3()) }
+        ShareArt.ill = { AnyView(Ill($0)) }
         CheckItemIntent.handler = { id in await AppStore.shared.checkFromActivity(id) }  // Knopf in der Live-Aktivität (37)
     }
 

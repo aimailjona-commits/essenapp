@@ -154,7 +154,7 @@ final class CookTimers {
     var rings = 0  // Auslöser für Ton + Haptik
 
     init() {
-        timers = Demo.screen == "cooking" ? [CookTimer(name: "Zwiebel", total: 300, end: .now + 192, left: 300)]
+        timers = Demo.screen == "cookvoice" ? [CookTimer(name: "Zwiebel", total: 300, end: .now + 192, left: 300)]
                                           : Persist.load("cookTimers") ?? []
     }
 
@@ -409,7 +409,7 @@ struct CookingView: View {
     var onSubstitute: (MealDTO?) -> Void = { _ in }  // „Ersatz finden“ (7): gespeichertes Rezept → S3 übernimmt es
     @Environment(\.dismiss) private var dismiss
     @Environment(\.scenePhase) private var scenePhase
-    @State private var page = Demo.screen == "cooking" ? 2 : 0
+    @State private var page = ["cooking", "cookvoice"].contains(Demo.screen ?? "") ? 2 : 0
     @State private var checked: Set<Int> = []
     @State private var timers = CookTimers()
     @State private var voice = VoiceControl()
@@ -479,6 +479,8 @@ struct CookingView: View {
             CookTimers.cookingOpen = true
             voice.hints = ["weiter", "zurück", "wiederholen", "Timer starten", "Zutaten", "wie viel"] + meal.recipe.ingredients.map(\.name)
             voice.onCommand = { cmd in handle(cmd) }
+            if Demo.screen == "cookdone" { page = last }
+            if Demo.screen == "cookvoice" { voice.listening = true }  // Demo: Pille „hört zu …“ ohne Mikrofon
         }
         .onDisappear {
             UIApplication.shared.isIdleTimerDisabled = false
