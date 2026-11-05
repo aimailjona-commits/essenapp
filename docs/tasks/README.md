@@ -33,7 +33,6 @@
 | Was | Wofür | Phase |
 |---|---|---|
 | iPhone anschließen + entsperren, Apple Devices offen | neue Version installieren, Abnahmen | 8–16 |
-| Bezahlter Apple-Account aktiv → APNs-Schlüssel (`.p8`) erstellen, nach `backend/secrets/`, Key-ID + Team-ID nennen; xtool neu einloggen | Push Ende-zu-Ende | 8, 11–14 |
 | 3 Instagram-Reels mit Rezept in der Beschreibung | Abnahme Import | 9 |
 | Kühlschrank-Foto, 10 echte Coupons, Testscan an der Kasse | Abnahmen | 9, 13 |
 | Entscheidung Payback-Umrechnung (Spec „10fach = 10 %“ vs. 1 °P/2 € = 5 %; umgesetzt 5 %) | Coupons | 13 |
