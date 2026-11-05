@@ -551,13 +551,16 @@ struct PlateHeart: View {
                     CubicKeyframe(1.3, duration: 0.16)
                     CubicKeyframe(1, duration: 0.24)
                 }
+            }
+            .frame(width: 34, height: 34)
+            .overlay {  // Funken (64) als Overlay, sonst bläht der Rahmen den 34er-Kreis auf
                 KeyframeAnimator(initialValue: 0.0, trigger: pops) { t in Sparks(t: t) } keyframes: { _ in
                     LinearKeyframe(0.001, duration: 0.01)
                     LinearKeyframe(1, duration: 0.45, timingCurve: .easeOut)
                     LinearKeyframe(0, duration: 0.01)
                 }
+                .frame(width: 64, height: 64)
             }
-            .frame(width: 34, height: 34)
             .frame(width: 44, height: 44)
             .contentShape(Circle())
         }
@@ -715,7 +718,9 @@ struct PlanSlotSheet: View {
                     }
                 }
                 .padding(.bottom, 40)
+                .padding(.horizontal, Theme.pagePadding)  // Tellerrand nicht an der ScrollView abschneiden
             }
+            .padding(.horizontal, -Theme.pagePadding)
         } else {
             StateNote8(ill: "lying", title: "Noch kein Wochenplan", text: "Erstelle zuerst einen Plan – dann kannst du Rezepte einsetzen.")
                 .padding(.top, 20)
@@ -735,7 +740,9 @@ struct PlanSlotSheet: View {
                     }
                 }
                 .padding(.bottom, 40)
+                .padding(.horizontal, Theme.pagePadding)  // Tellerrand nicht an der ScrollView abschneiden
             }
+            .padding(.horizontal, -Theme.pagePadding)
         } else if cards != nil {
             StateNote8(ill: "cookbook", title: "Noch keine Rezepte gespeichert", text: "Merk dir Gerichte mit dem Herz oder lege eigene Rezepte an.")
                 .padding(.top, 20)
@@ -751,7 +758,7 @@ struct PlanSlotSheet: View {
     /// `.irow` 64: kleiner Teller (a-mini), Label in Großbuchstaben, Name; rechts Tauschen bzw. Schloss.
     private func row(_ image: String, _ label: String, _ name: String, busy: Bool, locked: Bool) -> some View {
         HStack(spacing: 14) {
-            PlatePhoto(url: mediaURL(image), size: 44, ring: 3)
+            PlatePhoto(url: mediaURL(image), size: 44, ring: 3, shadow: false)  // a-mini: ohne großen Schatten (wurde im Scroll-Rand abgeschnitten)
             VStack(alignment: .leading, spacing: 2) {
                 SectionLabel(label)
                 Text(name).font(Theme.F.text(16, .bold)).foregroundStyle(Theme.C.ink).lineLimit(1)

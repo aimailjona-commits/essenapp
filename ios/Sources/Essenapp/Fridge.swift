@@ -148,7 +148,7 @@ struct FridgeScanSheet: View {
     private enum M {
         static let introBlob: CGFloat = 460, introBlobLeft: CGFloat = 60, introBlobTop: CGFloat = 100
         static let introFridge: CGFloat = 310, introFridgeLeft: CGFloat = 40, introFridgeTop: CGFloat = 130
-        static let introText: CGFloat = 508  // t1 bei y 560 im Mockup
+        static let introText: CGFloat = 494  // t1 bei y 560 im Mockup (− 52 Statusleiste − 14 Kopfabstand)
         static let finder: CGFloat = 334, finderCircle: CGFloat = 300, finderFridge: CGFloat = 220, finderTop: CGFloat = 8
         static let thumb: CGFloat = 56, thumbX: CGFloat = 22, shutter: CGFloat = 76
         static let reviewBlob: CGFloat = 250, reviewBlobLeft: CGFloat = 250, reviewBlobTop: CGFloat = -70
@@ -237,13 +237,6 @@ struct FridgeScanSheet: View {
                     .accessibilityLabel("Schritt 1 von 3")
             }
             Spacer(minLength: 0)
-            VStack(alignment: .leading, spacing: 8) {
-                Text("Was ist im Kühlschrank?").font(Theme.F.t1).accessibilityAddTraits(.isHeader)
-                Text("Mach 1–5 Fotos. Wir füllen den Vorrat und schlagen Gerichte vor.")
-                    .font(Theme.F.text(16)).foregroundStyle(Theme.C.ink2).lineSpacing(4)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-            Spacer(minLength: 0)
             Button(action: openCamera) {
                 HStack {
                     Text("Foto machen").font(Theme.F.text(17, .extrabold))
@@ -256,6 +249,16 @@ struct FridgeScanSheet: View {
             }
             .buttonStyle(PressableStyle())
             .padding(.bottom, 6)
+        }
+        .overlay(alignment: .topLeading) {
+            // Titel fest auf Mockup-Höhe (y 560), unter der Zeichnung
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Was ist im Kühlschrank?").font(Theme.F.t1).accessibilityAddTraits(.isHeader)
+                Text("Mach 1–5 Fotos. Wir füllen den Vorrat und schlagen Gerichte vor.")
+                    .font(Theme.F.text(16)).foregroundStyle(Theme.C.ink2).lineSpacing(4)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            .padding(.top, M.introText)
         }
         .padding(.horizontal, Theme.pagePadding)
         .padding(.top, 14)
@@ -553,7 +556,7 @@ struct FridgeScanSheet: View {
                     art.circle(40, image: 34)
                     VStack(alignment: .leading, spacing: 0) {
                         Text(item.name.isEmpty ? "Neuer Eintrag" : item.name).font(Theme.F.serif(18)).lineLimit(1)
-                        Text(ScanLabels.sub(item)).font(Theme.F.text(12)).foregroundStyle(Theme.C.ink2).lineLimit(1)
+                        Text(ScanLabels.sub(item)).font(Theme.F.text(12)).foregroundStyle(Theme.C.ink2).lineLimit(1).minimumScaleFactor(0.8)
                     }
                     Spacer(minLength: 8)
                     ConfidenceTag(confidence: item.confidence)
@@ -742,7 +745,7 @@ struct CookNowView: View {
         let added = onList.contains(r.id)
         return HStack(alignment: .top, spacing: 22) {
             NavigationLink { SavedRecipeView(recipeId: r.id) } label: {
-                RemoteImage(url: mediaURL(r.imageUrl), contentMode: .fill) { Theme.C.blue1.overlay { Ill("pasta").padding(18) } }
+                RemoteImage(url: mediaURL(r.imageUrl), contentMode: .fill) { Theme.C.blue1.overlay { Ill("pasta").frame(width: M.plate * 0.7) } }
                     .plate(M.plate)
             }
             .buttonStyle(PressableStyle())
@@ -764,7 +767,7 @@ struct CookNowView: View {
                         Button { addMissing(idea) } label: {
                             HStack(spacing: 5) {
                                 if added { Icon(.check, size: 14) }
-                                Text(added ? "Auf der Liste" : "Zur Liste")
+                                Text(added ? "Auf der Liste" : "Zur Liste").fixedSize()
                             }
                             .font(Theme.F.pill).foregroundStyle(Theme.C.ink)
                             .padding(.horizontal, 12).frame(height: Theme.S.pill)
@@ -779,7 +782,7 @@ struct CookNowView: View {
                             if busy == r.id {
                                 Hop3().scaleEffect(0.5).frame(width: 64, height: 30).padding(.top, 8).padding(.horizontal, 12)
                             } else {
-                                Text("Heute kochen").padding(.horizontal, 12)
+                                Text("Heute kochen").fixedSize().padding(.horizontal, 12)
                             }
                         }
                         .font(Theme.F.pill).foregroundStyle(Theme.C.ink)

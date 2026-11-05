@@ -380,7 +380,7 @@ struct Toggle8Style: ToggleStyle {
     func makeBody(configuration: Configuration) -> some View {
         Button { withAnimation(.spring(response: 0.3, dampingFraction: 0.75)) { configuration.isOn.toggle() } } label: {
             HStack {
-                configuration.label
+                ToggleLabel8 { configuration.label }
                 Spacer(minLength: 12)
                 Capsule().fill(configuration.isOn ? Theme.C.ink : Theme.C.ink3)
                     .frame(width: Theme.S.switchSize.width, height: Theme.S.switchSize.height)
@@ -392,6 +392,22 @@ struct Toggle8Style: ToggleStyle {
         }
         .buttonStyle(.plain)
         .accessibilityValue(configuration.isOn ? "an" : "aus")
+    }
+}
+
+/// Titel des `.v8`-Schalters; `.labelsHidden()` blendet ihn aus (eigene Styles beachten das sonst nicht).
+private struct ToggleLabel8<L: View>: View {
+    @ViewBuilder let label: L
+
+    var body: some View {
+        if #available(iOS 18.0, *) { Visible(label: label) } else { label }  // shortcut: iOS 17 zeigt den Titel weiter
+    }
+
+    @available(iOS 18.0, *)
+    private struct Visible: View {
+        let label: L
+        @Environment(\.labelsVisibility) private var visibility
+        var body: some View { if visibility != .hidden { label } }
     }
 }
 

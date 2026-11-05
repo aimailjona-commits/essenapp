@@ -55,7 +55,8 @@ struct RecipeShareCard: View {
                 if let photo {
                     Image(uiImage: photo).resizable().scaledToFill().plate(103).frame(width: 103, height: 103)
                 } else {
-                    PlatePhoto(url: nil, size: 103)
+                    // ohne AsyncImage: der ImageRenderer liefert sonst kein Bild
+                    Theme.C.blue1.overlay { Ill("pot").padding(10) }.plate(103).frame(width: 103, height: 103)
                 }
             }
             .offset(x: 235, y: 32)
@@ -104,7 +105,7 @@ struct ShareCardSheet: View {
     let meal: MealDTO
 
     var body: some View {
-        ImageShareSheet(name: meal.recipe.title) {
+        ImageShareSheet(name: meal.recipe.title, preview: AnyView(RecipeShareCard(meal: meal, photo: nil))) {
             var photo: UIImage?
             if let url = mediaURL(meal.recipe.imageUrl), let loaded = try? await URLSession.shared.data(from: url) {
                 photo = UIImage(data: loaded.0)
@@ -117,6 +118,7 @@ struct ShareCardSheet: View {
 /// Bildkarte als Vorschau + „Teilen“ (Rezept 10, Wochenrückblick 55).
 struct ImageShareSheet: View {
     let name: String
+    var preview: AnyView?  // Karte direkt anzeigen, solange (oder falls) das Bild nicht fertig ist
     let render: @MainActor () async -> UIImage?
     @State private var image: UIImage?
 
@@ -143,6 +145,12 @@ struct ImageShareSheet: View {
                         .shadow(color: Theme.C.ink.opacity(0.14), radius: 15, y: 14)
                         .accessibilityLabel("Bildkarte \(name)")
                         .transition(.scale(scale: 0.95).combined(with: .opacity))
+                } else if let preview {
+                    preview.frame(width: 360, height: 450)
+                        .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+                        .scaleEffect(272 * 1.2 / 360)
+                        .frame(width: 272 * 1.2, height: 450 * 272 * 1.2 / 360)
+                        .accessibilityLabel("Bildkarte \(name)")
                 } else {
                     Skeleton8(height: 340).aspectRatio(0.8, contentMode: .fit)
                 }

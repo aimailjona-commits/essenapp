@@ -42,7 +42,10 @@ struct OffersView: View {
             }
         }
         .onAppear {
-            if store.demo { category = Demo.screen == "drogerie" ? "drogerie" : nil; subcategory = nil; chain = nil }
+            if store.demo {
+                category = Demo.screen == "drogerie" ? "drogerie" : nil; subcategory = nil
+                chain = Demo.screen == "offersempty" ? "aldi_sued" : nil  // kein Aldi-Angebot erfüllt alle Filter
+            }
         }
     }
 
@@ -834,7 +837,9 @@ struct OfferDetailView: View {
 
     private enum L {
         static let top: CGFloat = 14
-        static let titleWidth: CGFloat = 160  // Titel läuft nicht in die Zeichnung (x 176)
+        static let titleWidth: CGFloat = 200  // Titel läuft nicht in die Zeichnung
+        static let titleSize: CGFloat = 34  // .t1
+        static let glyph: CGFloat = 0.44  // mittlere Zeichenbreite der Serif in em
         static let infoRow: CGFloat = 50
         static let bottom: CGFloat = 120  // Platz für den festen Knopf
     }
@@ -919,7 +924,11 @@ struct OfferDetailView: View {
     private var top: some View {
         VStack(alignment: .leading, spacing: 0) {
             if let d = offer.discount { DealPill(text: "−\(d) %").padding(.top, 30) }
-            Text(offer.title).font(Theme.F.t1).lineLimit(4).minimumScaleFactor(0.7)
+            // Längstes Wort passt in eine Zeile: Umbruch nur zwischen Wörtern
+            let word = offer.title.split(separator: " ").map(\.count).max() ?? 1
+            Text(offer.title)
+                .font(Theme.F.serif(min(L.titleSize, L.titleWidth / (CGFloat(word) * L.glyph)), relativeTo: .largeTitle))
+                .lineLimit(3)
                 .frame(maxWidth: L.titleWidth, alignment: .leading)
                 .padding(.top, 8)
                 .accessibilityAddTraits(.isHeader)

@@ -21,6 +21,10 @@ enum Theme {
         static let sand = Color(hex: 0xE7DCC5)
         static let warn = Color(hex: 0xF6E2B8)
         static let deal = Color(hex: 0xE0603F)
+        static let best = Color(hex: 0xF7D8CE)  // .c-best Grund
+        static let onBest = Color(hex: 0xA8402A)  // .c-best Schrift
+        static let camera = Color(hex: 0x1E1C19)  // Scanner-Grund außen
+        static let cameraGlow = Color(hex: 0x4A4640)  // Scanner-Grund Mitte
         static let navBar = Color.white  // Nav-Leiste mit Mulde
         static let onInk = Color.white
         static let scrim = ink.opacity(0.32)

@@ -31,7 +31,7 @@ struct StartView: View {
                         .overlay(alignment: .topTrailing) { avatarRow.padding(.top, K.top).padding(.trailing, Theme.pagePadding) }
                 } else {
                     VStack(alignment: .leading, spacing: 0) {
-                        hero
+                        hero.zIndex(1)  // Kreis des Spar-Bereichs liegt hinter „Gespart“, nicht darüber
                         more.id("savings")
                     }
                 }
@@ -190,13 +190,15 @@ struct StartView: View {
             }
             .padding(.top, 36)
             if !search.isEmpty { searchResults.padding(.top, 14) }
+            // Kochbuch unter den Zeilen (Mockup: Bild links 10, sandfarbener Kreis 80 weiter links, 60 tiefer) – im Fluss, damit nichts überdeckt
+            Ill("cookbook").frame(width: 200)
+                .edgeForm(.circle, Theme.C.sand, width: 330, height: 330, left: -80, top: 60)
+                .padding(.leading, 10 - Theme.pagePadding).padding(.top, 24)
         }
         .padding(.horizontal, Theme.pagePadding)
         .padding(.top, 64)
         .padding(.bottom, Theme.S.nav)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .pinned(left: 10, top: 540) { Ill("cookbook").frame(width: 200) }
-        .edgeForm(.circle, Theme.C.sand, width: 330, height: 330, left: -70, top: 600)
         .edgeForm(.circle, Theme.C.blue1, width: 240, height: 240, left: 250, top: -70)
     }
 
@@ -357,23 +359,27 @@ struct PlanEmptyHero: View {
             let t = reduceMotion ? 0 : ctx.date.timeIntervalSinceReferenceDate
             let breathe = reduceMotion ? 0 : (1 - cos(2 * .pi * t / 4)) / 2  // 4 s hin und zurück
             let nudge = Self.nudge(reduceMotion ? 1 : t.truncatingRemainder(dividingBy: 4) / 0.6)
-            ZStack(alignment: .topLeading) {
-                Circle().fill(Theme.C.blue1).frame(width: 510, height: 510).offset(x: -60, y: 470).accessibilityHidden(true)
-                Ill("lying").frame(width: 360)
-                    .scaleEffect(x: 1 + 0.012 * breathe, y: 1 + 0.025 * breathe, anchor: UnitPoint(x: 0.5, y: 0.85))
-                    .offset(x: 14, y: 330)
+            // Kreis, Figur und „z“ als Hintergrund/Overlay: nehmen keinen Platz ein (510er-Kreis machte die Seite sonst breiter)
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Noch nichts\ngeplant.").font(Theme.F.serif(42, relativeTo: .largeTitle))
+                Text("Kein Stress – in 30 Sekunden steht dein Plan.").font(Theme.F.text(17, .medium, relativeTo: .body))
+                    .foregroundStyle(Theme.C.ink2)
+            }
+            .padding(.horizontal, Theme.pagePadding).padding(.top, 66 + 40)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+            .overlay(alignment: .topLeading) {
                 if !reduceMotion {
                     zzz(t, delay: 0, size: 24, x: 300, y: 458)
                     zzz(t, delay: 2.25, size: 18, x: 304, y: 466)
                 }
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("Noch nichts\ngeplant.").font(Theme.F.serif(42, relativeTo: .largeTitle))
-                    Text("Kein Stress – in 30 Sekunden steht dein Plan.").font(Theme.F.text(17, .medium, relativeTo: .body))
-                        .foregroundStyle(Theme.C.ink2)
-                }
-                .padding(.horizontal, Theme.pagePadding).padding(.top, 66 + 40)
             }
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+            .pinned(left: 14, top: 330) {
+                Ill("lying").frame(width: 360)
+                    .scaleEffect(x: 1 + 0.012 * breathe, y: 1 + 0.025 * breathe, anchor: UnitPoint(x: 0.5, y: 0.85))
+            }
+            .pinned(left: -60, top: 470) {
+                Circle().fill(Theme.C.blue1).frame(width: 510, height: 510).accessibilityHidden(true)
+            }
             .overlay(alignment: .bottom) {
                 Button(action: action) {
                     HStack {

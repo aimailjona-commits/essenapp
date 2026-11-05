@@ -684,8 +684,10 @@ struct CouponCheckoutView: View {
         .foregroundStyle(Theme.C.ink)
         .padding(24)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Theme.C.plate, in: RoundedRectangle(cornerRadius: 28, style: .continuous))
-        .shadow(color: Theme.C.ink.opacity(0.16), radius: 25, y: 24)
+        .background {  // Schatten nur am Plättchen, nicht an Barcode und Text
+            RoundedRectangle(cornerRadius: 28, style: .continuous).fill(Theme.C.plate)
+                .shadow(color: Theme.C.ink.opacity(0.16), radius: 25, y: 24)
+        }
     }
 }
 

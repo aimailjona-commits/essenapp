@@ -226,7 +226,9 @@ struct RecipeFormSheet: View {
             }
             .padding(.top, 28)
             .padding(.bottom, 12)
+            .padding(.horizontal, Theme.pagePadding)  // Rand innen, sonst schneidet die ScrollView Tellerrand und -schatten ab
         }
+        .padding(.horizontal, -Theme.pagePadding)
         .scrollDismissesKeyboard(.immediately)
     }
 

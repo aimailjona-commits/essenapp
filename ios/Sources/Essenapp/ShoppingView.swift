@@ -390,7 +390,7 @@ private struct StoreAdviceRows: View {
             HStack(spacing: 14) {
                 Icon(.trophy).frame(width: Theme.S.rowCircle, height: Theme.S.rowCircle).background(Theme.C.blue1, in: Circle())
                 VStack(alignment: .leading, spacing: 0) {
-                    Text(Self.title(main)).font(Theme.F.text(16, .extrabold))
+                    Text(Self.title(main)).font(Theme.F.text(16, .extrabold)).lineLimit(1).minimumScaleFactor(0.8)
                     if main.savedCents > 0 {
                         Text("\(euro(main.savedCents)) gespart").font(Theme.F.text(12)).foregroundStyle(Theme.C.success)
                     }
@@ -403,7 +403,7 @@ private struct StoreAdviceRows: View {
                         assigning = false
                     }
                 } label: {
-                    Group { if assigning { Hop3().frame(width: 60) } else { Pill8(text: "So aufteilen") } }.tapArea(7)
+                    Group { if assigning { Hop3().frame(width: 60) } else { Pill8(text: "So aufteilen").fixedSize() } }.tapArea(7)
                 }
                 .buttonStyle(PressableStyle())
                 .disabled(assigning)
@@ -466,7 +466,7 @@ struct ShoppingListView: View {
     // Mockup-Lage (S5b): Blatt oben rechts mit Einkäufer; offline 30 höher, Figur 60 tiefer (Banner oben)
     private enum M {
         static let leaf = CGSize(width: 166, height: 270), leafOffline: CGFloat = 300, leafRadius: CGFloat = 110
-        static let shopper: CGFloat = 144, shopperRight: CGFloat = 6, shopperTop: CGFloat = 44, shopperTopOffline: CGFloat = 104
+        static let shopper: CGFloat = 144, shopperRight: CGFloat = 6, shopperTop: CGFloat = 44, shopperTopOffline: CGFloat = 104, topOffline: CGFloat = 72
     }
 
     private enum Line: Identifiable, Equatable {
@@ -526,7 +526,7 @@ struct ShoppingListView: View {
                 .sensoryFeedback(.impact(weight: .light), trigger: items.filter(\.checked).count)
             }
             .padding(.horizontal, Theme.pagePadding)
-            .padding(.top, 14)
+            .padding(.top, offline ? M.topOffline : 14)  // offline unter dem Glas-Banner (Mockup y 124)
             .padding(.bottom, 40)
         }
         .backdrop8 {

@@ -339,10 +339,9 @@ struct WatchListView: View {
             : AnyView(LogoCircle(chain: o.chain))
         return NavigationLink { OfferDetailView(offer: o) } label: {
             row(w.label, Text("\(euro(o.priceCents)) bei \(Labels.chain(o.chain))").foregroundStyle(Theme.C.ink2), lead: lead,
-                trail: AnyView(HStack(spacing: 6) {
-                    DealPill(text: o.discount.map { d in "−\(d) %" } ?? "Angebot")
-                    if let c = w.coupon { couponPill(c) }
-                }), pad: 2)
+                // höchstens ein Zusatz rechts (S10): Rabatt, sonst Coupon
+                trail: o.discount == nil && w.coupon != nil ? AnyView(couponPill(w.coupon!))
+                    : AnyView(DealPill(text: o.discount.map { d in "−\(d) %" } ?? "Angebot")), pad: 2)
         }
         .buttonStyle(PressableStyle())
         .contextMenu { menu(w) }
@@ -388,6 +387,7 @@ struct WatchListView: View {
 
     @ViewBuilder private func menu(_ w: WatchDTO) -> some View {
         Button("Bearbeiten", systemImage: "slider.horizontal.3") { editing = w }
+        if let c = w.coupon { Button("Coupon zeigen", systemImage: "barcode") { store.checkoutCoupon = c.id } }
         Button("Entfernen", systemImage: "trash", role: .destructive) { Task { await store.deleteWatch(w) } }
     }
 }
@@ -686,9 +686,8 @@ struct BarcodeScanView: View {
 
     var body: some View {
         ZStack {
-            // shortcut: Kamera-Grund #1E1C19/#4A4640 fehlt in Theme – aus Tinte angenähert
-            RadialGradient(colors: [Theme.C.ink2.opacity(0.55), Theme.C.ink], center: UnitPoint(x: 0.5, y: 0.46), startRadius: 0, endRadius: 420)
-                .background(Theme.C.ink)
+            RadialGradient(colors: [Theme.C.cameraGlow, Theme.C.camera], center: UnitPoint(x: 0.5, y: 0.46), startRadius: 0, endRadius: 420)
+                .background(Theme.C.camera)
                 .ignoresSafeArea()
             if !store.demo, camera == true {
                 DataScanner(paused: ean != nil, symbologies: coupon == nil ? [.ean8, .ean13, .upce] : [.code128, .ean13, .ean8, .qr],

@@ -216,7 +216,7 @@ struct InstagramShareView: View {
             VStack(alignment: .leading, spacing: 1) {
                 Text("Server-Adresse").font(Theme.F.text(15, .bold))
                 Text(store.api.baseURL.isEmpty ? "nicht eingestellt" : store.api.baseURL)
-                    .font(.system(size: 12, weight: .medium, design: .monospaced)).foregroundStyle(Theme.C.ink2)
+                    .font(Theme.F.text(13, .semibold, relativeTo: .footnote)).foregroundStyle(Theme.C.ink2)
                     .lineLimit(1).minimumScaleFactor(0.7)
             }
             Spacer()

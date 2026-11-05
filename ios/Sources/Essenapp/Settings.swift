@@ -118,7 +118,7 @@ struct ESwitch: View {
     let label: String
 
     var body: some View {
-        Toggle(label, isOn: $isOn).labelsHidden().toggleStyle(.v8).fixedSize()
+        Toggle(isOn: $isOn) { EmptyView() }.toggleStyle(.v8).fixedSize()  // .v8 zeigt das Label auch bei labelsHidden()
             .accessibilityLabel(label)
     }
 }

@@ -33,8 +33,7 @@ struct OfferHistoryDTO: Codable, Hashable {
 enum Verdict {
     static func pill(_ verdict: String?) -> (text: String, bg: Color, fg: Color)? {
         switch verdict {
-        // shortcut: .c-best (#F7D8CE/#A8402A) fehlt in Theme – aus `deal` angenähert, bis die Hauptsession Tokens ergänzt
-        case "bestpreis": ("Bestpreis", Theme.C.deal.opacity(0.22), Theme.C.deal)
+        case "bestpreis": ("Bestpreis", Theme.C.best, Theme.C.onBest)
         case "gut": ("Gutes Angebot", Theme.C.sage, Theme.C.ink)
         case "normal": ("Normal", Theme.C.line, Theme.C.ink2)
         case "kein_echtes": ("Kein echtes Angebot", Theme.C.warn, Theme.C.ink)

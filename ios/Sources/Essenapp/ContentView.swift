@@ -193,11 +193,13 @@ struct MainView: View {
                 }
                 .navigationDestination(isPresented: $deepAchievements) { AchievementsView() }
             }
+            .contentMargins(.bottom, Theme.S.nav - 34, for: .scrollContent)  // Ende jeder Liste über der Tab-Leiste erreichbar
             .id("\(tab)-\(resetToken)")  // Tab-Wechsel schließt offene Detailseiten
             .animation(.easeInOut(duration: 0.2), value: tab)
 
             if !Self.modalDemo.contains(Demo.screen ?? ""), store.tabBarHiders == 0 {
                 NotchTabBar(selected: $tab, badges: [.angebote: store.watchHits]) { resetToken += 1 }
+                    .frame(maxHeight: .infinity, alignment: .bottom)  // Leiste (120 inkl. Home-Balken) bis an den Bildschirmrand
                     .ignoresSafeArea(edges: .bottom)
                     .transition(.move(edge: .bottom))
             }
