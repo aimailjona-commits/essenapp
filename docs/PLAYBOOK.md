@@ -119,6 +119,7 @@ Nutzer: der Entwickler selbst (iOS-App) + Familie/Freunde (Web-Version).
 | E91 | **Phase 19 ohne Mockup-Freigabe (Nutzerentscheidung 2026-11-04):** „Das Design wird eh nochmal geändert.“ Neue/erweiterte Screens werden direkt mit den vorhandenen v3-Bausteinen gebaut und per CI-Screenshot geprüft; Phase 18 ruht, Phase 19 ist aktiv | Funktionen zuerst, Optik später gesammelt |
 | E98 | **Redesign v8 „Tinte & Bogen“ (Nutzerentscheidung 2026-11-04):** „gefällt mir perfekt … 1:1 genau so umbauen“. Ganzes UI (iOS + PWA) nach `docs/ui/redesign-v8.md`, Phase 21; löst v3/Phase 18 ab. Schriften DM Serif Display, Manrope, Inter Tight (OFL, Download freigegeben). Dunkelmodus: erst v8-Dunkel-Mockup zur Freigabe, bis dahin App fest hell. Bau in Gruppen A–F mit getrennten Dateien, parallel. |
 | E99 | **Schrift + Hintergrund (Nutzerentscheidung 2026-11-05):** „eine ähnliche Schriftart und einen eher weißen statt beigen Hintergrund“, gewählt im Vergleich `docs/ui/mockups/schrift-vergleich.html` Variante D: Titel-Serife Crimson Pro 500 (OFL, statischer Schnitt `CrimsonProV8-Medium`) statt DM Serif Display; `bg` #FFFFFF, `card` #F5F5F3 (iOS, Share-Extension, PWA). Mockups bleiben sonst gültig. | ruhiger, heller Look |
+| E100 | **Swipe-Richtung gedreht (Nutzerentscheidung 2026-11-05):** links = diese Woche (mag ich), rechts = nicht; Knöpfe entsprechend „Diese Woche“ links, „Nicht“ rechts. Ersetzt die Richtung aus E97. | Nutzerwunsch |
 
 ---
 

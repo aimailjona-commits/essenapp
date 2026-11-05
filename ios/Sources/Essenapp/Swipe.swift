@@ -82,7 +82,8 @@ struct SwipeView: View {
     @State private var match: SwipeCardDTO? = Demo.screen == "match" ? Demo.swipe.chosen.first { $0.match } : nil
     @State private var drag = CGSize.zero
     @State private var crossed = false
-    @State private var disliking: SwipeCardDTO?
+    @State private var disliking: SwipeCardDTO?  // bleibt bis zur Entscheidung, auch wenn der erste Dialog schließt
+    @State private var dislikeOpen = false
     @State private var days: [Int: Int] = [:]  // Frühstück/Snack: Tage je Karte
     @State private var voting = 0  // laufende Stimmen: Abfrage überschreibt dann nichts
     @State private var asked: Set<String> = []  // „mehr Karten“ je Art schon angefragt
@@ -176,7 +177,7 @@ struct SwipeView: View {
         .padding(.horizontal, Theme.pagePadding)
         .padding(.bottom, 8)
         .modifier(DislikeDialog(ingredients: disliking?.ingredients ?? [],
-                                isPresented: Binding(get: { disliking != nil }, set: { on in if !on { disliking = nil } }),
+                                isPresented: $dislikeOpen,
                                 noMood: { if let c = disliking { send(c, "mag_nicht", reason: "keine_lust") } }) { reason in
             guard let c = disliking else { return }
             switch reason {
@@ -244,7 +245,8 @@ struct SwipeView: View {
     }
 
     private func decision(_ t: CGSize) -> String? {
-        if abs(t.width) > abs(t.height) { return t.width > threshold ? "ja" : t.width < -threshold ? "nein" : nil }
+        // links = mag ich (E100)
+        if abs(t.width) > abs(t.height) { return t.width < -threshold ? "ja" : t.width > threshold ? "nein" : nil }
         return t.height < -threshold ? "mag_nicht" : nil
     }
 
@@ -257,9 +259,10 @@ struct SwipeView: View {
         if kind == "mag_nicht" {
             withAnimation(Theme.spring) { drag = .zero }
             disliking = card
+            dislikeOpen = true
             return
         }
-        withAnimation(.easeIn(duration: 0.22)) { drag = CGSize(width: kind == "ja" ? 600 : -600, height: drag.height) }
+        withAnimation(.easeIn(duration: 0.22)) { drag = CGSize(width: kind == "ja" ? -600 : 600, height: drag.height) }
         Task {
             try? await Task.sleep(for: .milliseconds(220))
             send(card, kind)
@@ -270,11 +273,11 @@ struct SwipeView: View {
         HStack(alignment: .top, spacing: 0) {
             small(nil, "arrow.uturn.backward", "Rückgängig") { Task { await undo() } }
             Spacer()
-            act(.x, "", "Nicht", size: 72) { if let c = pile.first { decide(c, "nein") } }
+            act(.check, "", "Diese Woche", size: 72, dark: true) { if let c = pile.first { decide(c, "ja") } }
             Spacer()
             act(nil, "hand.thumbsdown", "Mag ich nicht", size: 58) { if let c = pile.first { decide(c, "mag_nicht") } }
             Spacer()
-            act(.check, "", "Diese Woche", size: 72, dark: true) { if let c = pile.first { decide(c, "ja") } }
+            act(.x, "", "Nicht", size: 72) { if let c = pile.first { decide(c, "nein") } }
             Spacer()
             small(.dice, "", "Überrasch mich") { planBefore = store.plan?.id; surprise = true }
         }
@@ -463,8 +466,8 @@ struct SwipeCardFace: View {
         .background(Theme.C.card)
         .clipShape(RoundedRectangle(cornerRadius: Theme.R.sheet, style: .continuous))
         .overlay(RoundedRectangle(cornerRadius: Theme.R.sheet, style: .continuous).strokeBorder(Theme.C.line, lineWidth: Theme.S.hair))
-        .overlay(alignment: .topLeading) { stamp("DIESE WOCHE", Theme.C.ink, -12, max(drag.width, 0)).padding(.top, 40).padding(.leading, 24) }
-        .overlay(alignment: .topTrailing) { stamp("NICHT", Theme.C.ink2, 12, max(-drag.width, 0)).padding(.top, 40).padding(.trailing, 24) }
+        .overlay(alignment: .topTrailing) { stamp("DIESE WOCHE", Theme.C.ink, 12, max(-drag.width, 0)).padding(.top, 40).padding(.trailing, 24) }
+        .overlay(alignment: .topLeading) { stamp("NICHT", Theme.C.ink2, -12, max(drag.width, 0)).padding(.top, 40).padding(.leading, 24) }
         .overlay(alignment: .bottom) {
             stamp("MAG ICH NICHT", Theme.C.deal, 0, abs(drag.height) > abs(drag.width) ? max(-drag.height, 0) : 0).padding(.bottom, 150)
         }
