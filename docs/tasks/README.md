@@ -26,6 +26,7 @@
 | 19 | [Nutzerwünsche, Rezensions-Lehren, Paywall](phase-19-feedback-paywall.md) | **aktiv** – Entscheidungen E90/E91 |
 | 20 | [Woche per Swipe planen](phase-20-swipe-planen.md) | **aktiv** (E97) – Mockup frei, Backend gebaut, iOS läuft |
 | 21 | [Redesign v8 „Tinte & Bogen“](phase-21-redesign-v8.md) | **aktiv** (E98) – ganzes UI 1:1 nach [`docs/ui/redesign-v8.md`](../ui/redesign-v8.md) |
+| 22 | [v9-Umbau nach iPhone-Test](phase-22-v9-umbau.md) | **aktiv** (E101) – gewählte Varianten aus `redesign-v9-entwurf.html` |
 
 ## Wartet auf dich 👤
 

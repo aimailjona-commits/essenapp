@@ -1,12 +1,14 @@
 import SwiftUI
 import UIKit
+import CoreLocation
 
-/// S4 Angebote v8 „Tinte & Bogen“ (diese/nächste Woche, Kategorien, Filter-Sheet, Drogerie mit Monatsaktionen, Leer)
-/// und Umschalter zur Merkliste (S10, `WatchListView`). Mockup: docs/ui/mockups/v8-parts/c.html, Kern S4 in redesign-v8.html.
+/// S4 Angebote v9 Variante C „Ein Markt im Fokus“ (docs/ui/mockups/v9-parts/c.html): runde Markt-Knöpfe, blaue Bühne des
+/// gewählten Markts, Kategorie-Pillen, Kacheln nach Nutzen. Dazu Wochen-Umschalter, Filter-Sheet, Drogerie-Monatsaktionen,
+/// Leer-Zustände und Umschalter zur Merkliste (S10, `WatchListView`).
 struct OffersView: View {
     @Environment(AppStore.self) private var store
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @AppStorage("offers.chain") private var chain: String?  // Auswahl merken (19.4)
+    @AppStorage("offers.chain") private var chain: String?  // Auswahl merken (19.4), nil = „Alle“
     @AppStorage("offers.category") private var category: String?
     @AppStorage("offers.subcategory") private var subcategory: String?
     @State private var search = ""
@@ -17,19 +19,34 @@ struct OffersView: View {
     @State private var vegan = Demo.screen == "offersempty"
     @State private var nutri = Demo.screen == "offersempty"
     @State private var bonusOnly = Demo.screen == "offersempty"  // Rewe-Bonus-Aktionen (39)
+    @State private var forYou = false  // Pille „Für dich“: nur Angebote aus dem Wochenplan
+    @State private var allDeals = false  // „alle N →“ bei „Größte Rabatte“
     @State private var filtering = Demo.screen == "offersfilter"
     @State private var pull: CGFloat = 0
     @State private var refreshing = false
     @State private var fresh: Set<Int> = []  // nach dem Aktualisieren neu dazugekommen (a2-pull)
     @State private var fly: OfferFly?
 
-    /// Lagen aus dem Mockup (Bildschirm-Koordinaten ab Oberkante, Telefon 390 breit, Statusleiste 52).
+    /// Maße aus dem Mockup (v9 c.html, Variante C).
     private enum L {
         static let top: CGFloat = 14  // .scr 66 − 52
         static let pullAt: CGFloat = 110  // so weit ziehen, dann lädt es
         static let hold: CGFloat = 120  // Liste bleibt beim Laden so weit unten (a2-pull)
         static let emptyGap: CGFloat = 372  // Leer-Text bei y 556, gemessen ab Chip-Reihe
-        static let statWidth: CGFloat = 170
+        static let market: CGFloat = 64  // .c9-cb .r
+        static let marketWidth: CGFloat = 70
+        static let marketPad: CGFloat = 9
+        static let allArt: CGFloat = 52
+        static let stageHeight: CGFloat = 178  // .c9-stage
+        static let stageRadius: CGFloat = 80
+        static let stageText: CGFloat = 210
+        static let stageArt: CGFloat = 150
+        static let logoPill: CGFloat = 42
+        static let logo = CGSize(width: 90, height: 22)
+        static let pill: CGFloat = 44  // .c9-pc
+        static let pillArt: CGFloat = 34
+        static let gridGap: CGFloat = 10  // .c9-g2
+        static let topDeals = 6  // „Größte Rabatte“ zugeklappt
     }
 
     private enum Empty { case nextWeek, none, filter }
@@ -62,9 +79,19 @@ struct OffersView: View {
         [realOnly, bio, vegan, nutri, bonusOnly, !search.isEmpty, chain != nil].filter { $0 }.count
     }
 
+    /// Angebots-ID → Gericht im Wochenplan, das die Zutat nutzt („Passt zu deiner Woche“).
+    private var plannedDishes: [Int: String] {
+        var map: [Int: String] = [:]
+        for m in store.plan?.entries ?? [] {
+            for i in m.recipe.ingredients { if let id = i.offerId, map[id] == nil { map[id] = m.recipe.title } }
+        }
+        return map
+    }
+
     private var offersScreen: some View {
         let all = (nextWeek ? store.nextOffers : store.offers).filter { $0.category != "nonfood" }  // Möbel, Technik … (19.1)
-        let filtered = all.filter(matches)
+        let planned = plannedDishes
+        let filtered = all.filter(matches).filter { o in !forYou || planned[o.id] != nil }
         let drug = category == "drogerie" && !nextWeek  // Monatsaktionen (59)
         let monthly = drug ? filtered.filter { o in o.monthly == true } : []
         let rows = drug ? filtered.filter { o in o.monthly != true } : filtered
@@ -72,12 +99,12 @@ struct OffersView: View {
             : all.isEmpty ? .none : rows.isEmpty && monthly.isEmpty ? .filter : nil
         return GeometryReader { g in
             ScrollView {
-                content(all: all, filtered: filtered, rows: rows, monthly: monthly, drug: drug, empty: empty)
+                content(all: all, rows: rows, monthly: monthly, drug: drug, empty: empty, planned: planned)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(.horizontal, Theme.pagePadding)
                     .padding(.top, g.safeAreaInsets.top + L.top)
                     .padding(.bottom, Theme.S.nav)
-                    .modifier(OffersForms(empty: empty != nil, drug: drug, nextWeek: nextWeek, refreshing: refreshing, looking: pull > 20 || refreshing))
+                    .modifier(OffersForms(empty: empty != nil, refreshing: refreshing))
                     .padding(.top, refreshing ? L.hold : 0)
                     .onGeometryChange(for: CGFloat.self) { p in p.frame(in: .scrollView).minY } action: { y in
                         pull = max(0, y)
@@ -100,31 +127,32 @@ struct OffersView: View {
     // MARK: Inhalt
 
     @ViewBuilder
-    private func content(all: [OfferDTO], filtered: [OfferDTO], rows: [OfferDTO], monthly: [OfferDTO], drug: Bool,
-                         empty: Empty?) -> some View {
+    private func content(all: [OfferDTO], rows: [OfferDTO], monthly: [OfferDTO], drug: Bool, empty: Empty?,
+                         planned: [Int: String]) -> some View {
         let weekRow = !store.nextOffers.isEmpty || nextWeek
         VStack(alignment: .leading, spacing: 0) {
             NavigationLink { StoreMapView() } label: {
-                Text("\(store.household?.plz ?? "") · \(store.household?.stores.filter(\.enabled).count ?? 0) Läden")
+                Text(headline)
                     .font(Theme.F.small).foregroundStyle(Theme.C.ink2)
                     .padding(.vertical, 12).contentShape(Rectangle()).padding(.vertical, -12)  // Tap-Fläche 44
             }
             .buttonStyle(.plain)
             .accessibilityHint("Läden und Umkreis ändern")
-            Text("Angebote").font(Theme.F.t1).accessibilityAddTraits(.isHeader)
-
-            if empty == nil && !drug {
-                StatNumber(label: nextWeek ? "Ab nächster\nWoche" : "Diese\nWoche", value: "\(all.count)", size: nextWeek ? 56 : 64)
-                    .frame(width: L.statWidth)
-                    .padding(.top, nextWeek ? 18 : 22)
-                    .animation(Theme.spring, value: all.count)
+            HStack {
+                Text("Angebote").font(Theme.F.t1).accessibilityAddTraits(.isHeader)
+                Spacer(minLength: 0)
+                filterButton  // ohne Mockup: Suche und Filter bleiben erreichbar
             }
 
             if empty == .filter {
                 filterChips.padding(.top, 16)
             } else {
-                if weekRow { weekChips.padding(.top, empty == nil && !drug ? 28 : 40) }
-                categoryRow(all: all, withFilter: !weekRow).padding(.top, weekRow ? 12 : 40)
+                if weekRow { weekChips.padding(.top, 8) }
+                if empty == nil {
+                    marketRow(all).padding(.top, 14)
+                    stage(all)
+                }
+                categoryPills(all: all, planned: planned).padding(.top, 16)
                 subcategoryRow(all: all)
             }
 
@@ -136,29 +164,26 @@ struct OffersView: View {
 
             if let empty {
                 emptyBlock(empty)
-            } else if drug {
-                drugstore(monthly: monthly, rows: rows)
-            } else if category == "haushalt" {
-                LazyVStack(spacing: 0) { ForEach(rows) { o in lineLink(o) } }.padding(.top, 16)
             } else {
-                LazyVStack(spacing: 0) {
-                    ForEach(rows) { o in
-                        NavigationLink { OfferDetailView(offer: o) } label: {
-                            OfferRow8(offer: o, fresh: fresh.contains(o.id)) { frame in
-                                if !reduceMotion { fly = OfferFly(offer: o, from: frame, start: .now) }
-                            }
-                        }
-                        .buttonStyle(PressableStyle())
-                        .transition(.scale(scale: 0.85, anchor: .leading).combined(with: .opacity))
-                    }
-                }
-                .padding(.top, nextWeek ? 20 : 16)
-                .animation(reduceMotion ? nil : .spring(response: 0.35, dampingFraction: 0.7), value: rows.map(\.id))
+                if drug { drugstore(monthly: monthly) }
+                sections(rows, planned: planned)
             }
         }
     }
 
-    /// Diese / nächste Woche + Filter-Knopf (S4 Nächste Woche).
+    /// „24118 · KW 45 · 2.11.–8.11.“ (Woche Mo–So, bei „Nächste Woche“ die folgende).
+    private var headline: String {
+        let cal = Calendar(identifier: .iso8601)
+        let day = cal.date(byAdding: .day, value: nextWeek ? 7 : 0, to: .now) ?? .now
+        var parts = [store.household?.plz ?? "", "KW \(cal.component(.weekOfYear, from: day))"]
+        if let start = cal.dateInterval(of: .weekOfYear, for: day)?.start, let end = cal.date(byAdding: .day, value: 6, to: start) {
+            let dm = { (d: Date) in "\(cal.component(.day, from: d)).\(cal.component(.month, from: d))." }
+            parts.append("\(dm(start))–\(dm(end))")
+        }
+        return parts.filter { !$0.isEmpty }.joined(separator: " · ")
+    }
+
+    /// Diese / nächste Woche (S4 Nächste Woche).
     private var weekChips: some View {
         HStack(spacing: 6) {
             SmallChip(title: "Diese Woche \(store.offers.count)", on: !nextWeek, compact: true) {
@@ -168,37 +193,183 @@ struct OffersView: View {
                       badge: store.nextOffers.isEmpty ? nil : "neu") {
                 withAnimation(Theme.spring) { nextWeek = true }
             }
-            Spacer(minLength: 0)
-            filterButton
         }
     }
 
-    /// Alle · Merkliste · Kategorien mit Treffern (S4, S4 Drogerie). Ohne Wochen-Reihe sitzt der Filter-Knopf rechts.
-    private func categoryRow(all: [OfferDTO], withFilter: Bool) -> some View {
-        HStack(spacing: 8) {
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 8) {
-                    Chip8(title: "Alle", on: category == nil) {
-                        withAnimation(Theme.spring) { category = nil; subcategory = nil }
+    // MARK: Märkte (.c9-cb) und Bühne (.c9-stage)
+
+    /// Runde Logo-Knöpfe zum Wischen: „Alle“ + jeder Markt mit Angeboten. Immer genau einer gewählt.
+    private func marketRow(_ all: [OfferDTO]) -> some View {
+        let chains = Labels.chains.map(\.key).filter { c in all.contains { $0.chain == c } }
+        return ScrollView(.horizontal, showsIndicators: false) {
+            HStack(alignment: .top, spacing: 6) {
+                marketButton(nil, count: all.count)
+                ForEach(chains, id: \.self) { c in marketButton(c, count: all.filter { $0.chain == c }.count) }
+            }
+            .padding(.horizontal, Theme.pagePadding)
+            .padding(.vertical, 4)  // Ring ragt über den Kreis
+        }
+        .padding(.horizontal, -Theme.pagePadding)
+    }
+
+    private func marketButton(_ c: String?, count: Int) -> some View {
+        let on = chain == c
+        let ring: CGFloat = on ? 3 : Theme.S.hair
+        let name = c.map(Labels.chain) ?? "Alle"
+        return Button { withAnimation(Theme.spring) { chain = c; subcategory = nil } } label: {
+            VStack(spacing: 0) {
+                Group {
+                    if let c {
+                        RemoteImage(url: Labels.logoURL(c), dim: false) {
+                            Text(String(name.prefix(2))).font(Theme.F.text(14, .extrabold, relativeTo: .footnote))
+                        }
+                        .padding(L.marketPad)
+                        .frame(width: L.market, height: L.market)
+                        .background(Theme.C.plate, in: Circle())
+                    } else {
+                        Ill("binoculars").frame(width: L.allArt)
+                            .frame(width: L.market, height: L.market)
+                            .background(Theme.C.blue1, in: Circle())
                     }
-                    Chip8(title: store.watches.isEmpty ? "Merkliste" : "Merkliste \(store.watches.count)") {
-                        withAnimation(Theme.spring) { watchMode = true }
+                }
+                .clipShape(Circle())
+                .overlay(Circle().stroke(on ? Theme.C.ink : Theme.C.line, lineWidth: ring).padding(-ring / 2))
+                Text(name).font(Theme.F.text(11.5, .bold, relativeTo: .caption)).lineLimit(1).minimumScaleFactor(0.8)
+                    .padding(.top, 7)
+                Text("\(count)").font(Theme.F.text(11, .bold, relativeTo: .caption2)).foregroundStyle(Theme.C.ink2)
+            }
+            .foregroundStyle(Theme.C.ink)
+            .frame(width: L.marketWidth)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(PressableStyle())
+        .accessibilityLabel("\(c == nil ? "Alle Märkte" : name), \(count) Angebote")
+        .accessibilityAddTraits(on ? .isSelected : [])
+    }
+
+    /// Blaue Bühne des gewählten Markts: Logo, Anzahl, Gültigkeit, Filiale (wenn bekannt). Bei „Alle“: Zahl der Läden.
+    private func stage(_ all: [OfferDTO]) -> some View {
+        let mine = all.filter { o in chain == nil || o.chain == chain }
+        let label = ["Angebote", validity(mine)].compactMap { $0 }.joined(separator: "\n")
+        return VStack(alignment: .leading, spacing: 0) {
+            Group {
+                if let chain {
+                    RemoteImage(url: Labels.logoURL(chain), dim: false) {
+                        Text(Labels.chain(chain)).font(Theme.F.text(14, .extrabold, relativeTo: .footnote))
                     }
-                    ForEach(Labels.categories, id: \.0) { c in
-                        let n = all.filter { o in o.category == c.0 }.count
-                        if n > 0 {
-                            Chip8(title: "\(c.1.split(separator: " ").dropFirst().joined(separator: " ")) \(n)", on: category == c.0) {
-                                withAnimation(Theme.spring) { category = category == c.0 ? nil : c.0; subcategory = nil }
-                            }
+                    .frame(maxWidth: L.logo.width, maxHeight: L.logo.height)
+                } else {
+                    Text("Alle Märkte").font(Theme.F.text(14, .extrabold, relativeTo: .footnote))
+                }
+            }
+            .padding(.horizontal, 14)
+            .frame(height: L.logoPill)
+            .background(Theme.C.plate, in: Capsule())
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel(chain.map(Labels.chain) ?? "Alle Märkte")
+            StatNumber(label: label, value: "\(mine.count)", size: 46).padding(.top, 14)
+            if let line = branchLine {
+                Text(line).font(Theme.F.text(12.5, .semibold, relativeTo: .footnote)).lineLimit(1).padding(.top, 8)
+            }
+        }
+        .foregroundStyle(Theme.C.ink)
+        .frame(width: L.stageText, alignment: .leading)
+        .padding(.vertical, 20)
+        .padding(.horizontal, Theme.pagePadding)
+        .frame(maxWidth: .infinity, minHeight: L.stageHeight, alignment: .topLeading)
+        .background(alignment: .topTrailing) { Ill("shopper").frame(width: L.stageArt).offset(x: 6, y: 6) }
+        .background(Theme.C.blue)
+        .clipShape(UnevenRoundedRectangle(bottomLeadingRadius: L.stageRadius))
+        .padding(.horizontal, -Theme.pagePadding)
+        .padding(.top, 16)
+    }
+
+    /// „bis Sa 8.11.“ – häufigstes Ende der Angebote (nächste Woche: häufigster Beginn).
+    private func validity(_ offers: [OfferDTO]) -> String? {
+        let days = offers.map { nextWeek ? $0.validFrom : $0.validTo }
+        guard let top = Dictionary(grouping: days, by: { $0 }).max(by: { ($0.value.count, $0.key) < ($1.value.count, $1.key) })?.key
+        else { return nil }
+        return (nextWeek ? "ab " : "bis ") + weekdayDay(top)
+    }
+
+    /// „Rewe Holtenauer Str. 12 · 1,2 km“ aus der eingestellten Filiale; bei „Alle“ „5 Läden“.
+    private var branchLine: String? {
+        guard let chain else {
+            let n = store.household?.stores.filter(\.enabled).count ?? 0
+            return n > 0 ? "\(n) Läden" : nil
+        }
+        guard let shop = store.household?.stores.first(where: { $0.chain == chain && $0.enabled }) else { return nil }
+        let street = shop.address.flatMap { a in a.split(separator: ",").first.map { "\(Labels.chain(chain)) \($0)" } }
+        var km: String?
+        if let a = shop.lat, let b = shop.lng, let h = store.household, let la = h.lat, let lo = h.lng {
+            km = "\(num(CLLocation(latitude: a, longitude: b).distance(from: CLLocation(latitude: la, longitude: lo)) / 1000)) km"
+        }
+        let parts = [street ?? (shop.storeName.isEmpty ? nil : shop.storeName), km].compactMap { $0 }
+        return parts.isEmpty ? nil : parts.joined(separator: " · ")
+    }
+
+    // MARK: Kategorien (.c9-pc)
+
+    /// Für dich · Kategorien mit Treffern im gewählten Markt · Merkliste. Antippen = an/aus.
+    private func categoryPills(all: [OfferDTO], planned: [Int: String]) -> some View {
+        let mine = all.filter { o in chain == nil || o.chain == chain }
+        let fits = mine.filter { planned[$0.id] != nil }.count
+        return ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 8) {
+                if fits > 0 || forYou {
+                    pill("Für dich", count: fits, on: forYou, tint: Theme.C.blue) { Icon(.sparkle, size: 20) } action: {
+                        forYou.toggle()
+                        if forYou { category = nil; subcategory = nil }
+                    }
+                }
+                ForEach(Labels.categories, id: \.0) { c in
+                    let n = mine.filter { $0.category == c.0 }.count
+                    if n > 0 {
+                        pill(c.1.split(separator: " ").dropFirst().joined(separator: " "), count: n, on: category == c.0,
+                             tint: Theme.hue(category: c.0).tint) { categoryArt(c.0) } action: {
+                            category = category == c.0 ? nil : c.0; subcategory = nil; forYou = false
                         }
                     }
                 }
-                .padding(.horizontal, Theme.pagePadding)
+                pill("Merkliste", count: store.watches.isEmpty ? nil : store.watches.count, on: false, tint: Theme.C.rose) {
+                    Icon(.heart, size: 20)
+                } action: { watchMode = true }
             }
-            .padding(.leading, -Theme.pagePadding)
-            .padding(.trailing, withFilter ? 0 : -Theme.pagePadding)
-            if withFilter { filterButton }
+            .padding(.horizontal, Theme.pagePadding)
         }
+        .padding(.horizontal, -Theme.pagePadding)
+    }
+
+    /// Zeichnung je Kategorie (`ill/`); ohne passende Zeichnung das Etikett-Symbol.
+    @ViewBuilder
+    private func categoryArt(_ c: String) -> some View {
+        if let ill = ["obst_gemuese": "tomato", "kuehlung": "fridge", "vorrat": "pot", "drogerie": "bag"][c] {
+            Ill(ill)
+        } else {
+            Icon(.tag, size: 20)
+        }
+    }
+
+    private func pill<Art: View>(_ title: String, count: Int?, on: Bool, tint: Color, @ViewBuilder art: () -> Art,
+                                 action: @escaping () -> Void) -> some View {
+        Button { withAnimation(Theme.spring) { action() } } label: {
+            HStack(spacing: 8) {
+                art().frame(width: L.pillArt, height: L.pillArt)
+                Text(title).font(Theme.F.text(13.5, .extrabold, relativeTo: .footnote))
+                if let count {
+                    Text("\(count)").font(Theme.F.text(12, .bold, relativeTo: .caption)).foregroundStyle(on ? Theme.C.ink3 : Theme.C.ink2)
+                }
+            }
+            .lineLimit(1)
+            .foregroundStyle(on ? Theme.C.onInk : Theme.C.ink)
+            .padding(.leading, 6).padding(.trailing, 16)
+            .frame(height: L.pill)
+            .background(on ? Theme.C.ink : tint, in: Capsule())
+            .contentShape(Capsule())
+        }
+        .buttonStyle(PressableStyle())
+        .accessibilityLabel(count.map { "\(title), \($0)" } ?? title)
+        .accessibilityAddTraits(on ? .isSelected : [])
     }
 
     /// Feine Kategorien der gewählten Kategorie (19.4): Joghurt ≠ Käse. Ohne Mockup, im Stil `.c-chip`.
@@ -224,6 +395,67 @@ struct OffersView: View {
         }
     }
 
+    // MARK: Kacheln nach Nutzen (.c9-g2)
+
+    /// „Passt zu deiner Woche“ (Zutat im Plan) · „Größte Rabatte“ · übrige Angebote.
+    @ViewBuilder
+    private func sections(_ rows: [OfferDTO], planned: [Int: String]) -> some View {
+        let byDeal: (OfferDTO, OfferDTO) -> Bool = { ($0.discount ?? 0) > ($1.discount ?? 0) }
+        let week = rows.filter { planned[$0.id] != nil }.sorted(by: byDeal)
+        let others = rows.filter { planned[$0.id] == nil }
+        let deals = others.filter { $0.discount != nil }.sorted(by: byDeal)
+        let shown = allDeals ? deals : Array(deals.prefix(L.topDeals))
+        let shownIDs = Set(shown.map(\.id))
+        let rest = others.filter { !shownIDs.contains($0.id) }
+        VStack(alignment: .leading, spacing: 0) {
+            if !week.isEmpty {
+                sectionHead("Passt zu deiner Woche") { Text("Rabatt ↓") }
+                grid(week, planned: planned)
+            }
+            if !deals.isEmpty {
+                sectionHead("Größte Rabatte") {
+                    if deals.count > L.topDeals {
+                        Button { withAnimation(Theme.spring) { allDeals.toggle() } } label: {
+                            Text(allDeals ? "weniger ↑" : "alle \(deals.count) →")
+                                .padding(.vertical, 12).contentShape(Rectangle()).padding(.vertical, -12)  // Tap-Fläche 44
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+                grid(shown, planned: planned)
+            }
+            if !rest.isEmpty {
+                if !week.isEmpty || !deals.isEmpty { sectionHead("Weitere Angebote") { EmptyView() } }  // ohne Mockup
+                grid(rest, planned: planned).padding(.top, week.isEmpty && deals.isEmpty ? 22 : 0)
+            }
+        }
+        .animation(reduceMotion ? nil : .spring(response: 0.35, dampingFraction: 0.7), value: rows.map(\.id))
+    }
+
+    private func sectionHead<Trail: View>(_ title: String, @ViewBuilder trail: () -> Trail) -> some View {
+        HStack(alignment: .firstTextBaseline) {
+            Text(title).font(Theme.F.serif(22)).foregroundStyle(Theme.C.ink).accessibilityAddTraits(.isHeader)
+            Spacer(minLength: 8)
+            trail().font(Theme.F.text(13, .bold, relativeTo: .footnote)).foregroundStyle(Theme.C.ink2)
+        }
+        .padding(.top, 22)
+        .padding(.bottom, 10)
+    }
+
+    private func grid(_ offers: [OfferDTO], planned: [Int: String]) -> some View {
+        LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: L.gridGap, alignment: .top), count: 2), spacing: L.gridGap) {
+            ForEach(offers) { o in
+                NavigationLink { OfferDetailView(offer: o) } label: {
+                    OfferTile(offer: o, dish: planned[o.id], fresh: fresh.contains(o.id)) { frame in
+                        if !reduceMotion { fly = OfferFly(offer: o, from: frame, start: .now) }
+                    }
+                }
+                .buttonStyle(PressableStyle())
+                .transition(.scale(scale: 0.85).combined(with: .opacity))
+            }
+        }
+    }
+
     /// S4 Leer: aktive Filter als Chips (antippen = an/aus), darunter der Leer-Text.
     private var filterChips: some View {
         let toggles: [(String, Icon8?, Binding<Bool>)] = [
@@ -237,6 +469,7 @@ struct OffersView: View {
                               on: true) { withAnimation(Theme.spring) { category = nil; subcategory = nil } }
                 }
                 if let c = chain { SmallChip(title: Labels.chain(c), on: true) { withAnimation(Theme.spring) { chain = nil } } }
+                if forYou { SmallChip(title: "Für dich", on: true) { withAnimation(Theme.spring) { forYou = false } } }
                 if !search.isEmpty { SmallChip(title: "„\(search)“", on: true) { withAnimation(Theme.spring) { search = "" } } }
                 ForEach(Array(toggles.sorted { $0.2.wrappedValue && !$1.2.wrappedValue }.enumerated()), id: \.element.0) { _, t in
                     SmallChip(title: t.0, on: t.2.wrappedValue, icon: t.1) { withAnimation(Theme.spring) { t.2.wrappedValue.toggle() } }
@@ -299,12 +532,12 @@ struct OffersView: View {
     }
 
     private func resetFilters() {
-        realOnly = false; bio = false; vegan = false; nutri = false; bonusOnly = false
+        realOnly = false; bio = false; vegan = false; nutri = false; bonusOnly = false; forYou = false
         search = ""; chain = nil; category = nil; subcategory = nil
     }
 
-    /// S4 Drogerie: Monatsaktionen von dm/Rossmann nebeneinander, darunter die übrigen Angebote als Zeilen.
-    private func drugstore(monthly: [OfferDTO], rows: [OfferDTO]) -> some View {
+    /// S4 Drogerie: Monatsaktionen von dm/Rossmann nebeneinander; die übrigen Angebote folgen als Kacheln.
+    private func drugstore(monthly: [OfferDTO]) -> some View {
         VStack(alignment: .leading, spacing: 0) {
             HStack(spacing: 6) {
                 Icon(.cal, size: 16)
@@ -330,17 +563,7 @@ struct OffersView: View {
                 .padding(.horizontal, -Theme.pagePadding)
                 .padding(.top, 10)
             }
-            LazyVStack(spacing: 0) { ForEach(rows) { o in lineLink(o) } }.padding(.top, 30)
         }
-    }
-
-    private func lineLink(_ o: OfferDTO) -> some View {
-        NavigationLink { OfferDetailView(offer: o) } label: {
-            OfferLine(offer: o, parts: [Labels.chain(o.chain), o.amountText]) {
-                Text(euro(o.priceCents)).font(Theme.F.text(17, .bold, relativeTo: .headline)).monospacedDigit()
-            }
-        }
-        .buttonStyle(PressableStyle())
     }
 
     /// Ziehen zum Aktualisieren (a2-pull): Liste bleibt unten, Fernglas schaut hervor, neue Angebote ploppen ein.
@@ -417,13 +640,10 @@ struct OffersView: View {
 
 // MARK: Rand-Formen S4
 
-/// Blatt + Fernglas (S4, Nächste Woche), Viertelkreis + Tasche (Drogerie), Kreis + Fernglas (Leer). Mockup-Koordinaten.
+/// Leer-Zustände: Kreis + Fernglas (beim Laden der Topf). Mockup-Koordinaten.
 private struct OffersForms: ViewModifier {
     let empty: Bool
-    let drug: Bool
-    let nextWeek: Bool
     let refreshing: Bool
-    let looking: Bool  // beim Ziehen weicht das große Fernglas nach oben aus (a2-look)
 
     func body(content: Content) -> some View {
         if empty {
@@ -432,39 +652,8 @@ private struct OffersForms: ViewModifier {
                     if refreshing { PotLoader() } else { Ill("binoculars").frame(width: 240) }
                 }
                 .edgeForm(.circle, Theme.C.blue1, width: 440, height: 440, left: -70, top: 300)
-        } else if drug {
-            content
-                .pinned(left: 262, top: 46) { Ill("bag").frame(width: 110) }
-                .edgeForm(.quarter, Theme.C.rose, width: 190, height: 190, right: 0, top: 0)
-                .modifier(Overscroll(color: Theme.C.rose, width: 190))
-        } else if nextWeek {
-            content
-                .pinned(left: 222, top: 58) { look(Ill("binoculars").frame(width: 160)) }
-                .edgeForm(.leaf(130), Theme.C.blue1, width: 200, height: 240, right: 0, top: 0)
-                .modifier(Overscroll(color: Theme.C.blue1, width: 200))
         } else {
             content
-                .pinned(left: 200, top: 56) { look(Ill("binoculars").frame(width: 200)) }
-                .edgeForm(.leaf(150), Theme.C.blue1, width: 240, height: 290, right: 0, top: 0)
-                .modifier(Overscroll(color: Theme.C.blue1, width: 240))
-        }
-    }
-
-    private func look(_ v: some View) -> some View {
-        v.opacity(looking ? 0 : 1).offset(y: looking ? -24 : 0)
-            .animation(.spring(response: 0.5, dampingFraction: 0.6), value: looking)
-    }
-}
-
-/// Verlängert die Rand-Form nach oben, damit beim Herunterziehen keine Lücke über der Form entsteht.
-private struct Overscroll: ViewModifier {
-    let color: Color
-    let width: CGFloat
-    private static let reach: CGFloat = 600
-
-    func body(content: Content) -> some View {
-        content.background(alignment: .topTrailing) {
-            color.frame(width: width, height: Self.reach).offset(y: -Self.reach)
         }
     }
 }
@@ -638,62 +827,85 @@ struct OfferArt: View {
     }
 }
 
-/// Angebot als Zeile mit Farb-Lasche von rechts (`.offer` + `.tab`): Rabatt, Name, Laden · Menge, Preis; „+“ = Zur Liste (a1-add).
-struct OfferRow8: View {
+/// Angebotskachel (v9 `.c9-tc`): Fläche `card`, Bildfeld in Formfarbe mit Zeichnung oder Produktfoto auf weißem Plättchen,
+/// Rabatt oben links, „+“ unten rechts = Zur Liste (a1-add), Name, Preis mit altem Preis, Menge · Frist, Gericht aus dem Plan.
+struct OfferTile: View {
     @Environment(AppStore.self) private var store
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     let offer: OfferDTO
+    var dish: String?  // „Passt zu deiner Woche“: Gericht, das die Zutat nutzt
     var fresh = false  // „neu“ nach dem Aktualisieren
     var onAdd: ((CGRect) -> Void)?  // Rahmen der Zeichnung (global) für den Flug zum Einkauf-Symbol
     @State private var artFrame: CGRect = .zero
     @State private var gone = false
 
     private enum L {
-        static let tabRight: CGFloat = -24
-        static let tabTop: CGFloat = 12
-        static let artLeft: CGFloat = 12
-        static let artTop: CGFloat = -4
-        static let artWidth: CGFloat = 118
-        static let photo: CGFloat = 100  // Foto-Plättchen passt in die Lasche (112 hoch)
-        static let photoLeft: CGFloat = 30  // rechts vom „+“, das Foto bleibt ganz sichtbar
-        static let plus = CGPoint(x: 194, y: 46)
-        static let textWidth: CGFloat = 186
+        static let pad: CGFloat = 8  // .c9-tc padding 8 8 12
+        static let padBottom: CGFloat = 12
+        static let photoHeight: CGFloat = 104
+        static let photoRadius: CGFloat = 18
+        static let art: CGFloat = 80
+        static let photo: CGFloat = 92  // weißes Plättchen
+        static let text: CGFloat = 4
+        static let plus: CGFloat = 32
+        static let plusRing: CGFloat = 3
+        static let plusOffset = CGSize(width: -2, height: 18)  // Kreis 32: rechts 8, unten −12; Tap-Fläche 44
     }
 
     var body: some View {
         let onList = store.isOnList(offer)
+        let photo = OfferArt.hasPhoto(offer.title, url: offer.imageUrl)
+        let size = photo ? L.photo : L.art
+        let sub = [offer.amountText, offer.startsLater ? "ab \(weekdayDay(offer.validFrom))" : "bis \(weekdayDay(offer.validTo))"]
+            .compactMap { $0 }.joined(separator: " · ")
         VStack(alignment: .leading, spacing: 0) {
-            HStack(spacing: 6) {
-                if let d = offer.discount { DealPill(text: "−\(d) %") }
-                if offer.verdict == "bestpreis", let v = Verdict.pill(offer.verdict) { TintPill(text: v.text, bg: v.bg, fg: v.fg) }
-                if fresh { SoftPill(text: "neu") }
+            OfferArt(title: offer.title, url: offer.imageUrl)
+                .frame(width: size, height: size)
+                .onGeometryChange(for: CGRect.self) { g in g.frame(in: .global) } action: { f in artFrame = f }
+                .opacity(gone ? 0 : 1).scaleEffect(gone ? 0.6 : 1)
+                .accessibilityHidden(true)
+                .frame(maxWidth: .infinity)
+                .frame(height: L.photoHeight)
+                .background(OfferArt.tint(offer.title, category: offer.category),
+                            in: RoundedRectangle(cornerRadius: L.photoRadius, style: .continuous))
+                .overlay(alignment: .topLeading) {
+                    HStack(spacing: 4) {
+                        if let d = offer.discount { DealPill(text: "−\(d) %") }
+                        if fresh { SoftPill(text: "neu") }
+                    }
+                    .padding(L.pad)
+                }
+                .overlay(alignment: .bottomTrailing) { plus(onList).offset(L.plusOffset) }
+            Text(offer.title).font(Theme.F.serif(17, relativeTo: .headline)).lineLimit(2)
+                .padding(.top, 10).padding(.horizontal, L.text)
+            HStack(alignment: .firstTextBaseline, spacing: 4) {
+                Text(euro(offer.priceCents)).font(Theme.F.num(22)).tracking(Theme.F.numTracking(22))
+                if let regular = offer.regularPriceCents, regular > offer.priceCents {
+                    Text(num(Double(regular) / 100, 2...2)).strikethrough()
+                        .font(Theme.F.text(11, .semibold, relativeTo: .caption2)).foregroundStyle(Theme.C.ink2)
+                        .accessibilityLabel("statt \(euro(regular))")
+                }
             }
-            Text(offer.title).font(Theme.F.t2).lineLimit(2).minimumScaleFactor(0.75).padding(.top, 6)
-            Text([Labels.chain(offer.chain), offer.amountText, offer.startsLater ? "ab \(dayMonth(offer.validFrom))" : nil]
-                    .compactMap { $0 }.joined(separator: " · "))
-                .font(Theme.F.text(13, .semibold, relativeTo: .footnote)).foregroundStyle(Theme.C.ink2).lineLimit(1)
-            BigNumber(euro(offer.priceCents), size: 34).padding(.top, 8)
+            .lineLimit(1).minimumScaleFactor(0.7)
+            .padding(.top, 6).padding(.horizontal, L.text)
+            Text(sub).font(Theme.F.text(11, .semibold, relativeTo: .caption2)).foregroundStyle(Theme.C.ink2).lineLimit(1)
+                .padding(.top, 3).padding(.horizontal, L.text)
+            if let dish {
+                HStack(spacing: 4) {
+                    Icon(.sparkle, size: 13)
+                    Text(dish).lineLimit(1)
+                }
+                .font(Theme.F.text(11, .extrabold, relativeTo: .caption2)).foregroundStyle(Theme.C.blue3)
+                .padding(.top, 6).padding(.horizontal, L.text)
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel("passt zu \(dish)")
+            }
         }
         .foregroundStyle(Theme.C.ink)
-        .frame(maxWidth: L.textWidth, alignment: .leading)
-        .padding(.top, 12)
-        .frame(maxWidth: .infinity, minHeight: Theme.S.offerRow, alignment: .topLeading)
-        .overlay(alignment: .top) { Hairline() }
-        .pinned(right: L.tabRight, top: L.tabTop) {
-            EdgeForm(.tab(Theme.R.offer)).fill(OfferArt.tint(offer.title, category: offer.category))
-                .frame(width: Theme.S.offerTab.width, height: Theme.S.offerTab.height)
-                .overlay(alignment: .topLeading) {
-                    let photo = OfferArt.hasPhoto(offer.title, url: offer.imageUrl)
-                    let size = photo ? L.photo : L.artWidth
-                    OfferArt(title: offer.title, url: offer.imageUrl)
-                        .frame(width: size, height: size)
-                        .onGeometryChange(for: CGRect.self) { g in g.frame(in: .global) } action: { f in artFrame = f }
-                        .opacity(gone ? 0 : 1).scaleEffect(gone ? 0.6 : 1)
-                        .offset(x: photo ? L.photoLeft : L.artLeft, y: photo ? (Theme.S.offerTab.height - L.photo) / 2 : L.artTop)
-                }
-                .accessibilityHidden(true)
-        }
-        .overlay(alignment: .topLeading) { plus(onList).offset(x: L.plus.x, y: L.plus.y) }
+        .padding([.horizontal, .top], L.pad)
+        .padding(.bottom, L.padBottom)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .background(Theme.C.card, in: RoundedRectangle(cornerRadius: Theme.R.tile, style: .continuous))
         .contentShape(Rectangle())
         .accessibilityElement(children: .contain)
     }
@@ -710,10 +922,11 @@ struct OfferRow8: View {
                 withAnimation(.spring(response: 0.4, dampingFraction: 0.55)) { gone = false }
             }
         } label: {
-            Icon(onList ? .check : .plus, size: 20)
+            Icon(onList ? .check : .plus, size: 16)
                 .foregroundStyle(Theme.C.onInk)
-                .frame(width: 44, height: 44)
+                .frame(width: L.plus, height: L.plus)
                 .background(Theme.C.ink, in: Circle())
+                .overlay(Circle().stroke(Theme.C.card, lineWidth: L.plusRing).padding(-L.plusRing / 2))
                 .keyframeAnimator(initialValue: 1.0, trigger: onList) { v, s in v.scaleEffect(s) } keyframes: { _ in
                     KeyframeTrack {
                         LinearKeyframe(reduceMotion ? 1 : 0.7, duration: 0.01)
@@ -721,6 +934,7 @@ struct OfferRow8: View {
                         CubicKeyframe(1, duration: 0.14)
                     }
                 }
+                .frame(width: 44, height: 44)
                 .contentShape(Circle())
         }
         .buttonStyle(PressableStyle())
@@ -745,8 +959,8 @@ struct OfferFlight: View {
             TimelineView(.animation) { ctx in
                 let k = Self.curve(min(1, ctx.date.timeIntervalSince(fly.start) / 0.6))
                 let o = g.frame(in: .global).origin
-                let step = g.size.width / CGFloat(AppTab.allCases.count)
-                let bag = CGPoint(x: step / 2 + step * CGFloat(AppTab.allCases.firstIndex(of: .einkauf) ?? 3),
+                let step = g.size.width / 5  // 5 Plätze inkl. „+“
+                let bag = CGPoint(x: step / 2 + step * CGFloat(AppTab.einkauf.slot),
                                   y: g.size.height - (Theme.S.nav - Theme.S.navT - 34))  // inaktives Symbol: T + 34
                 let p0 = CGPoint(x: fly.from.midX - o.x, y: fly.from.midY - o.y)
                 let c = CGPoint(x: p0.x + 10, y: p0.y - 320)
@@ -802,6 +1016,12 @@ func offerSub(_ parts: [String?], deal: Int?) -> some View {
 func dayMonth(_ iso: String) -> String {
     let p = iso.prefix(10).split(separator: "-").compactMap { Int($0) }
     return p.count == 3 ? "\(p[2]).\(p[1])." : iso
+}
+
+/// „2026-11-07“ → „Sa 7.11.“
+func weekdayDay(_ iso: String) -> String {
+    guard let d = try? Date(String(iso.prefix(10)), strategy: PantryDTO.day) else { return dayMonth(iso) }
+    return "\(Labels.days[(Calendar.current.component(.weekday, from: d) + 5) % 7]) \(dayMonth(iso))"
 }
 
 /// Kleine Angebotskachel (`.c-mini`): Kreis 72 mit Logo (Drogerie) oder Zeichnung, Name zweizeilig, Preis + Rabatt.

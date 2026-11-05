@@ -200,183 +200,63 @@ enum PlanWeek {
 
 // MARK: S2 Wochenplan
 
-/// S2 Wochenplan (a.html): Zeitstrahl links, der gewählte Tag führt mit einer Linie zum blauen Halbkreis mit Teller, Name, Preis.
-/// Darunter (ohne Mockup, Funktion bleibt): Budget, Reste, Wochenschnitt, neu planen, teilen.
+/// S2 Wochenplan (v9 b.html, Variante A „Rad“, `WeekWheel`): Kopf, Tage zum Wischen, unten „Diese Woche“.
+/// Nach Sonntag (ohne Mockup, Funktion bleibt): Budget, Reste, Wochenschnitt, neu planen, teilen.
 private struct WeekPlanView: View {
     @Environment(AppStore.self) private var store
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Binding var planWeek: Bool
     @State private var day = Demo.screen != nil ? 1 : (Calendar(identifier: .iso8601).component(.weekday, from: .now) + 5) % 7
-    @State private var dir: CGFloat = 1  // 1 = Tag weiter unten gewählt
-    @State private var link: CGFloat = 1
     @State private var detail = Demo.screen == "dayDetail"
     @State private var guestsFor: MealDTO? = Demo.screen == "guests" ? Demo.plan.entries[3] : nil  // „Gäste hinzufügen“ (15)
 
-    // Maße aus dem Mockup (Bildschirm-Oberkante = 0)
-    private enum K {
-        static let lineX: CGFloat = 34, lineTop: CGFloat = 205, lineHeight: CGFloat = 470
-        static let rowTop: CGFloat = 236, rowStep: CGFloat = 72, rowLeft: CGFloat = 28, dotLeft: CGFloat = 25
-        static let plateX: CGFloat = 182, plateY: CGFloat = 232, plate: CGFloat = 190
-        static let infoTop: CGFloat = 446, infoRight: CGFloat = 20
-        static let hero: CGFloat = 724  // 844 − Nav 120
-    }
-
     var body: some View {
-        ScrollView {
+        Group {
             if let plan = store.plan {
                 VStack(alignment: .leading, spacing: 0) {
-                    hero(plan)
-                    more(plan).padding(.horizontal, Theme.pagePadding)
+                    header(plan).frame(height: 150, alignment: .top)  // Mockup: Wisch-Fläche ab 150
+                    WeekWheel(plan: plan, today: store.today, openDay: { d in day = d; detail = true }) {
+                        more(plan).padding(.horizontal, Theme.pagePadding)
+                    }
+                    .refreshable { await store.loadAll() }
+                    PlanStat(label: "Diese Woche") { BigNumber(euro(plan.totalCents), size: 30) }
+                        .padding(.horizontal, Theme.pagePadding).padding(.top, 6)
                 }
                 .padding(.bottom, Theme.S.nav)
+                .ignoresSafeArea(edges: .vertical)
             } else {
-                PlanEmptyHero { planWeek = true }
+                ScrollView { PlanEmptyHero { planWeek = true } }
+                    .ignoresSafeArea(edges: .top)
+                    .refreshable { await store.loadAll() }
             }
         }
-        .ignoresSafeArea(edges: .top)
-        .refreshable { await store.loadAll() }
         .navigationDestination(isPresented: $detail) { DayDetailView(day: day) }
         .sheet(item: $guestsFor) { m in GuestsSheet(meal: m).presentationDetents([.height(466), .large]) }
     }
 
-    private func y(_ d: Int) -> CGFloat { K.rowTop + K.rowStep * CGFloat(d) }
-
-    private func hero(_ plan: PlanDTO) -> some View {
+    private func header(_ plan: PlanDTO) -> some View {
         let filled = (0..<7).filter { d in plan.entries.contains { $0.day == d } }.count
-        let main = PlanWeek.main(plan, day)
-        return ZStack(alignment: .topLeading) {
-            HStack(alignment: .bottom) {
-                VStack(alignment: .leading, spacing: 0) {
-                    Text("KW \(PlanWeek.kw(plan.week)) · \(PlanWeek.range(plan.week))").font(Theme.F.small).foregroundStyle(Theme.C.ink2)
-                    Text("Deine Woche").font(Theme.F.t1)
-                }
-                Spacer()
-                (Text("\(filled)") + Text("/7").foregroundStyle(Theme.C.ink3))
-                    .font(Theme.F.num(30)).tracking(Theme.F.numTracking(30))
-                    .accessibilityLabel("\(filled) von 7 Tagen geplant")
+        return HStack(alignment: .bottom) {
+            VStack(alignment: .leading, spacing: 0) {
+                Text("KW \(PlanWeek.kw(plan.week)) · \(PlanWeek.range(plan.week))").font(Theme.F.small).foregroundStyle(Theme.C.ink2)
+                Text("Deine Woche").font(Theme.F.t1)
             }
-            .padding(.horizontal, Theme.pagePadding).padding(.top, 66)
-
-            Rectangle().fill(Theme.C.line).frame(width: Theme.S.hair, height: K.lineHeight)
-                .padding(.leading, K.lineX).padding(.top, K.lineTop)
-            ForEach(0..<7, id: \.self) { d in dayRow(plan, d) }
-            Circle().fill(Theme.C.ink).frame(width: 19, height: 19)
-                .background(Circle().fill(Theme.C.bg).padding(-5))
-                .padding(.leading, K.dotLeft).padding(.top, y(day) - 7)
-                .allowsHitTesting(false)
-            Connector(y: y(day) + 9).trim(from: 0, to: link)
-                .stroke(Theme.C.ink, style: StrokeStyle(lineWidth: Theme.S.hair, lineCap: .round))
-                .allowsHitTesting(false)
-
-            Button { detail = true } label: {
-                ZStack {
-                    if let main {
-                        PlanPlate(url: mediaURL(main.recipe.imageUrl), size: K.plate)
-                    } else {
-                        Circle().fill(Theme.C.card).overlay { Ill("pot").padding(36) }.frame(width: K.plate, height: K.plate)
-                    }
-                }
-                .id(day)
-                .transition(plateTransition)
-            }
-            .buttonStyle(PressableStyle())
-            .padding(.leading, K.plateX).padding(.top, K.plateY)
-            .accessibilityLabel("\(Labels.dayNames[day]) im Detail")
-
-            info(main).padding(.leading, K.plateX).padding(.trailing, K.infoRight).padding(.top, K.infoTop)
+            Spacer()
+            (Text("\(filled)") + Text("/7").foregroundStyle(Theme.C.ink3))
+                .font(Theme.F.num(30)).tracking(Theme.F.numTracking(30))
+                .accessibilityLabel("\(filled) von 7 Tagen geplant")
         }
-        .frame(maxWidth: .infinity, minHeight: K.hero, alignment: .topLeading)
-        .edgeForm(.circle, Theme.C.blue, width: 500, height: 500, left: 140, top: 180)
-        .sensoryFeedback(.selection, trigger: day)
+        .padding(.horizontal, Theme.pagePadding).padding(.top, 66)
     }
 
-    /// Teller fällt beim Tageswechsel nach unten/oben weg und federt von der anderen Seite herein (`a1-day`).
-    private var plateTransition: AnyTransition {
-        guard !reduceMotion else { return .opacity }
-        return .asymmetric(
-            insertion: .modifier(active: PlanFly(y: -dir * 520, deg: -dir * 180), identity: PlanFly())
-                .animation(.spring(response: 0.55, dampingFraction: 0.62).delay(0.4)),
-            removal: .modifier(active: PlanFly(y: dir * 640, deg: dir * 180), identity: PlanFly())
-                .animation(.timingCurve(0.5, 0, 0.9, 0.5, duration: 0.4)))
-    }
-
-    private func dayRow(_ plan: PlanDTO, _ d: Int) -> some View {
-        let has = plan.entries.contains { $0.day == d }
-        let on = d == day
-        return Button { select(d) } label: {
-            HStack(alignment: .top, spacing: 14) {
-                Circle().fill(has ? Theme.C.ink3 : Theme.C.bg)
-                    .overlay(Circle().strokeBorder(Theme.C.ink3, lineWidth: 2))
-                    .frame(width: 13, height: 13).padding(.top, 3)
-                    .opacity(on ? 0 : 1)  // gewählt: der wandernde Punkt
-                VStack(alignment: .leading, spacing: 1) {
-                    Text(on ? Labels.dayNames[d] : Labels.days[d])
-                        .font(on ? Theme.F.rowName : Theme.F.text(15, .bold))
-                        .foregroundStyle(on ? Theme.C.ink : Theme.C.ink2)
-                    Text(on ? PlanWeek.dayDate(plan.week, d) : PlanWeek.main(plan, d)?.recipe.title ?? "frei")
-                        .font(Theme.F.text(12, .bold, relativeTo: .caption)).foregroundStyle(Theme.C.ink3)
-                        .lineLimit(1).frame(maxWidth: 96, alignment: .leading)
-                }
-            }
-            .frame(minHeight: 44, alignment: .top)
-            .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-        .padding(.leading, K.rowLeft).padding(.top, y(d) - 7)
-        .accessibilityLabel("\(Labels.dayNames[d]), \(PlanWeek.main(plan, d)?.recipe.title ?? "frei")")
-        .accessibilityAddTraits(on ? .isSelected : [])
-    }
-
-    @ViewBuilder private func info(_ m: MealDTO?) -> some View {
-        VStack(alignment: .leading, spacing: 0) {
-            if let m {
-                let deals = PlanWeek.deals(m)
-                Text("\(Labels.meal(m.mealType)) · \(m.recipe.prepMinutes) min".uppercased())
-                    .font(Theme.F.lbl).tracking(11 * 0.08).foregroundStyle(Theme.C.ink)
-                    .contentTransition(.opacity)
-                Text(m.recipe.title).font(Theme.F.t2).padding(.top, 4).contentTransition(.opacity)
-                HStack(alignment: .bottom) {
-                    VStack(alignment: .leading, spacing: 4) {
-                        BigNumber(euro(PlanWeek.perPortion(m)), size: 44)
-                        (Text("p. P.") + Text(deals > 0 ? " · " : "") + Text(deals > 0 ? "\(deals) im Angebot" : "").foregroundStyle(Theme.C.deal))
-                            .font(Theme.F.text(12, .semibold, relativeTo: .caption)).foregroundStyle(Theme.C.ink)
-                    }
-                    Spacer(minLength: 8)
-                    NavigationLink { RecipeDetailView(meal: m) } label: { PlanInkCircle(icon: .play, size: 50, iconSize: 18) }
-                        .buttonStyle(PressableStyle())
-                        .accessibilityLabel("\(m.recipe.title) öffnen")
-                }
-                .padding(.top, 12)
-            } else {
-                Text("FREI").font(Theme.F.lbl).tracking(11 * 0.08).foregroundStyle(Theme.C.ink)
-                Text("Nichts geplant").font(Theme.F.t2).padding(.top, 4)
-            }
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-    }
-
-    private func select(_ d: Int) {
-        guard d != day else { detail = true; return }  // gewählten Tag nochmal antippen → Tag im Detail
-        guard !reduceMotion else { day = d; return }
-        dir = d > day ? 1 : -1
-        withAnimation(.easeIn(duration: 0.15)) { link = 0 }
-        DispatchQueue.main.async {  // Richtung erst setzen, dann tauschen (Übergang liest `dir`)
-            withAnimation(.spring(response: 0.45, dampingFraction: 0.55)) { day = d }
-            withAnimation(.easeOut(duration: 0.3).delay(0.4)) { link = 1 }
-        }
-    }
-
-    // Unter dem Mockup-Bereich: was die alte Woche zusätzlich zeigte
+    // Nach Sonntag: was die alte Woche zusätzlich zeigte („Diese Woche“ steht fest unten)
     private func more(_ plan: PlanDTO) -> some View {
         let budget = store.household?.budgetFoodWeekCents ?? 0
         return VStack(alignment: .leading, spacing: 0) {
-            PlanStat(label: "Diese Woche") { BigNumber(euro(plan.totalCents), size: 44) }
             if budget > 0 {
                 HStack(spacing: 10) {
                     ProgressBar8(value: Double(plan.totalCents) / Double(budget), color: plan.totalCents > budget ? Theme.C.deal : Theme.C.ink)
-                    Text("von \(euro(budget))").font(Theme.F.text(12, .semibold, relativeTo: .caption)).foregroundStyle(Theme.C.ink2)
+                    Text("\(euro(plan.totalCents)) von \(euro(budget))").font(Theme.F.text(12, .semibold, relativeTo: .caption)).foregroundStyle(Theme.C.ink2)
                 }
-                .padding(.top, 10)
             }
             if plan.savedCents > 0 {
                 PlanStat(label: "Gespart", mute: true) { BigNumber(euro(plan.savedCents), size: 30).foregroundStyle(Theme.C.deal) }
@@ -408,22 +288,6 @@ private struct WeekPlanView: View {
                 }
             }
             .animation(Theme.spring, value: n.members)
-        }
-    }
-
-    /// Linie vom gewählten Tag zum Teller (Mockup `a1-link`: `M140 y C166 y 156 327 182 327`).
-    private struct Connector: Shape {
-        var y: CGFloat
-        var animatableData: CGFloat {
-            get { y }
-            set { y = newValue }
-        }
-
-        func path(in rect: CGRect) -> Path {
-            var p = Path()
-            p.move(to: CGPoint(x: 140, y: y))
-            p.addCurve(to: CGPoint(x: 182, y: 327), control1: CGPoint(x: 166, y: y), control2: CGPoint(x: 156, y: 327))
-            return p
         }
     }
 }
@@ -742,7 +606,6 @@ struct RecipeDetailView: View {
     }
     private var details: RecipeDTO { info ?? recipe }
     private var nutrition: NutritionDTO? { recipe.nutrition ?? info?.nutrition }
-    private var composition: [CompositionItem]? { recipe.composition ?? info?.composition }
     private var isFavorite: Bool { favorite ?? details.favorite }
     /// Importiert (Instagram, Web) oder aus einem anderen Haushalt übernommen → Variante „Importiertes Rezept“.
     private var imported: Bool { ["instagram", "web", "shared"].contains(recipe.source) }
@@ -835,7 +698,7 @@ struct RecipeDetailView: View {
     /// Plan-Gerichte holen Bewertungen/Favorit nach; fehlen Nährwerte (Berechnung läuft), einmal nach ~3 s neu laden.
     private func loadInfo() async {
         if recipe.ratings == nil { info = (try? await store.recipe(recipe.id)) ?? info }
-        guard nutrition == nil || composition == nil else { return }
+        guard nutrition == nil else { return }
         try? await Task.sleep(for: .seconds(3))
         if let again = try? await store.recipe(recipe.id) { withAnimation(Theme.spring) { info = again } }
     }
@@ -888,12 +751,6 @@ private enum S3Layout {
     static let ingredientsTop: CGFloat = 34, importedIngredientsTop: CGFloat = 68
     static let deepAt: CGFloat = 420  // Zutaten-Ende höher als das → untere Leiste aus Teil 2/3
     static let sectionTop: CGFloat = 40  // Teil 1 → Teil 2 (im Mockup getrennte Bildschirme)
-    static let forTop: CGFloat = 28, nutriTop: CGFloat = 16, nutriSize: CGFloat = 40, nutriUnit: CGFloat = 20
-    static let nutriColGap: CGFloat = 24, nutriRowGap: CGFloat = 14
-    static let bloomTitleTop: CGFloat = 32, bloomTop: CGFloat = 6, bloomHeight: CGFloat = 290, bloomCenterY: CGFloat = 180
-    static let bloomPlate: CGFloat = 110, bloomRing: CGFloat = 4
-    static let petalBase: CGFloat = 60, petalMin: CGFloat = 20, petalGrow: CGFloat = 57  // Blatt 60 → 137 beim größten Anteil
-    static let labelGap: CGFloat = 24, labelWidth: CGFloat = 92, bloomNum: CGFloat = 21
     static let portionsTop: CGFloat = 28, stepsTop: CGFloat = 32, stepsBottom: CGFloat = 8
     static let stepNum: CGFloat = 22, stepNumWidth: CGFloat = 34, stepText: CGFloat = 15, stepLine: CGFloat = 15 * 0.45 - 3
     static let ratingsTop: CGFloat = 32, ratingsListTop: CGFloat = 10, ratingNum: CGFloat = 34, star: CGFloat = 14
@@ -906,8 +763,6 @@ private enum S3Layout {
     static var amount: Font { Theme.F.text(16, .bold, relativeTo: .body) }  // <b>
     /// Kreisfarben der Zutaten ohne eigene Zeichnung, Reihenfolge wie im Mockup.
     static var tints: [Color] { [Theme.C.rose, Theme.C.sage, Theme.C.blue1, Theme.C.sand] }
-    /// Blüten-Blätter (Mockup b-g1…b-g5: rosé, sand, salbei, blau; „Sonstiges“ grau).
-    static var petals: [Color] { [Theme.C.rose, Theme.C.sand, Theme.C.sage, Theme.C.blue, Theme.C.blue3, Theme.C.blue1, Theme.C.warn] }
 }
 
 extension RecipeDetailView {
@@ -948,22 +803,8 @@ extension RecipeDetailView {
                     }
             }
 
-            // Teil 2: Für, Nährwerte, Zusammensetzung
-            Group {
-                if let who { forRow(who, mine: mine, base: base).padding(.top, S3Layout.sectionTop) }
-                nutrients(mine ?? 1).padding(.top, S3Layout.nutriTop)
-                if composition.map({ c in !c.isEmpty }) ?? true {
-                    Text("Zusammensetzung").font(S3Layout.head).padding(.top, S3Layout.bloomTitleTop)
-                    Group {
-                        if let composition {
-                            DetailBloom(items: composition, photo: mediaURL(recipe.imageUrl))
-                        } else {
-                            Skeleton8(height: S3Layout.bloomHeight)  // Berechnung läuft
-                        }
-                    }
-                    .padding(.top, S3Layout.bloomTop)
-                }
-            }
+            // Teil 2: Nährwerte im Vergleich (v9 a.html Variante C, Personen-Umschalter in der Karte)
+            NutritionColumns(nutrition: nutrition, who: who, mine: mine, person: $person).padding(.top, S3Layout.sectionTop)
 
             // Teil 3: Portionen, Zubereitung, Bewertungen
             Group {
@@ -1187,72 +1028,6 @@ extension RecipeDetailView {
         }
     }
 
-    // MARK: Teil 2
-
-    /// „Für“ + Chip je Person (an = Tinte), darunter „Pro Portion · deine Portion 1,2 × · 310 g“ (48).
-    fileprivate func forRow(_ who: ProfileDTO, mine: Double?, base: Double) -> some View {
-        let isMe = who.memberId == store.profile?.memberId
-        let grams = recipe.ingredients.filter { ["g", "ml"].contains($0.unit) }.map(\.amount).reduce(0, +) * (mine ?? 0) * meal.scale / base
-        let line = mine.map { m in
-            ["Pro Portion", "\(isMe ? "deine Portion" : "Portion \(who.name)") \(num(m, 0...2)) ×", grams > 0 ? "\(Int(grams.rounded())) g" : nil]
-                .compactMap { $0 }.joined(separator: " · ")
-        } ?? "\(who.name) isst bei diesem Gericht nicht mit."
-        return VStack(alignment: .leading, spacing: 8) {
-            ScrollView(.horizontal) {
-                HStack(spacing: 8) {
-                    Text("Für").font(S3Layout.head).padding(.trailing, 6)
-                    ForEach(store.profiles.isEmpty ? [who] : store.profiles) { p in
-                        Chip8(title: p.name, on: p.memberId == who.memberId) { withAnimation(Theme.spring) { person = p.memberId } }
-                            .accessibilityLabel("Für \(p.name)")
-                    }
-                }
-            }
-            .scrollIndicators(.hidden)
-            .sensoryFeedback(.selection, trigger: person)
-            Text(line).font(S3Layout.small13).foregroundStyle(Theme.C.ink2).contentTransition(.numericText())
-        }
-    }
-
-    /// Vier Nährwerte als Zahlen 40 im 2×2-Raster (Einheit 20 in ink2); Platzhalter, solange die Berechnung läuft.
-    fileprivate func nutrients(_ k: Double) -> some View {
-        let values: [(String, Double, String?)]? = nutrition.map { n in
-            [("kcal", n.kcal * k, nil), ("Protein", n.protein * k, "g"), ("KH", n.carbs * k, "g"), ("Fett", n.fat * k, "g")]
-        }
-        return HStack(alignment: .top, spacing: S3Layout.nutriColGap) {
-            ForEach(0..<2, id: \.self) { col in
-                VStack(spacing: S3Layout.nutriRowGap) {
-                    ForEach([col, col + 2], id: \.self) { i in
-                        if let values {
-                            nutrient(values[i].0, values[i].1, values[i].2)
-                        } else {
-                            Skeleton8(height: S3Layout.nutriSize + 8)
-                        }
-                    }
-                }
-                .frame(maxWidth: .infinity)
-            }
-        }
-        .animation(Theme.spring, value: k)
-    }
-
-    fileprivate func nutrient(_ label: String, _ value: Double, _ unit: String?) -> some View {
-        VStack(spacing: 6) {
-            Hairline(color: Theme.C.ink)
-            HStack(alignment: .top) {
-                Text(label).font(Theme.F.text(12, .bold, relativeTo: .caption))
-                Spacer(minLength: 8)
-                HStack(alignment: .lastTextBaseline, spacing: 0) {
-                    BigNumber("\(Int(value.rounded()))", size: S3Layout.nutriSize)
-                    if let unit {
-                        Text(" " + unit).font(Theme.F.num(S3Layout.nutriUnit)).tracking(Theme.F.numTracking(S3Layout.nutriUnit))
-                            .foregroundStyle(Theme.C.ink2)
-                    }
-                }
-            }
-        }
-        .accessibilityElement(children: .combine)
-    }
-
     // MARK: Teil 3
 
     /// `.irow` „Portionen / Mengen passen sich an“ + Stepper, Linie oben und unten.
@@ -1417,67 +1192,6 @@ private struct DetailStars: View {
         .foregroundStyle(Theme.C.ink)
         .accessibilityElement()
         .accessibilityLabel("\(num(value)) von 5 Sternen")
-    }
-}
-
-/// Zusammensetzung als Blüte 342 × 290 um den Teller 110 (Blatt-Länge = Anteil am Gewicht), Blätter wachsen nacheinander auf.
-private struct DetailBloom: View {
-    let items: [CompositionItem]
-    let photo: URL?
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @State private var grown = false
-
-    var body: some View {
-        let parts = Bloom.parts(items)
-        let top = Double(parts.map(\.percent).max() ?? 1)
-        ZStack {
-            ForEach(Array(parts.enumerated()), id: \.offset) { i, part in
-                let angle = Double(i) / Double(max(parts.count, 1)) * 2 * .pi
-                let length = S3Layout.petalMin + S3Layout.petalGrow * CGFloat(Double(part.percent) / max(top, 1))
-                let color = part.name == "Sonstiges" ? Theme.C.bloomOther : S3Layout.petals[i % S3Layout.petals.count]
-                let r = S3Layout.petalBase + length + S3Layout.labelGap
-                Leaf()
-                    .fill(LinearGradient(colors: [color.opacity(0.45), color], startPoint: .bottom, endPoint: .top))
-                    .frame(width: Leaf.width(length), height: length)
-                    .scaleEffect(grown ? 1 : 0.01, anchor: .bottom)
-                    .offset(y: -(S3Layout.petalBase + length / 2))
-                    .rotationEffect(.radians(angle))
-                    .animation(reduceMotion ? nil : .spring(response: 0.6, dampingFraction: 0.7).delay(Double(i) * 0.09), value: grown)
-                VStack(spacing: 0) {
-                    Text("\(part.percent) %").font(Theme.F.num(S3Layout.bloomNum)).tracking(-0.04 * S3Layout.bloomNum)
-                    Text(part.name).font(Theme.F.text(12, .bold, relativeTo: .caption)).foregroundStyle(Theme.C.ink2).lineLimit(1)
-                }
-                .frame(width: S3Layout.labelWidth)
-                .offset(x: CGFloat(sin(angle)) * r, y: -CGFloat(cos(angle)) * r)
-                .opacity(grown ? 1 : 0)
-                .animation(reduceMotion ? nil : .easeOut(duration: 0.3).delay(Double(i) * 0.09 + 0.25), value: grown)
-                .accessibilityElement(children: .combine)
-            }
-            PlatePhoto(url: photo, size: S3Layout.bloomPlate, ring: S3Layout.bloomRing, shadow: false)
-        }
-        .offset(y: S3Layout.bloomCenterY - S3Layout.bloomHeight / 2)
-        .frame(maxWidth: .infinity)
-        .frame(height: S3Layout.bloomHeight)
-        .onAppear { grown = true }
-        .accessibilityElement(children: .contain)
-        .accessibilityLabel("Zusammensetzung nach Gewicht")
-    }
-
-    /// Blatt wie im Mockup (Basis unten, Spitze oben): Kontrollpunkte wachsen mit der Länge.
-    struct Leaf: Shape {
-        static func width(_ l: CGFloat) -> CGFloat { 2 * (14 + 0.16 * l) }
-
-        func path(in r: CGRect) -> Path {
-            let l = r.height, k1 = 14 + 0.16 * l, k2 = 10.5 + 0.1 * l
-            var p = Path()
-            p.move(to: CGPoint(x: r.midX, y: r.maxY))
-            p.addCurve(to: CGPoint(x: r.midX, y: r.minY), control1: CGPoint(x: r.midX + k1, y: r.maxY - 0.35 * l),
-                       control2: CGPoint(x: r.midX + k2, y: r.minY))
-            p.addCurve(to: CGPoint(x: r.midX, y: r.maxY), control1: CGPoint(x: r.midX - k2, y: r.minY),
-                       control2: CGPoint(x: r.midX - k1, y: r.maxY - 0.35 * l))
-            p.closeSubpath()
-            return p
-        }
     }
 }
 
@@ -2128,36 +1842,119 @@ enum DislikeReason {
     }
 }
 
-/// „Mag ich nicht“ mit Grund: Rezeptdetail und Würfel-Dialog (19.2), Swipe-Stapel (20).
+/// „Mag ich nicht“ mit Grund (Sheet, Mockup v9 e.html D): Rezeptdetail und Würfel-Dialog (19.2), Swipe-Stapel (20).
 struct DislikeDialog: ViewModifier {
     let ingredients: [String]
     @Binding var isPresented: Bool
     let noMood: (() -> Void)?  // „Keine Lust (nur diese Woche)“
+    var title = ""  // Gericht unter der Überschrift
     let choose: (DislikeReason) -> Void
-    @State private var picking = false
-    @State private var other = false
-    @State private var note = ""
 
     func body(content: Content) -> some View {
-        content
-            .confirmationDialog("Was magst du daran nicht?", isPresented: $isPresented, titleVisibility: .visible) {
-                if !ingredients.isEmpty { Button("Zutaten mag ich nicht") { picking = true } }
-                Button("Schmeckt mir einfach nicht") { choose(.taste) }
-                if let noMood { Button("Keine Lust (nur diese Woche)", action: noMood) }
-                Button("Sonstiges …") { note = ""; other = true }
-                Button("Abbrechen", role: .cancel) {}
-            }
-            .confirmationDialog("Welche Zutat?", isPresented: $picking, titleVisibility: .visible) {
-                ForEach(ingredients, id: \.self) { name in
-                    Button(name) { choose(.ingredient(name)) }
+        content.sheet(isPresented: $isPresented) {
+            DislikeSheet(title: title, ingredients: ingredients, noMood: noMood, choose: choose)
+        }
+    }
+}
+
+/// Gründe als Haken-Zeilen; „Eine Zutat“ klappt die Zutaten als Chips auf, „Sonstiges“ ein Freitextfeld.
+private struct DislikeSheet: View {
+    enum Pick { case ingredient, taste, mood, other }
+
+    let title: String
+    let ingredients: [String]
+    let noMood: (() -> Void)?
+    let choose: (DislikeReason) -> Void
+    @Environment(\.dismiss) private var dismiss
+    @State private var pick: Pick
+    @State private var ingredient: String?
+    @State private var note = ""
+    @State private var height: CGFloat = 420
+
+    init(title: String, ingredients: [String], noMood: (() -> Void)?, choose: @escaping (DislikeReason) -> Void) {
+        self.title = title
+        self.ingredients = ingredients
+        self.noMood = noMood
+        self.choose = choose
+        _pick = State(initialValue: ingredients.isEmpty ? .taste : .ingredient)
+        _ingredient = State(initialValue: ingredients.first)
+    }
+
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 0) {
+                HStack(alignment: .top) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Mag ich nicht").font(Theme.F.t2)
+                        if !title.isEmpty {
+                            Text(title).font(Theme.F.text(13, .semibold, relativeTo: .footnote)).foregroundStyle(Theme.C.ink2)
+                        }
+                    }
+                    Spacer()
+                    CloseButton { dismiss() }
                 }
-                Button("Abbrechen", role: .cancel) {}
+                VStack(spacing: 0) {
+                    if !ingredients.isEmpty {
+                        option(.ingredient, "Eine Zutat", "kommt auf deine Mag-nicht-Liste") {
+                            // shortcut: eine Zutat je Mal – Vote/Abneigung nehmen nur einen Namen, bei Bedarf Liste im Backend
+                            FlowLayout(spacing: 6, lineSpacing: 0) {  // Chips haben 44er Tap-Rahmen
+                                ForEach(ingredients, id: \.self) { name in
+                                    Chip8(title: name, on: ingredient == name) { ingredient = name }
+                                }
+                            }
+                            .padding(.top, 4)
+                        }
+                    }
+                    option(.taste, "Schmeckt mir nicht", "Gericht nie wieder vorschlagen") { EmptyView() }
+                    if noMood != nil { option(.mood, "Keine Lust", "nur diese Woche raus") { EmptyView() } }
+                    option(.other, "Sonstiges", "kurz sagen, warum") {
+                        FieldBox { TextField("z. B. zu scharf für die Kinder", text: $note) }.padding(.top, 8)
+                    }
+                }
+                .padding(.top, 14)
+                PrimaryButton(title: "Raus damit", disabled: pick == .ingredient && ingredient == nil, action: done)
+                    .padding(.top, 14)
             }
-            .alert("Was passt dir nicht?", isPresented: $other) {
-                TextField("z. B. zu scharf, zu aufwendig", text: $note)
-                Button("Nie wieder vorschlagen") { choose(.other(note)) }
-                Button("Abbrechen", role: .cancel) {}
+            .padding(.horizontal, Theme.pagePadding)
+            .padding(.bottom, 40)
+            .animation(Theme.spring, value: pick)
+            .onGeometryChange(for: CGFloat.self) { g in g.size.height } action: { h in height = h }
+        }
+        .scrollBounceBehavior(.basedOnSize)
+        .scrollDismissesKeyboard(.immediately)
+        .presentationDetents([.height(height + 33), .large])
+        .sheet8()
+    }
+
+    /// Zeile `.opt`: Haken-Kreis, Titel 15, Unterzeile 12; Zusatz nur, wenn gewählt.
+    private func option<Extra: View>(_ p: Pick, _ head: String, _ sub: String, @ViewBuilder extra: () -> Extra) -> some View {
+        let on = pick == p
+        return HStack(alignment: .top, spacing: 12) {
+            CheckCircle(on: on).padding(.top, 1).accessibilityHidden(true)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(head).font(Theme.F.text(15, .extrabold, relativeTo: .body))
+                Text(sub).font(Theme.F.text(12, .semibold, relativeTo: .caption)).foregroundStyle(Theme.C.ink2)
+                if on { extra() }
             }
+            Spacer(minLength: 0)
+        }
+        .padding(.vertical, 10)
+        .frame(minHeight: 44)
+        .overlay(alignment: .top) { Hairline() }
+        .contentShape(Rectangle())
+        .onTapGesture { pick = p }
+        .accessibilityElement(children: on ? .contain : .combine)
+        .accessibilityAddTraits(on ? [.isButton, .isSelected] : .isButton)
+    }
+
+    private func done() {
+        switch pick {
+        case .ingredient: if let ingredient { choose(.ingredient(ingredient)) }
+        case .taste: choose(.taste)
+        case .mood: noMood?()
+        case .other: choose(.other(note))
+        }
+        dismiss()
     }
 }
 
@@ -2165,7 +1962,7 @@ extension DislikeDialog {
     /// Plan-Gericht: Zutat → Abneigungen, sonst Nie-Liste; danach ggf. neu würfeln.
     init(meal: MealDTO, isPresented: Binding<Bool>, roll: (() -> Void)?, store: AppStore) {
         self.init(ingredients: meal.recipe.ingredients.filter { $0.inPantry != true }.map(\.name).uniqued(),
-                  isPresented: isPresented, noMood: roll) { reason in
+                  isPresented: isPresented, noMood: roll, title: meal.recipe.title) { reason in
             Task {
                 if case .ingredient(let name) = reason {
                     await store.dislike(name)

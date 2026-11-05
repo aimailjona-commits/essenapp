@@ -99,10 +99,12 @@ struct MainView: View {
     @State private var tab = MainView.demoTab
     @State private var resetToken = 0  // erneutes Tippen auf den aktiven Tab → zurück zum Anfang
     @Environment(\.requestReview) private var requestReview
-    @State private var quickOpen = Demo.screen == "quick"
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var allOpen = ["quick", "alles"].contains(Demo.screen ?? "")  // „Alles“ aus dem „+“ (v9 2A)
+    @State private var showRecipes = false  // Meine Rezepte (unter „+“, früher eigener Tab)
     @State private var showGenerator = ["generator", "generating", "singlestore", "generatorMore"].contains(Demo.screen ?? "")  // „Überrasch mich“
-    @State private var planWeek = ["swipe", "match", "auswahl", "verteilen"].contains(Demo.screen ?? "")  // Swipe-Stapel (20)
-    @State private var showRecipeForm = false  // Schnell-Aktion „Rezept anlegen“ (S17)
+    @State private var planWeek = ["swipe", "match", "auswahl", "verteilen", "magnicht"].contains(Demo.screen ?? "")  // Swipe-Stapel (20)
+    @State private var showRecipeForm = false  // essenapp://recipe/new (S17)
     @State private var deepAchievements = false  // Push „Neuer Erfolg“ (54)
     @State private var sharedCode: String? = Demo.screen == "sharedrecipe" ? Demo.sharedRecipe.code : nil  // essenapp://import-recipe/<code> (56)
 
@@ -110,7 +112,6 @@ struct MainView: View {
         switch Demo.screen {
         case "offers", "offer", "stores", "watch", "scanner", "nextweek", "offerstock", "drogerie", "offersfilter", "offersempty", "watchedit", "watchsearch": .angebote
         case "plan", "guests", "dayDetail": .woche
-        case "recipe", "cooking", "cookprep", "cookvoice", "cookdone", "sharecard", "recipes", "myrecipe", "recipeform", "imported", "importlink": .rezepte
         case "shopping", "list", "pantry", "fridgecam", "fridgereview", "cooknow", "offline", "voiceadd", "wallet", "bonus", "coupon": .einkauf
         default: .start
         }
@@ -123,11 +124,10 @@ struct MainView: View {
 
     @ViewBuilder private var tabContent: some View {
         switch tab {
-        case .start: StartView(showGenerator: $showGenerator, planWeek: $planWeek, quickOpen: $quickOpen)
+        case .start: StartView(tab: $tab, showGenerator: $showGenerator, planWeek: $planWeek, allOpen: $allOpen)
         case .woche: RecipesTab(planWeek: $planWeek, week: true)
         case .angebote: OffersView()
         case .einkauf: ShoppingView()
-        case .rezepte: RecipesTab(planWeek: $planWeek)
         }
     }
 
@@ -139,6 +139,7 @@ struct MainView: View {
                 Group {
                     switch (Demo.screen, tab) {
                     case ("recipe", _), ("cooking", _), ("cookprep", _), ("cookvoice", _), ("cookdone", _), ("sharecard", _): RecipeDetailView(meal: Demo.plan.entries[2])
+                    case ("recipes", _): RecipesTab(planWeek: $planWeek)
                     case ("myrecipe", _): SavedRecipeView(recipeId: Demo.savedRecipe.id)
                     case ("recipeform", _): RecipeFormSheet(editing: Demo.savedRecipe, page: 1)
                     case ("recipeform1", _): RecipeFormSheet(editing: Demo.savedRecipe, page: 0)
@@ -192,36 +193,41 @@ struct MainView: View {
                     }
                 }
                 .navigationDestination(isPresented: $deepAchievements) { AchievementsView() }
+                .navigationDestination(isPresented: $showRecipes) { RecipesTab(planWeek: $planWeek).backBar() }
             }
             .contentMargins(.bottom, Theme.S.nav - 34, for: .scrollContent)  // Ende jeder Liste über der Tab-Leiste erreichbar
             .id("\(tab)-\(resetToken)")  // Tab-Wechsel schließt offene Detailseiten
             .animation(.easeInOut(duration: 0.2), value: tab)
 
-            if !Self.modalDemo.contains(Demo.screen ?? ""), store.tabBarHiders == 0 {
-                NotchTabBar(selected: $tab, badges: [.angebote: store.watchHits]) { resetToken += 1 }
-                    .frame(maxHeight: .infinity, alignment: .bottom)  // Leiste (120 inkl. Home-Balken) bis an den Bildschirmrand
+            if allOpen {  // „Alles“ liegt unter der Tab-Leiste, „+“ bleibt als × sichtbar (f.html 2A)
+                Theme.C.scrim.ignoresSafeArea()
+                    .onTapGesture { go(.close) }
+                    .accessibilityLabel("Alles schließen")
+                    .accessibilityAddTraits(.isButton)
+                    .transition(.opacity)
+                    .zIndex(1)
+                AllSheet { g in go(g) }
+                    .padding(.top, 36)
                     .ignoresSafeArea(edges: .bottom)
-                    .transition(.move(edge: .bottom))
+                    .transition(reduceMotion ? .opacity : .move(edge: .bottom))
+                    .zIndex(2)
             }
-            if !store.newAchievements.isEmpty { UnlockOverlay().zIndex(2) }  // Vollbild-Moment (54)
+            if !Self.modalDemo.contains(Demo.screen ?? ""), store.tabBarHiders == 0 {
+                NotchTabBar(selected: $tab, badges: [.angebote: store.watchHits], plusOpen: allOpen,
+                            plus: { withAnimation(reduceMotion ? nil : Theme.spring) { allOpen.toggle() } }) {
+                    if allOpen { go(.close) } else { resetToken += 1 }
+                }
+                .frame(maxHeight: .infinity, alignment: .bottom)  // Leiste (120 inkl. Home-Balken) bis an den Bildschirmrand
+                .ignoresSafeArea(edges: .bottom)
+                .transition(.move(edge: .bottom))
+                .zIndex(3)
+            }
+            if !store.newAchievements.isEmpty { UnlockOverlay().zIndex(4) }  // Vollbild-Moment (54)
         }
         .sheet(isPresented: Binding(get: { store.scanning }, set: { on in store.scanning = on })) {
             FridgeScanSheet().presentationDetents([.large]).presentationCornerRadius(Theme.R.sheet)
         }
         .fullScreenCover(isPresented: Binding(get: { store.barcode }, set: { on in store.barcode = on })) { BarcodeScanView() }
-        .sheet(isPresented: $quickOpen) {
-            QuickActionsSheet { action in
-                quickOpen = false
-                switch action {
-                case .plan: planWeek = true
-                case .list: tab = .einkauf
-                case .barcode: store.barcode = true
-                case .recipe: showRecipeForm = true
-                case .scan: store.scanning = true
-                }
-            }
-            .presentationDetents([.height(460)]).presentationCornerRadius(Theme.R.sheet)
-        }
         .sheet(isPresented: $showGenerator) { PlanGeneratorSheet().presentationDetents([.large]) }
         .fullScreenCover(isPresented: $planWeek) { SwipeView() }
         .sheet(isPresented: $showRecipeForm) { RecipeFormSheet().presentationDetents([.large]).presentationCornerRadius(Theme.R.sheet) }
@@ -237,8 +243,7 @@ struct MainView: View {
             if let code = sharedCode {
                 SharedRecipeSheet(code: code) { id in
                     Task {
-                        withAnimation(Theme.spring) { tab = .rezepte }
-                        try? await Task.sleep(for: .milliseconds(450))  // Sheet zu, Tab-Wechsel baut den NavigationStack neu
+                        try? await Task.sleep(for: .milliseconds(450))  // erst nach dem Schließen des Sheets
                         deepRecipe = id
                     }
                 }
@@ -258,9 +263,10 @@ struct MainView: View {
         }
         .modifier(PushAsk(active: store.askPush))
         .onOpenURL { url in Task { await open(url) } }
-        .onChange(of: store.recipeFilter) { _, f in  // Start-Karte → Rezepte-Tab (RecipesTab übernimmt den Filter)
-            if f != nil { withAnimation(Theme.spring) { tab = .rezepte } }
+        .onChange(of: store.recipeFilter) { _, f in  // Start-Karte → Meine Rezepte (RecipesTab übernimmt den Filter)
+            if f != nil { showRecipes = true }
         }
+        .onChange(of: tab) { _, _ in if allOpen { go(.close) } }
         .onReceive(delegate.$pendingURL) { url in  // Mitteilung angetippt
             guard let url else { return }
             delegate.pendingURL = nil
@@ -273,7 +279,7 @@ struct MainView: View {
     /// essenapp://import-recipe/<code>.
     private func open(_ url: URL) async {
         guard url.scheme == "essenapp" else { return }
-        withAnimation(Theme.spring) { quickOpen = false }
+        withAnimation(Theme.spring) { allOpen = false }
         switch url.host() {
         case "start":
             withAnimation(Theme.spring) { tab = .start }
@@ -284,8 +290,6 @@ struct MainView: View {
         case "recipe":  // Lunchbox-Push „für morgen vorbereiten“ (24)
             guard let id = Int(url.lastPathComponent) else { return }
             if store.plan == nil { await store.loadAll() }
-            withAnimation(Theme.spring) { tab = .rezepte }
-            try? await Task.sleep(for: .milliseconds(350))  // Tab-Wechsel baut den NavigationStack neu
             deepRecipe = id
         case "offer":
             guard let id = Int(url.lastPathComponent) else { return }
@@ -319,7 +323,20 @@ struct MainView: View {
     }
 }
 
-/// Schnell-Aktionen (E14): Ziele für `QuickActionsSheet` (StartView).
-enum QuickActions {
-    enum Action { case plan, barcode, list, recipe, scan }
+extension MainView {
+    /// Ziele aus „Alles“: Fläche schließen, dann Tab wechseln bzw. Ablauf öffnen.
+    fileprivate func go(_ g: AllSheet.Go) {
+        withAnimation(reduceMotion ? nil : Theme.spring) { allOpen = false }
+        switch g {
+        case .close: break
+        case .tab(let t): withAnimation(Theme.spring) { tab = t }
+        case .recipes: showRecipes = true
+        case .planWeek: planWeek = true
+        case .generator: showGenerator = true
+        case .scan: store.scanning = true
+        case .barcode: store.barcode = true
+        case .review: store.review = ""
+        case .recipe(let id): deepRecipe = id
+        }
+    }
 }

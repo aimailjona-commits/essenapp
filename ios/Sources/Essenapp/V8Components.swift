@@ -807,29 +807,37 @@ struct NotchShape: Shape {
     }
 }
 
-/// Nav v8: nur Icons, weiße Leiste mit Mulde, aktives Symbol schwebt im blauen 58er-Kreis. Mulde gleitet beim Wechsel.
+/// Nav v9 (f.html): Start · Woche · „+“ · Angebote · Einkauf. Mulde fest unter dem schwarzen „+“ (58), das beim Öffnen
+/// von „Alles“ zum × dreht. Aktiver Tab: Tinte mit Punkt darunter.
 struct NotchTabBar: View {
     @Binding var selected: AppTab
     var badges: [AppTab: Int] = [:]  // z. B. Merklisten-Treffer am Angebote-Tab (27)
+    var plusOpen = false
+    var plus: () -> Void = {}
     var reselect: () -> Void = {}
 
     var body: some View {
         GeometryReader { g in
-            let w = g.size.width, step = w / 5
+            let step = g.size.width / 5
             let x = { (i: Int) in step / 2 + step * CGFloat(i) }  // 390 breit: 39 + 78 · i
-            let on = AppTab.allCases.firstIndex(of: selected) ?? 0
             ZStack(alignment: .topLeading) {
-                NotchShape(center: x(on))
+                NotchShape(center: x(2))
                     .fill(Theme.C.navBar)
                     .shadow(color: Color(hex: 0x281E14).opacity(0.07), radius: 7, y: -6)
-                Circle().fill(Theme.C.blue)
-                    .frame(width: Theme.S.navActive, height: Theme.S.navActive)
-                    .position(x: x(on), y: Theme.S.navT + 12)
-                ForEach(Array(AppTab.allCases.enumerated()), id: \.offset) { i, tab in
-                    item(tab, active: i == on).position(x: x(i), y: i == on ? Theme.S.navT + 12 : Theme.S.navT + 34)
+                ForEach(AppTab.allCases, id: \.self) { tab in
+                    item(tab, active: tab == selected).position(x: x(tab.slot), y: Theme.S.navT + 34)
                 }
+                Button(action: plus) {
+                    Icon(.plus, size: 26).foregroundStyle(Theme.C.onInk)
+                        .rotationEffect(.degrees(plusOpen ? 45 : 0))
+                        .frame(width: Theme.S.navActive, height: Theme.S.navActive)
+                        .background(Theme.C.ink, in: Circle())
+                        .contentShape(Circle())
+                }
+                .buttonStyle(PressableStyle())
+                .position(x: x(2), y: Theme.S.navT + 12)
+                .accessibilityLabel(plusOpen ? "Alles schließen" : "Alles")
             }
-            .animation(.spring(response: 0.42, dampingFraction: 0.78), value: selected)
         }
         .frame(height: Theme.S.nav)
         .sensoryFeedback(.selection, trigger: selected)
@@ -842,7 +850,10 @@ struct NotchTabBar: View {
         } label: {
             Icon(tab.icon)
                 .foregroundStyle(active ? Theme.C.ink : Theme.C.ink3)
-                .frame(width: active ? Theme.S.navActive : Theme.S.navTap, height: active ? Theme.S.navActive : Theme.S.navTap)
+                .frame(width: Theme.S.navTap, height: Theme.S.navTap)
+                .overlay(alignment: .bottom) {
+                    if active { Circle().fill(Theme.C.ink).frame(width: 5, height: 5).offset(y: 2) }
+                }
                 .overlay(alignment: .topTrailing) {
                     if let n = badges[tab], n > 0, !active {
                         Text("\(n)").font(Theme.F.text(10, .extrabold, relativeTo: .caption2)).foregroundStyle(.white)

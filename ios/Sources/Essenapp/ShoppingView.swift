@@ -49,7 +49,7 @@ struct StoreCircle: View {
     }
 }
 
-/// S5 Einkauf: je Laden eine Zeile, Laden-Empfehlung, einmalige Listen. Segment „Vorrat“ → S16, „Coupons“ → S31.
+/// S5 Einkauf (v9 d.html): Listen als Einkaufstaschen, Laden-Empfehlung in „Sparen“. Segment „Vorrat“ → S16, „Coupons“ → S31.
 struct ShoppingView: View {
     @Environment(AppStore.self) private var store
     @State private var page = Demo.screen == "pantry" ? 1 : ["wallet", "bonus"].contains(Demo.screen ?? "") ? 2 : 0
@@ -67,96 +67,100 @@ struct ShoppingView: View {
     }
 }
 
-/// S5 Übersicht (redesign-v8 d.html „S5 Einkauf Übersicht“).
+/// S5 Übersicht v9 (d.html Variante B „Taschen-Reihe“): Taschen zum Wischen, unter der mittleren ihre nächsten Artikel
+/// und „Öffnen“, darunter die Gruppe „Sparen“. „Artikel hinzufügen“ schwebt über der Leiste.
 private struct ShoppingOverview: View {
     @Environment(AppStore.self) private var store
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Binding var page: Int
     @State private var newItem = ""
+    @FocusState private var typing: Bool
     @State private var newListName = ""
     @State private var askNewList = false
     @State private var voiceOpen = false
     @State private var showLater = false
     @State private var lastWeekSaved: Int?
+    @State private var current: String?  // Tasche in der Mitte
+    @State private var carWidth: CGFloat = 390
+    @State private var openChain: String?
+    @State private var openList: ListSummaryDTO?
+    @State private var oneoffItems: [Int: [ListItemDTO]] = [:]  // Artikel eigener Listen, geholt sobald sie in der Mitte stehen
 
-    // Mockup-Lage (S5): Kreis 200 und Tasche oben rechts
+    // Mockup-Lage (d.html B1): Ellipse 630 × 330 hinter den Taschen (ab Statusleiste), Taschen 190, Nachbarn 0,72
     private enum M {
-        static let blob: CGFloat = 200, blobRight: CGFloat = -80, blobTop: CGFloat = 96
-        static let bag: CGFloat = 100, bagRight: CGFloat = 12, bagTop: CGFloat = 116
+        static let blob = CGSize(width: 630, height: 330), blobLeft: CGFloat = -120, blobTop: CGFloat = 98
+        static let bag: CGFloat = 190, side: CGFloat = 0.72, overlap: CGFloat = -38  // gap 6, margin 0 -22
+        static let addSide: CGFloat = 16, addBottom: CGFloat = 128, scrollBottom: CGFloat = 180
+    }
+
+    /// Eine Tasche: Laden der Haushaltsliste oder eigene Liste.
+    private struct Bag: Identifiable {
+        var id: String
+        var chain = ""
+        var oneoff: ListSummaryDTO?
+        var items: [ListItemDTO]
+
+        var name: String { oneoff?.name ?? (chain.isEmpty ? "Überall" : Labels.chain(chain)) }
+        var open: [ListItemDTO] { items.filter { i in !i.checked }.sorted { a, b in a.name < b.name } }
+        var openCount: Int { oneoff?.openCount ?? open.count }
+        var total: Int { oneoff?.totalCount ?? items.count }
+    }
+
+    private var bags: [Bag] {
+        let items = store.listItems.filter { i in i.nextWeek != true }
+        let chains = Dictionary(grouping: items, by: \.chain).sorted { a, b in (a.key.isEmpty ? "~" : a.key) < (b.key.isEmpty ? "~" : b.key) }
+        return chains.map { c in Bag(id: "c:" + c.key, chain: c.key, items: c.value) }
+            + store.lists.filter { l in l.kind == "oneoff" }.map { l in Bag(id: "l:\(l.id)", oneoff: l, items: oneoffItems[l.id] ?? []) }
     }
 
     var body: some View {
-        let items = store.listItems.filter { i in i.nextWeek != true }
+        let bags = self.bags
+        let cur = bags.first { b in b.id == current } ?? bags.first
         let later = store.listItems.filter { i in i.nextWeek == true }  // Gruppe „Nächste Woche“ (30)
-        let groups = Dictionary(grouping: items, by: \.chain).sorted { ($0.key.isEmpty ? "~" : $0.key) < ($1.key.isEmpty ? "~" : $1.key) }
-        let oneoffs = store.lists.filter { $0.kind == "oneoff" }
+        let oneoffId = cur?.oneoff?.id
         ScrollView {
             VStack(alignment: .leading, spacing: 0) {
                 ShopTabs(page: $page)
-                Text("KW \(week) · \(items.filter { !$0.checked }.count) offen").font(Theme.F.small).foregroundStyle(Theme.C.ink2).padding(.top, 16)
-                Text("Einkauf").font(Theme.F.t1).accessibilityAddTraits(.isHeader)
-                VStack(spacing: 10) {
-                    NavigationLink { SavingsView() } label: {  // S11 Ersparnis
-                        StatNumber(label: "Diese Woche\ngespart", value: euro(store.plan?.savedCents ?? 0), size: 40)
+                HStack(alignment: .bottom) {
+                    VStack(alignment: .leading, spacing: 0) {
+                        Text("KW \(week) · \(bags.map(\.openCount).reduce(0, +)) offen").font(Theme.F.small).foregroundStyle(Theme.C.ink2)
+                        Text("Einkauf").font(Theme.F.t1).accessibilityAddTraits(.isHeader)
+                    }
+                    Spacer(minLength: 8)
+                    Button { askNewList = true } label: {
+                        Icon(.plus, size: 20).foregroundStyle(Theme.C.onInk)
+                            .frame(width: 44, height: 44)
+                            .background(Theme.C.ink, in: Circle())
                     }
                     .buttonStyle(PressableStyle())
-                    if let lastWeekSaved { StatNumber(label: "Letzte Woche", value: euro(lastWeekSaved), size: 26, mute: true) }
+                    .padding(.bottom, 4)
+                    .accessibilityLabel("Neue Liste, z. B. Grillparty")
                 }
-                .frame(width: 218)
                 .padding(.top, 16)
 
-                if groups.isEmpty {
+                if let cur {
+                    carousel(bags, sel: cur.id)
+                    dots(bags, sel: cur.id)
+                    info(cur).padding(.top, 18)
+                } else {
                     VStack(alignment: .leading, spacing: 6) {
                         Text("Liste ist leer").font(Theme.F.t2)
                         Text("Sobald ein Wochenplan da ist, steht hier alles, was du kaufen musst.").font(Theme.F.small).foregroundStyle(Theme.C.ink2)
                     }
                     .padding(.top, 30)
                 }
-                VStack(spacing: 0) {
-                    ForEach(Array(groups.enumerated()), id: \.element.key) { i, group in
-                        NavigationLink { ShoppingListView(chain: group.key) } label: { storeRow(group.key, group.value) }
-                            .buttonStyle(PressableStyle())
-                            .appear(delay: Double(i) * 0.05)
-                    }
-                }
-                .padding(.top, 30)
 
-                if let id = store.householdList?.id { StoreAdviceRows(listId: id).padding(.top, 28) }  // Laden-Empfehlung (42)
-
-                // Nicht im Mockup, Funktion bleibt: Nächste Woche, einmalige Listen, Artikel ohne Laden
-                VStack(spacing: 0) {
-                    if !later.isEmpty { NextWeekRow(count: later.count) { showLater = true } }
-                    ForEach(oneoffs) { l in
-                        NavigationLink { OneOffListView(summary: l) } label: { oneoffRow(l) }
-                            .buttonStyle(PressableStyle())
-                            .contextMenu {
-                                Button("Liste löschen", systemImage: "trash", role: .destructive) { Task { await store.deleteList(l.id) } }
-                            }
-                    }
-                    Button { askNewList = true } label: {
-                        HStack(spacing: 14) {
-                            Icon(.plus)
-                            Text("Neue Liste, z. B. Grillparty").font(Theme.F.text(16))
-                            Spacer()
-                        }
-                        .foregroundStyle(Theme.C.ink3)
-                        .frame(minHeight: Theme.S.row)
-                        .overlay(alignment: .top) { Hairline() }
-                        .contentShape(Rectangle())
-                    }
-                    .buttonStyle(.plain)
-                    AddItemField(text: $newItem, add: add) { withAnimation(Theme.spring) { voiceOpen = true } }
-                }
-                .padding(.top, 28)
+                SavingsGroup(listId: store.householdList?.id, week: week, lastWeekSaved: lastWeekSaved).padding(.top, 28)
+                if !later.isEmpty { NextWeekRow(count: later.count) { showLater = true }.padding(.top, 14) }  // nicht im Mockup, Funktion bleibt
             }
             .padding(.horizontal, Theme.pagePadding)
             .padding(.top, 14)
-            .padding(.bottom, Theme.S.nav)
+            .padding(.bottom, M.scrollBottom)
+            .pinned(left: M.blobLeft, top: M.blobTop) {
+                Ellipse().fill(Theme.C.blue1).frame(width: M.blob.width, height: M.blob.height).accessibilityHidden(true)
+            }
         }
-        .backdrop8 {
-            Color.clear
-                .pinned(right: M.bagRight, top: M.bagTop) { Ill("bag").frame(width: M.bag) }
-                .edgeForm(.circle, Theme.C.blue, width: M.blob, height: M.blob, right: M.blobRight, top: M.blobTop)
-        }
+        .backdrop8 { Color.clear }
         .scrollDismissesKeyboard(.immediately)
         .refreshable { await store.loadLists() }
         .task {
@@ -166,6 +170,20 @@ private struct ShoppingOverview: View {
             }
         }
         .task { lastWeekSaved = await savedLastWeek() }
+        .task(id: oneoffId) {
+            if let oneoffId, !store.demo { oneoffItems[oneoffId] = (try? await store.list(oneoffId))?.items }
+        }
+        .overlay(alignment: .bottom) {
+            if !voiceOpen {  // `.d9-add`: schwebt über der Leiste, beim Tippen über der Tastatur
+                AddField9(text: $newItem, focus: $typing, floating: true, add: add) {
+                    typing = false
+                    withAnimation(Theme.spring) { voiceOpen = true }
+                }
+                .padding(.horizontal, M.addSide)
+                .padding(.bottom, typing ? 12 : M.addBottom)
+                .ignoresSafeArea(.container, edges: .bottom)
+            }
+        }
         .overlay {
             if voiceOpen {
                 VoiceAddOverlay { spoken in
@@ -174,6 +192,8 @@ private struct ShoppingOverview: View {
                 } close: { withAnimation(Theme.spring) { voiceOpen = false } }
             }
         }
+        .navigationDestination(item: $openChain) { chain in ShoppingListView(chain: chain) }
+        .navigationDestination(item: $openList) { l in OneOffListView(summary: l) }
         .sheet(isPresented: $showLater) { NextWeekSheet(chain: nil) }
         .alert("Neue Liste", isPresented: $askNewList) {
             TextField("z. B. Grillparty", text: $newListName)
@@ -190,42 +210,125 @@ private struct ShoppingOverview: View {
         store.plan.map { String($0.week.suffix(2)) } ?? String(Calendar(identifier: .iso8601).component(.weekOfYear, from: .now))
     }
 
-    /// `.d-row` je Laden: Logo im Pastell-Kreis, Name, Avatare, „3 offen“.
-    private func storeRow(_ chain: String, _ items: [ListItemDTO]) -> some View {
-        let names = items.map(\.addedBy).filter { n in !n.isEmpty }.reduce(into: [String]()) { r, n in if !r.contains(n) { r.append(n) } }
-        return HStack(spacing: 14) {
-            StoreCircle(chain: chain)
-            VStack(alignment: .leading, spacing: 3) {
-                Text(chain.isEmpty ? "Überall" : Labels.chain(chain)).font(Theme.F.serif(20, relativeTo: .title3))
-                if !names.isEmpty {
-                    HStack(spacing: -6) { ForEach(names.prefix(4), id: \.self) { n in Avatar8(name: n) } }
-                        .padding(.leading, 6)
-                        .accessibilityElement().accessibilityLabel("Von \(names.joined(separator: ", "))")
+    /// `.d9b-car`: Taschen nebeneinander, die mittlere groß; Antippen holt eine Tasche in die Mitte bzw. öffnet sie.
+    private func carousel(_ bags: [Bag], sel: String) -> some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: M.overlap) {
+                ForEach(bags) { b in
+                    let on = b.id == sel
+                    Button {
+                        if on { open(b) } else { withAnimation(reduceMotion ? nil : Theme.spring) { current = b.id } }
+                    } label: { bag(b) }
+                    .buttonStyle(PressableStyle())
+                    .scaleEffect(on ? 1 : M.side)
+                    .opacity(on ? 1 : 0.55)
+                    .zIndex(on ? 1 : 0)
+                    .animation(reduceMotion ? nil : .easeOut(duration: 0.3), value: on)
+                    .accessibilityLabel("\(b.name), \(b.openCount) offen, \(b.total - b.openCount) von \(b.total) drin")
+                    .accessibilityHint(on ? "Öffnet die Liste" : "In die Mitte holen")
+                    .contextMenu {
+                        if let l = b.oneoff {
+                            Button("Liste löschen", systemImage: "trash", role: .destructive) { Task { await store.deleteList(l.id) } }
+                        }
+                    }
                 }
             }
-            Spacer(minLength: 8)
-            Text("\(items.filter { !$0.checked }.count) offen").font(Theme.F.text(16, .extrabold))
+            .scrollTargetLayout()
+            .padding(.top, 10)
+            .padding(.bottom, 18)
         }
-        .foregroundStyle(Theme.C.ink)
-        .padding(.vertical, 7)
-        .overlay(alignment: .top) { Hairline() }
-        .contentShape(Rectangle())
+        .scrollTargetBehavior(.viewAligned)
+        .scrollPosition(id: $current)
+        .contentMargins(.horizontal, max(0, (carWidth - M.bag) / 2), for: .scrollContent)
+        .onGeometryChange(for: CGFloat.self) { g in g.size.width } action: { w in carWidth = w }
+        .padding(.horizontal, -Theme.pagePadding)
+        .padding(.top, 14)
+        .sensoryFeedback(.selection, trigger: current)
     }
 
-    private func oneoffRow(_ l: ListSummaryDTO) -> some View {
-        HStack(spacing: 14) {
-            Icon(.users).frame(width: Theme.S.rowCircle, height: Theme.S.rowCircle).background(Theme.C.sand, in: Circle())
-            VStack(alignment: .leading, spacing: 1) {
-                Text(l.name).font(Theme.F.rowName).lineLimit(1)
-                Text("\(l.openCount) offen · \(l.totalCount) gesamt").font(Theme.F.text(12)).foregroundStyle(Theme.C.ink2)
+    private func bag(_ b: Bag) -> some View {
+        ShopBag(kind: b.oneoff == nil ? BagKind.of(b.chain) : .tote,
+                color: b.oneoff == nil ? Theme.storeColor(b.chain) : Theme.C.blue,
+                width: M.bag, open: b.openCount, done: b.total - b.openCount,
+                chain: b.oneoff == nil ? b.chain : nil, title: b.oneoff?.name,
+                peeks: Array(store.bagPeeks(b.open).prefix(1)), who: ShopBag.shoppers(b.items), hole: Theme.C.blue1)
+    }
+
+    /// `.d9b-dots`: Punkt je Tasche, der aktuelle breit.
+    private func dots(_ bags: [Bag], sel: String) -> some View {
+        HStack(spacing: 6) {
+            ForEach(bags) { b in
+                Capsule().fill(b.id == sel ? Theme.C.ink : Theme.C.ink3).frame(width: b.id == sel ? 18 : 6, height: 6)
             }
-            Spacer()
-            Icon(.chev, size: 18).foregroundStyle(Theme.C.ink3)
+        }
+        .frame(maxWidth: .infinity)
+        .animation(reduceMotion ? nil : .easeOut(duration: 0.3), value: sel)
+        .accessibilityHidden(true)
+    }
+
+    /// Name, wer einkauft, „8 von 20 drin“, „Öffnen ›“ und die nächsten drei Artikel der mittleren Tasche.
+    private func info(_ b: Bag) -> some View {
+        let who = ShopBag.shoppers(b.items)
+        let parts: [String?] = [b.oneoff != nil ? "eigene Liste" : b.chain.isEmpty ? "egal wo" : nil,
+                                who.isEmpty ? nil : who.joined(separator: " & ") + (who.count == 1 ? " kauft ein" : " kaufen ein"),
+                                "\(b.total - b.openCount) von \(b.total) drin"]
+        return VStack(alignment: .leading, spacing: 0) {
+            HStack(alignment: .bottom) {
+                VStack(alignment: .leading, spacing: 0) {
+                    Text(b.name).font(Theme.F.t2).lineLimit(1)
+                    Text(parts.compactMap { p in p }.joined(separator: " · ")).font(Theme.F.text(13, relativeTo: .footnote)).foregroundStyle(Theme.C.ink2)
+                }
+                Spacer(minLength: 8)
+                Button { open(b) } label: {
+                    HStack(spacing: 6) {
+                        Text("Öffnen")
+                        Icon(.chev, size: 15)
+                    }
+                    .font(Theme.F.pill)
+                    .foregroundStyle(Theme.C.onInk)
+                    .padding(.horizontal, 12)
+                    .frame(height: 36)
+                    .background(Theme.C.ink, in: Capsule())
+                    .tapArea(4)
+                }
+                .buttonStyle(PressableStyle())
+                .accessibilityLabel("\(b.name) öffnen")
+            }
+            VStack(spacing: 0) {
+                ForEach(b.open.prefix(3)) { item in nextRow(item, checkable: b.oneoff == nil) }
+            }
+            .padding(.top, 10)
+            .animation(reduceMotion ? nil : Theme.spring, value: b.open.map(\.id))
+        }
+    }
+
+    /// `.d9-it` (46 hoch): Haken, Name, Menge, Rabatt; Antippen hakt ab (Haushaltsliste).
+    @ViewBuilder private func nextRow(_ item: ListItemDTO, checkable: Bool) -> some View {
+        let offer = store.offer(for: item)
+        let row = HStack(spacing: 12) {
+            CheckCircle(on: item.checked)
+            VStack(alignment: .leading, spacing: 0) {
+                Text(offer?.title ?? item.name).font(Theme.F.text(16, .bold)).lineLimit(1)
+                if !item.amountText.isEmpty { Text(item.amountText).font(Theme.F.text(12)).foregroundStyle(Theme.C.ink2) }
+            }
+            Spacer(minLength: 8)
+            if let d = offer?.discount { DealPill(text: "−\(d) %") }
         }
         .foregroundStyle(Theme.C.ink)
-        .padding(.vertical, 7)
+        .frame(minHeight: 46)
         .overlay(alignment: .top) { Hairline() }
         .contentShape(Rectangle())
+        if checkable {
+            Button { Task { await store.toggle(item) } } label: { row }
+                .buttonStyle(.plain)
+                .accessibilityLabel("\(item.name) abhaken")
+        } else {
+            row
+        }
+    }
+
+    private func open(_ b: Bag) {
+        if let l = b.oneoff { openList = l } else { openChain = b.chain }
     }
 
     private func add() {
@@ -338,38 +441,68 @@ private struct NextWeekSheet: View {
     }
 }
 
-/// Laden-Empfehlung (42) als Zeilen: „Rewe + Lidl · 39,50 €“ mit „So aufteilen“, darunter die zweite Möglichkeit und „Mehr“.
-private struct StoreAdviceRows: View {
+/// Gruppe „Sparen“ (d.html B1): zwei Flächen nebeneinander, „Gespart“ (→ S11) und „Aufteilen“ (Laden-Empfehlung 42),
+/// darunter die andere Möglichkeit mit „So aufteilen“. Antippen von „Aufteilen“ zeigt Weg und Hinweise („Mehr“).
+private struct SavingsGroup: View {
     @Environment(AppStore.self) private var store
-    let listId: Int
+    let listId: Int?
+    let week: String
+    let lastWeekSaved: Int?
     @State private var combos: [StoreComboDTO]?
     @State private var failed = false
     @State private var picked: [String]?
     @State private var more = false
     @State private var assigning = false
 
+    private enum M {
+        static let radius: CGFloat = 26, pad: CGFloat = 16, minHeight: CGFloat = 150, row: CGFloat = 52, pill: CGFloat = 34
+    }
+
     var body: some View {
         let open = store.listItems.filter { i in !i.checked && i.nextWeek != true }
+        let advice = (combos?.count ?? 0) > 1 && !open.isEmpty ? combos : nil
+        let main = advice.map { cs in cs.first { c in c.chains == picked } ?? cs[0] }
         VStack(alignment: .leading, spacing: 0) {
-            if let combos, combos.count > 1, !open.isEmpty {
-                rows(combos).transition(.opacity)
+            HStack(alignment: .firstTextBaseline) {
+                Text("Sparen").font(Theme.F.serif(22)).accessibilityAddTraits(.isHeader)
+                Spacer()
+                Text("KW \(week)").font(Theme.F.text(13, relativeTo: .footnote)).foregroundStyle(Theme.C.ink2)
+            }
+            .padding(.bottom, 14)
+            HStack(spacing: 10) {
+                NavigationLink { SavingsView() } label: { savedTile }  // S11 Ersparnis
+                    .buttonStyle(PressableStyle())
+                if let main {
+                    Button { withAnimation(Theme.spring) { more.toggle() } } label: { splitTile(main) }
+                        .buttonStyle(PressableStyle())
+                        .accessibilityHint(more ? "Details ausblenden" : "Details zeigen")
+                        .transition(.opacity)
+                } else if combos == nil, !failed, !open.isEmpty, listId != nil {
+                    Skeleton8(height: M.minHeight).frame(maxWidth: .infinity)
+                }
+            }
+            .fixedSize(horizontal: false, vertical: true)
+            if let advice, let main {
+                adviceRow(advice, main)
             } else if failed {
                 HStack {
                     Text("Laden-Empfehlung gerade nicht verfügbar.").font(Theme.F.text(13)).foregroundStyle(Theme.C.ink2)
                     Spacer()
                     Button("Erneut") { Task { await load() } }.font(Theme.F.text(13, .bold)).frame(minHeight: 44)
                 }
+                .frame(minHeight: M.row)
                 .overlay(alignment: .top) { Hairline() }
-            } else if combos == nil && !open.isEmpty {
-                Skeleton8(height: 60)
+                .padding(.top, 14)
             }
         }
+        .foregroundStyle(Theme.C.ink)
         .animation(Theme.spring, value: combos)
         .animation(Theme.spring, value: more)
         .task(id: open.map(\.id).hashValue ^ open.map(\.chain).hashValue) { await load() }
     }
 
     private func load() async {
+        guard let listId else { return }
         do {
             combos = try await store.storeCombos(listId)
             failed = false
@@ -380,59 +513,83 @@ private struct StoreAdviceRows: View {
 
     private static func title(_ c: StoreComboDTO) -> String { c.name.prefix(1).uppercased() + c.name.dropFirst() + " · " + euro(c.totalCents) }
 
-    private func rows(_ combos: [StoreComboDTO]) -> some View {
+    private func tile<V: View>(_ color: Color, @ViewBuilder _ content: () -> V) -> some View {
+        VStack(alignment: .leading, spacing: 0) { content() }
+            .foregroundStyle(Theme.C.ink)
+            .padding(M.pad)
+            .frame(maxWidth: .infinity, minHeight: M.minHeight, maxHeight: .infinity, alignment: .topLeading)
+            .background(color, in: RoundedRectangle(cornerRadius: M.radius, style: .continuous))
+            .accessibilityElement(children: .combine)
+    }
+
+    private var savedTile: some View {
+        tile(Theme.C.card) {
+            Text("GESPART").font(Theme.F.lbl).tracking(11 * 0.08)
+            Spacer(minLength: 12)
+            BigNumber(euro(store.plan?.savedCents ?? 0), size: 34)
+            if let lastWeekSaved {
+                Text("Letzte Woche \(euro(lastWeekSaved))").font(Theme.F.text(12, relativeTo: .caption)).foregroundStyle(Theme.C.ink2).padding(.top, 6)
+            }
+        }
+    }
+
+    private func splitTile(_ c: StoreComboDTO) -> some View {
+        tile(Theme.C.sage) {
+            Text("AUFTEILEN").font(Theme.F.lbl).tracking(11 * 0.08)
+            Text(c.chains.map(Labels.chain).joined(separator: " + ")).font(Theme.F.text(14, .extrabold, relativeTo: .subheadline))
+                .lineLimit(2).padding(.top, 6)
+            Spacer(minLength: 12)
+            BigNumber(euro(c.totalCents), size: 28)
+            if c.savedCents > 0 {
+                Text("−" + euro(c.savedCents)).font(Theme.F.text(12, .extrabold, relativeTo: .caption)).foregroundStyle(Theme.C.savedOnSage).padding(.top, 4)
+            }
+        }
+    }
+
+    /// `.hr` 52: die andere Möglichkeit (antippen = als Vorschlag wählen) und „So aufteilen“; darunter „Mehr“.
+    private func adviceRow(_ combos: [StoreComboDTO], _ main: StoreComboDTO) -> some View {
         let single = combos.first { c in c.chains.count == 1 }
         let pair = combos.first { c in c.chains.count == 2 && c.savedCents > 0 }
-        let main = combos.first { c in c.chains == picked } ?? combos[0]
         let other = [pair, single].compactMap { c in c }.first { c in c.chains != main.chains }
         let km = main.chains.count > 1 ? main.extraKm.map { k in "+1 Laden · +\(num(k, 1...1)) km" } : main.distanceKm.map { k in "\(num(k, 1...1)) km Weg" }
         return VStack(alignment: .leading, spacing: 0) {
-            HStack(spacing: 14) {
-                Icon(.trophy).frame(width: Theme.S.rowCircle, height: Theme.S.rowCircle).background(Theme.C.blue1, in: Circle())
-                VStack(alignment: .leading, spacing: 0) {
-                    Text(Self.title(main)).font(Theme.F.text(16, .extrabold)).lineLimit(1).minimumScaleFactor(0.8)
-                    if main.savedCents > 0 {
-                        Text("\(euro(main.savedCents)) gespart").font(Theme.F.text(12)).foregroundStyle(Theme.C.success)
+            HStack {
+                if let other {
+                    Button { withAnimation(Theme.spring) { picked = other.chains } } label: {
+                        Text(Self.title(other)).font(Theme.F.text(13, relativeTo: .footnote)).foregroundStyle(Theme.C.ink2)
+                            .lineLimit(1).minimumScaleFactor(0.8)
+                            .frame(minHeight: 44).contentShape(Rectangle())
                     }
+                    .buttonStyle(.plain)
+                    .accessibilityHint("Als Vorschlag wählen")
                 }
                 Spacer(minLength: 8)
                 Button {
                     assigning = true
                     Task {
-                        if await store.assignStores(listId, main.chains) { await load() }
+                        if let listId, await store.assignStores(listId, main.chains) { await load() }
                         assigning = false
                     }
                 } label: {
-                    Group { if assigning { Hop3().frame(width: 60) } else { Pill8(text: "So aufteilen").fixedSize() } }.tapArea(7)
+                    Group {
+                        if assigning {
+                            Hop3().frame(width: 60)
+                        } else {
+                            Text("So aufteilen").font(Theme.F.pill).foregroundStyle(Theme.C.onInk)
+                                .padding(.horizontal, 12).frame(height: M.pill)
+                                .background(Theme.C.ink, in: Capsule())
+                                .fixedSize()
+                        }
+                    }
+                    .tapArea(5)
                 }
                 .buttonStyle(PressableStyle())
                 .disabled(assigning)
                 .sensoryFeedback(.success, trigger: assigning)
             }
-            .padding(.vertical, 7)
+            .frame(minHeight: M.row)
             .overlay(alignment: .top) { Hairline() }
-            HStack {
-                if let other {
-                    Button { withAnimation(Theme.spring) { picked = other.chains } } label: {
-                        Text(Self.title(other)).font(Theme.F.text(13)).foregroundStyle(Theme.C.ink2)
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityHint("Als Vorschlag wählen")
-                }
-                Spacer()
-                Button { more.toggle() } label: {
-                    HStack(spacing: 0) {
-                        Text(more ? "Weniger" : "Mehr").font(Theme.F.text(13, .bold))
-                        Icon(.chev, size: 16).rotationEffect(.degrees(more ? 90 : 0))
-                    }
-                    .foregroundStyle(Theme.C.ink)
-                    .frame(minHeight: 44)
-                    .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
-            }
-            .frame(minHeight: 44)
-            .overlay(alignment: .top) { Hairline() }
+            .padding(.top, 14)
             if more {
                 VStack(alignment: .leading, spacing: 4) {
                     if let km { Text(km) }
@@ -449,7 +606,8 @@ private struct StoreAdviceRows: View {
     }
 }
 
-/// S5b Einkaufsliste eines Ladens (gemeinsam abhaken). Abhaken wie Animation a1-shop.
+/// S5b geöffnete Tasche v9 (d.html Variante A): dieselbe Tasche groß oben rechts, Artikel nach Abteilung gruppiert,
+/// Erledigtes zugeklappt in „In der Tasche · 8“. Abhaken wie Animation a1-shop.
 struct ShoppingListView: View {
     @Environment(AppStore.self) private var store
     @Environment(\.dismiss) private var dismiss
@@ -458,20 +616,18 @@ struct ShoppingListView: View {
     @State private var coupons: [CouponDTO] = []  // Coupons für diesen Laden (38d)
     @State private var live = false  // Live-Aktivität läuft für diesen Laden (37)
     @State private var newItem = ""
+    @FocusState private var typing: Bool
     @State private var voiceOpen = Demo.screen == "voiceadd"
-    @State private var settling: Set<Int> = []  // gerade abgehakt: bleibt kurz an ihrem Platz, dann rutscht sie ans Ende
+    @State private var settling: Set<Int> = []  // gerade abgehakt: bleibt kurz an ihrem Platz, dann wandert sie in die Tasche
     @State private var showCoupons = false
     @State private var showLater = false
+    @State private var showDone = false
 
-    // Mockup-Lage (S5b): Blatt oben rechts mit Einkäufer; offline 30 höher, Figur 60 tiefer (Banner oben)
+    // Mockup-Lage (d.html A2): Kreis 300 oben rechts, Tasche 150; offline Tasche 60 tiefer, Inhalt unter dem Banner
     private enum M {
-        static let leaf = CGSize(width: 166, height: 270), leafOffline: CGFloat = 300, leafRadius: CGFloat = 110
-        static let shopper: CGFloat = 144, shopperRight: CGFloat = 6, shopperTop: CGFloat = 44, shopperTopOffline: CGFloat = 104, topOffline: CGFloat = 72
-    }
-
-    private enum Line: Identifiable, Equatable {
-        case item(ListItemDTO), add
-        var id: Int { if case .item(let i) = self { i.id } else { Int.min } }
+        static let blob: CGFloat = 300, blobRight: CGFloat = -128, blobTop: CGFloat = -30
+        static let bag: CGFloat = 150, bagRight: CGFloat = 24, bagTop: CGFloat = 70, offlineShift: CGFloat = 60, topOffline: CGFloat = 72
+        static let miniBag: CGFloat = 30, row: CGFloat = 54
     }
 
     var body: some View {
@@ -479,12 +635,13 @@ struct ShoppingListView: View {
         let later = store.listItems.filter { $0.chain == chain && $0.nextWeek == true }
         let open = items.filter { !$0.checked }
         let total = open.compactMap { store.offer(for: $0)?.priceCents }.reduce(0, +)
-        let saved = open.compactMap { store.offer(for: $0) }.map { o in max(0, (o.regularPriceCents ?? o.priceCents) - o.priceCents) }.reduce(0, +)
-        let shown = items.filter { i in i.checked == settling.contains(i.id) }.sorted { $0.name < $1.name }  // offen (oder gerade abgehakt)
+        let shown = items.filter { i in i.checked == settling.contains(i.id) }  // offen (oder gerade abgehakt)
         let done = items.filter { i in i.checked != settling.contains(i.id) }.sorted { $0.name < $1.name }
-        let lines = shown.map(Line.item) + [.add] + done.map(Line.item)
+        let order = Labels.categories.map { c in c.0 }
+        let depts = Dictionary(grouping: shown) { i in store.department(i) }
+            .sorted { a, b in (order.firstIndex(of: a.key) ?? order.count) < (order.firstIndex(of: b.key) ?? order.count) }
         let offline = !store.api.online
-        let names = store.profiles.map(\.name).filter { !$0.isEmpty }
+        let who = ShopBag.shoppers(items)
         ScrollView {
             VStack(alignment: .leading, spacing: 0) {
                 Button { dismiss() } label: {
@@ -498,41 +655,58 @@ struct ShoppingListView: View {
                 .buttonStyle(.plain)
                 .padding(.leading, -6)
                 .accessibilityLabel("Zurück zu Einkauf")
-                Text(([open.count == 1 ? "1 offen" : "\(open.count) offen"] + (names.isEmpty ? [] : [names.joined(separator: ", ")])).joined(separator: " · "))
+                Text(who.isEmpty ? (open.count == 1 ? "1 offen" : "\(open.count) offen")
+                    : who.joined(separator: " & ") + (who.count == 1 ? " kauft ein" : " kaufen ein"))
                     .font(Theme.F.small).foregroundStyle(Theme.C.ink2).padding(.top, 12)
                     .contentTransition(.numericText())
                 Text(chain.isEmpty ? "Überall" : Labels.chain(chain)).font(Theme.F.t1).accessibilityAddTraits(.isHeader)
                 VStack(spacing: 10) {
-                    StatNumber(label: "Offen", value: euro(total), size: 40)
-                    StatNumber(label: "Gespart", value: euro(saved), size: 28, mute: true)
+                    StatNumber(label: "Offen", value: euro(total), size: 36)
+                    StatNumber(label: "Drin", value: "\(items.count - open.count) / \(items.count)", size: 26, mute: true)
                 }
-                .frame(width: 190)
+                .frame(width: 180)
                 .padding(.top, 16)
                 HStack(spacing: 10) {
                     startButton
                     if !coupons.isEmpty { couponPill }
                 }
-                .padding(.top, 28)
-                VStack(spacing: 0) {
-                    ForEach(lines) { line in
-                        switch line {
-                        case .item(let item): itemRow(item)
-                        case .add: AddItemField(text: $newItem, add: add) { withAnimation(Theme.spring) { voiceOpen = true } }
-                        }
-                    }
-                    if !later.isEmpty { NextWeekRow(count: later.count) { showLater = true } }
+                .padding(.top, 22)
+                AddField9(text: $newItem, focus: $typing, add: add) {
+                    typing = false
+                    withAnimation(Theme.spring) { voiceOpen = true }
                 }
-                .padding(.top, 28)
-                .sensoryFeedback(.impact(weight: .light), trigger: items.filter(\.checked).count)
+                .padding(.top, 18)
+                ForEach(depts, id: \.key) { d in
+                    HStack {
+                        Text(Labels.categoryName(d.key).uppercased())
+                        Spacer()
+                        Text("\(d.value.count)")
+                    }
+                    .font(Theme.F.lbl).tracking(11 * 0.08).foregroundStyle(Theme.C.ink2)
+                    .padding(.top, 22).padding(.bottom, 2)
+                    .accessibilityElement(children: .combine)
+                    .accessibilityAddTraits(.isHeader)
+                    ForEach(d.value.sorted { a, b in a.name < b.name }) { item in itemRow(item) }
+                }
+                if !done.isEmpty {
+                    inBagRow(done, open: open.count)
+                    if showDone { ForEach(done) { item in itemRow(item) } }
+                }
+                if !later.isEmpty { NextWeekRow(count: later.count) { showLater = true } }
             }
+            .sensoryFeedback(.impact(weight: .light), trigger: items.filter(\.checked).count)
             .padding(.horizontal, Theme.pagePadding)
             .padding(.top, offline ? M.topOffline : 14)  // offline unter dem Glas-Banner (Mockup y 124)
             .padding(.bottom, 40)
         }
         .backdrop8 {
             Color.clear
-                .pinned(right: M.shopperRight, top: offline ? M.shopperTopOffline : M.shopperTop) { Ill("shopper").frame(width: M.shopper) }
-                .edgeForm(.leaf(M.leafRadius), Theme.C.blue, width: M.leaf.width, height: offline ? M.leafOffline : M.leaf.height, right: 0, top: 0)
+                .pinned(right: M.bagRight, top: M.bagTop + (offline ? M.offlineShift : 0)) {
+                    ShopBag(kind: BagKind.of(chain), color: Theme.storeColor(chain), width: M.bag, open: open.count, done: items.count - open.count,
+                            chain: chain, peeks: Array(store.bagPeeks(open).prefix(2)), who: who, hole: Theme.C.blue1)
+                        .accessibilityHidden(true)
+                }
+                .edgeForm(.circle, Theme.C.blue1, width: M.blob, height: M.blob, right: M.blobRight, top: M.blobTop)
         }
         .scrollDismissesKeyboard(.immediately)
         .overlay {
@@ -551,6 +725,32 @@ struct ShoppingListView: View {
             live = LiveShop.running(chain)
             if !chain.isEmpty { coupons = await store.storeCoupons(chain) }
         }
+    }
+
+    /// „In der Tasche · 8“: Mini-Tasche, die ersten Namen, zugeklappt; Antippen klappt das Erledigte auf.
+    private func inBagRow(_ done: [ListItemDTO], open: Int) -> some View {
+        Button { withAnimation(reduceMotion ? nil : Theme.spring) { showDone.toggle() } } label: {
+            HStack(spacing: 12) {
+                ShopBag(kind: BagKind.of(chain), color: Theme.storeColor(chain), width: M.miniBag, open: open, done: done.count, plain: true)
+                VStack(alignment: .leading, spacing: 0) {
+                    Text("In der Tasche").font(Theme.F.text(16, .bold))
+                    Text(done.prefix(3).map(\.name).joined(separator: ", ") + (done.count > 3 ? " …" : "")).font(Theme.F.text(12)).lineLimit(1)
+                }
+                Spacer(minLength: 8)
+                Text("\(done.count)").font(Theme.F.text(13, relativeTo: .footnote))
+                Icon(.chev, size: 18).rotationEffect(.degrees(showDone ? 90 : 0))
+            }
+            .foregroundStyle(Theme.C.ink2)
+            .frame(minHeight: M.row)
+            .overlay(alignment: .top) { Hairline() }
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .padding(.top, 18)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("In der Tasche, \(done.count) erledigt")
+        .accessibilityHint(showDone ? "Zuklappen" : "Aufklappen")
+        .accessibilityAddTraits(.isButton)
     }
 
     /// `.btn2` klein (40 hoch): „Einkauf starten“ bzw. „Einkauf beenden“ (Live-Aktivität 37).
@@ -581,7 +781,7 @@ struct ShoppingListView: View {
         .sensoryFeedback(.impact, trigger: live)
     }
 
-    /// `.soft` 40 hoch: „2 Coupons ›“ → Kasse (ein Coupon) bzw. Auswahl.
+    /// `.soft` 40 hoch: „2 Coupons“ → Kasse (ein Coupon) bzw. Auswahl.
     private var couponPill: some View {
         Button {
             if coupons.count == 1 { store.checkoutCoupon = coupons[0].id } else { showCoupons = true }
@@ -589,7 +789,6 @@ struct ShoppingListView: View {
             HStack(spacing: 5) {
                 Icon(.barcode, size: 15)
                 Text(coupons.count == 1 ? "1 Coupon" : "\(coupons.count) Coupons")
-                Icon(.chev, size: 14)
             }
             .font(Theme.F.text(13, .extrabold, relativeTo: .footnote))
             .foregroundStyle(Theme.C.ink)
@@ -601,12 +800,12 @@ struct ShoppingListView: View {
         .buttonStyle(PressableStyle())
     }
 
-    /// `.irow` mit Haken; rechts höchstens ein Zusatz (Rabatt, Coupon oder „bald leer“).
+    /// `.d9-it` (54 hoch) mit Haken; rechts höchstens ein Zusatz (Rabatt, Coupon oder „bald leer“).
     private func itemRow(_ item: ListItemDTO) -> some View {
         let offer = store.offer(for: item)
         let done = item.checked
         let sub = [item.amountText, item.source == "stockup" ? "Vorratskauf" : ""].filter { !$0.isEmpty }.joined(separator: " · ")
-        return HStack(spacing: 14) {
+        return HStack(spacing: 12) {
             Button { toggle(item) } label: { CheckCircle(on: done).tapArea(9) }
                 .buttonStyle(.plain)
                 .accessibilityLabel(done ? "\(item.name) wieder offen" : "\(item.name) abhaken")
@@ -633,7 +832,7 @@ struct ShoppingListView: View {
                 }
             }
         }
-        .frame(minHeight: Theme.S.row)
+        .frame(minHeight: M.row)
         .overlay(alignment: .top) { Hairline() }
         .contentShape(Rectangle())
         .onTapGesture { toggle(item) }

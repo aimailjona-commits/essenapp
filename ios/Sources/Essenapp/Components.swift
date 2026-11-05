@@ -457,9 +457,9 @@ struct Toast: View {
 
 // MARK: Tab-Bar
 
-/// Tabs der Nav v8 (Mockup: Start, Woche, Angebote, Einkauf, Rezepte).
+/// Tabs der Nav v9 (f.html): Start · Woche · „+“ · Angebote · Einkauf. Rezepte liegen unter „+“ (Alles-Sheet).
 enum AppTab: CaseIterable {
-    case start, woche, angebote, einkauf, rezepte
+    case start, woche, angebote, einkauf
 
     var title: String {
         switch self {
@@ -467,7 +467,6 @@ enum AppTab: CaseIterable {
         case .woche: "Woche"
         case .angebote: "Angebote"
         case .einkauf: "Einkauf"
-        case .rezepte: "Rezepte"
         }
     }
 
@@ -477,7 +476,16 @@ enum AppTab: CaseIterable {
         case .woche: .cal
         case .angebote: .tag
         case .einkauf: .bag
-        case .rezepte: .book
+        }
+    }
+
+    /// Platz in der Leiste (5 Plätze, 2 = „+“ in der Mulde).
+    var slot: Int {
+        switch self {
+        case .start: 0
+        case .woche: 1
+        case .angebote: 3
+        case .einkauf: 4
         }
     }
 }

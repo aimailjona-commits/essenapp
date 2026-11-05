@@ -23,6 +23,7 @@ enum Theme {
         static let deal = Color(hex: 0xE0603F)
         static let best = Color(hex: 0xF7D8CE)  // .c-best Grund
         static let onBest = Color(hex: 0xA8402A)  // .c-best Schrift
+        static let savedOnSage = Color(hex: 0x3F7350)  // v9 d.html: „−6,28 €“ auf der Aufteilen-Fläche
         static let camera = Color(hex: 0x1E1C19)  // Scanner-Grund außen
         static let cameraGlow = Color(hex: 0x4A4640)  // Scanner-Grund Mitte
         static let navBar = Color.white  // Nav-Leiste mit Mulde
@@ -75,6 +76,7 @@ enum Theme {
         static let plate = Color.white  // Logos und Teller auf weißem Kreis
         static let bloom: [Color] = [blue, sage, rose, sand, blue1, warn, blue3]
         static let bloomOther = line
+        static let gridLine = Color(hex: 0xE1E1DC)  // Hilfslinien der Nährwert-Säulen (v9 `.a9-grid`)
         static let listTints: [Color] = day
         // Nutri-Score A–E in den Originalfarben (49); Buchstabe weiß, auf C dunkel (`onBright`)
         static let nutri: [String: Color] = ["A": Color(hex: 0x038141), "B": Color(hex: 0x85BB2F), "C": Color(hex: 0xFECB02),
@@ -197,6 +199,7 @@ enum Theme {
         static let card: CGFloat = 24
         static let day: CGFloat = 24
         static let sheet: CGFloat = 36
+        static let swipeCard: CGFloat = 30  // Rezeptkarte Wochen-Tisch (v9 e.html A)
         static let skeleton: CGFloat = 12
     }
 
