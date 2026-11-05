@@ -1,0 +1,288 @@
+<style>
+/* Teil e: Swipe-Planen v9 – links = diese Woche, rechts = nicht */
+.e9-ph{border-radius:50%;background-size:cover;background-position:center;flex:none}
+.e9-head{position:absolute;left:24px;right:24px;top:62px;z-index:3}
+.e9-av{width:34px;height:34px;border-radius:50%;background:var(--sand);display:grid;place-items:center;font-family:"DM Serif Display",serif;font-size:17px;box-shadow:0 0 0 3px var(--bg)}
+.e9-av+.e9-av{margin-left:-10px;background:var(--sage)}
+.e9-mt{display:inline-flex;flex-direction:column;gap:5px}
+.e9-mt .chip{height:32px;font-size:13px}
+.e9-mt i{display:block;height:3px;border-radius:2px;background:var(--line);overflow:hidden}
+.e9-mt i b{display:block;height:100%;background:var(--ink);transition:width .4s}
+.e9-logo{height:14px;width:auto;display:block}
+.e9-tst{opacity:0;transition:opacity .25s;pointer-events:none}
+.e9-tst.on{opacity:1}
+.e9-fly{position:absolute;border-radius:50%;background-size:cover;background-position:center;z-index:14;box-shadow:0 10px 24px rgba(20,20,20,.22);transition:left .55s cubic-bezier(.5,0,.2,1),top .55s cubic-bezier(.5,0,.2,1),width .55s,height .55s}
+.e9-drag{touch-action:none;cursor:grab;user-select:none;-webkit-user-select:none}
+.e9-drag:active{cursor:grabbing}
+.e9-hint{font-size:12px;color:var(--ink2);font-weight:700}
+@keyframes e9-pop{0%{transform:scale(.4)}70%{transform:scale(1.12)}100%{transform:none}}
+@keyframes e9-ring{50%{box-shadow:0 0 0 7px rgba(21,21,21,.08)}}
+
+/* A: Wochen-Tisch links, Rezeptkarte rechts */
+.e9a-arc{position:absolute;left:-60px;top:196px;width:150px;height:520px;border-radius:0 260px 260px 0;background:var(--blue1);transition:width .2s}
+.e9a-nope{position:absolute;right:-120px;top:300px;width:200px;height:300px;border-radius:50%;background:var(--rose);opacity:0}
+.e9a-rail{position:absolute;left:19px;top:210px;display:flex;flex-direction:column;gap:8px;z-index:2}
+.e9a-slot{display:flex;flex-direction:column;align-items:center;gap:2px}
+.e9a-slot span{font-size:10px;font-weight:800;letter-spacing:.06em;color:var(--ink2)}
+.e9a-slot i{width:44px;height:44px;border-radius:50%;background:var(--bg) center/cover;box-shadow:inset 0 0 0 1.5px var(--line);display:block;transition:transform .2s}
+.e9a-slot.on i{box-shadow:0 0 0 3px var(--bg),0 4px 10px rgba(20,20,20,.15);animation:e9-pop .35s}
+.e9a-slot.nx i{box-shadow:inset 0 0 0 1.5px var(--ink);animation:e9-ring 1.6s infinite}
+.e9a-slot.nx span{color:var(--ink)}
+.e9a-peek,.e9a-card{position:absolute;left:100px;top:206px;width:270px;height:404px;border-radius:30px;background:#fff;overflow:hidden}
+.e9a-peek{transform:rotate(3deg) translate(4px,6px) scale(.97);background:var(--card);box-shadow:0 6px 18px rgba(20,20,20,.06)}
+.e9a-card{z-index:5;box-shadow:0 18px 40px rgba(20,20,20,.13),0 0 0 1px rgba(20,20,20,.04)}
+.e9a-card .bg{position:absolute;left:-40px;top:-150px;width:350px;height:290px;border-radius:50%;background:var(--rose)}
+.e9a-card .in{position:relative;padding:18px 20px;height:100%;display:flex;flex-direction:column}
+.e9a-card .e9-ph{width:160px;height:160px;margin:4px auto 0;box-shadow:0 0 0 6px #fff,0 12px 26px rgba(20,20,20,.18)}
+.e9a-card .t2{font-size:22px;text-align:center;margin-top:14px}
+.e9a-card .meta{display:flex;justify-content:center;gap:6px;align-items:center;margin-top:8px;font-size:12px;color:var(--ink2);font-weight:700}
+.e9a-card .stat{margin-top:auto}
+.e9a-btns{position:absolute;left:100px;width:270px;top:628px;z-index:3}
+.e9a-btns .btn,.e9a-btns .btn2{height:48px;font-size:14px;padding:0 14px;cursor:pointer;white-space:nowrap}.e9a-btns .btn{flex:1}
+.e9-cb{width:44px;height:44px;border-radius:50%;display:grid;place-items:center;flex:none;box-shadow:inset 0 0 0 1.5px var(--line);cursor:pointer;background:var(--bg)}
+.e9-cb svg{width:19px;height:19px}
+.e9-cb.ink{background:var(--ink);color:#fff;box-shadow:none}
+
+/* B: Register am Rand */
+.e9b-tab{position:absolute;left:0;z-index:6;height:52px;border-radius:0 26px 26px 0;display:flex;align-items:center;gap:8px;padding-left:16px;font-size:12px;font-weight:800;color:var(--ink2)}
+.e9b-tab .e9-ph{width:34px;height:34px;box-shadow:0 0 0 2px #fff}
+.e9b-menu{position:absolute;left:76px;top:212px;width:282px;height:420px;border-radius:26px;background:#fff;box-shadow:0 18px 40px rgba(20,20,20,.14),0 0 0 1px rgba(20,20,20,.05);transform:translateX(-46px) rotate(-7deg);transform-origin:0 60%;z-index:5;padding:22px 22px;text-align:center}
+.e9b-menu .orn{display:flex;align-items:center;gap:10px;justify-content:center;margin:8px 0 14px;color:var(--ink3)}
+.e9b-menu .orn::before,.e9b-menu .orn::after{content:"";height:1px;width:56px;background:var(--line)}
+.e9b-lead{display:flex;align-items:baseline;gap:6px;margin-top:16px}
+.e9b-lead i{flex:1;border-bottom:2px dotted var(--ink3);transform:translateY(-4px)}
+
+/* C: Teller auf den Wochentisch */
+.e9c-table{position:absolute;left:-30px;right:-30px;top:162px;height:96px;border-radius:48px;background:var(--sand)}
+.e9c-row{position:absolute;left:16px;right:16px;top:174px;display:flex;justify-content:space-between;z-index:2}
+.e9c-row .e9a-slot i{width:42px;height:42px;background-color:#fff}
+.e9c-in{position:absolute;left:-90px;top:330px;width:150px;height:260px;border-radius:50%;background:var(--blue);transition:transform .2s}
+.e9c-out{position:absolute;right:-90px;top:330px;width:150px;height:260px;border-radius:50%;background:var(--rose);opacity:.45;transition:transform .2s}
+.e9c-in b,.e9c-out b{position:absolute;top:118px;font-size:12px;font-weight:800}
+.e9c-in b{right:8px}.e9c-out b{left:18px}
+.e9c-card{position:absolute;left:75px;top:280px;width:240px;z-index:5;text-align:center}
+.e9c-card .e9-ph{width:210px;height:210px;margin:0 auto;box-shadow:0 0 0 8px #fff,0 0 0 9px var(--line),0 22px 40px rgba(20,20,20,.18)}
+.e9c-card .t2{font-size:22px;margin-top:18px}
+.e9c-bar{position:absolute;left:24px;right:24px;top:676px;display:flex;justify-content:space-between;align-items:flex-start;z-index:3}
+.e9c-bar>div{display:flex;flex-direction:column;align-items:center;gap:6px;font-size:11px;font-weight:800;color:var(--ink2);cursor:pointer;width:64px;text-align:center}
+.e9c-bar .e9-cb{width:52px;height:52px}
+.e9c-bar .big .e9-cb{width:64px;height:64px;margin-top:-6px}
+
+/* Mag-ich-nicht-Sheet */
+.e9-sh .opt{display:flex;gap:12px;align-items:flex-start;padding:10px 0;border-top:1.5px solid var(--line);cursor:pointer}
+.e9-sh .opt .ck{margin-top:1px}
+.e9-sh .opt b{display:block;font-size:15px}
+.e9-sh .opt small{display:block;font-size:12px;color:var(--ink2);margin-top:2px;font-weight:600}
+.e9-sh .zt{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.e9-sh .zt .chip{height:32px;font-size:13px;cursor:pointer}
+</style>
+
+<section class="sec"><h2>Swipe-Planen</h2><p>Neue Richtung: nach <b>links</b> schieben = kommt in diese Woche, nach <b>rechts</b> = nicht. Kein Tinder-Stapel mehr – das Gericht landet sichtbar auf einem Tagesplatz. A und C sind echt bedienbar (Maus oder Finger ziehen, nach oben ziehen = „Mag ich nicht“).</p></section>
+<div class="screens">
+
+  <!-- A: Wochen-Tisch + Rezeptkarte (interaktiv) -->
+  <div class="screen"><div class="phone" id="e9a">
+    <div class="sb"><b>9:41</b><span class="island"></span><svg><use href="#status"/></svg></div>
+    <div class="e9a-arc" id="e9a-arc"></div>
+    <div class="e9a-nope" id="e9a-nope"></div>
+    <div class="e9-head">
+      <div class="row between"><div><div class="small" style="font-size:13px">KW 45 · 2.–8. Nov</div><div class="t1" style="font-size:32px">Woche 45</div></div>
+        <div class="row" style="gap:8px"><span class="small" style="font-size:12px">swipen mit</span><span class="e9-av">J</span><span class="e9-av">I</span></div></div>
+      <div class="row" style="margin-top:10px;gap:8px">
+        <span class="e9-mt"><span class="chip"><svg class="i" style="width:14px"><use href="#i-check"/></svg>Mittag</span><i><b style="width:100%"></b></i></span>
+        <span class="e9-mt"><span class="chip on" id="e9a-cnt">Abend 3/7</span><i><b id="e9a-bar" style="width:43%"></b></i></span>
+      </div>
+    </div>
+    <div class="e9a-rail" id="e9a-rail"></div>
+    <div class="e9a-peek"></div>
+    <div class="e9a-card e9-drag" id="e9a-card"></div>
+    <div class="e9a-btns">
+      <div class="row" style="gap:8px"><span class="btn" data-a="in"><svg class="i" style="width:18px;transform:scaleX(-1)"><use href="#i-arrow"/></svg>Diese Woche</span><span class="btn2" data-a="out">Nicht<svg class="i" style="width:18px"><use href="#i-arrow"/></svg></span></div>
+      <div class="row between" style="margin-top:10px"><span class="e9-cb" data-a="undo" title="Zurück"><svg class="i"><use href="#i-back"/></svg></span><span class="btn2" data-a="nope" style="flex:none;height:44px;padding:0 18px;font-size:14px;cursor:pointer;box-shadow:inset 0 0 0 1.5px var(--line)">Mag ich nicht …</span><span class="e9-cb ink" data-a="dice" title="Überrasch mich"><svg class="i"><use href="#i-dice"/></svg></span></div>
+    </div>
+    <div class="e9-hint" style="position:absolute;left:24px;right:24px;bottom:30px;text-align:center">Würfel = Überrasch mich: KI plant den Rest</div>
+    <div class="toast e9-tst"></div>
+    <div class="homebar"></div></div>
+    <div class="caption"><b>Variante A – Wochen-Tisch</b>Links steht die Woche als Reihe leerer Teller in einem blauen Bogen (Farbe = Mahlzeitart, Abend blau, Mittag grün). Die Rezeptkarte nach links schieben: das Foto fliegt als Teller auf den nächsten freien Tag, der Bogen wächst beim Ziehen mit. Nach rechts: Karte fliegt raus, rosa Bogen am rechten Rand. Knöpfe darunter für alle, die nicht ziehen wollen. <i>Probier's aus.</i></div></div>
+
+  <!-- B: Register am Rand (Standbild mitten im Schieben) -->
+  <div class="screen"><div class="phone">
+    <div class="sb"><b>9:41</b><span class="island"></span><svg><use href="#status"/></svg></div>
+    <div class="blob" style="right:-110px;top:360px;width:190px;height:260px;background:var(--rose);opacity:.35"></div>
+    <div class="e9-head">
+      <div class="row between"><div><div class="small" style="font-size:13px">KW 45 · Abendkarte</div><div class="t1" style="font-size:32px">Woche 45</div></div>
+        <div class="row" style="gap:8px"><span class="e9-av">J</span><span class="e9-av">I</span></div></div>
+    </div>
+    <div class="e9b-tab" style="top:200px;width:84px;background:var(--blue1)"><span class="e9-ph" style="background-image:url(../../../ios/Sources/Essenapp/Resources/hero/bowl.jpg)"></span>Mo</div>
+    <div class="e9b-tab" style="top:258px;width:84px;background:var(--blue1)"><span class="e9-ph" style="background-image:url(../../../ios/Sources/Essenapp/Resources/hero/pasta.jpg)"></span>Di</div>
+    <div class="e9b-tab" style="top:316px;width:84px;background:var(--blue1)"><span class="e9-ph" style="background-image:url(../../../ios/Sources/Essenapp/Resources/hero/grill.jpg)"></span>Mi</div>
+    <div class="e9b-tab" style="top:374px;width:120px;background:var(--blue);color:var(--ink)">Do</div>
+    <div class="e9b-tab" style="top:432px;width:56px;background:var(--card)">Fr</div>
+    <div class="e9b-tab" style="top:490px;width:56px;background:var(--card)">Sa</div>
+    <div class="e9b-tab" style="top:548px;width:56px;background:var(--card)">So</div>
+    <div class="e9b-menu">
+      <div class="row" style="justify-content:flex-end;gap:10px"><span class="soft" style="background:var(--rose)"><svg class="i" style="width:13px"><use href="#i-sparkle"/></svg>KI-Idee</span><img class="e9-logo" src="https://upload.wikimedia.org/wikipedia/commons/thumb/4/4c/Logo_REWE.svg/250px-Logo_REWE.svg.png" alt="Rewe"></div>
+      <div class="e9-ph" style="width:118px;height:118px;margin:14px auto 0;background-image:url(../../../ios/Sources/Essenapp/Resources/hero/table.jpg);box-shadow:0 0 0 5px #fff,0 0 0 6px var(--line)"></div>
+      <div class="orn"><svg class="i" style="width:16px"><use href="#i-fork"/></svg></div>
+      <div class="t2" style="font-size:28px">Hähnchen vom Blech</div>
+      <div style="font-family:'Crimson Pro',serif;font-style:italic;font-size:18px;color:var(--ink2);margin-top:4px">mit Rosenkohl und Chili-Reis</div>
+      <div class="small" style="font-size:12px;margin-top:12px">30 min · <span style="color:var(--deal);font-weight:800">3 im Angebot</span></div>
+      <div class="e9b-lead"><span class="lbl" style="color:var(--ink)">PRO PORTION</span><i></i><span class="num" style="font-size:32px">1,62 €</span></div>
+    </div>
+    <div style="position:absolute;left:24px;right:24px;top:664px;z-index:3">
+      <div class="row" style="gap:8px"><span class="btn" style="flex:1;height:48px;font-size:14px"><svg class="i" style="width:18px;transform:scaleX(-1)"><use href="#i-arrow"/></svg>In den Donnerstag</span><span class="btn2" style="height:48px;font-size:14px">Weiter<svg class="i" style="width:18px"><use href="#i-arrow"/></svg></span></div>
+      <div class="row between" style="margin-top:10px"><span class="e9-cb"><svg class="i"><use href="#i-back"/></svg></span><span class="small" style="font-size:13px;font-weight:800;color:var(--ink)">Mag ich nicht …</span><span class="e9-cb ink"><svg class="i"><use href="#i-dice"/></svg></span></div>
+    </div>
+    <div class="homebar"></div></div>
+    <div class="caption"><b>Variante B – Register</b>Die Woche ist ein Register wie in einem Kochbuch, die Laschen laufen aus dem linken Rand. Das Gericht ist eine Speisekarte (Name groß, Beilage kursiv, Preis mit Punktlinie). Nach links schieben steckt die Karte in die nächste freie Lasche – hier gerade „Do“, die sich dafür herauszieht. Rechts = weiterblättern. Standbild mitten im Schieben.</div></div>
+
+  <!-- C: Teller auf den Wochentisch (interaktiv) -->
+  <div class="screen"><div class="phone" id="e9c">
+    <div class="sb"><b>9:41</b><span class="island"></span><svg><use href="#status"/></svg></div>
+    <div class="e9-head">
+      <div class="row between"><div><div class="small" style="font-size:13px">KW 45 · Abendessen</div><div class="t1" style="font-size:32px">Woche 45</div></div>
+        <div class="row" style="gap:8px"><span class="num" style="font-size:30px" id="e9c-cnt">3<span style="color:var(--ink3)">/7</span></span></div></div>
+    </div>
+    <div class="e9c-table"></div>
+    <div class="e9c-row" id="e9c-rail"></div>
+    <div class="e9c-in" id="e9c-in"><b>Woche</b></div>
+    <div class="e9c-out" id="e9c-out"><b>Nicht</b></div>
+    <div class="e9c-card e9-drag" id="e9c-card"></div>
+    <div class="e9c-bar">
+      <div class="big" data-a="in"><span class="e9-cb ink"><svg class="i" style="transform:scaleX(-1)"><use href="#i-arrow"/></svg></span>Diese Woche</div>
+      <div data-a="undo"><span class="e9-cb"><svg class="i"><use href="#i-back"/></svg></span>Zurück</div>
+      <div data-a="nope"><span class="e9-cb"><svg class="i"><use href="#i-x"/></svg></span>Mag ich nicht</div>
+      <div data-a="dice"><span class="e9-cb"><svg class="i"><use href="#i-dice"/></svg></span>Überrasch mich</div>
+      <div class="big" data-a="out"><span class="e9-cb"><svg class="i"><use href="#i-arrow"/></svg></span>Nicht</div>
+    </div>
+    <div class="toast e9-tst"></div>
+    <div class="homebar"></div></div>
+    <div class="caption"><b>Variante C – Wochentisch</b>Keine Karte, nur der Teller. Oben steht der Tisch mit sieben Gedecken. Teller nach links schieben: er gleitet auf das nächste freie Gedeck, der blaue Halbmond links wird größer. Nach rechts: rosa Halbmond, Teller rollt weg. Ruhigster Entwurf, Foto am größten. <i>Probier's aus.</i></div></div>
+
+  <!-- D: Mag ich nicht -->
+  <div class="screen"><div class="phone" id="e9d">
+    <div class="sb"><b>9:41</b><span class="island"></span><svg><use href="#status"/></svg></div>
+    <div class="e9-head"><div class="small" style="font-size:13px">KW 45 · 2.–8. Nov</div><div class="t1" style="font-size:32px">Woche 45</div></div>
+    <div class="e9-ph" style="position:absolute;left:115px;top:170px;width:160px;height:160px;background-image:url(../../../ios/Sources/Essenapp/Resources/hero/table.jpg)"></div>
+    <div class="toast e9-tst"></div>
+    <div class="homebar"></div></div>
+    <div class="caption"><b>„Mag ich nicht“ – mit Grund</b>Aus allen Varianten erreichbar (Knopf oder Karte nach oben ziehen). „Eine Zutat“ klappt die Zutaten des Gerichts als Chips auf – antippen, was nicht geht; sie kommen auf die Mag-nicht-Liste. „Schmeckt mir nicht“ = nie wieder, „Keine Lust“ = nur diese Woche, „Sonstiges“ mit Freitext. Antippbar.</div></div>
+
+</div>
+
+<script>
+(() => {
+  const H = '../../../ios/Sources/Essenapp/Resources/hero/', W = 'https://upload.wikimedia.org/wikipedia/commons/thumb/';
+  const L = {rewe: W+'4/4c/Logo_REWE.svg/250px-Logo_REWE.svg.png', edeka: W+'c/cf/Edeka_Logo_Aktuell.svg/250px-Edeka_Logo_Aktuell.svg.png',
+    aldi: W+'e/e5/Aldi_S%C3%BCd_2017_logo.svg/250px-Aldi_S%C3%BCd_2017_logo.svg.png', lidl: W+'9/91/Lidl-Logo.svg/250px-Lidl-Logo.svg.png',
+    penny: W+'8/8e/Penny-Logo.svg/250px-Penny-Logo.svg.png'};
+  const D = [
+    {n:'Hähnchen vom Blech mit Rosenkohl und Chili-Reis', img:'table', min:30, p:'1,62', deals:3, m:'rewe', ki:1, z:['Hähnchen','Rosenkohl','Paprika','Reis','Chili','Zwiebel']},
+    {n:'Ofenlachs mit Brokkoli und Kartoffeln', img:'chef', min:35, p:'2,48', deals:2, m:'edeka', ki:0, z:['Lachs','Brokkoli','Kartoffeln','Zitrone','Dill']},
+    {n:'Gemüse vom Blech mit Kräuterquark', img:'market', min:40, p:'1,38', deals:4, m:'penny', ki:1, z:['Möhren','Zucchini','Paprika','Quark','Petersilie']},
+    {n:'Spaghetti Pomodoro', img:'pasta', min:25, p:'1,05', deals:2, m:'aldi', ki:0, z:['Spaghetti','Tomaten','Basilikum','Knoblauch','Parmesan']},
+    {n:'Kichererbsen-Bowl mit Feta', img:'bowl', min:20, p:'1,90', deals:1, m:'lidl', ki:1, z:['Kichererbsen','Feta','Gurke','Tomaten','Joghurt']},
+  ];
+  const DAYS = ['Mo','Di','Mi','Do','Fr','Sa','So'], PRE = ['bowl','pasta','grill'];
+  const url = i => `url(${H}${i}.jpg)`;
+
+  function toast(ph, t) { const e = ph.querySelector('.e9-tst'); e.textContent = t; e.classList.add('on'); clearTimeout(e._t); e._t = setTimeout(() => e.classList.remove('on'), 2200); }
+
+  // Grund-Dialog; onDone(text) bekommt die Rückmeldung
+  function sheet(ph, d, onDone, keep) {
+    const sc = document.createElement('div'), sh = document.createElement('div');
+    sc.className = 'scrim'; sh.className = 'sheet e9-sh';
+    const R = [['zt','Eine Zutat','kommt auf deine Mag-nicht-Liste'],['nie','Schmeckt mir nicht','Gericht nie wieder vorschlagen'],['lust','Keine Lust','nur diese Woche raus'],['sonst','Sonstiges','kurz sagen, warum']];
+    sh.innerHTML = `<div class="row between"><div><div class="t2">Mag ich nicht</div><div class="small" style="font-size:13px;margin-top:2px">${d.n}</div></div><span class="x" data-x style="cursor:pointer"><svg class="i"><use href="#i-x"/></svg></span></div>
+      <div style="margin-top:14px">${R.map(([k,t,s]) => `<div class="opt" data-r="${k}"><span class="ck"></span><div style="flex:1"><b>${t}</b><small>${s}</small>${k=='zt' ? `<div class="zt">${d.z.map(z => `<span class="chip">${z}</span>`).join('')}</div>` : k=='sonst' ? '<div class="field" style="height:40px;margin-top:8px;font-size:13px;display:none">z. B. zu scharf für die Kinder</div>' : ''}</div></div>`).join('')}</div>
+      <div class="btn" data-ok style="margin-top:14px;cursor:pointer">Raus damit</div>`;
+    ph.append(sc, sh);
+    const pick = k => sh.querySelectorAll('.opt').forEach(o => { const on = o.dataset.r == k; o.querySelector('.ck').classList.toggle('on', on);
+      const x = o.querySelector('.zt,.field'); if (x) x.style.display = on ? '' : 'none'; });
+    pick('zt'); sh.querySelector('.zt .chip').classList.add('on');
+    const close = () => { if (!keep) { sc.remove(); sh.remove(); } };
+    sh.onclick = e => {
+      const c = e.target.closest('.chip'); if (c) return c.classList.toggle('on');
+      const o = e.target.closest('.opt'); if (o) return pick(o.dataset.r);
+      if (e.target.closest('[data-x]')) return close();
+      if (e.target.closest('[data-ok]')) {
+        const r = sh.querySelector('.ck.on').closest('.opt').dataset.r, zs = [...sh.querySelectorAll('.zt .chip.on')].map(c => c.textContent);
+        close(); onDone(r == 'zt' ? (zs.length ? zs.join(', ') + ' steht jetzt auf deiner Mag-nicht-Liste' : 'Keine Zutat gewählt')
+          : r == 'nie' ? 'Kommt nie wieder' : r == 'lust' ? 'Diese Woche nicht mehr' : 'Danke, gemerkt');
+      }
+    };
+    sc.onclick = close;
+  }
+
+  // Stapel: links = Woche, rechts = nicht, oben = Mag ich nicht
+  function deck(id, render, onCount) {
+    const ph = document.getElementById(id), card = document.getElementById(id + '-card'), rail = document.getElementById(id + '-rail');
+    rail.innerHTML = DAYS.map((d, k) => `<div class="e9a-slot"><span>${d}</span><i></i></div>`).join('');
+    const slots = [...rail.children], hist = [];
+    let i = 0, busy = false;
+    const free = () => slots.find(s => !s.classList.contains('on'));
+    const fill = (s, img) => { s.classList.add('on'); s.querySelector('i').style.backgroundImage = url(img); };
+    const mark = () => { slots.forEach(s => s.classList.remove('nx')); const f = free(); if (f) f.classList.add('nx'); onCount(slots.filter(s => s.classList.contains('on')).length); };
+    PRE.forEach((img, k) => fill(slots[k], img));
+    const show = () => { card.innerHTML = render(D[i % D.length]); card.style.transition = 'none'; card.style.opacity = 1;
+      card.style.transform = 'translateY(14px) scale(.95)'; card.offsetWidth; card.style.transition = 'transform .3s'; card.style.transform = ''; mark(); busy = false; };
+    const next = () => { i++; show(); };
+    const drag = (dx) => ph.dispatchEvent(new CustomEvent('e9drag', {detail: dx}));
+
+    function take() {
+      const s = free(); if (!s) { toast(ph, 'Woche ist voll – Fertig'); return back(); }
+      busy = true; const d = D[i % D.length], p = ph.getBoundingClientRect(), a = card.querySelector('.e9-ph').getBoundingClientRect(), b = s.querySelector('i').getBoundingClientRect();
+      const f = document.createElement('div'); f.className = 'e9-fly'; f.style.backgroundImage = url(d.img);
+      Object.assign(f.style, {left: a.left - p.left + 'px', top: a.top - p.top + 'px', width: a.width + 'px', height: a.height + 'px'});
+      ph.append(f); card.style.transition = 'opacity .15s'; card.style.opacity = 0; f.offsetWidth;
+      Object.assign(f.style, {left: b.left - p.left + 'px', top: b.top - p.top + 'px', width: b.width + 'px', height: b.height + 'px'});
+      setTimeout(() => { f.remove(); fill(s, d.img); hist.push(s); drag(0); next(); }, 560);
+    }
+    function drop(ty) { busy = true; hist.push(null); card.style.transition = 'transform .35s ease-in, opacity .35s';
+      card.style.transform = ty ? 'translateY(-560px)' : 'translate(460px,40px) rotate(22deg)'; card.style.opacity = 0; setTimeout(() => { drag(0); next(); }, 340); }
+    function back() { card.style.transition = 'transform .3s'; card.style.transform = ''; drag(0); }
+    function nope() { sheet(ph, D[i % D.length], t => { toast(ph, t); drop(1); }); }
+    const act = {in: take, out: () => drop(0), nope,
+      undo() { if (!hist.length) return; const s = hist.pop(); if (s) { s.classList.remove('on'); s.querySelector('i').style.backgroundImage = ''; } i = Math.max(0, i - 1); show(); },
+      dice() { const e = slots.filter(s => !s.classList.contains('on')); if (!e.length) return;
+        e.forEach((s, k) => setTimeout(() => { fill(s, D[(i + k) % D.length].img); hist.push(s); if (k == e.length - 1) { mark(); toast(ph, 'KI hat den Rest geplant'); } }, 140 * k)); }};
+    ph.addEventListener('click', e => { const a = e.target.closest('[data-a]'); if (a && !busy) act[a.dataset.a](); });
+
+    let x0, y0, dx = 0, dy = 0, on = false;
+    card.addEventListener('pointerdown', e => { if (busy) return; on = true; x0 = e.clientX; y0 = e.clientY; dx = dy = 0; card.setPointerCapture(e.pointerId); card.style.transition = 'none'; });
+    card.addEventListener('pointermove', e => { if (!on) return; dx = e.clientX - x0; dy = e.clientY - y0;
+      card.style.transform = `translate(${dx}px,${dy}px) rotate(${dx / 18}deg)`; drag(dx); });
+    const up = () => { if (!on) return; on = false;
+      if (dx < -90) take(); else if (dx > 90) drop(0); else if (dy < -110) { back(); nope(); } else back(); };
+    card.addEventListener('pointerup', up); card.addEventListener('pointercancel', up);
+    show();
+    return ph;
+  }
+
+  // A
+  const meta = d => `${d.min} min · <span style="color:var(--deal);font-weight:800">${d.deals} im Angebot</span>`;
+  const a = deck('e9a', d => `<div class="bg"></div><div class="in">
+      <div class="row between"><span class="soft" style="background:#fff">${d.ki ? '<svg class="i" style="width:13px"><use href="#i-sparkle"/></svg>KI-Idee' : '<svg class="i" style="width:13px"><use href="#i-book"/></svg>Dein Rezept'}</span><img class="e9-logo" src="${L[d.m]}" alt="${d.m}"></div>
+      <div class="e9-ph" style="background-image:${url(d.img)}"></div>
+      <div class="t2">${d.n}</div><div class="meta">${meta(d)}</div>
+      <div class="stat"><span class="lbl">pro<br>Portion</span><span class="num" style="font-size:38px">${d.p} €</span></div></div>`,
+    n => { document.getElementById('e9a-cnt').innerHTML = n == 7 ? '<svg class="i" style="width:14px"><use href="#i-check"/></svg>Abend' : `Abend ${n}/7`; document.getElementById('e9a-bar').style.width = n / 7 * 100 + '%'; });
+  a.addEventListener('e9drag', e => { const dx = e.detail;
+    document.getElementById('e9a-arc').style.width = 150 + Math.max(0, -dx) * .5 + 'px';
+    document.getElementById('e9a-nope').style.opacity = Math.min(1, Math.max(0, dx) / 140);
+    const nx = a.querySelector('.e9a-slot.nx i'); if (nx) nx.style.transform = dx < 0 ? `scale(${1 + Math.min(.3, -dx / 400)})` : ''; });
+
+  // C
+  const c = deck('e9c', d => `<div class="e9-ph" style="background-image:${url(d.img)}"></div><div class="t2">${d.n}</div>
+      <div class="small" style="font-size:12px;margin-top:6px">${meta(d)}</div>
+      <div class="row" style="justify-content:center;gap:10px;margin-top:10px"><span class="num" style="font-size:30px">${d.p} €</span><span class="small" style="font-size:12px;text-align:left;line-height:1.2">pro<br>Portion</span><img class="e9-logo" src="${L[d.m]}" alt="${d.m}" style="margin-left:6px"></div>`,
+    n => { document.getElementById('e9c-cnt').innerHTML = `${n}<span style="color:var(--ink3)">/7</span>`; });
+  c.addEventListener('e9drag', e => { const dx = e.detail;
+    document.getElementById('e9c-in').style.transform = `scale(${1 + Math.max(0, -dx) / 300})`;
+    const o = document.getElementById('e9c-out'); o.style.transform = `scale(${1 + Math.max(0, dx) / 300})`; o.style.opacity = .45 + Math.min(.55, Math.max(0, dx) / 200); });
+
+  // D: Sheet dauerhaft offen
+  const d = document.getElementById('e9d');
+  sheet(d, D[0], t => toast(d, t), true);
+})();
+</script>

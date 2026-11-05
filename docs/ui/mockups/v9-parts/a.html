@@ -1,0 +1,307 @@
+<style>
+/* Teil a (v9): Rezeptdetail S3 – Nährwert-Statistik statt „Zusammensetzung“ */
+.a9-scroll{position:absolute;inset:0;overflow-y:auto;overflow-x:hidden;padding:66px 24px 150px;scrollbar-width:none;cursor:grab;touch-action:pan-y}
+.a9-scroll::-webkit-scrollbar{display:none}
+.a9-scroll.drag{cursor:grabbing;user-select:none}
+.a9-top{position:absolute;left:0;right:0;top:0;height:58px;background:linear-gradient(var(--bg) 70%,rgba(255,255,255,0));z-index:19;pointer-events:none}
+.a9-fade{position:absolute;left:0;right:0;bottom:0;height:150px;background:linear-gradient(rgba(255,255,255,0),var(--bg) 50%);z-index:14;pointer-events:none}
+.a9-fix{position:absolute;left:24px;right:24px;bottom:30px;z-index:15}
+.a9-bowl{background-image:url(../../../ios/Sources/Essenapp/Resources/hero/bowl.jpg)}
+.a9-x{width:44px;height:44px;border-radius:50%;background:#fff;display:grid;place-items:center;flex:none}
+.a9-x svg{width:20px;height:20px}
+.a9-card{position:relative;background:var(--card);border-radius:32px;padding:20px;margin-top:22px;overflow:hidden}
+.a9-gh{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.a9-gh b{font-size:17px;font-weight:800}
+.a9-who{display:flex;gap:6px}
+.a9-who span{height:32px;padding:0 13px;border-radius:999px;display:grid;place-items:center;font-size:13px;font-weight:800;color:var(--ink2);box-shadow:inset 0 0 0 1.5px var(--line);cursor:pointer;user-select:none;background:#fff}
+.a9-who span.on{background:var(--ink);color:#fff;box-shadow:none}
+.a9-u{font-size:.5em;color:var(--ink2);letter-spacing:-.02em}
+.a9-dot{width:10px;height:10px;border-radius:50%;display:inline-block;flex:none}
+.a9-price{display:flex;align-items:center;gap:12px;background:var(--card);border-radius:999px;padding:8px 16px 8px 8px;margin-top:4px}
+.a9-price img{width:40px;height:40px;border-radius:50%;background:#fff;object-fit:contain;padding:6px;flex:none}
+.a9-step i{cursor:pointer;user-select:none}
+.a9-ing .nm{font-size:18px}
+/* A – Ring */
+.a9-ring{position:relative;height:262px;margin-top:6px}
+.a9-ring svg{position:absolute;left:0;top:0;overflow:visible}
+.a9-rl{position:absolute;display:flex;flex-direction:column;gap:2px}
+.a9-rl .num{font-size:28px}
+.a9-rl .lbl{color:var(--ink);letter-spacing:0;font-size:12px;display:flex;align-items:center;gap:6px}
+.a9-rl .small{font-size:12px}
+.a9-mini{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:16px}
+.a9-mini .num{font-size:26px}
+.a9-mt{height:6px;border-radius:999px;background:#fff;margin-top:8px;overflow:hidden}
+.a9-mt i{display:block;height:100%;border-radius:999px;transition:width .3s}
+/* B – Tagesbalken */
+.a9-day{display:flex;height:46px;border-radius:999px;overflow:hidden;margin-top:14px;background:repeating-linear-gradient(135deg,#fff 0 6px,#EDEDEA 6px 9px)}
+.a9-day i{display:grid;place-items:center;font:600 14px "Inter Tight",sans-serif;font-style:normal;color:var(--ink);transition:width .3s;border-right:2px solid var(--card);white-space:nowrap;overflow:hidden}
+.a9-dl{display:flex;gap:14px;flex-wrap:wrap;margin-top:10px;font-size:12px;font-weight:700;color:var(--ink2)}
+.a9-dl span{display:flex;align-items:center;gap:5px}
+.a9-sub{font-size:12px;font-weight:800;letter-spacing:.06em;color:var(--ink2);margin:22px 0 2px;display:flex;justify-content:space-between}
+.a9-br{display:grid;grid-template-columns:96px 1fr 38px;align-items:center;gap:10px;padding:10px 0;border-top:1.5px solid #E6E6E2}
+.a9-br .num{font-size:26px}
+.a9-br .lbl{color:var(--ink);letter-spacing:0;font-size:12px;display:block;margin-bottom:3px}
+.a9-bt{position:relative;height:14px;border-radius:999px;background:#fff}
+.a9-bt i{position:absolute;left:0;top:0;bottom:0;border-radius:999px;transition:width .3s}
+.a9-bt::after{content:"";position:absolute;left:33.3%;top:-5px;bottom:-5px;width:0;border-left:2px dotted var(--ink)}
+.a9-br em{font-style:normal;font-size:13px;font-weight:800;text-align:right}
+/* C – Säulen */
+.a9-vs{display:flex;align-items:flex-end;gap:16px;margin-top:12px}
+.a9-cols{position:relative;height:178px;margin-top:18px;display:grid;grid-template-columns:repeat(7,1fr);gap:8px;align-items:end;padding-left:0}
+.a9-grid{position:absolute;left:0;right:0;border-top:1.5px dashed #E1E1DC;font-size:10px;font-weight:800;color:var(--ink3);pointer-events:none}
+.a9-grid span{position:absolute;right:0;top:-14px}
+.a9-col{position:relative;height:100%;display:flex;align-items:flex-end;justify-content:center}
+.a9-col i{display:block;width:100%;border-radius:12px 12px 4px 4px;transition:height .3s}
+.a9-col b{position:absolute;left:-3px;right:-3px;height:0;border-top:2.5px solid var(--ink);transition:bottom .3s}
+.a9-col b::after{content:"";position:absolute;right:-3px;top:-5.5px;width:8px;height:8px;border-radius:50%;background:var(--ink)}
+.a9-cl{display:grid;grid-template-columns:repeat(7,1fr);gap:8px;margin-top:8px;text-align:center}
+.a9-cl span{font-size:10px;font-weight:800;color:var(--ink2);letter-spacing:.02em}
+.a9-cl .num{display:block;font-size:16px;color:var(--ink);margin-top:3px;letter-spacing:-.04em}
+.a9-leg{display:flex;gap:16px;margin-top:14px;font-size:12px;font-weight:700;color:var(--ink2)}
+.a9-leg span{display:flex;align-items:center;gap:6px}
+.a9-tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:14px}
+</style>
+
+<section class="sec"><h2>Gericht im Detail – Nährwerte</h2><p>Die „Zusammensetzung“ (Prozent je Zutat) fliegt raus. Stattdessen die Nährwerte pro Portion als Diagramm mit den echten Zahlen. Drei Formen zur Wahl. Im Handy scrollen (Maus ziehen oder Rad), „Jona/Mia“ und die Portionen sind anklickbar.</p></section>
+<div class="screens">
+
+  <!-- ===== Variante A: Ring um den Teller ===== -->
+  <div class="screen"><div class="phone a9-phone">
+    <div class="sb"><b>9:41</b><span class="island"></span><svg><use href="#status"/></svg></div>
+    <div class="a9-top"></div>
+    <div class="a9-scroll">
+      <div class="blob" style="left:-110px;top:-120px;width:420px;height:420px;background:var(--blue)"></div>
+      <div style="position:relative">
+        <div class="row between"><span class="a9-x"><svg class="i"><use href="#i-back"/></svg></span><div class="row" style="gap:10px"><span class="a9-x"><svg class="i"><use href="#i-heart"/></svg></span><span class="a9-x"><svg class="i"><use href="#i-share"/></svg></span></div></div>
+        <div class="small" style="margin-top:14px;color:var(--ink)">Hauptgericht · <b>vegetarisch</b></div>
+        <div class="t1" style="font-size:33px;margin-top:2px">Rosenkohl-Pfanne<br>mit Paprika-<br>Chili-Reis</div>
+        <div style="position:relative;height:128px;margin-top:16px">
+          <div class="plate a9-bowl" style="position:absolute;right:-70px;top:-24px;width:176px;height:176px"></div>
+          <div style="width:136px">
+            <div class="stat"><span class="lbl">Zeit</span><span class="num" style="font-size:34px">30′</span></div>
+            <div class="stat" style="margin-top:12px"><span class="lbl">p. P.</span><span class="num" style="font-size:34px">1,85</span></div>
+            <div class="row" style="gap:5px;margin-top:10px;font-size:13px;white-space:nowrap"><svg class="i" style="width:14px;height:14px;fill:currentColor"><use href="#i-star"/></svg><b>4,5</b><span class="small" style="font-size:13px">· 6 Bewertungen</span></div>
+                      </div>
+        </div>
+        <div class="a9-price"><img src="https://upload.wikimedia.org/wikipedia/commons/thumb/4/4c/Logo_REWE.svg/250px-Logo_REWE.svg.png" alt="Rewe"><div style="flex:1"><div style="font-weight:800">3,70 € für 2 bei Rewe</div><div class="small" style="font-size:12px">KW 45 · 2.–8. Nov</div></div><span class="deal">2 Angebote</span></div>
+
+        <!-- Statistik -->
+        <div class="a9-card">
+          <div class="a9-gh"><b>Nährwerte</b><div class="a9-who"><span class="on" data-i="0">Jona</span><span data-i="1">Mia</span></div></div>
+          <div class="row" style="align-items:flex-end;gap:10px;margin-top:14px">
+            <span class="num" style="font-size:64px" data-t="403|322">403</span>
+            <div style="padding-bottom:4px"><div style="font-weight:800">kcal pro Portion</div><div class="small" style="font-size:12px" data-t="18 % von Jonas Tag (2.200)|18 % von Mias Tag (1.800)">18 % von Jonas Tag (2.200)</div></div>
+          </div>
+          <div class="a9-ring">
+            <svg width="302" height="262" viewBox="0 0 302 262">
+              <g transform="translate(151 136)" fill="none" stroke-width="22">
+                <circle r="90" stroke="#fff"/>
+                <circle r="90" stroke="var(--sand)" stroke-dasharray="19 600" transform="rotate(-104.4)"/>
+                <circle r="90" stroke="var(--rose)" stroke-dasharray="70 600" transform="rotate(-90)"/>
+                <circle r="90" stroke="var(--blue)" stroke-dasharray="466 600" transform="rotate(-43.2)"/>
+              </g>
+              <g fill="none" stroke="var(--ink3)" stroke-width="1.5">
+                <path d="M138 34 L112 18 H86"/>
+                <path d="M193 41 L216 22 H232"/>
+                <path d="M110 230 L92 246 H76"/>
+              </g>
+            </svg>
+            <div class="plate a9-bowl" style="position:absolute;left:83px;top:68px;width:136px;height:136px;box-shadow:0 0 0 4px var(--card),0 10px 22px rgba(40,30,20,.14)"></div>
+            <div class="a9-rl" style="left:0;top:0"><span class="lbl"><i class="a9-dot" style="background:var(--sand)"></i>Fett</span><span class="num" data-t="2 g|2 g">2 g</span></div>
+            <div class="a9-rl" style="right:0;top:0;align-items:flex-end"><span class="lbl"><i class="a9-dot" style="background:var(--rose)"></i>Protein</span><span class="num" data-t="14 g|11 g">14 g</span></div>
+            <div class="a9-rl" style="left:0;bottom:2px"><span class="lbl"><i class="a9-dot" style="background:var(--blue)"></i>Kohlenhydrate</span><span class="num" data-t="86 g|69 g">86 g</span></div>
+            <div class="a9-rl" style="right:0;bottom:2px;align-items:flex-end;text-align:right"><span class="small">Ring = Anteil<br>an den kcal</span></div>
+          </div>
+          <div class="a9-mini">
+            <div><div class="stat"><span class="lbl">Ballastst.</span></div><div class="num" style="margin-top:6px" data-t="9 g|7 g">9 g</div><div class="a9-mt"><i style="width:30%;background:var(--sage)" data-w="30|23"></i></div></div>
+            <div><div class="stat"><span class="lbl">Zucker</span></div><div class="num" style="margin-top:6px" data-t="7 g|6 g">7 g</div><div class="a9-mt"><i style="width:14%;background:#F0D9A8" data-w="14|13"></i></div></div>
+            <div><div class="stat"><span class="lbl">Salz</span></div><div class="num" style="margin-top:6px" data-t="1,2 g|1,0 g">1,2 g</div><div class="a9-mt"><i style="width:20%;background:var(--ink3)" data-w="20|17"></i></div></div>
+          </div>
+          <div class="small" style="font-size:11px;margin-top:8px">Balken = Anteil am Tagesbedarf</div>
+        </div>
+
+        <div class="irow" style="margin-top:22px;border-bottom:1.5px solid var(--line)"><div style="flex:1"><div style="font-weight:800">Portionen</div><div class="small" style="font-size:12px">Mengen passen sich an</div></div><span class="stepper a9-step"><i>−</i><span>2</span><i>+</i></span></div>
+        <div class="row between" style="margin-top:26px;margin-bottom:6px"><span style="font-weight:800;font-size:17px">Zutaten</span><span class="small" style="font-size:13px">6 Stück</span></div>
+        <div class="a9-ing">
+          <div class="irow"><span class="c" style="background:var(--sage)"><img src="../../../ios/Sources/Essenapp/Resources/ill/basil.webp" alt=""></span><span class="nm">Rosenkohl</span><span class="deal">−30 %</span><b data-q="250|g">500 g</b></div>
+          <div class="irow"><span class="c" style="background:var(--rose)"><img src="../../../ios/Sources/Essenapp/Resources/ill/tomato.webp" alt=""></span><span class="nm">Paprika, rot</span><span class="deal">−20 %</span><b data-q="1| Stück">2 Stück</b></div>
+          <div class="irow"><span class="c" style="background:var(--blue1)"><img src="../../../ios/Sources/Essenapp/Resources/ill/pot.webp" alt=""></span><span class="nm">Basmati-Reis</span><b data-q="100|g">200 g</b></div>
+          <div class="irow"><span class="c" style="background:var(--sand)"><img src="../../../ios/Sources/Essenapp/Resources/ill/garlic.webp" alt=""></span><span class="nm">Knoblauch</span><b data-q="1| Zehen">2 Zehen</b></div>
+        </div>
+      </div>
+    </div>
+    <div class="a9-fade"></div>
+    <div class="a9-fix row between"><div><div style="font-weight:800">Kochmodus</div><div class="small" style="font-size:13px">5 Schritte</div></div><span class="circle" style="width:64px;height:64px"><svg class="i" style="width:22px"><use href="#i-play"/></svg></span></div>
+    <div class="homebar"></div></div>
+    <div class="caption"><b>Variante A – Ring um den Teller</b>kcal groß oben, darunter ein Ring um das Tellerfoto: Kohlenhydrate (blau), Protein (rosa), Fett (sand) als Anteil an den Kalorien, die Gramm stehen groß an den Ecken. Darunter Ballaststoffe, Zucker, Salz mit dünnem Balken für den Tagesbedarf. Nah am alten Bild (Teller in der Mitte), aber nur Nährwerte, keine Zutaten-Prozente.</div></div>
+
+  <!-- ===== Variante B: Dein Tag als Balken ===== -->
+  <div class="screen"><div class="phone a9-phone">
+    <div class="sb"><b>9:41</b><span class="island"></span><svg><use href="#status"/></svg></div>
+    <div class="a9-top"></div>
+    <div class="a9-scroll">
+      <div class="blob" style="left:-110px;top:-120px;width:420px;height:420px;background:var(--blue)"></div>
+      <div style="position:relative">
+        <div class="row between"><span class="a9-x"><svg class="i"><use href="#i-back"/></svg></span><div class="row" style="gap:10px"><span class="a9-x"><svg class="i"><use href="#i-heart"/></svg></span><span class="a9-x"><svg class="i"><use href="#i-share"/></svg></span></div></div>
+        <div class="small" style="margin-top:14px;color:var(--ink)">Hauptgericht · <b>vegetarisch</b></div>
+        <div class="t1" style="font-size:33px;margin-top:2px">Rosenkohl-Pfanne<br>mit Paprika-<br>Chili-Reis</div>
+        <div style="position:relative;height:128px;margin-top:16px">
+          <div class="plate a9-bowl" style="position:absolute;right:-70px;top:-24px;width:176px;height:176px"></div>
+          <div style="width:136px">
+            <div class="stat"><span class="lbl">Zeit</span><span class="num" style="font-size:34px">30′</span></div>
+            <div class="stat" style="margin-top:12px"><span class="lbl">p. P.</span><span class="num" style="font-size:34px">1,85</span></div>
+            <div class="row" style="gap:5px;margin-top:10px;font-size:13px;white-space:nowrap"><svg class="i" style="width:14px;height:14px;fill:currentColor"><use href="#i-star"/></svg><b>4,5</b><span class="small" style="font-size:13px">· 6 Bewertungen</span></div>
+                      </div>
+        </div>
+        <div class="a9-price"><img src="https://upload.wikimedia.org/wikipedia/commons/thumb/4/4c/Logo_REWE.svg/250px-Logo_REWE.svg.png" alt="Rewe"><div style="flex:1"><div style="font-weight:800">3,70 € für 2 bei Rewe</div><div class="small" style="font-size:12px">KW 45 · 2.–8. Nov</div></div><span class="deal">2 Angebote</span></div>
+
+        <!-- Statistik -->
+        <div class="a9-card">
+          <div class="a9-gh"><b>Dein Tag</b><div class="a9-who"><span class="on" data-i="0">Jona</span><span data-i="1">Mia</span></div></div>
+          <div class="row between" style="align-items:flex-end;margin-top:14px">
+            <div class="row" style="align-items:flex-end;gap:8px"><span class="num" style="font-size:56px" data-t="403|322">403</span><span style="font-weight:800;padding-bottom:4px">kcal</span></div>
+            <div style="text-align:right;padding-bottom:3px"><div class="small" style="font-size:12px">Tagesziel</div><div class="num" style="font-size:22px" data-t="2.200|1.800">2.200</div></div>
+          </div>
+          <div class="a9-day">
+            <i style="width:17.3%;background:var(--sand)" data-w="17.3|17.2" data-t="380|310">380</i>
+            <i style="width:27.7%;background:var(--sage)" data-w="27.7|27.8" data-t="610|500">610</i>
+            <i style="width:18.3%;background:var(--blue);font-weight:700" data-w="18.3|17.9" data-t="403|322">403</i>
+          </div>
+          <div class="a9-dl"><span><i class="a9-dot" style="background:var(--sand)"></i>Frühstück</span><span><i class="a9-dot" style="background:var(--sage)"></i>Mittag</span><span style="color:var(--ink)"><i class="a9-dot" style="background:var(--blue)"></i>dieses Gericht</span><span data-t="807 übrig|668 übrig">807 übrig</span></div>
+
+          <div class="a9-sub"><span>MAKROS</span><span style="letter-spacing:0;font-weight:700">⋮ = ⅓ vom Tag</span></div>
+          <div class="a9-br"><div><span class="lbl">Protein</span><span class="num" data-t="14 g|11 g">14 g</span></div><div class="a9-bt"><i style="width:23%;background:var(--rose)" data-w="23|22"></i></div><em data-t="23 %|22 %">23 %</em></div>
+          <div class="a9-br"><div><span class="lbl">Kohlenhydrate</span><span class="num" data-t="86 g|69 g">86 g</span></div><div class="a9-bt"><i style="width:31%;background:var(--blue)" data-w="31|31"></i></div><em data-t="31 %|31 %">31 %</em></div>
+          <div class="a9-br"><div><span class="lbl">Fett</span><span class="num" data-t="2 g|2 g">2 g</span></div><div class="a9-bt"><i style="width:3%;background:var(--sand)" data-w="3|3"></i></div><em data-t="3 %|3 %">3 %</em></div>
+          <div class="a9-sub"><span>AUSSERDEM</span></div>
+          <div class="a9-br"><div><span class="lbl">Ballaststoffe</span><span class="num" data-t="9 g|7 g">9 g</span></div><div class="a9-bt"><i style="width:30%;background:var(--sage)" data-w="30|23"></i></div><em data-t="30 %|23 %">30 %</em></div>
+          <div class="a9-br"><div><span class="lbl">Zucker</span><span class="num" data-t="7 g|6 g">7 g</span></div><div class="a9-bt"><i style="width:14%;background:#F0D9A8" data-w="14|13"></i></div><em data-t="14 %|13 %">14 %</em></div>
+          <div class="a9-br"><div><span class="lbl">Salz</span><span class="num" data-t="1,2 g|1,0 g">1,2 g</span></div><div class="a9-bt"><i style="width:20%;background:var(--ink3)" data-w="20|17"></i></div><em data-t="20 %|17 %">20 %</em></div>
+        </div>
+
+        <div class="irow" style="margin-top:22px;border-bottom:1.5px solid var(--line)"><div style="flex:1"><div style="font-weight:800">Portionen</div><div class="small" style="font-size:12px">Mengen passen sich an</div></div><span class="stepper a9-step"><i>−</i><span>2</span><i>+</i></span></div>
+        <div class="row between" style="margin-top:26px;margin-bottom:6px"><span style="font-weight:800;font-size:17px">Zutaten</span><span class="small" style="font-size:13px">6 Stück</span></div>
+        <div class="a9-ing">
+          <div class="irow"><span class="c" style="background:var(--sage)"><img src="../../../ios/Sources/Essenapp/Resources/ill/basil.webp" alt=""></span><span class="nm">Rosenkohl</span><span class="deal">−30 %</span><b data-q="250|g">500 g</b></div>
+          <div class="irow"><span class="c" style="background:var(--rose)"><img src="../../../ios/Sources/Essenapp/Resources/ill/tomato.webp" alt=""></span><span class="nm">Paprika, rot</span><span class="deal">−20 %</span><b data-q="1| Stück">2 Stück</b></div>
+          <div class="irow"><span class="c" style="background:var(--blue1)"><img src="../../../ios/Sources/Essenapp/Resources/ill/pot.webp" alt=""></span><span class="nm">Basmati-Reis</span><b data-q="100|g">200 g</b></div>
+          <div class="irow"><span class="c" style="background:var(--sand)"><img src="../../../ios/Sources/Essenapp/Resources/ill/garlic.webp" alt=""></span><span class="nm">Knoblauch</span><b data-q="1| Zehen">2 Zehen</b></div>
+        </div>
+      </div>
+    </div>
+    <div class="a9-fade"></div>
+    <div class="a9-fix row between"><div><div style="font-weight:800">Kochmodus</div><div class="small" style="font-size:13px">5 Schritte</div></div><span class="circle" style="width:64px;height:64px"><svg class="i" style="width:22px"><use href="#i-play"/></svg></span></div>
+    <div class="homebar"></div></div>
+    <div class="caption"><b>Variante B – Dein Tag als Balken</b>Oben ein gestapelter Balken über den ganzen Tag: Frühstück und Mittag aus dem Wochenplan, dieses Gericht blau, der Rest bleibt gestreift („807 übrig“). Darunter jeder Nährwert als Zeile: Gramm groß links, Balken = Anteil am Tagesbedarf, gepunktete Linie bei ⅓ (Richtwert für eine Hauptmahlzeit). Gruppiert in Makros und Außerdem.</div></div>
+
+  <!-- ===== Variante C: Säulen gegen den Wochenschnitt ===== -->
+  <div class="screen"><div class="phone a9-phone">
+    <div class="sb"><b>9:41</b><span class="island"></span><svg><use href="#status"/></svg></div>
+    <div class="a9-top"></div>
+    <div class="a9-scroll">
+      <div class="blob" style="left:-110px;top:-120px;width:420px;height:420px;background:var(--blue)"></div>
+      <div style="position:relative">
+        <div class="row between"><span class="a9-x"><svg class="i"><use href="#i-back"/></svg></span><div class="row" style="gap:10px"><span class="a9-x"><svg class="i"><use href="#i-heart"/></svg></span><span class="a9-x"><svg class="i"><use href="#i-share"/></svg></span></div></div>
+        <div class="small" style="margin-top:14px;color:var(--ink)">Hauptgericht · <b>vegetarisch</b></div>
+        <div class="t1" style="font-size:33px;margin-top:2px">Rosenkohl-Pfanne<br>mit Paprika-<br>Chili-Reis</div>
+        <div style="position:relative;height:128px;margin-top:16px">
+          <div class="plate a9-bowl" style="position:absolute;right:-70px;top:-24px;width:176px;height:176px"></div>
+          <div style="width:136px">
+            <div class="stat"><span class="lbl">Zeit</span><span class="num" style="font-size:34px">30′</span></div>
+            <div class="stat" style="margin-top:12px"><span class="lbl">p. P.</span><span class="num" style="font-size:34px">1,85</span></div>
+            <div class="row" style="gap:5px;margin-top:10px;font-size:13px;white-space:nowrap"><svg class="i" style="width:14px;height:14px;fill:currentColor"><use href="#i-star"/></svg><b>4,5</b><span class="small" style="font-size:13px">· 6 Bewertungen</span></div>
+                      </div>
+        </div>
+        <div class="a9-price"><img src="https://upload.wikimedia.org/wikipedia/commons/thumb/4/4c/Logo_REWE.svg/250px-Logo_REWE.svg.png" alt="Rewe"><div style="flex:1"><div style="font-weight:800">3,70 € für 2 bei Rewe</div><div class="small" style="font-size:12px">KW 45 · 2.–8. Nov</div></div><span class="deal">2 Angebote</span></div>
+
+        <!-- Statistik -->
+        <div class="a9-card">
+          <div class="blob" style="right:-70px;top:-70px;width:170px;height:170px;background:var(--sage);opacity:.7"></div>
+          <div class="a9-gh" style="position:relative"><b>Im Vergleich</b><div class="a9-who"><span class="on" data-i="0">Jona</span><span data-i="1">Mia</span></div></div>
+          <div class="a9-vs" style="position:relative">
+            <div><div class="small" style="font-size:12px">dieses Gericht</div><div class="row" style="align-items:flex-end;gap:6px"><span class="num" style="font-size:56px" data-t="403|322">403</span><span style="font-weight:800;padding-bottom:3px">kcal</span></div></div>
+            <div style="padding-bottom:3px"><div class="small" style="font-size:12px">Ø deine Woche</div><span class="num" style="font-size:30px;color:var(--ink2)" data-t="560|448">560</span></div>
+          </div>
+          <span class="soft ok" style="margin-top:10px" data-t="157 kcal leichter als sonst|126 kcal leichter als sonst">157 kcal leichter als sonst</span>
+
+          <div class="small" style="font-size:12px;margin-top:18px">Säule = Anteil am Tagesbedarf · Linien je 10 %</div>
+          <div class="a9-cols" style="margin-top:6px">
+            <div class="a9-grid" style="bottom:35.6px"></div>
+            <div class="a9-grid" style="bottom:71.1px"></div>
+            <div class="a9-grid" style="bottom:106.7px"></div>
+            <div class="a9-grid" style="bottom:142.2px"></div>
+            <div class="a9-col"><i style="height:64px;background:var(--blue3)" data-h="64|64"></i><b style="bottom:89px" data-b="89|89"></b></div>
+            <div class="a9-col"><i style="height:82px;background:var(--rose)" data-h="82|78"></i><b style="bottom:142px" data-b="142|135"></b></div>
+            <div class="a9-col"><i style="height:110px;background:var(--blue)" data-h="110|110"></i><b style="bottom:82px" data-b="82|78"></b></div>
+            <div class="a9-col"><i style="height:11px;background:var(--sand)" data-h="11|11"></i><b style="bottom:107px" data-b="107|100"></b></div>
+            <div class="a9-col"><i style="height:107px;background:var(--sage)" data-h="107|82"></i><b style="bottom:71px" data-b="71|60"></b></div>
+            <div class="a9-col"><i style="height:50px;background:#F0D9A8" data-h="50|46"></i><b style="bottom:64px" data-b="64|57"></b></div>
+            <div class="a9-col"><i style="height:71px;background:var(--ink3)" data-h="71|60"></i><b style="bottom:125px" data-b="125|100"></b></div>
+          </div>
+          <div class="a9-cl">
+            <span>kcal<b class="num" data-t="403|322">403</b></span>
+            <span>Protein<b class="num" data-t="14 g|11 g">14 g</b></span>
+            <span>KH<b class="num" data-t="86 g|69 g">86 g</b></span>
+            <span>Fett<b class="num" data-t="2 g|2 g">2 g</b></span>
+            <span>Ballast.<b class="num" data-t="9 g|7 g">9 g</b></span>
+            <span>Zucker<b class="num" data-t="7 g|6 g">7 g</b></span>
+            <span>Salz<b class="num" data-t="1,2 g|1,0 g">1,2 g</b></span>
+          </div>
+          <div class="a9-leg"><span><i style="width:14px;height:14px;border-radius:4px;background:var(--blue);display:inline-block"></i>dieses Gericht</span><span><i style="width:16px;border-top:2.5px solid var(--ink);display:inline-block"></i>Ø deine Woche</span></div>
+          <div class="a9-tags"><span class="soft ok">viele Ballaststoffe</span><span class="soft ok">kaum Fett</span><span class="soft warn">weniger Protein als sonst</span></div>
+        </div>
+
+        <div class="irow" style="margin-top:22px;border-bottom:1.5px solid var(--line)"><div style="flex:1"><div style="font-weight:800">Portionen</div><div class="small" style="font-size:12px">Mengen passen sich an</div></div><span class="stepper a9-step"><i>−</i><span>2</span><i>+</i></span></div>
+        <div class="row between" style="margin-top:26px;margin-bottom:6px"><span style="font-weight:800;font-size:17px">Zutaten</span><span class="small" style="font-size:13px">6 Stück</span></div>
+        <div class="a9-ing">
+          <div class="irow"><span class="c" style="background:var(--sage)"><img src="../../../ios/Sources/Essenapp/Resources/ill/basil.webp" alt=""></span><span class="nm">Rosenkohl</span><span class="deal">−30 %</span><b data-q="250|g">500 g</b></div>
+          <div class="irow"><span class="c" style="background:var(--rose)"><img src="../../../ios/Sources/Essenapp/Resources/ill/tomato.webp" alt=""></span><span class="nm">Paprika, rot</span><span class="deal">−20 %</span><b data-q="1| Stück">2 Stück</b></div>
+          <div class="irow"><span class="c" style="background:var(--blue1)"><img src="../../../ios/Sources/Essenapp/Resources/ill/pot.webp" alt=""></span><span class="nm">Basmati-Reis</span><b data-q="100|g">200 g</b></div>
+          <div class="irow"><span class="c" style="background:var(--sand)"><img src="../../../ios/Sources/Essenapp/Resources/ill/garlic.webp" alt=""></span><span class="nm">Knoblauch</span><b data-q="1| Zehen">2 Zehen</b></div>
+        </div>
+      </div>
+    </div>
+    <div class="a9-fade"></div>
+    <div class="a9-fix row between"><div><div style="font-weight:800">Kochmodus</div><div class="small" style="font-size:13px">5 Schritte</div></div><span class="circle" style="width:64px;height:64px"><svg class="i" style="width:22px"><use href="#i-play"/></svg></span></div>
+    <div class="homebar"></div></div>
+    <div class="caption"><b>Variante C – Säulen gegen deine Woche</b>Groß: kcal dieses Gerichts neben dem Schnitt deiner Woche, darunter „157 kcal leichter als sonst“. Sieben Säulen (kcal, Protein, KH, Fett, Ballaststoffe, Zucker, Salz) zeigen den Anteil am Tagesbedarf, der schwarze Strich den Wochenschnitt; die Gramm stehen unter jeder Säule. Unten kurze Hinweise wie „viele Ballaststoffe“.</div></div>
+
+</div>
+<script>
+(() => {
+  document.querySelectorAll('.a9-phone').forEach(ph => {
+    // Jona/Mia: Werte je Person aus data-t / data-w / data-h / data-b („Jona|Mia“)
+    ph.querySelectorAll('.a9-who span').forEach(chip => chip.addEventListener('click', () => {
+      const i = +chip.dataset.i;
+      ph.querySelectorAll('.a9-who span').forEach(c => c.classList.toggle('on', c === chip));
+      const v = (el, k) => el.dataset[k].split('|')[i];
+      ph.querySelectorAll('[data-t]').forEach(el => el.textContent = v(el, 't'));
+      ph.querySelectorAll('[data-w]').forEach(el => el.style.width = v(el, 'w') + '%');
+      ph.querySelectorAll('[data-h]').forEach(el => el.style.height = v(el, 'h') + 'px');
+      ph.querySelectorAll('[data-b]').forEach(el => el.style.bottom = v(el, 'b') + 'px');
+    }));
+    // Portionen: Mengen = Menge pro Portion × n
+    const st = ph.querySelector('.a9-step'), out = st.querySelector('span');
+    let n = 2;
+    st.querySelectorAll('i').forEach((b, k) => b.addEventListener('click', () => {
+      n = Math.min(8, Math.max(1, n + (k ? 1 : -1)));
+      out.textContent = n;
+      ph.querySelectorAll('[data-q]').forEach(el => {
+        const [q, u] = el.dataset.q.split('|');
+        el.textContent = String(+q * n).replace('.', ',') + (u.startsWith(' ') ? u : ' ' + u);
+      });
+    }));
+    // Mit der Maus ziehen = scrollen (Touch scrollt nativ)
+    const sc = ph.querySelector('.a9-scroll');
+    let y0 = null, t0 = 0, moved = false;
+    sc.addEventListener('pointerdown', e => { if (e.pointerType !== 'mouse') return; y0 = e.clientY; t0 = sc.scrollTop; moved = false; });
+    window.addEventListener('pointermove', e => {
+      if (y0 === null) return;
+      if (Math.abs(e.clientY - y0) > 4) { moved = true; sc.classList.add('drag'); }
+      if (moved) sc.scrollTop = t0 - (e.clientY - y0);
+    });
+    window.addEventListener('pointerup', () => { y0 = null; sc.classList.remove('drag'); });
+    sc.addEventListener('click', e => { if (moved) { e.stopPropagation(); e.preventDefault(); moved = false; } }, true);
+  });
+})();
+</script>

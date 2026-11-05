@@ -1,0 +1,349 @@
+<style>
+/* Teil d (v9): Einkauf-Tab – Listen als Einkaufstaschen. Tasche = .d9-bag + Art (.tote Stoffbeutel, .plastic Tüte, .paper Papiertüte, .basket Korb), Farbe --c, Füllstand --p (= erledigt). */
+.d9-bag{--w:128px;--d:color-mix(in srgb,var(--c) 66%,#151515);position:relative;width:var(--w);height:calc(var(--w)*1.12);flex:none;display:block}
+.d9-bag>.h{position:absolute;left:27%;right:27%;top:0;height:36%;border:calc(var(--w)*.04) solid var(--d);border-bottom:0;border-radius:999px 999px 0 0}
+.d9-bag>.pk{position:absolute;left:14%;top:2%;width:54%}
+.d9-bag>.pk+.pk{left:44%;top:4%;width:40%;transform:rotate(14deg)}
+.d9-bag>.b{position:absolute;left:0;right:0;top:26%;bottom:0;background:var(--c);border-radius:8px 8px 20px 20px;overflow:hidden}
+.d9-bag .f{position:absolute;left:0;right:0;bottom:0;height:var(--p,0%);background:var(--d);opacity:.22;transition:height .5s cubic-bezier(.3,1.4,.5,1)}
+.d9-bag .lg{position:absolute;left:50%;top:13%;transform:translateX(-50%);width:60%;height:30%;background:#fff;border-radius:9px;display:flex;align-items:center;justify-content:center;padding:3px 6px;font-family:"Crimson Pro",serif;font-size:calc(var(--w)*.13);font-weight:500;white-space:nowrap}
+.d9-bag .lg img{height:100%;width:auto;max-width:100%;object-fit:contain;display:block}
+.d9-bag .lg svg.i{width:60%;height:60%}
+.d9-bag .n{position:absolute;left:0;right:0;bottom:10%;text-align:center;line-height:1}
+.d9-bag .n .num{font-size:calc(var(--w)*.25)}
+.d9-bag .n small{display:block;font-size:calc(var(--w)*.085);font-weight:800;margin-top:2px;color:color-mix(in srgb,var(--c) 30%,#151515)}
+.d9-who{position:absolute;right:-6px;bottom:-6px;display:flex;z-index:2}
+.d9-who i{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;font-style:normal;font-size:12px;font-weight:800;background:var(--ink);color:#fff;box-shadow:0 0 0 3px var(--bg);margin-left:-8px}
+/* Stoffbeutel: lange Träger, Naht oben */
+.d9-bag.tote>.h{left:22%;right:22%;height:44%}
+.d9-bag.tote>.b{top:32%;border-radius:4px 4px 10px 10px}
+.d9-bag.tote>.b::before{content:"";position:absolute;left:5%;right:5%;top:6%;border-top:2px dashed color-mix(in srgb,var(--c) 55%,#fff)}
+/* Plastiktüte: Griffloch statt Träger */
+.d9-bag.plastic>.b{top:4%;border-radius:40% 40% 18px 18px/22% 22% 18px 18px}
+.d9-bag.plastic>.b::after{content:"";position:absolute;left:36%;right:36%;top:6%;height:8%;border-radius:999px;background:var(--hole,var(--bg))}
+.d9-bag.plastic .lg{top:24%}
+/* Papiertüte: Umschlag oben, kurze Kordel */
+.d9-bag.paper>.h{left:33%;right:33%;top:6%;height:26%;border-width:calc(var(--w)*.028)}
+.d9-bag.paper>.b{top:20%;border-radius:3px 3px 8px 8px}
+.d9-bag.paper>.b::before{content:"";position:absolute;left:0;right:0;top:0;height:13%;background:color-mix(in srgb,var(--c) 70%,#fff);border-bottom:1.5px solid color-mix(in srgb,var(--c) 80%,#151515)}
+.d9-bag.paper .lg{top:20%}
+/* Korb: breiter Bügel, geflochten */
+.d9-bag.basket>.h{left:10%;right:10%;height:50%}
+.d9-bag.basket>.b{top:34%;border-radius:6px 6px 26px 26px;background:repeating-linear-gradient(0deg,var(--c) 0 10px,color-mix(in srgb,var(--c) 86%,#151515) 10px 12px)}
+.d9-bag.basket .lg{top:12%}
+/* leere Tasche = neue Liste */
+.d9-new>.h{border-style:dashed;border-color:var(--ink3)}
+.d9-new>.b{background:none;box-shadow:inset 0 0 0 2px var(--ink3);border-radius:8px 8px 20px 20px;display:grid;place-items:center;color:var(--ink2)}
+
+/* gemeinsame Teile */
+.d9-scroll{-webkit-mask-image:linear-gradient(transparent 44px,#000 72px);mask-image:linear-gradient(transparent 44px,#000 72px);overflow-y:auto;overflow-x:hidden;scrollbar-width:none;padding-bottom:180px}
+.d9-scroll::-webkit-scrollbar{display:none}
+.d9-glass{background:rgba(255,255,255,.78);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);box-shadow:0 10px 30px rgba(40,30,20,.12)}
+.d9-add{position:absolute;left:16px;right:16px;bottom:128px;height:52px;border-radius:999px;display:flex;align-items:center;gap:10px;padding:0 8px 0 18px;color:var(--ink2);font-size:15px;z-index:14}
+.d9-add .m{width:38px;height:38px;border-radius:50%;background:var(--ink);color:#fff;display:grid;place-items:center;margin-left:auto}
+.d9-add .m svg{width:18px;height:18px}
+.d9-h{display:flex;align-items:baseline;justify-content:space-between;margin:30px 0 14px}
+.d9-h .t2{font-size:22px}
+.d9-card{background:var(--card);border-radius:28px;padding:18px 20px}
+.d9-shelf{display:grid;grid-template-columns:1fr 1fr;gap:0 16px;position:relative;padding-top:6px}
+.d9-shelf .cell{display:flex;flex-direction:column;align-items:center;text-align:center}
+.d9-shelf .cell .t2{font-size:19px;margin-top:20px}
+.d9-shelf .cell .small{font-size:12px}
+.d9-plank{grid-column:1/-1;height:10px;margin:10px -24px 18px;background:var(--sand);border-radius:0 0 6px 6px;position:relative;z-index:-1}
+.d9-dept{font-size:11px;font-weight:800;letter-spacing:.08em;color:var(--ink2);margin:22px 0 2px;display:flex;justify-content:space-between}
+.d9-it{display:flex;align-items:center;gap:12px;min-height:54px;border-top:1.5px solid var(--line)}
+.d9-it .nm{flex:1;font-weight:700}.d9-it .nm small{display:block;font-size:12px;color:var(--ink2);font-weight:600}
+.d9-it.on .nm{color:var(--ink3);text-decoration:line-through}
+/* B: Taschen-Karussell */
+.d9b-car{display:flex;gap:6px;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none;margin:14px -24px 0;padding:10px calc(50% - 95px) 18px;cursor:grab;user-select:none;-webkit-user-select:none}
+.d9b-car::-webkit-scrollbar{display:none}
+.d9b-car.drag{scroll-snap-type:none;cursor:grabbing}
+.d9b-car .d9-bag{--w:190px;scroll-snap-align:center;transform:scale(.72);opacity:.55;transition:transform .3s,opacity .3s;margin:0 -22px}
+.d9b-car .d9-bag.on{transform:none;opacity:1}
+.d9b-car img{pointer-events:none;-webkit-user-drag:none}
+.d9b-dots{display:flex;gap:6px;justify-content:center}.d9b-dots i{width:6px;height:6px;border-radius:50%;background:var(--ink3);transition:width .3s}.d9b-dots i.on{width:18px;border-radius:3px;background:var(--ink)}
+.d9b-tiles{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.d9b-tiles>div{border-radius:26px;padding:16px;min-height:150px;display:flex;flex-direction:column}
+.d9b-list .d9-it{cursor:pointer;transition:opacity .3s,max-height .45s .15s,min-height .45s .15s,border-width .45s .15s;max-height:60px;overflow:hidden}
+.d9b-list .d9-it.on{opacity:0;max-height:0;min-height:0;border-width:0}
+.d9b-bump{animation:d9b-bump .45s cubic-bezier(.3,1.6,.5,1)}
+@keyframes d9b-bump{40%{transform:translateX(-50%) scale(1.06,.94)}}
+/* C: Kassenbon */
+.d9c-bon{background:var(--card);padding:18px 20px 30px;-webkit-mask:conic-gradient(from -45deg at bottom,#0000,#000 1deg 89deg,#0000 90deg) 50%/16px 100%;mask:conic-gradient(from -45deg at bottom,#0000,#000 1deg 89deg,#0000 90deg) 50%/16px 100%}
+.d9c-ln{display:flex;align-items:baseline;gap:6px;font-size:14px;font-weight:700;margin-top:6px}
+.d9c-ln::after{content:"";order:1;flex:1;border-bottom:1.5px dotted var(--ink3);transform:translateY(-4px)}
+.d9c-ln b{order:2;font-family:"Inter Tight",sans-serif;font-weight:600}
+.d9c-who{display:flex;align-items:center;gap:12px;margin:26px 0 12px}
+.d9c-who .av{width:36px;height:36px;border-radius:50%;display:grid;place-items:center;font-weight:800;font-size:15px}
+.d9c-row{display:flex;gap:18px;align-items:flex-end;overflow-x:auto;scrollbar-width:none;margin:0 -24px;padding:4px 24px 6px}
+.d9c-row::-webkit-scrollbar{display:none}
+.d9c-row .cell{display:flex;flex-direction:column;align-items:center;gap:8px;font-weight:700;font-size:14px}
+.d9c-paper{position:absolute;left:14px;right:14px;top:252px;bottom:-30px;background:var(--sand);border-radius:6px 6px 0 0;padding:58px 20px 0;overflow:hidden}
+.d9c-paper::before{content:"";position:absolute;left:0;right:0;top:0;height:40px;background:color-mix(in srgb,var(--sand) 65%,#fff);border-bottom:1.5px solid color-mix(in srgb,var(--sand) 78%,#151515)}
+.d9c-paper .d9-it{border-color:color-mix(in srgb,var(--sand) 80%,#151515)}
+.d9c-paper .ck{background:#fff;border-color:color-mix(in srgb,var(--sand) 60%,#151515)}
+.d9c-paper .ck.on{background:var(--ink);border-color:var(--ink)}
+</style>
+
+<section class="sec"><h2>Einkauf – Listen als Einkaufstaschen</h2><p>Jede Liste ist eine Tasche: Stoffbeutel, Tüte, Papiertüte oder Korb, Marktlogo auf dem Etikett, der dunklere Teil unten zeigt, wie viel schon drin ist (erledigt), die große Zahl, wie viel noch fehlt, der Kreis unten rechts, wer einkauft. Sparen und „So aufteilen“ stehen jeweils zusammen in einer Gruppe. Drei Varianten, je Übersicht + geöffnete Liste.</p></section>
+<div class="screens">
+
+  <!-- A1 Regal -->
+  <div class="screen"><div class="phone">
+    <div class="sb"><b>9:41</b><span class="island"></span><svg><use href="#status"/></svg></div>
+    <div class="scr d9-scroll">
+      <div class="blob" style="left:262px;top:-40px;width:230px;height:230px;background:var(--blue)"></div>
+      <img class="ill" src="../../../ios/Sources/Essenapp/Resources/ill/bag.webp" style="position:absolute;left:276px;top:60px;width:96px" alt="">
+      <div style="position:relative">
+        <div class="seg" style="width:236px"><span class="on">Liste</span><span>Vorrat</span><span>Coupons</span></div>
+        <div class="small" style="margin-top:16px">KW 45 · 2.–8. Nov · 27 offen</div><div class="t1">Einkauf</div>
+        <div style="width:220px;margin-top:18px">
+          <div class="stat"><span class="lbl">Diese Woche<br>gespart</span><span class="num" style="font-size:40px">19,32 €</span></div>
+          <div class="stat mute" style="margin-top:10px"><span class="lbl">Letzte Woche</span><span class="num" style="font-size:26px">0,00 €</span></div>
+        </div>
+
+        <div class="d9-h"><span class="t2">Deine Taschen</span><span class="small" style="font-size:13px">5 Listen</span></div>
+        <div class="d9-shelf">
+          <div class="cell">
+            <span class="d9-bag tote" style="--c:var(--blue);--p:40%"><img class="pk" src="../../../ios/Sources/Essenapp/Resources/ill/tomato.webp" alt=""><i class="h"></i><span class="b"><i class="f"></i><span class="lg"><img src="https://upload.wikimedia.org/wikipedia/commons/thumb/c/cf/Edeka_Logo_Aktuell.svg/250px-Edeka_Logo_Aktuell.svg.png" alt="Edeka"></span><span class="n"><span class="num">12</span><small>offen</small></span></span><span class="d9-who"><i style="background:var(--blue3)">W</i></span></span>
+            <div class="t2">Edeka</div><div class="small">8 von 20 drin · Sa</div>
+          </div>
+          <div class="cell">
+            <span class="d9-bag plastic" style="--c:var(--rose);--p:14%"><span class="b"><i class="f"></i><span class="lg"><img src="https://upload.wikimedia.org/wikipedia/commons/thumb/4/4c/Logo_REWE.svg/250px-Logo_REWE.svg.png" alt="Rewe"></span><span class="n"><span class="num">6</span><small>offen</small></span></span><span class="d9-who"><i>J</i><i style="background:var(--deal)">M</i></span></span>
+            <div class="t2">Rewe</div><div class="small">1 von 7 drin · heute</div>
+          </div>
+          <div class="d9-plank"></div>
+          <div class="cell">
+            <span class="d9-bag basket" style="--c:var(--sand);--p:0%"><i class="h"></i><span class="b"><i class="f"></i><span class="lg"><svg class="i"><use href="#i-bag"/></svg></span><span class="n"><span class="num">4</span><small>offen</small></span></span></span>
+            <div class="t2">Überall</div><div class="small">egal wo · niemand</div>
+          </div>
+          <div class="cell">
+            <span class="d9-bag paper" style="--c:var(--sage);--p:60%"><i class="h"></i><span class="b"><i class="f"></i><span class="lg"><img src="https://upload.wikimedia.org/wikipedia/commons/thumb/2/2c/Dm-drogerie-Logo.svg/250px-Dm-drogerie-Logo.svg.png" alt="dm"></span><span class="n"><span class="num">2</span><small>offen</small></span></span><span class="d9-who"><i style="background:var(--deal)">M</i></span></span>
+            <div class="t2">dm</div><div class="small">3 von 5 drin</div>
+          </div>
+          <div class="d9-plank"></div>
+          <div class="cell">
+            <span class="d9-bag tote" style="--c:var(--blue1);--p:0%"><i class="h"></i><span class="b"><i class="f"></i><span class="lg">Grillparty</span><span class="n"><span class="num">3</span><small>offen</small></span></span></span>
+            <div class="t2">Grillparty</div><div class="small">eigene Liste · Fr</div>
+          </div>
+          <div class="cell">
+            <span class="d9-bag tote d9-new" style="--c:transparent"><i class="h"></i><span class="b"><svg class="i" style="width:30px;height:30px"><use href="#i-plus"/></svg></span></span>
+            <div class="t2" style="color:var(--ink2)">Neue Tasche</div><div class="small">z. B. Grillparty</div>
+          </div>
+          <div class="d9-plank"></div>
+        </div>
+
+        <div class="d9-h"><span class="t2">Günstiger einkaufen</span></div>
+        <div class="d9-card" style="background:var(--blue1)">
+          <div class="row between" style="align-items:flex-start"><div><div class="lbl">AM GÜNSTIGSTEN</div><div class="t2" style="font-size:22px;margin-top:4px">Edeka + Rewe</div></div><span class="num" style="font-size:34px">61,39 €</span></div>
+          <div class="row between" style="margin-top:12px"><span style="font-weight:800;color:#4F8460">6,28 € gespart</span><span class="pill" style="height:38px;padding:0 16px">So aufteilen</span></div>
+          <div class="row between" style="margin-top:14px;padding-top:12px;border-top:1.5px solid rgba(21,21,21,.12)"><span class="small" style="font-size:13px">Alles bei Edeka · 67,67 €</span><span class="row" style="gap:0;font-size:13px;font-weight:700">Mehr<svg class="i" style="width:16px"><use href="#i-chev"/></svg></span></div>
+        </div>
+      </div>
+    </div>
+    <div class="d9-add d9-glass"><svg class="i"><use href="#i-plus"/></svg>Artikel hinzufügen …<span class="m"><svg class="i"><use href="#i-mic"/></svg></span></div>
+    <div class="nav" data-on="3"></div>
+    <div class="homebar"></div></div>
+    <div class="caption"><b>Variante A – Taschen-Regal</b>Die Listen stehen als Taschen auf Regalbrettern, die aus dem Rand laufen (2 pro Brett, scrollbar). Jede Tasche hat ihre eigene Form. Darunter eine blaue Gruppe „Günstiger einkaufen“ mit Aufteil-Vorschlag und „Alles bei Edeka“. „Neue Liste“ ist eine leere, gestrichelte Tasche; „Artikel hinzufügen“ schwebt immer über der Leiste.</div></div>
+
+  <!-- A2 geöffnet -->
+  <div class="screen"><div class="phone">
+    <div class="sb"><b>9:41</b><span class="island"></span><svg><use href="#status"/></svg></div>
+    <div class="scr d9-scroll" style="padding-bottom:60px">
+      <div class="blob" style="left:218px;top:-30px;width:300px;height:300px;background:var(--blue1)"></div>
+      <span class="d9-bag tote" style="--w:150px;--c:var(--blue);--p:40%;position:absolute;left:216px;top:70px;--bg:var(--blue1)"><img class="pk" src="../../../ios/Sources/Essenapp/Resources/ill/tomato.webp" alt=""><img class="pk" src="../../../ios/Sources/Essenapp/Resources/ill/basil.webp" alt=""><i class="h"></i><span class="b"><i class="f"></i><span class="lg"><img src="https://upload.wikimedia.org/wikipedia/commons/thumb/c/cf/Edeka_Logo_Aktuell.svg/250px-Edeka_Logo_Aktuell.svg.png" alt="Edeka"></span><span class="n"><span class="num">12</span><small>offen</small></span></span><span class="d9-who"><i style="background:var(--blue3)">W</i></span></span>
+      <div style="position:relative">
+        <div class="row" style="gap:2px;margin-left:-6px"><svg class="i"><use href="#i-back"/></svg><span class="small" style="color:var(--ink)">Einkauf</span></div>
+        <div class="small" style="margin-top:12px">Wilma kauft ein · Sa</div><div class="t1">Edeka</div>
+        <div style="width:180px;margin-top:16px">
+          <div class="stat"><span class="lbl">Offen</span><span class="num" style="font-size:36px">34,10 €</span></div>
+          <div class="stat mute" style="margin-top:10px"><span class="lbl">Drin</span><span class="num" style="font-size:26px">8 / 20</span></div>
+        </div>
+        <div class="row" style="margin-top:22px;gap:10px">
+          <div class="btn2" style="height:40px;padding:0 16px;font-size:14px"><svg class="i" style="width:16px"><use href="#i-play"/></svg>Einkauf starten</div>
+          <span class="soft" style="height:40px;padding:0 14px;font-size:13px"><svg class="i" style="width:15px;height:15px"><use href="#i-barcode"/></svg>2 Coupons</span>
+        </div>
+        <div class="field" style="margin-top:18px;height:48px"><svg class="i"><use href="#i-plus"/></svg><span style="flex:1">Artikel hinzufügen …</span><svg class="i" style="color:var(--ink)"><use href="#i-mic"/></svg></div>
+        <div class="d9-dept"><span>OBST &amp; GEMÜSE</span><span>3</span></div>
+        <div class="d9-it"><span class="ck"></span><span class="nm">Rosenkohl<small>500 g · Rosenkohl-Pfanne</small></span><span class="deal">−30 %</span></div>
+        <div class="d9-it"><span class="ck"></span><span class="nm">Paprika rot<small>3 Stück</small></span></div>
+        <div class="d9-it"><span class="ck"></span><span class="nm">Chilischote<small>1 Stück · Paprika-Chili-Reis</small></span></div>
+        <div class="d9-dept"><span>KÜHLREGAL</span><span>2</span></div>
+        <div class="d9-it"><span class="ck"></span><span class="nm">Schlagsahne<small>200 ml</small></span><span class="deal">−20 %</span></div>
+        <div class="d9-it"><span class="ck"></span><span class="nm">Feta<small>200 g</small></span></div>
+        <div class="d9-dept"><span>VORRAT</span><span>1</span></div>
+        <div class="d9-it"><span class="ck"></span><span class="nm">Basmatireis<small>1 kg · Vorratskauf</small></span><span class="deal">−25 %</span></div>
+        <div class="d9-it" style="margin-top:18px;color:var(--ink2)"><span class="d9-bag tote" style="--w:30px;--c:var(--blue);--p:40%"><i class="h"></i><span class="b"><i class="f"></i></span></span><span class="nm">In der Tasche<small>Zwiebeln, Knoblauch, Butter …</small></span><span class="small" style="font-size:13px">8</span><svg class="i" style="width:18px"><use href="#i-chev"/></svg></div>
+      </div>
+    </div>
+    <div class="homebar"></div></div>
+    <div class="caption"><b>Variante A – geöffnete Tasche</b>Oben rechts dieselbe Tasche, größer, mit herausschauenden Zutaten. Die Artikel sind nach Abteilung gruppiert (Obst &amp; Gemüse, Kühlregal, Vorrat) statt einer langen Liste; Abgehaktes wandert in die zugeklappte Zeile „In der Tasche · 8“ mit Mini-Tasche.</div></div>
+
+</div>
+<div class="screens">
+
+  <!-- B1 Karussell -->
+  <div class="screen"><div class="phone">
+    <div class="sb"><b>9:41</b><span class="island"></span><svg><use href="#status"/></svg></div>
+    <div class="scr d9-scroll">
+      <div class="blob" style="left:-120px;top:150px;width:630px;height:330px;border-radius:50%;background:var(--blue1)"></div>
+      <div style="position:relative">
+        <div class="seg" style="width:236px"><span class="on">Liste</span><span>Vorrat</span><span>Coupons</span></div>
+        <div class="row between" style="margin-top:16px;align-items:flex-end"><div><div class="small">KW 45 · 27 offen</div><div class="t1">Einkauf</div></div><span class="circle" style="width:44px;height:44px;margin-bottom:4px"><svg class="i" style="width:20px"><use href="#i-plus"/></svg></span></div>
+        <div class="d9b-car" id="d9b-car">
+          <span class="d9-bag tote on" style="--c:var(--blue);--p:40%;--bg:var(--blue1)"><img class="pk" src="../../../ios/Sources/Essenapp/Resources/ill/tomato.webp" alt=""><i class="h"></i><span class="b"><i class="f"></i><span class="lg"><img src="https://upload.wikimedia.org/wikipedia/commons/thumb/c/cf/Edeka_Logo_Aktuell.svg/250px-Edeka_Logo_Aktuell.svg.png" alt="Edeka"></span><span class="n"><span class="num">12</span><small>offen</small></span></span><span class="d9-who"><i style="background:var(--blue3)">W</i></span></span>
+          <span class="d9-bag plastic" style="--c:var(--rose);--p:14%;--hole:var(--blue1)"><span class="b"><i class="f"></i><span class="lg"><img src="https://upload.wikimedia.org/wikipedia/commons/thumb/4/4c/Logo_REWE.svg/250px-Logo_REWE.svg.png" alt="Rewe"></span><span class="n"><span class="num">6</span><small>offen</small></span></span><span class="d9-who"><i>J</i><i style="background:var(--deal)">M</i></span></span>
+          <span class="d9-bag basket" style="--c:var(--sand)"><i class="h"></i><span class="b"><span class="lg"><svg class="i"><use href="#i-bag"/></svg></span><span class="n"><span class="num">4</span><small>offen</small></span></span></span>
+          <span class="d9-bag paper" style="--c:var(--sage);--p:60%"><i class="h"></i><span class="b"><i class="f"></i><span class="lg"><img src="https://upload.wikimedia.org/wikipedia/commons/thumb/2/2c/Dm-drogerie-Logo.svg/250px-Dm-drogerie-Logo.svg.png" alt="dm"></span><span class="n"><span class="num">2</span><small>offen</small></span></span><span class="d9-who"><i style="background:var(--deal)">M</i></span></span>
+          <span class="d9-bag tote" style="--c:var(--blue)"><i class="h"></i><span class="b"><span class="lg">Grillparty</span><span class="n"><span class="num">3</span><small>offen</small></span></span></span>
+        </div>
+        <div class="d9b-dots" id="d9b-dots"><i class="on"></i><i></i><i></i><i></i><i></i></div>
+        <div style="margin-top:18px" id="d9b-info">
+          <div class="row between" style="align-items:flex-end"><div><div class="t2" data-k="name">Edeka</div><div class="small" style="font-size:13px" data-k="sub">Wilma kauft ein · Sa · 8 von 20 drin</div></div><span class="pill" style="height:36px">Öffnen<svg class="i" style="width:15px"><use href="#i-chev"/></svg></span></div>
+          <div style="margin-top:10px" data-k="items"></div>
+        </div>
+        <div class="d9-h" style="margin-top:28px"><span class="t2">Sparen</span><span class="small" style="font-size:13px">KW 45</span></div>
+        <div class="d9b-tiles">
+          <div style="background:var(--card)"><span class="lbl" style="color:var(--ink)">GESPART</span><span class="num" style="font-size:34px;margin-top:auto">19,32 €</span><span class="small" style="font-size:12px;margin-top:6px">Letzte Woche 0,00 €</span></div>
+          <div style="background:var(--sage)"><span class="lbl" style="color:var(--ink)">AUFTEILEN</span><span style="font-weight:800;font-size:14px;margin-top:6px">Edeka + Rewe</span><span class="num" style="font-size:28px;margin-top:auto">61,39 €</span><span style="font-size:12px;font-weight:800;color:#3F7350;margin-top:4px">−6,28 €</span></div>
+        </div>
+        <div class="row between hr" style="height:52px;margin-top:14px"><span class="small" style="font-size:13px">Alles bei Edeka · 67,67 €</span><span class="pill" style="height:34px">So aufteilen</span></div>
+      </div>
+    </div>
+    <div class="d9-add d9-glass"><svg class="i"><use href="#i-plus"/></svg>Artikel hinzufügen …<span class="m"><svg class="i"><use href="#i-mic"/></svg></span></div>
+    <div class="nav" data-on="3"></div>
+    <div class="homebar"></div></div>
+    <div class="caption"><b>Variante B – Taschen-Reihe</b>Große Taschen nebeneinander zum Wischen (mit Maus ziehen oder tippen); die Tasche in der Mitte ist groß, darunter erscheinen ihre nächsten Artikel und „Öffnen“. Sparen ist eine Gruppe aus zwei Flächen nebeneinander: „Gespart“ und „Aufteilen“, darunter die Alternative mit „So aufteilen“.</div></div>
+
+  <!-- B2 Einpacken (interaktiv) -->
+  <div class="screen"><div class="phone">
+    <div class="sb"><b>9:41</b><span class="island"></span><svg><use href="#status"/></svg></div>
+    <div class="scr">
+      <div class="row between"><div class="row" style="gap:2px;margin-left:-6px"><svg class="i"><use href="#i-back"/></svg><span class="small" style="color:var(--ink)">Einkauf</span></div><span class="soft" style="height:30px;padding:0 12px"><svg class="i" style="width:14px;height:14px"><use href="#i-barcode"/></svg>2 Coupons</span></div>
+      <div class="row between" style="margin-top:12px;align-items:flex-end"><div><div class="small">Wilma · im Laden</div><div class="t1">Edeka</div></div><span class="num" style="font-size:40px" id="d9b2-n">8<span style="color:var(--ink3)">/20</span></span></div>
+      <div class="small" style="font-size:13px;margin-top:6px">Tippe an, was du eingepackt hast.</div>
+      <div class="d9b-list" id="d9b2-list" style="margin-top:12px">
+        <div class="d9-it"><span class="ck"></span><span class="nm">Rosenkohl<small>500 g · Obst &amp; Gemüse</small></span><span class="deal">−30 %</span></div>
+        <div class="d9-it"><span class="ck"></span><span class="nm">Paprika rot<small>3 Stück · Obst &amp; Gemüse</small></span></div>
+        <div class="d9-it"><span class="ck"></span><span class="nm">Chilischote<small>1 Stück · Obst &amp; Gemüse</small></span></div>
+        <div class="d9-it"><span class="ck"></span><span class="nm">Schlagsahne<small>200 ml · Kühlregal</small></span><span class="deal">−20 %</span></div>
+        <div class="d9-it"><span class="ck"></span><span class="nm">Feta<small>200 g · Kühlregal</small></span></div>
+        <div class="d9-it"><span class="ck"></span><span class="nm">Basmatireis<small>1 kg · Vorrat</small></span><span class="deal">−25 %</span></div>
+      </div>
+    </div>
+    <div class="blob" style="left:-60px;top:610px;width:510px;height:510px;background:var(--blue1)"></div>
+    <span class="d9-bag tote" id="d9b2-bag" style="--w:200px;--c:var(--blue);--p:40%;--bg:var(--blue1);position:absolute;left:50%;top:600px;transform:translateX(-50%)"><img class="pk" src="../../../ios/Sources/Essenapp/Resources/ill/garlic.webp" alt=""><img class="pk" src="../../../ios/Sources/Essenapp/Resources/ill/basil.webp" alt=""><i class="h"></i><span class="b"><i class="f"></i><span class="lg"><img src="https://upload.wikimedia.org/wikipedia/commons/thumb/c/cf/Edeka_Logo_Aktuell.svg/250px-Edeka_Logo_Aktuell.svg.png" alt="Edeka"></span><span class="n"><span class="num" id="d9b2-off">12</span><small>offen</small></span></span></span>
+    <div class="homebar"></div></div>
+    <div class="caption"><b>Variante B – Einpacken</b>Geöffnete Liste im Laden: unten steht die Tasche, oben die Artikel. Antippen (hier ausprobieren) packt den Artikel ein: Die Zeile verschwindet, die Tasche federt, füllt sich und zählt „offen“ herunter, oben steigt „8/20“. Abteilung steht klein in der zweiten Zeile.</div></div>
+
+</div>
+<div class="screens">
+
+  <!-- C1 Wer kauft ein + Kassenbon -->
+  <div class="screen"><div class="phone">
+    <div class="sb"><b>9:41</b><span class="island"></span><svg><use href="#status"/></svg></div>
+    <div class="scr d9-scroll">
+      <div class="blob" style="left:250px;top:-120px;width:280px;height:280px;background:var(--blue)"></div>
+      <div style="position:relative">
+        <div class="seg" style="width:236px"><span class="on">Liste</span><span>Vorrat</span><span>Coupons</span></div>
+        <div class="small" style="margin-top:16px">KW 45 · 27 offen</div><div class="t1">Einkauf</div>
+        <div class="d9c-bon" style="margin-top:16px">
+          <div class="row between"><span class="lbl" style="color:var(--ink)">SPAR-BON · KW 45</span><svg class="i" style="width:18px;color:var(--ink2)"><use href="#i-trophy"/></svg></div>
+          <div class="row between" style="margin-top:8px;align-items:flex-end"><span style="font-weight:800">Diese Woche gespart</span><span class="num" style="font-size:40px">19,32 €</span></div>
+          <div class="d9c-ln" style="color:var(--ink2)">Letzte Woche<b>0,00 €</b></div>
+          <div style="border-top:1.5px dashed var(--ink3);margin:14px 0 10px"></div>
+          <div class="d9c-ln">Edeka + Rewe<b>61,39 €</b></div>
+          <div class="d9c-ln" style="color:var(--ink2)">Alles bei Edeka<b>67,67 €</b></div>
+          <div class="row between" style="margin-top:12px"><span style="font-weight:800;color:#4F8460">Aufteilen spart 6,28 €</span><span class="pill" style="height:36px">So aufteilen</span></div>
+        </div>
+
+        <div class="d9c-who"><span class="av" style="background:var(--blue3);color:#fff">W</span><div style="flex:1"><div class="t2" style="font-size:20px">Wilma · Samstag</div><div class="small" style="font-size:12px">2 Taschen · 18 offen</div></div></div>
+        <div class="d9c-row">
+          <div class="cell"><span class="d9-bag tote" style="--w:112px;--c:var(--blue);--p:40%"><img class="pk" src="../../../ios/Sources/Essenapp/Resources/ill/tomato.webp" alt=""><i class="h"></i><span class="b"><i class="f"></i><span class="lg"><img src="https://upload.wikimedia.org/wikipedia/commons/thumb/c/cf/Edeka_Logo_Aktuell.svg/250px-Edeka_Logo_Aktuell.svg.png" alt="Edeka"></span><span class="n"><span class="num">12</span><small>offen</small></span></span></span>Edeka</div>
+          <div class="cell"><span class="d9-bag plastic" style="--w:112px;--c:var(--rose);--p:14%"><span class="b"><i class="f"></i><span class="lg"><img src="https://upload.wikimedia.org/wikipedia/commons/thumb/4/4c/Logo_REWE.svg/250px-Logo_REWE.svg.png" alt="Rewe"></span><span class="n"><span class="num">6</span><small>offen</small></span></span></span>Rewe</div>
+        </div>
+        <div class="d9c-who hr" style="padding-top:18px"><span class="av" style="background:var(--deal);color:#fff">M</span><div style="flex:1"><div class="t2" style="font-size:20px">Mia · heute</div><div class="small" style="font-size:12px">1 Tasche · 2 offen</div></div></div>
+        <div class="d9c-row">
+          <div class="cell"><span class="d9-bag paper" style="--w:112px;--c:var(--sage);--p:60%"><i class="h"></i><span class="b"><i class="f"></i><span class="lg"><img src="https://upload.wikimedia.org/wikipedia/commons/thumb/2/2c/Dm-drogerie-Logo.svg/250px-Dm-drogerie-Logo.svg.png" alt="dm"></span><span class="n"><span class="num">2</span><small>offen</small></span></span></span>dm</div>
+        </div>
+        <div class="d9c-who hr" style="padding-top:18px"><span class="av" style="box-shadow:inset 0 0 0 1.5px var(--ink3);color:var(--ink3)">?</span><div style="flex:1"><div class="t2" style="font-size:20px;color:var(--ink2)">Noch niemand</div><div class="small" style="font-size:12px">Tasche antippen und übernehmen</div></div></div>
+        <div class="d9c-row">
+          <div class="cell"><span class="d9-bag basket" style="--w:112px;--c:var(--sand)"><i class="h"></i><span class="b"><span class="lg"><svg class="i"><use href="#i-bag"/></svg></span><span class="n"><span class="num">4</span><small>offen</small></span></span></span>Überall</div>
+          <div class="cell"><span class="d9-bag tote" style="--w:112px;--c:var(--blue1)"><i class="h"></i><span class="b"><span class="lg">Grillparty</span><span class="n"><span class="num">3</span><small>offen</small></span></span></span>Grillparty</div>
+          <div class="cell"><span class="d9-bag tote d9-new" style="--w:112px;--c:transparent"><i class="h"></i><span class="b"><svg class="i"><use href="#i-plus"/></svg></span></span><span style="color:var(--ink2)">Neue Liste</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="d9-add d9-glass"><svg class="i"><use href="#i-plus"/></svg>Artikel hinzufügen …<span class="m"><svg class="i"><use href="#i-mic"/></svg></span></div>
+    <div class="nav" data-on="3"></div>
+    <div class="homebar"></div></div>
+    <div class="caption"><b>Variante C – Wer trägt welche Tasche</b>Oben ein Spar-Bon mit Zackenrand: gespart, letzte Woche und der Aufteil-Vorschlag auf einem Zettel. Darunter die Taschen gruppiert nach Person (Wilma Samstag, Mia heute, noch niemand); jede Reihe lässt sich seitlich wischen. Die leere Tasche legt eine neue Liste an.</div></div>
+
+  <!-- C2 Papiertüte geöffnet -->
+  <div class="screen"><div class="phone">
+    <div class="sb"><b>9:41</b><span class="island"></span><svg><use href="#status"/></svg></div>
+    <div class="scr">
+      <div class="row" style="gap:2px;margin-left:-6px"><svg class="i"><use href="#i-back"/></svg><span class="small" style="color:var(--ink)">Einkauf</span></div>
+      <div class="row between" style="margin-top:12px;align-items:flex-end"><div><div class="small">Jona &amp; Mia · heute</div><div class="t1">Rewe</div></div><div style="text-align:right"><div class="lbl">OFFEN</div><span class="num" style="font-size:36px">18,40 €</span></div></div>
+    </div>
+    <div style="position:absolute;left:130px;width:130px;top:196px;height:90px;border:7px solid color-mix(in srgb,var(--rose) 66%,#151515);border-bottom:0;border-radius:999px 999px 0 0"></div>
+    <div class="d9c-paper" style="--sand:var(--rose)">
+      <span style="position:absolute;left:50%;top:8px;transform:translateX(-50%);background:#fff;border-radius:8px;padding:3px 10px;height:26px;z-index:1"><img src="https://upload.wikimedia.org/wikipedia/commons/thumb/4/4c/Logo_REWE.svg/250px-Logo_REWE.svg.png" style="height:100%;display:block" alt="Rewe"></span>
+      <div class="d9-dept" style="margin-top:0;color:var(--ink)"><span>NOCH HOLEN</span><span>6</span></div>
+      <div class="d9-it"><span class="ck"></span><span class="nm">Paprika gelb<small>2 Stück</small></span><span class="deal">−25 %</span></div>
+      <div class="d9-it"><span class="ck"></span><span class="nm">Kokosmilch<small>400 ml</small></span></div>
+      <div class="d9-it"><span class="ck"></span><span class="nm">Kaffee<small>500 g</small></span><span class="soft" style="background:#fff">10fach</span></div>
+      <div class="d9-it"><span class="ck"></span><span class="nm">Eier<small>10 Stück</small></span></div>
+      <div class="d9-it"><span class="ck"></span><span class="nm">Brot<small>1 Laib</small></span></div>
+      <div class="d9-it" style="color:var(--ink2)"><svg class="i"><use href="#i-plus"/></svg><span class="nm" style="color:var(--ink2);font-weight:600">Artikel hinzufügen …</span><svg class="i" style="color:var(--ink)"><use href="#i-mic"/></svg></div>
+      <div class="d9-dept" style="margin-top:18px"><span>SCHON DRIN</span><span>1</span></div>
+      <div class="d9-it on"><span class="ck on"><svg class="i" style="width:15px"><use href="#i-check"/></svg></span><span class="nm">Milch<small>2 l</small></span></div>
+    </div>
+    <div class="homebar"></div></div>
+    <div class="caption"><b>Variante C – Liste in der Tüte</b>Geöffnet wird die Tasche selbst zur Fläche: Die Liste steht auf der Rewe-Tüte, mit Griff darüber und Logo auf dem Umschlag. Oben „Noch holen“, unten „Schon drin“. Farbe der Tüte = Farbe der Tasche in der Übersicht.</div></div>
+
+</div>
+
+<script>
+(() => {
+  // B1: Taschen-Karussell – Mitte wird groß, Infos darunter wechseln; Maus ziehen + Touch-Wischen + Antippen
+  const car = document.getElementById('d9b-car'); if (!car) return;
+  const bags = [...car.children], dots = [...document.querySelectorAll('#d9b-dots i')], info = document.getElementById('d9b-info');
+  const D = [
+    ['Edeka', 'Wilma kauft ein · Sa · 8 von 20 drin', [['Rosenkohl', '500 g', '−30 %'], ['Paprika rot', '3 Stück'], ['Chilischote', '1 Stück']]],
+    ['Rewe', 'Jona & Mia · heute · 1 von 7 drin', [['Paprika gelb', '2 Stück', '−25 %'], ['Kokosmilch', '400 ml'], ['Kaffee', '500 g']]],
+    ['Überall', 'egal wo · noch niemand', [['Zwiebeln', '1 Netz'], ['Knoblauch', '1 Knolle'], ['Zitrone', '2 Stück']]],
+    ['dm', 'Mia · 3 von 5 drin', [['Zahnpasta', '2 Tuben', '−20 %'], ['Spülmittel', '1 Flasche']]],
+    ['Grillparty', 'eigene Liste · Fr', [['Grillkäse', '2 Pck.'], ['Baguette', '2 Stück'], ['Kohle', '3 kg']]],
+  ];
+  let cur = -1;
+  const show = i => {
+    if (i === cur) return; cur = i;
+    bags.forEach((b, j) => b.classList.toggle('on', j === i)); dots.forEach((d, j) => d.classList.toggle('on', j === i));
+    info.querySelector('[data-k=name]').textContent = D[i][0]; info.querySelector('[data-k=sub]').textContent = D[i][1];
+    info.querySelector('[data-k=items]').innerHTML = D[i][2].map(([n, m, d]) => `<div class="d9-it" style="min-height:46px"><span class="ck"></span><span class="nm">${n}<small>${m}</small></span>${d ? `<span class="deal">${d}</span>` : ''}</div>`).join('');
+  };
+  const near = () => { const c = car.scrollLeft + car.clientWidth / 2; let k = 0, best = 1e9;
+    bags.forEach((b, j) => { const d = Math.abs(b.offsetLeft + b.offsetWidth / 2 - c); if (d < best) { best = d; k = j; } }); return k; };
+  const go = i => car.scrollTo({ left: bags[i].offsetLeft + bags[i].offsetWidth / 2 - car.clientWidth / 2, behavior: 'smooth' });
+  car.addEventListener('scroll', () => show(near()), { passive: true });
+  let down = null, moved = false;
+  car.addEventListener('pointerdown', e => { if (e.pointerType !== 'mouse') return; down = { x: e.clientX, l: car.scrollLeft }; moved = false; car.classList.add('drag'); });
+  addEventListener('pointermove', e => { if (!down) return; const dx = e.clientX - down.x; if (Math.abs(dx) > 4) moved = true; car.scrollLeft = down.l - dx; });
+  addEventListener('pointerup', () => { if (!down) return; down = null; car.classList.remove('drag'); go(near()); });
+  bags.forEach((b, j) => b.addEventListener('click', () => { if (!moved) go(j); }));
+  car.scrollLeft = 0; show(0);
+
+  // B2: Antippen packt ein – Tasche füllt sich, zählt herunter
+  const list = document.getElementById('d9b2-list'), bag = document.getElementById('d9b2-bag');
+  let inBag = 8; const total = 20;
+  list.querySelectorAll('.d9-it').forEach(r => r.addEventListener('click', () => {
+    if (r.classList.contains('on')) return;
+    r.classList.add('on'); r.querySelector('.ck').classList.add('on'); inBag++;
+    bag.style.setProperty('--p', Math.round(inBag / total * 100) + '%');
+    document.getElementById('d9b2-off').textContent = total - inBag;
+    document.getElementById('d9b2-n').innerHTML = `${inBag}<span style="color:var(--ink3)">/${total}</span>`;
+    bag.classList.remove('d9b-bump'); void bag.offsetWidth; bag.classList.add('d9b-bump');
+  }));
+})();
+</script>

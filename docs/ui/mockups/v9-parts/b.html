@@ -1,0 +1,192 @@
+<style>
+/* Teil b (v9): Deine Woche – Woche zum Durchscrollen */
+.b9-head{z-index:3}
+.b9-noscroll{scrollbar-width:none}.b9-noscroll::-webkit-scrollbar{display:none}
+/* A – Rad */
+.b9-sc{position:absolute;left:0;right:0;top:150px;height:530px;overflow-y:auto;scroll-snap-type:y mandatory;overscroll-behavior:contain;z-index:4}
+.b9-pg{position:relative;height:530px;scroll-snap-align:start;scroll-snap-stop:always;overflow:hidden}
+.b9-pg .blob{left:150px;top:-40px;width:400px;height:400px}
+.b9-pg .plate{position:absolute;left:172px;top:60px;width:180px;height:180px;will-change:transform}
+.b9-txt{position:absolute;left:150px;right:22px;top:262px}
+.b9-txt .t2{font-size:23px;margin-top:4px}
+.b9-ab{position:absolute;left:150px;right:22px;top:432px;display:flex;align-items:center;gap:12px;height:62px;border-top:1.5px solid var(--line)}
+.b9-ab .plate{position:static;width:44px;height:44px;box-shadow:0 0 0 3px var(--card)}
+.b9-ab b{display:block;font-size:14px}
+.b9-ab.add{color:var(--ink3);font-size:14px;font-weight:700}
+.b9-ab.add i{width:44px;height:44px;border-radius:50%;box-shadow:inset 0 0 0 1.5px var(--line);display:grid;place-items:center;font-style:normal;font-size:20px}
+.b9-wh{position:absolute;left:0;top:150px;width:150px;height:530px;overflow:hidden;pointer-events:none;z-index:6;-webkit-mask-image:linear-gradient(#000 70%,transparent);mask-image:linear-gradient(#000 70%,transparent)}
+.b9-whi{position:absolute;left:0;top:0;width:150px;will-change:transform}
+.b9-rail{position:absolute;left:33px;width:1.5px;background:var(--line)}
+.b9-fill{position:absolute;left:33px;width:1.5px;background:var(--ink)}
+.b9-it{position:absolute;left:27px;height:0}
+.b9-it .d{position:absolute;left:0;top:-6px;width:13px;height:13px;border-radius:50%;background:var(--bg);border:2px solid var(--ink3)}
+.b9-it.past .d{background:var(--ink);border-color:var(--ink)}
+.b9-it b{position:absolute;left:22px;bottom:4px;white-space:nowrap;font-size:15px;color:var(--ink2);transition:font-size .2s}
+.b9-it span{position:absolute;left:22px;top:5px;white-space:nowrap;font-size:12px;font-weight:700;color:var(--ink3)}
+.b9-it.on b{font-family:"DM Serif Display",serif;font-size:20px;color:var(--ink)}
+.b9-it.on span{color:var(--ink)}
+.b9-dot{position:absolute;left:24px;width:21px;height:21px;margin-top:-10px;border-radius:50%;background:var(--ink);box-shadow:0 0 0 5px var(--bg);z-index:7;pointer-events:none}
+.b9-thr{position:absolute;left:44px;width:120px;height:1.5px;background:var(--ink);z-index:6;pointer-events:none}
+.b9-foot{position:absolute;left:24px;right:24px;top:686px;z-index:5}
+/* B – Faden-Liste */
+.b9-ls{position:absolute;left:0;right:0;top:150px;bottom:0;overflow-y:auto;scroll-snap-type:y mandatory;scroll-padding-top:20px;overscroll-behavior:contain;z-index:4}
+.b9-lsi{position:relative;padding:20px 0 380px}
+.b9-lsi .b9-rail,.b9-lsi .b9-fill{top:34px}
+.b9-row{position:relative;padding-left:62px;margin-bottom:22px;scroll-snap-align:start;scroll-snap-stop:always}
+.b9-row>.d{position:absolute;left:27px;top:8px;width:13px;height:13px;border-radius:50%;background:var(--bg);border:2px solid var(--ink3);transition:.2s}
+.b9-row.past>.d{background:var(--ink);border-color:var(--ink)}
+.b9-row.on>.d{left:24px;top:4px;width:21px;height:21px;background:var(--ink);border-color:var(--ink);box-shadow:0 0 0 5px var(--bg)}
+.b9-rh{display:flex;align-items:baseline;gap:8px;height:28px}
+.b9-rh b{font-size:15px;color:var(--ink2);transition:.2s}
+.b9-rh span{font-size:12px;font-weight:700;color:var(--ink3)}
+.b9-row.on .b9-rh b{font-family:"DM Serif Display",serif;font-size:22px;color:var(--ink)}
+.b9-row.on .b9-rh span{color:var(--ink)}
+.b9-fl{position:relative;display:flex;align-items:center;gap:14px;height:88px;margin-top:8px;padding-left:10px;border-radius:44px 0 0 44px;background:var(--card);transition:background .3s,height .3s}
+.b9-fl .plate{width:66px;height:66px;box-shadow:0 0 0 3px var(--bg);transition:.3s}
+.b9-fl .nm{font-family:"DM Serif Display",serif;font-size:18px;line-height:1.12;margin-top:2px}
+.b9-fl .pr{font-size:12px;color:var(--ink2);margin-top:4px}
+.b9-fl .pr .num{font-size:20px;color:var(--ink)}
+.b9-fl .circle{width:40px;height:40px;margin-right:18px;opacity:0;transition:opacity .3s}
+.b9-row.on .b9-fl{height:112px;background:var(--fc)}
+.b9-row.on .b9-fl .plate{width:88px;height:88px}
+.b9-row.on .b9-fl .circle{opacity:1}
+.b9-row.on .b9-fl .pr{color:var(--ink)}
+.b9-end{margin:30px 24px 0 62px}
+/* C – Mahlzeiten-Takt (statisch) */
+.b9-c-d{position:absolute;left:27px;display:flex;align-items:center;gap:12px;font-size:12px;font-weight:700;color:var(--ink3);margin-top:-7px}
+.b9-c-d i{width:13px;height:13px;border-radius:50%;border:2px solid var(--ink3);background:var(--bg);flex:none}
+.b9-c-d.past{color:var(--ink2)}.b9-c-d.past i{background:var(--ink);border-color:var(--ink)}
+.b9-c-fl{position:absolute;left:62px;right:0;display:flex;align-items:center;gap:14px;padding-left:12px;border-radius:999px 0 0 999px}
+.b9-c-tick{position:absolute;left:29px;width:10px;height:10px;margin-top:-5px;border-radius:50%;background:var(--bg);border:2px solid var(--ink);z-index:2}
+.b9-c-tick.on{left:24px;width:21px;height:21px;margin-top:-10px;background:var(--ink);box-shadow:0 0 0 5px var(--bg)}
+.b9-c-stub{position:absolute;left:44px;width:20px;height:1.5px;background:var(--ink)}
+</style>
+
+<section class="sec"><h2>Deine Woche</h2><p>Die Woche wird gewischt statt angetippt: jeder Wisch rastet einen Tag (oder eine Mahlzeit) weiter, die Zeitleiste links füllt sich mit. A und B im Mockup mit Mausrad oder Finger scrollbar.</p></section>
+<div class="screens">
+
+  <!-- A Rad -->
+  <div class="screen"><div class="phone">
+    <div class="sb"><b>9:41</b><span class="island"></span><svg><use href="#status"/></svg></div>
+    <div class="scr b9-head"><div class="row between" style="align-items:flex-end"><div><div class="small">KW 45 · 2.–8. Nov</div><div class="t1">Deine Woche</div></div><div class="num" style="font-size:30px">7<span style="color:var(--ink3)">/7</span></div></div></div>
+    <div class="b9-sc b9-noscroll" id="b9a-sc"></div>
+    <div class="b9-wh"><div class="b9-whi" id="b9a-wh"></div></div>
+    <div class="b9-dot" style="top:320px"></div>
+    <div class="b9-thr" style="top:320px"></div>
+    <div class="stat b9-foot"><span class="lbl">Diese Woche</span><span class="num" style="font-size:30px">83,43 €</span></div>
+    <div class="nav" data-on="1"></div>
+    <div class="homebar"></div></div>
+    <div class="caption"><b>Variante A – Rad (interaktiv)</b>Wischen dreht die Woche wie ein Rad: der schwarze Punkt bleibt auf einer festen Höhe, die Zeitleiste läuft darunter durch und füllt sich schwarz. Tagesname und Teller liegen auf derselben Linie – der Strich unter „Donnerstag“ führt gerade zum Teller. Beim Wischen dreht sich der Teller und der Bogen wechselt die Farbe. Zweite Mahlzeit (Abend) als Zeile darunter, sonst „+ Abend“.</div></div>
+
+  <!-- B Faden-Liste -->
+  <div class="screen"><div class="phone">
+    <div class="sb"><b>9:41</b><span class="island"></span><svg><use href="#status"/></svg></div>
+    <div class="scr b9-head"><div class="row between" style="align-items:flex-end"><div><div class="small">KW 45 · 2.–8. Nov</div><div class="t1">Deine Woche</div></div><div class="num" style="font-size:30px">7<span style="color:var(--ink3)">/7</span></div></div></div>
+    <div class="b9-ls b9-noscroll" id="b9b-ls"></div>
+    <div class="nav" data-on="1"></div>
+    <div class="homebar"></div></div>
+    <div class="caption"><b>Variante B – Faden-Liste (interaktiv)</b>Alle Tage untereinander, jedes Gericht als Fahne, die am Punkt der Zeitleiste ansetzt und aus dem rechten Rand läuft. Beim Wischen wächst ein schwarzer Faden mit; der Tag oben rastet ein, seine Fahnen bekommen die Tagesfarbe, größeren Teller und Play. Mittag und Abend stehen als zwei Fahnen am selben Tag. Gesamtsumme am Listenende.</div></div>
+
+  <!-- C Mahlzeiten-Takt -->
+  <div class="screen"><div class="phone">
+    <div class="sb"><b>9:41</b><span class="island"></span><svg><use href="#status"/></svg></div>
+    <div class="scr"><div class="row between" style="align-items:flex-end"><div><div class="small">KW 45 · 2.–8. Nov</div><div class="t1">Deine Woche</div></div><div style="text-align:right"><div class="num" style="font-size:30px">83,43 €</div><div class="small" style="font-size:12px;margin-top:4px">7/7 geplant</div></div></div></div>
+    <div class="b9-rail" style="top:180px;height:508px"></div>
+    <div class="b9-fill" style="top:180px;height:202px"></div>
+    <div class="b9-c-d past" style="top:184px"><i></i>Mo · Dal</div>
+    <div class="b9-c-d past" style="top:214px"><i></i>Di · Pomodoro</div>
+    <div class="b9-c-d past" style="top:244px"><i></i>Mi · Ofengemüse</div>
+    <div class="b9-c-d past" style="top:290px"><i></i></div>
+    <div style="position:absolute;left:62px;top:270px"><span class="t2" style="font-size:24px">Donnerstag</span> <span class="small" style="font-size:13px;color:var(--ink)">5. Nov · heute</span></div>
+    <div class="b9-c-tick on" style="top:382px"></div><div class="b9-c-stub" style="top:381px"></div>
+    <div class="b9-c-fl" style="top:312px;height:140px;background:var(--blue)">
+      <div class="plate" style="width:116px;height:116px;background-image:url(../../../ios/Sources/Essenapp/Resources/hero/chef.jpg)"></div>
+      <div style="flex:1;padding-right:20px"><div class="lbl" style="color:var(--ink)">MITTAG · 30 MIN</div><div class="t2" style="font-size:19px;margin-top:3px">Rosenkohl-Pfanne mit Paprika-Chili-Reis</div>
+        <div class="row" style="margin-top:6px"><span class="num" style="font-size:22px">1,10 €</span><span class="small" style="font-size:12px;color:var(--ink)">p. P.</span><span class="circle" style="width:34px;height:34px;margin-left:auto"><svg class="i" style="width:14px"><use href="#i-play"/></svg></span></div></div>
+    </div>
+    <div class="b9-c-tick" style="top:518px"></div><div class="b9-c-stub" style="top:517px;background:var(--line)"></div>
+    <div class="b9-c-fl" style="top:470px;height:96px;background:var(--sage)">
+      <div class="plate" style="width:74px;height:74px;box-shadow:0 0 0 4px var(--card);background-image:url(../../../ios/Sources/Essenapp/Resources/hero/table.jpg)"></div>
+      <div style="flex:1"><div class="lbl" style="color:var(--ink)">ABEND · 15 MIN · in 6 Std</div><div class="t2" style="font-size:18px;margin-top:3px">Tomatensuppe mit Brot</div><div class="small" style="font-size:12px;margin-top:3px;color:var(--ink)"><span class="num" style="font-size:18px">0,80 €</span> p. P.</div></div>
+    </div>
+    <div class="b9-c-d" style="top:620px"><i></i>Fr · Pizza</div>
+    <div class="b9-c-d" style="top:654px"><i></i>Sa · Kartoffelsuppe</div>
+    <div class="b9-c-d" style="top:688px"><i></i>So · Braten</div>
+    <div class="nav" data-on="1"></div>
+    <div class="homebar"></div></div>
+    <div class="caption"><b>Variante C – Mahlzeiten-Takt (Standbild)</b>Die Zeitleiste rastet nicht pro Tag, sondern pro Mahlzeit: Donnerstag hat zwei Haltepunkte (Mittag, Abend), jeder mit eigener Fahne. Vergangene und kommende Tage schrumpfen zu kurzen Zeilen, der heutige Tag bekommt die Bühne. Ein Wisch springt von Mittag zu Abend, dann zu Freitag. Summe oben rechts statt unten.</div></div>
+
+</div>
+
+<script>
+(() => {
+  const H = '../../../ios/Sources/Essenapp/Resources/hero/';
+  const W = [
+    {d:'Mo', l:'Montag', n:2, s:'Dal', c:'--sage', m:[['ABEND · 25 MIN','Linsen-Dal mit Naan','0,95 €','bowl']]},
+    {d:'Di', l:'Dienstag', n:3, s:'Pomodoro', c:'--rose', m:[['ABEND · 20 MIN','Spaghetti Pomodoro','1,30 €','pasta']]},
+    {d:'Mi', l:'Mittwoch', n:4, s:'Ofengemüse', c:'--sand', m:[['ABEND · 40 MIN','Ofengemüse mit Feta','1,45 €','grill']]},
+    {d:'Do', l:'Donnerstag', n:5, s:'Rosenkohl', c:'--blue', m:[['MITTAG · 30 MIN','Rosenkohl-Pfanne mit Paprika-Chili-Reis','1,10 €','chef'],['ABEND · 15 MIN','Tomatensuppe mit Brot','0,80 €','table']]},
+    {d:'Fr', l:'Freitag', n:6, s:'Pizza', c:'--blue1', m:[['ABEND · 35 MIN','Pizza Margherita','1,60 €','table']]},
+    {d:'Sa', l:'Samstag', n:7, s:'Kartoffelsuppe', c:'--rose', m:[['ABEND · 45 MIN','Kartoffelsuppe mit Würstchen','1,25 €','market']]},
+    {d:'So', l:'Sonntag', n:8, s:'Braten', c:'--sage', m:[['MITTAG · 90 MIN','Schmorbraten mit Klößen','2,90 €','grill']]},
+  ];
+  const TODAY = 3, CY = 170, ROW = 62;
+  const img = k => `background-image:url(${H}${k}.jpg)`;
+  const date = (w, i) => `${w.n}. Nov${i === TODAY ? ' · heute' : ''}`;
+
+  // A – Rad
+  const sc = document.getElementById('b9a-sc'), wh = document.getElementById('b9a-wh');
+  sc.innerHTML = W.map(w => {
+    const [t, nm, p, k] = w.m[0], ab = w.m[1];
+    return `<div class="b9-pg"><div class="blob" style="background:var(${w.c})"></div><div class="plate" style="${img(k)}"></div>
+      <div class="b9-txt"><div class="lbl" style="color:var(--ink)">${t}</div><div class="t2">${nm}</div>
+      <div class="row between" style="margin-top:10px;align-items:flex-end"><div><span class="num" style="font-size:38px">${p}</span><div class="small" style="font-size:12px;margin-top:4px;color:var(--ink)">p. P.</div></div>
+      <span class="circle" style="width:46px;height:46px"><svg class="i" style="width:16px"><use href="#i-play"/></svg></span></div></div>
+      ${ab ? `<div class="b9-ab"><div class="plate" style="${img(ab[3])}"></div><div style="flex:1"><div class="lbl">${ab[0]}</div><b>${ab[1]}</b></div><span class="num" style="font-size:18px;white-space:nowrap">${ab[2]}</span></div>`
+           : `<div class="b9-ab add"><i>+</i>Abend dazuplanen</div>`}</div>`;
+  }).join('');
+  wh.innerHTML = `<div class="b9-rail" style="top:${CY}px;height:${6 * ROW}px"></div><div class="b9-fill" style="top:${CY}px"></div>` +
+    W.map((w, i) => `<div class="b9-it" style="top:${CY + i * ROW}px"><i class="d"></i><b data-s="${w.d}" data-l="${w.l}">${w.d}</b><span data-s="${w.s}" data-l="${date(w, i)}">${w.s}</span></div>`).join('');
+  const pages = [...sc.children], items = [...wh.querySelectorAll('.b9-it')], fill = wh.querySelector('.b9-fill');
+  let cur = -1;
+  const drawA = () => {
+    const p = sc.scrollTop / sc.clientHeight, on = Math.round(p);
+    wh.style.transform = `translateY(${-p * ROW}px)`;
+    fill.style.height = p * ROW + 'px';
+    pages.forEach((pg, i) => pg.querySelector('.plate').style.transform = `rotate(${(i - p) * 80}deg)`);
+    items.forEach((it, i) => { it.style.opacity = Math.max(.2, 1 - Math.abs(i - p) * .22); it.classList.toggle('past', i < p - .01); });
+    if (on === cur) return;
+    cur = on;
+    items.forEach((it, i) => { it.classList.toggle('on', i === on); it.querySelectorAll('b,span').forEach(e => e.textContent = i === on ? e.dataset.l : e.dataset.s); });
+  };
+  sc.addEventListener('scroll', () => requestAnimationFrame(drawA), {passive: true});
+
+  // B – Faden-Liste
+  const ls = document.getElementById('b9b-ls');
+  ls.innerHTML = `<div class="b9-lsi"><div class="b9-rail"></div><div class="b9-fill"></div>` + W.map((w, i) =>
+    `<div class="b9-row" style="--fc:var(${w.c})"><i class="d"></i><div class="b9-rh"><b data-s="${w.d}" data-l="${w.l}">${w.d}</b><span>${date(w, i)}</span></div>` +
+    w.m.map(([t, nm, p, k]) => `<div class="b9-fl"><div class="plate" style="${img(k)}"></div><div style="flex:1;min-width:0"><div class="lbl" style="color:var(--ink)">${t}</div><div class="nm">${nm}</div><div class="pr"><span class="num">${p}</span> p. P.</div></div><span class="circle"><svg class="i" style="width:14px"><use href="#i-play"/></svg></span></div>`).join('') +
+    `</div>`).join('') +
+    `<div class="b9-end"><div class="stat"><span class="lbl">Diese Woche</span><span class="num" style="font-size:40px">83,43 €</span></div><div class="small" style="font-size:12px;margin-top:6px">8 Gerichte · 4 Personen · 5 Zutaten im Angebot</div></div></div>`;
+  const lsi = ls.firstChild, rows = [...lsi.querySelectorAll('.b9-row')], lfill = lsi.querySelector('.b9-fill'), rail = lsi.querySelector('.b9-rail');
+  const dotY = r => r.offsetTop + 14;
+  rail.style.height = dotY(rows[6]) - 34 + 'px';
+  let bcur = -1;
+  const drawB = () => {
+    const y = Math.min(ls.scrollTop + 34, dotY(rows[6]));  // Faden endet an der Oberkante des Sichtbereichs
+    lfill.style.height = Math.max(0, y - 34) + 'px';
+    let on = 0;
+    rows.forEach((r, i) => { if (dotY(r) <= y + 30) on = i; r.classList.toggle('past', dotY(r) < y); });
+    if (on === bcur) return;
+    bcur = on;
+    rows.forEach((r, i) => { r.classList.toggle('on', i === on); const b = r.querySelector('b'); b.textContent = i === on ? b.dataset.l : b.dataset.s; });
+  };
+  ls.addEventListener('scroll', () => requestAnimationFrame(drawB), {passive: true});
+
+  // Start auf heute (Donnerstag); erst nach dem Layout, sonst ist clientHeight 0
+  requestAnimationFrame(() => {
+    sc.scrollTop = TODAY * sc.clientHeight; drawA();
+    ls.scrollTop = rows[TODAY].offsetTop - 20; drawB();
+  });
+})();
+</script>

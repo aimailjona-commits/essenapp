@@ -1,0 +1,310 @@
+<style>
+/* Teil c (v9): Angebote mit Markt-Knöpfen */
+.c9-sc{position:absolute;inset:0;overflow-y:auto;overflow-x:hidden;padding:66px 24px 140px;scrollbar-width:none}
+.c9-sc::-webkit-scrollbar,.c9-hs::-webkit-scrollbar{display:none}
+.c9-fade{position:absolute;left:0;right:0;top:0;height:58px;background:linear-gradient(#fff 72%,rgba(255,255,255,0));z-index:12;pointer-events:none}
+.c9-hs{display:flex;gap:10px;overflow-x:auto;margin:0 -24px;padding:4px 24px 6px;scrollbar-width:none;cursor:grab;user-select:none}
+.c9-hs img{-webkit-user-drag:none}
+.c9-h{display:flex;align-items:baseline;justify-content:space-between;margin:22px 0 10px}
+.c9-h .lbl{color:var(--ink)}
+.c9-h a{font-size:13px;font-weight:700;color:var(--ink2);text-decoration:none}
+.c9-lg{display:flex;align-items:center;justify-content:center}
+.c9-lg img{width:100%;height:100%;object-fit:contain}
+.c9-old{font-size:11px;color:var(--ink2);text-decoration:line-through;font-weight:600}
+.c9-plus{width:32px;height:32px;border-radius:50%;background:var(--ink);color:#fff;display:grid;place-items:center;flex:none}
+.c9-plus svg{width:16px;height:16px;stroke-width:2.4}
+.c9-tick{position:absolute;right:8px;top:8px;width:20px;height:20px;border-radius:50%;background:var(--ink);color:#fff;display:grid;place-items:center}
+.c9-tick svg{width:12px;height:12px}
+
+/* A – Markt-Regal (klickbar) */
+.c9-mk{position:relative;flex:none;width:96px;height:112px;border-radius:24px;background:#fff;box-shadow:inset 0 0 0 2px var(--ink);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;cursor:pointer;transition:background .15s,box-shadow .15s}
+.c9-mk .c9-lg{width:74px;height:50px}
+.c9-mk b{font-family:"Inter Tight",sans-serif;font-weight:600;font-size:22px;letter-spacing:-.04em;line-height:1}
+.c9-mk small{display:block;font-size:10.5px;color:var(--ink2);font-weight:700;margin-top:2px;text-align:center}
+.c9-mk.off{background:var(--card);box-shadow:none}
+.c9-mk.off img{filter:grayscale(1);opacity:.35}
+.c9-mk.off b{color:var(--ink3)}
+.c9-mk.off .c9-tick{display:none}
+.c9-mk.add{background:none;box-shadow:inset 0 0 0 1.5px var(--line);color:var(--ink2);font-size:12px;font-weight:700;cursor:default}
+.c9-ct{position:relative;flex:none;width:86px;height:108px;border-radius:24px;display:flex;flex-direction:column;align-items:center;padding-top:8px;cursor:pointer;transition:box-shadow .15s}
+.c9-ct img{width:56px;height:52px;object-fit:contain}
+.c9-ct .ic{width:52px;height:52px;display:grid;place-items:center}
+.c9-ct .ic svg{width:30px;height:30px}
+.c9-ct span{font-size:11.5px;font-weight:800;line-height:1.15;text-align:center;margin-top:2px;padding:0 4px}
+.c9-ct i{font-style:normal;font-size:11px;color:var(--ink2);font-weight:700;margin-top:1px}
+.c9-ct.on{box-shadow:inset 0 0 0 2px var(--ink)}
+.c9-so{display:flex;align-items:center;gap:6px;margin-top:14px}
+.c9-so .chip{height:32px;padding:0 12px;font-size:12.5px;cursor:pointer}
+.c9-grp{background:var(--card);border-radius:26px;padding:4px 14px 6px;margin-top:14px}
+.c9-grp .gh{display:flex;align-items:center;gap:10px;padding:12px 0 8px}
+.c9-grp .gh .t2{font-size:21px;flex:1}
+.c9-grp .gh .num{font-size:22px}
+.c9-grp .gh img{width:30px;height:30px}
+.c9-it{display:flex;align-items:center;gap:12px;padding:10px 0;border-top:1.5px solid var(--line)}
+.c9-it .pl{width:58px;height:58px;border-radius:50%;display:grid;place-items:center;flex:none;overflow:hidden;background-size:cover;background-position:center}
+.c9-it .pl img{width:48px}
+.c9-it .tx{flex:1;min-width:0}
+.c9-it .tx b{display:block;font-family:"DM Serif Display",serif;font-weight:400;font-size:18px;line-height:1.1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.c9-it .tx span{display:flex;align-items:center;gap:5px;font-size:11.5px;color:var(--ink2);margin-top:4px;white-space:nowrap}
+.c9-it .tx span img{height:12px;max-width:34px;object-fit:contain}
+.c9-it .pr{text-align:right;flex:none}
+.c9-it .pr .num{font-size:22px;display:block;margin-top:4px}
+.c9-it .deal{height:20px;font-size:10.5px}
+.c9-empty{display:none;text-align:center;padding:30px 10px;color:var(--ink2);font-size:14px;line-height:1.5}
+
+/* B – Logo-Raster */
+.c9-bg{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:16px}
+.c9-bm{position:relative;height:74px;border-radius:20px;background:#fff;box-shadow:inset 0 0 0 2px var(--ink);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px}
+.c9-bm .c9-lg{width:72px;height:40px}
+.c9-bm b{font-size:12px;font-weight:800}
+.c9-bm.off{background:var(--card);box-shadow:none}.c9-bm.off .c9-tick{display:none}.c9-bm.off img{filter:grayscale(1);opacity:.35}.c9-bm.off b{color:var(--ink3)}
+.c9-bm .c9-tick{right:6px;top:6px;width:18px;height:18px}
+.c9-bk{display:grid;grid-template-columns:repeat(4,1fr);gap:12px 6px;margin-top:4px}
+.c9-bk div{text-align:center}
+.c9-bk .c{width:66px;height:66px;border-radius:50%;margin:0 auto;display:grid;place-items:center;position:relative}
+.c9-bk .c img{width:52px}
+.c9-bk .c svg{width:28px;height:28px}
+.c9-bk .c.on{box-shadow:0 0 0 2.5px #fff,0 0 0 4.5px var(--ink)}
+.c9-bk .c em{position:absolute;right:-4px;top:-2px;font-style:normal;background:var(--ink);color:#fff;font-size:10.5px;font-weight:800;height:20px;min-width:20px;padding:0 6px;border-radius:999px;display:grid;place-items:center}
+.c9-bk b{display:block;font-size:11.5px;line-height:1.2;margin-top:6px}
+.c9-mg{display:flex;align-items:center;gap:10px;margin:24px 0 10px}
+.c9-mg .lgc{width:46px;height:46px;border-radius:50%;background:#fff;box-shadow:0 0 0 1.5px var(--line);padding:7px}
+.c9-mg .t2{font-size:22px}
+.c9-mg .small{font-size:12px}
+.c9-oc{flex:none;width:148px}
+.c9-oc .ph{position:relative;height:126px;border-radius:24px;display:grid;place-items:center}
+.c9-oc .ph img{width:92px}
+.c9-oc .ph .deal{position:absolute;left:10px;top:10px}
+.c9-oc .ph .hrt{position:absolute;right:10px;top:10px;width:30px;height:30px;border-radius:50%;background:#fff;display:grid;place-items:center}
+.c9-oc .ph .hrt svg{width:16px;height:16px}
+.c9-oc .ph .c9-plus{position:absolute;right:10px;bottom:10px}
+.c9-oc b{display:block;font-size:14px;margin-top:8px;line-height:1.2}
+.c9-oc .row{margin-top:3px;gap:6px;align-items:baseline}
+.c9-oc .num{font-size:22px}
+.c9-oc .small{font-size:11.5px;margin-top:2px}
+
+/* C – Ein Markt im Fokus */
+.c9-cb{flex:none;width:70px;text-align:center;cursor:pointer}
+.c9-cb .r{width:64px;height:64px;border-radius:50%;background:#fff;margin:0 auto;box-shadow:0 0 0 1.5px var(--line);display:flex;align-items:center;justify-content:center;padding:9px}
+.c9-cb.on .r{box-shadow:0 0 0 3px var(--ink)}
+.c9-cb b{display:block;font-size:11.5px;margin-top:7px;white-space:nowrap}
+.c9-cb i{display:block;font-style:normal;font-size:11px;color:var(--ink2);font-weight:700}
+.c9-stage{position:relative;margin:16px -24px 0;height:178px;background:var(--blue);border-radius:0 0 0 80px;overflow:hidden;padding:20px 24px}
+.c9-stage .logo{display:inline-grid;place-items:center;height:42px;padding:0 14px;background:#fff;border-radius:999px}
+.c9-stage .logo img{height:22px}
+.c9-pc{display:inline-flex;align-items:center;gap:8px;height:44px;padding:0 16px 0 6px;border-radius:999px;font-weight:800;font-size:13.5px;flex:none}
+.c9-pc img{width:34px;height:34px;object-fit:contain}
+.c9-pc .ic{width:34px;height:34px;display:grid;place-items:center}
+.c9-pc i{font-style:normal;color:var(--ink2);font-weight:700;font-size:12px}
+.c9-pc.on{background:var(--ink)!important;color:#fff}.c9-pc.on i{color:#B9B3A7}
+.c9-g2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.c9-tc{border-radius:24px;background:var(--card);padding:8px 8px 12px}
+.c9-tc .ph{position:relative;height:104px;border-radius:18px;display:grid;place-items:center;background-size:cover;background-position:center}
+.c9-tc .ph img{width:80px}
+.c9-tc .ph .deal{position:absolute;left:8px;top:8px}
+.c9-tc .ph .c9-plus{position:absolute;right:8px;bottom:-12px;box-shadow:0 0 0 3px var(--card)}
+.c9-tc b{display:block;font-family:"DM Serif Display",serif;font-weight:400;font-size:17px;line-height:1.1;margin:10px 4px 0}
+.c9-tc .num{font-size:22px;margin:6px 4px 0;display:block}
+.c9-tc .small{font-size:11px;margin:3px 4px 0}
+.c9-why{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:800;color:var(--blue3);margin:6px 4px 0}
+.c9-why svg{width:13px;height:13px}
+</style>
+
+<section class="sec"><h2>Angebote</h2><p>Große Markt-Knöpfe mit Logo und Anzahl, darunter Filter mit Zeichnungen und Zählern, Liste sichtbar gruppiert. A ist klickbar: Märkte an/aus, Kategorie wählen.</p></section>
+<div class="screens">
+
+  <!-- A – Markt-Regal (interaktiv) -->
+  <div class="screen"><div class="phone" id="c9a">
+    <div class="sb"><b>9:41</b><span class="island"></span><svg><use href="#status"/></svg></div>
+    <div class="c9-fade"></div>
+    <div class="c9-sc">
+      <div class="leaf" style="right:0;top:0;width:150px;height:176px;border-bottom-left-radius:100px;background:var(--blue1)"></div>
+      <img class="ill" src="../../../ios/Sources/Essenapp/Resources/ill/binoculars.webp" style="position:absolute;right:6px;top:52px;width:128px" alt="">
+      <div style="position:relative">
+        <div class="small">24118 · KW 45 · 2.–8. Nov</div><div class="t1">Angebote</div>
+        <div class="row" style="margin-top:10px;gap:10px;align-items:flex-end"><span class="num" id="c9a-n" style="font-size:52px">1063</span><span class="lbl" style="color:var(--ink);letter-spacing:0;font-size:12px;line-height:1.3;padding-bottom:4px">Angebote<br>in deinen Läden</span></div>
+      </div>
+
+      <div class="c9-h"><span class="lbl">DEINE MÄRKTE</span><a>antippen = an/aus</a></div>
+      <div class="c9-hs">
+        <div class="c9-mk" data-m="rewe"><span class="c9-tick"><svg class="i"><use href="#i-check"/></svg></span><span class="c9-lg"><img src="https://upload.wikimedia.org/wikipedia/commons/thumb/4/4c/Logo_REWE.svg/250px-Logo_REWE.svg.png" alt="Rewe"></span><div><b>284</b><small>Angebote</small></div></div>
+        <div class="c9-mk" data-m="edeka"><span class="c9-tick"><svg class="i"><use href="#i-check"/></svg></span><span class="c9-lg"><img src="https://upload.wikimedia.org/wikipedia/commons/thumb/c/cf/Edeka_Logo_Aktuell.svg/250px-Edeka_Logo_Aktuell.svg.png" alt="Edeka"></span><div><b>231</b><small>Angebote</small></div></div>
+        <div class="c9-mk" data-m="aldi"><span class="c9-tick"><svg class="i"><use href="#i-check"/></svg></span><span class="c9-lg"><img src="https://upload.wikimedia.org/wikipedia/commons/thumb/f/f0/AldiNord-WorldwideLogo.svg/250px-AldiNord-WorldwideLogo.svg.png" alt="Aldi Nord"></span><div><b>198</b><small>Angebote</small></div></div>
+        <div class="c9-mk" data-m="lidl"><span class="c9-tick"><svg class="i"><use href="#i-check"/></svg></span><span class="c9-lg"><img src="https://upload.wikimedia.org/wikipedia/commons/thumb/9/91/Lidl-Logo.svg/250px-Lidl-Logo.svg.png" alt="Lidl"></span><div><b>176</b><small>Angebote</small></div></div>
+        <div class="c9-mk" data-m="penny"><span class="c9-tick"><svg class="i"><use href="#i-check"/></svg></span><span class="c9-lg"><img src="https://upload.wikimedia.org/wikipedia/commons/thumb/8/8e/Penny-Logo.svg/250px-Penny-Logo.svg.png" alt="Penny"></span><div><b>112</b><small>Angebote</small></div></div>
+        <div class="c9-mk" data-m="dm"><span class="c9-tick"><svg class="i"><use href="#i-check"/></svg></span><span class="c9-lg"><img src="https://upload.wikimedia.org/wikipedia/commons/thumb/2/2c/Dm-drogerie-Logo.svg/250px-Dm-drogerie-Logo.svg.png" alt="dm"></span><div><b>62</b><small>Angebote</small></div></div>
+        <div class="c9-mk add"><svg class="i"><use href="#i-plus"/></svg>Laden</div>
+      </div>
+
+      <div class="c9-h"><span class="lbl">WAS SUCHST DU?</span></div>
+      <div class="c9-hs">
+        <div class="c9-ct on" data-k="alle" style="background:var(--blue1)"><span class="ic"><svg class="i"><use href="#i-tag"/></svg></span><span>Alle</span><i data-n="1063">1063</i></div>
+        <div class="c9-ct" data-k="fuer" style="background:var(--blue)"><span class="ic"><svg class="i"><use href="#i-sparkle"/></svg></span><span>Für dich</span><i data-n="38">38</i></div>
+        <div class="c9-ct" data-k="merk" style="background:var(--rose)"><span class="ic"><svg class="i"><use href="#i-heart"/></svg></span><span>Merkliste</span><i data-n="5">5</i></div>
+        <div class="c9-ct" data-k="obst" style="background:var(--sage)"><img src="../../../ios/Sources/Essenapp/Resources/ill/tomato.webp" alt=""><span>Obst &amp; Gemüse</span><i data-n="214">214</i></div>
+        <div class="c9-ct" data-k="kuehl" style="background:var(--blue1)"><img src="../../../ios/Sources/Essenapp/Resources/ill/fridge.webp" alt=""><span>Kühlregal</span><i data-n="287">287</i></div>
+        <div class="c9-ct" data-k="nudeln" style="background:var(--sand)"><img src="../../../ios/Sources/Essenapp/Resources/ill/pasta.webp" alt=""><span>Nudeln &amp; Reis</span><i data-n="96">96</i></div>
+        <div class="c9-ct" data-k="vorrat" style="background:var(--card)"><img src="../../../ios/Sources/Essenapp/Resources/ill/pot.webp" alt=""><span>Vorrat</span><i data-n="158">158</i></div>
+        <div class="c9-ct" data-k="drog" style="background:var(--rose)"><img src="../../../ios/Sources/Essenapp/Resources/ill/bag.webp" alt=""><span>Drogerie</span><i data-n="62">62</i></div>
+      </div>
+      <div class="c9-so"><span class="small" style="font-size:12.5px">Sortiert:</span><span class="chip on">Größter Rabatt</span><span class="chip">Preis</span><span class="chip">Laden</span></div>
+
+      <div class="c9-grp" data-g="obst" data-n="214">
+        <div class="gh"><img src="../../../ios/Sources/Essenapp/Resources/ill/tomato.webp" alt=""><span class="t2">Obst &amp; Gemüse</span><span class="num">214</span></div>
+        <div class="c9-it" data-m="lidl" data-k="obst" data-f><span class="pl" style="background:var(--rose)"><img src="../../../ios/Sources/Essenapp/Resources/ill/tomato.webp" alt=""></span><div class="tx"><b>Rispentomaten</b><span><img src="https://upload.wikimedia.org/wikipedia/commons/thumb/9/91/Lidl-Logo.svg/250px-Lidl-Logo.svg.png" alt="Lidl">1 kg · bis Sa 8.11.</span></div><div class="pr"><span class="deal">−33 %</span><span class="num">1,99 €</span><span class="c9-old">2,99 €</span></div></div>
+        <div class="c9-it" data-m="edeka" data-k="obst" data-f><span class="pl" style="background:var(--sand)"><img src="../../../ios/Sources/Essenapp/Resources/ill/garlic.webp" alt=""></span><div class="tx"><b>Knoblauch</b><span><img src="https://upload.wikimedia.org/wikipedia/commons/thumb/c/cf/Edeka_Logo_Aktuell.svg/250px-Edeka_Logo_Aktuell.svg.png" alt="Edeka">3 Stück · bis Sa 8.11.</span></div><div class="pr"><span class="deal">−20 %</span><span class="num">0,79 €</span><span class="c9-old">0,99 €</span></div></div>
+        <div class="c9-it" data-m="aldi" data-k="obst" data-h><span class="pl" style="background:var(--sage)"><img src="../../../ios/Sources/Essenapp/Resources/ill/basil.webp" alt=""></span><div class="tx"><b>Basilikum im Topf</b><span><img src="https://upload.wikimedia.org/wikipedia/commons/thumb/f/f0/AldiNord-WorldwideLogo.svg/250px-AldiNord-WorldwideLogo.svg.png" alt="Aldi Nord">Stück · bis Sa 8.11.</span></div><div class="pr"><span class="deal">−30 %</span><span class="num">1,19 €</span><span class="c9-old">1,69 €</span></div></div>
+      </div>
+      <div class="c9-grp" data-g="kuehl" data-n="287">
+        <div class="gh"><img src="../../../ios/Sources/Essenapp/Resources/ill/fridge.webp" alt=""><span class="t2">Kühlregal</span><span class="num">287</span></div>
+        <div class="c9-it" data-m="rewe" data-k="kuehl" data-f><span class="pl" style="background-image:url(../../../ios/Sources/Essenapp/Resources/hero/grill.jpg)"></span><div class="tx"><b>Hähnchenbrust</b><span><img src="https://upload.wikimedia.org/wikipedia/commons/thumb/4/4c/Logo_REWE.svg/250px-Logo_REWE.svg.png" alt="Rewe">600 g · bis Sa 8.11.</span></div><div class="pr"><span class="deal">−29 %</span><span class="num">5,99 €</span><span class="c9-old">8,49 €</span></div></div>
+        <div class="c9-it" data-m="penny" data-k="kuehl" data-h><span class="pl" style="background:var(--blue1)"><img src="../../../ios/Sources/Essenapp/Resources/ill/fridge.webp" alt=""></span><div class="tx"><b>Gouda jung, Scheiben</b><span><img src="https://upload.wikimedia.org/wikipedia/commons/thumb/8/8e/Penny-Logo.svg/250px-Penny-Logo.svg.png" alt="Penny">400 g · bis Mi 5.11.</span></div><div class="pr"><span class="deal">−33 %</span><span class="num">2,49 €</span><span class="c9-old">3,69 €</span></div></div>
+      </div>
+      <div class="c9-grp" data-g="nudeln" data-n="96">
+        <div class="gh"><img src="../../../ios/Sources/Essenapp/Resources/ill/pasta.webp" alt=""><span class="t2">Nudeln &amp; Reis</span><span class="num">96</span></div>
+        <div class="c9-it" data-m="edeka" data-k="nudeln" data-f data-h><span class="pl" style="background:var(--blue1)"><img src="../../../ios/Sources/Essenapp/Resources/ill/pasta.webp" alt=""></span><div class="tx"><b>Barilla Spaghetti</b><span><img src="https://upload.wikimedia.org/wikipedia/commons/thumb/c/cf/Edeka_Logo_Aktuell.svg/250px-Edeka_Logo_Aktuell.svg.png" alt="Edeka">500 g · bis Sa 8.11.</span></div><div class="pr"><span class="deal">−45 %</span><span class="num">0,99 €</span><span class="c9-old">1,79 €</span></div></div>
+      </div>
+      <div class="c9-grp" data-g="vorrat" data-n="158">
+        <div class="gh"><img src="../../../ios/Sources/Essenapp/Resources/ill/pot.webp" alt=""><span class="t2">Vorrat</span><span class="num">158</span></div>
+        <div class="c9-it" data-m="lidl" data-k="vorrat" data-f><span class="pl" style="background:var(--sand)"><img src="../../../ios/Sources/Essenapp/Resources/ill/pot.webp" alt=""></span><div class="tx"><b>Basmatireis</b><span><img src="https://upload.wikimedia.org/wikipedia/commons/thumb/9/91/Lidl-Logo.svg/250px-Lidl-Logo.svg.png" alt="Lidl">1 kg · bis Sa 8.11.</span></div><div class="pr"><span class="deal">−28 %</span><span class="num">1,79 €</span><span class="c9-old">2,49 €</span></div></div>
+      </div>
+      <div class="c9-grp" data-g="drog" data-n="62">
+        <div class="gh"><img src="../../../ios/Sources/Essenapp/Resources/ill/bag.webp" alt=""><span class="t2">Drogerie</span><span class="num">62</span></div>
+        <div class="c9-it" data-m="dm" data-k="drog" data-h><span class="pl" style="background:var(--rose)"><img src="../../../ios/Sources/Essenapp/Resources/ill/bag.webp" alt=""></span><div class="tx"><b>Balea Duschgel</b><span><img src="https://upload.wikimedia.org/wikipedia/commons/thumb/2/2c/Dm-drogerie-Logo.svg/250px-Dm-drogerie-Logo.svg.png" alt="dm">300 ml · bis 30.11.</span></div><div class="pr"><span class="deal">−27 %</span><span class="num">0,55 €</span><span class="c9-old">0,75 €</span></div></div>
+      </div>
+      <div class="c9-empty"><b style="color:var(--ink)">Nichts gefunden.</b><br>Schalte einen Markt dazu oder wähle „Alle“.</div>
+    </div>
+    <div class="nav" data-on="2"></div>
+    <div class="homebar"></div></div>
+    <div class="caption"><b>Variante A – Markt-Regal (klickbar)</b>Oben eine Reihe großer Markt-Knöpfe mit Logo und Anzahl – antippen schaltet den Markt an/aus (schwarzer Rand + Haken = an). Darunter Kategorie-Kacheln mit Zeichnung, Farbe und Zähler, plus „Für dich“ und „Merkliste“. Die Liste ist nach Kategorie gruppiert, jede Gruppe eine Fläche mit Überschrift; je Angebot Logo, Rabatt, alter Preis und „bis“. Probier's: Märkte ausschalten, Kategorie wählen, Liste scrollen.</div></div>
+
+  <!-- B – Logo-Raster -->
+  <div class="screen"><div class="phone">
+    <div class="sb"><b>9:41</b><span class="island"></span><svg><use href="#status"/></svg></div>
+    <div class="c9-fade"></div>
+    <div class="c9-sc">
+      <div class="blob" style="right:-80px;top:-70px;width:250px;height:250px;background:var(--blue1)"></div>
+      <img class="ill" src="../../../ios/Sources/Essenapp/Resources/ill/binoculars.webp" style="position:absolute;right:4px;top:46px;width:120px" alt="">
+      <div style="position:relative">
+        <div class="small">24118 · KW 45 · 2.–8. Nov</div><div class="t1">Angebote</div>
+        <div class="stat" style="width:200px;margin-top:14px"><span class="lbl">Gewählt<br>5 von 6</span><span class="num" style="font-size:46px">951</span></div>
+      </div>
+      <div class="c9-bg">
+        <div class="c9-bm"><span class="c9-tick"><svg class="i"><use href="#i-check"/></svg></span><span class="c9-lg"><img src="https://upload.wikimedia.org/wikipedia/commons/thumb/4/4c/Logo_REWE.svg/250px-Logo_REWE.svg.png" alt="Rewe"></span><b>284</b></div>
+        <div class="c9-bm"><span class="c9-tick"><svg class="i"><use href="#i-check"/></svg></span><span class="c9-lg"><img src="https://upload.wikimedia.org/wikipedia/commons/thumb/c/cf/Edeka_Logo_Aktuell.svg/250px-Edeka_Logo_Aktuell.svg.png" alt="Edeka"></span><b>231</b></div>
+        <div class="c9-bm"><span class="c9-tick"><svg class="i"><use href="#i-check"/></svg></span><span class="c9-lg"><img src="https://upload.wikimedia.org/wikipedia/commons/thumb/f/f0/AldiNord-WorldwideLogo.svg/250px-AldiNord-WorldwideLogo.svg.png" alt="Aldi Nord"></span><b>198</b></div>
+        <div class="c9-bm"><span class="c9-tick"><svg class="i"><use href="#i-check"/></svg></span><span class="c9-lg"><img src="https://upload.wikimedia.org/wikipedia/commons/thumb/9/91/Lidl-Logo.svg/250px-Lidl-Logo.svg.png" alt="Lidl"></span><b>176</b></div>
+        <div class="c9-bm off"><span class="c9-tick"><svg class="i"><use href="#i-check"/></svg></span><span class="c9-lg"><img src="https://upload.wikimedia.org/wikipedia/commons/thumb/8/8e/Penny-Logo.svg/250px-Penny-Logo.svg.png" alt="Penny"></span><b>112</b></div>
+        <div class="c9-bm"><span class="c9-tick"><svg class="i"><use href="#i-check"/></svg></span><span class="c9-lg"><img src="https://upload.wikimedia.org/wikipedia/commons/thumb/2/2c/Dm-drogerie-Logo.svg/250px-Dm-drogerie-Logo.svg.png" alt="dm"></span><b>62</b></div>
+      </div>
+      <div class="c9-h"><span class="lbl">KATEGORIEN</span><a>Rabatt ↓</a></div>
+      <div class="c9-bk">
+        <div><span class="c on" style="background:var(--blue)"><svg class="i"><use href="#i-sparkle"/></svg><em>38</em></span><b>Für dich</b></div>
+        <div><span class="c" style="background:var(--rose)"><svg class="i"><use href="#i-heart"/></svg><em>5</em></span><b>Merkliste</b></div>
+        <div><span class="c" style="background:var(--sage)"><img src="../../../ios/Sources/Essenapp/Resources/ill/tomato.webp" alt=""><em>196</em></span><b>Obst &amp; Gemüse</b></div>
+        <div><span class="c" style="background:var(--blue1)"><img src="../../../ios/Sources/Essenapp/Resources/ill/fridge.webp" alt=""><em>262</em></span><b>Kühlregal</b></div>
+        <div><span class="c" style="background:var(--sand)"><img src="../../../ios/Sources/Essenapp/Resources/ill/pasta.webp" alt=""><em>88</em></span><b>Nudeln &amp; Reis</b></div>
+        <div><span class="c" style="background:var(--card)"><img src="../../../ios/Sources/Essenapp/Resources/ill/pot.webp" alt=""><em>141</em></span><b>Vorrat</b></div>
+        <div><span class="c" style="background:var(--sage)"><img src="../../../ios/Sources/Essenapp/Resources/ill/basil.webp" alt=""><em>39</em></span><b>Kräuter</b></div>
+        <div><span class="c" style="background:var(--rose)"><img src="../../../ios/Sources/Essenapp/Resources/ill/bag.webp" alt=""><em>62</em></span><b>Drogerie</b></div>
+      </div>
+      <div class="c9-mg"><span class="c9-lg lgc"><img src="https://upload.wikimedia.org/wikipedia/commons/thumb/4/4c/Logo_REWE.svg/250px-Logo_REWE.svg.png" alt="Rewe"></span><div style="flex:1"><div class="t2">Rewe</div><div class="small">14 für dich · bis Sa 8.11.</div></div><span class="c9-plus" style="background:none;color:var(--ink);box-shadow:inset 0 0 0 1.5px var(--line)"><svg class="i"><use href="#i-chev"/></svg></span></div>
+      <div class="c9-hs">
+        <div class="c9-oc"><div class="ph" style="background:var(--rose)"><img src="../../../ios/Sources/Essenapp/Resources/ill/tomato.webp" alt=""><span class="deal">−33 %</span><span class="hrt"><svg class="i"><use href="#i-heart"/></svg></span><span class="c9-plus"><svg class="i"><use href="#i-plus"/></svg></span></div><b>Rispentomaten</b><div class="row"><span class="num">1,99 €</span><span class="c9-old">2,99 €</span></div><div class="small">1 kg · für Rosenkohl-Pfanne</div></div>
+        <div class="c9-oc"><div class="ph" style="background-image:url(../../../ios/Sources/Essenapp/Resources/hero/grill.jpg);background-size:cover"><span class="deal">−29 %</span><span class="hrt"><svg class="i"><use href="#i-heart"/></svg></span><span class="c9-plus"><svg class="i"><use href="#i-plus"/></svg></span></div><b>Hähnchenbrust</b><div class="row"><span class="num">5,99 €</span><span class="c9-old">8,49 €</span></div><div class="small">600 g</div></div>
+        <div class="c9-oc"><div class="ph" style="background:var(--sand)"><img src="../../../ios/Sources/Essenapp/Resources/ill/garlic.webp" alt=""><span class="deal">−20 %</span><span class="hrt"><svg class="i"><use href="#i-heart"/></svg></span><span class="c9-plus"><svg class="i"><use href="#i-plus"/></svg></span></div><b>Knoblauch</b><div class="row"><span class="num">0,79 €</span><span class="c9-old">0,99 €</span></div><div class="small">3 Stück</div></div>
+      </div>
+      <div class="c9-mg"><span class="c9-lg lgc"><img src="https://upload.wikimedia.org/wikipedia/commons/thumb/c/cf/Edeka_Logo_Aktuell.svg/250px-Edeka_Logo_Aktuell.svg.png" alt="Edeka"></span><div style="flex:1"><div class="t2">Edeka</div><div class="small">9 für dich · bis Sa 8.11.</div></div><span class="c9-plus" style="background:none;color:var(--ink);box-shadow:inset 0 0 0 1.5px var(--line)"><svg class="i"><use href="#i-chev"/></svg></span></div>
+      <div class="c9-hs">
+        <div class="c9-oc"><div class="ph" style="background:var(--blue1)"><img src="../../../ios/Sources/Essenapp/Resources/ill/pasta.webp" alt=""><span class="deal">−45 %</span><span class="hrt"><svg class="i"><use href="#i-heart"/></svg></span><span class="c9-plus"><svg class="i"><use href="#i-plus"/></svg></span></div><b>Barilla Spaghetti</b><div class="row"><span class="num">0,99 €</span><span class="c9-old">1,79 €</span></div><div class="small">500 g</div></div>
+        <div class="c9-oc"><div class="ph" style="background:var(--sage)"><img src="../../../ios/Sources/Essenapp/Resources/ill/basil.webp" alt=""><span class="deal">−25 %</span><span class="hrt"><svg class="i"><use href="#i-heart"/></svg></span><span class="c9-plus"><svg class="i"><use href="#i-plus"/></svg></span></div><b>Basilikum</b><div class="row"><span class="num">1,29 €</span><span class="c9-old">1,69 €</span></div><div class="small">Topf</div></div>
+      </div>
+    </div>
+    <div class="nav" data-on="2"></div>
+    <div class="homebar"></div></div>
+    <div class="caption"><b>Variante B – Logo-Raster</b>Alle Märkte auf einen Blick als 3×2-Raster, ausgeschaltete (hier Penny) grau. Darunter acht runde Kategorien mit Zeichnung und Zähler-Plakette, „Für dich“ zuerst. Die Liste ist nach Markt gruppiert: Logo, „14 für dich · bis Sa 8.11.“, dann eine Reihe Karten zum Wischen mit Rabatt, Herz und Plus.</div></div>
+
+  <!-- C – Ein Markt im Fokus -->
+  <div class="screen"><div class="phone">
+    <div class="sb"><b>9:41</b><span class="island"></span><svg><use href="#status"/></svg></div>
+    <div class="c9-fade"></div>
+    <div class="c9-sc">
+      <div class="small">24118 · KW 45 · 2.–8. Nov</div><div class="t1">Angebote</div>
+      <div class="c9-hs" style="margin-top:14px;gap:6px">
+        <div class="c9-cb"><span class="r" style="background:var(--blue1);padding:4px"><img src="../../../ios/Sources/Essenapp/Resources/ill/binoculars.webp" style="width:52px" alt=""></span><b>Alle</b><i>1063</i></div>
+        <div class="c9-cb on"><span class="r c9-lg"><img src="https://upload.wikimedia.org/wikipedia/commons/thumb/4/4c/Logo_REWE.svg/250px-Logo_REWE.svg.png" alt="Rewe"></span><b>Rewe</b><i>284</i></div>
+        <div class="c9-cb"><span class="r c9-lg"><img src="https://upload.wikimedia.org/wikipedia/commons/thumb/c/cf/Edeka_Logo_Aktuell.svg/250px-Edeka_Logo_Aktuell.svg.png" alt="Edeka"></span><b>Edeka</b><i>231</i></div>
+        <div class="c9-cb"><span class="r c9-lg"><img src="https://upload.wikimedia.org/wikipedia/commons/thumb/f/f0/AldiNord-WorldwideLogo.svg/250px-AldiNord-WorldwideLogo.svg.png" alt="Aldi Nord"></span><b>Aldi Nord</b><i>198</i></div>
+        <div class="c9-cb"><span class="r c9-lg"><img src="https://upload.wikimedia.org/wikipedia/commons/thumb/9/91/Lidl-Logo.svg/250px-Lidl-Logo.svg.png" alt="Lidl"></span><b>Lidl</b><i>176</i></div>
+        <div class="c9-cb"><span class="r c9-lg"><img src="https://upload.wikimedia.org/wikipedia/commons/thumb/8/8e/Penny-Logo.svg/250px-Penny-Logo.svg.png" alt="Penny"></span><b>Penny</b><i>112</i></div>
+        <div class="c9-cb"><span class="r c9-lg"><img src="https://upload.wikimedia.org/wikipedia/commons/thumb/2/2c/Dm-drogerie-Logo.svg/250px-Dm-drogerie-Logo.svg.png" alt="dm"></span><b>dm</b><i>62</i></div>
+      </div>
+      <div class="c9-stage">
+        <img class="ill" src="../../../ios/Sources/Essenapp/Resources/ill/shopper.webp" style="position:absolute;right:-6px;top:6px;width:150px" alt="">
+        <div style="position:relative;width:210px">
+          <span class="logo"><img src="https://upload.wikimedia.org/wikipedia/commons/thumb/4/4c/Logo_REWE.svg/250px-Logo_REWE.svg.png" alt="Rewe"></span>
+          <div class="stat" style="margin-top:14px"><span class="lbl">Angebote<br>bis Sa 8.11.</span><span class="num" style="font-size:46px">284</span></div>
+          <div class="small" style="font-size:12.5px;color:var(--ink);margin-top:8px">Rewe Holtenauer Str. · 1,2 km</div>
+        </div>
+      </div>
+      <div class="c9-hs" style="margin-top:16px;gap:8px">
+        <span class="c9-pc on"><span class="ic"><svg class="i" style="width:20px;height:20px"><use href="#i-sparkle"/></svg></span>Für dich <i>14</i></span>
+        <span class="c9-pc" style="background:var(--sage)"><img src="../../../ios/Sources/Essenapp/Resources/ill/tomato.webp" alt="">Obst &amp; Gemüse <i>58</i></span>
+        <span class="c9-pc" style="background:var(--blue1)"><img src="../../../ios/Sources/Essenapp/Resources/ill/fridge.webp" alt="">Kühlregal <i>77</i></span>
+        <span class="c9-pc" style="background:var(--sand)"><img src="../../../ios/Sources/Essenapp/Resources/ill/pasta.webp" alt="">Nudeln &amp; Reis <i>26</i></span>
+        <span class="c9-pc" style="background:var(--rose)"><span class="ic"><svg class="i" style="width:20px;height:20px"><use href="#i-heart"/></svg></span>Merkliste <i>2</i></span>
+      </div>
+      <div class="c9-h" style="margin-top:22px"><span class="t2" style="font-size:22px">Passt zu deiner Woche</span><a>Rabatt ↓</a></div>
+      <div class="c9-g2">
+        <div class="c9-tc"><div class="ph" style="background:var(--rose)"><img src="../../../ios/Sources/Essenapp/Resources/ill/tomato.webp" alt=""><span class="deal">−33 %</span><span class="c9-plus"><svg class="i"><use href="#i-plus"/></svg></span></div><b>Rispentomaten</b><span class="num">1,99 € <span class="c9-old">2,99</span></span><div class="small">1 kg · bis Sa 8.11.</div><div class="c9-why"><svg class="i"><use href="#i-sparkle"/></svg>Rosenkohl-Pfanne</div></div>
+        <div class="c9-tc"><div class="ph" style="background-image:url(../../../ios/Sources/Essenapp/Resources/hero/grill.jpg)"><span class="deal">−29 %</span><span class="c9-plus"><svg class="i"><use href="#i-plus"/></svg></span></div><b>Hähnchenbrust</b><span class="num">5,99 € <span class="c9-old">8,49</span></span><div class="small">600 g · bis Sa 8.11.</div><div class="c9-why"><svg class="i"><use href="#i-sparkle"/></svg>Paprika-Chili-Reis</div></div>
+      </div>
+      <div class="c9-h" style="margin-top:22px"><span class="t2" style="font-size:22px">Größte Rabatte</span><a>alle 31 →</a></div>
+      <div class="c9-g2">
+        <div class="c9-tc"><div class="ph" style="background:var(--blue1)"><img src="../../../ios/Sources/Essenapp/Resources/ill/pasta.webp" alt=""><span class="deal">−45 %</span><span class="c9-plus"><svg class="i"><use href="#i-plus"/></svg></span></div><b>Barilla Spaghetti</b><span class="num">0,99 € <span class="c9-old">1,79</span></span><div class="small">500 g · bis Sa 8.11.</div></div>
+        <div class="c9-tc"><div class="ph" style="background:var(--sand)"><img src="../../../ios/Sources/Essenapp/Resources/ill/pot.webp" alt=""><span class="deal">−40 %</span><span class="c9-plus"><svg class="i"><use href="#i-plus"/></svg></span></div><b>Kokosmilch</b><span class="num">0,89 € <span class="c9-old">1,49</span></span><div class="small">400 ml · bis Sa 8.11.</div></div>
+      </div>
+    </div>
+    <div class="nav" data-on="2"></div>
+    <div class="homebar"></div></div>
+    <div class="caption"><b>Variante C – Ein Markt im Fokus</b>Märkte als runde Logo-Knöpfe zum Wischen; immer einer gewählt (oder „Alle“). Der gewählte Markt bekommt eine blaue Bühne mit Logo, Anzahl, „bis Sa 8.11.“ und Filiale. Kategorien als farbige Pillen mit Zeichnung und Zähler. Darunter Kacheln in zwei Spalten, gruppiert nach Nutzen: „Passt zu deiner Woche“ (mit Gericht), „Größte Rabatte“.</div></div>
+
+</div>
+<script>
+(() => {
+  // Waagerechte Reihen mit der Maus ziehen (Touch scrollt nativ); Klick nach Ziehen unterdrücken.
+  document.querySelectorAll('.c9-hs').forEach(r => {
+    let x0 = null, s0 = 0, moved = false;
+    r.addEventListener('pointerdown', e => { if (e.pointerType !== 'mouse') return; x0 = e.clientX; s0 = r.scrollLeft; moved = false; });
+    window.addEventListener('pointermove', e => { if (x0 === null) return; const d = e.clientX - x0; if (Math.abs(d) > 5) moved = true; r.scrollLeft = s0 - d; });
+    window.addEventListener('pointerup', () => { x0 = null; });
+    r.addEventListener('click', e => { if (moved) { e.stopPropagation(); e.preventDefault(); moved = false; } }, true);
+  });
+
+  // Variante A: Märkte an/aus, Kategorie wählen, Sortier-Pillen
+  const p = document.getElementById('c9a'); if (!p) return;
+  const M = { rewe: 284, edeka: 231, aldi: 198, lidl: 176, penny: 112, dm: 62 }, ALL = 1063;
+  const mks = [...p.querySelectorAll('.c9-mk[data-m]')], cts = [...p.querySelectorAll('.c9-ct')];
+  const upd = () => {
+    const on = mks.filter(b => !b.classList.contains('off')).map(b => b.dataset.m);
+    const share = on.reduce((s, m) => s + M[m], 0) / ALL;
+    const k = p.querySelector('.c9-ct.on').dataset.k;
+    cts.forEach(c => { const i = c.querySelector('i'); i.textContent = Math.round(i.dataset.n * share); });
+    p.querySelector('#c9a-n').textContent = Math.round(p.querySelector('.c9-ct.on i').dataset.n * share);
+    let any = false;
+    p.querySelectorAll('.c9-grp').forEach(g => {
+      let n = 0;
+      g.querySelectorAll('.c9-it').forEach(it => {
+        const d = it.dataset, ok = on.includes(d.m) && (k === 'alle' || k === d.k || (k === 'fuer' && 'f' in d) || (k === 'merk' && 'h' in d));
+        it.style.display = ok ? '' : 'none'; if (ok) n++;
+      });
+      g.style.display = n ? '' : 'none'; if (n) any = true;
+      g.querySelector('.gh .num').textContent = Math.round(g.dataset.n * share);
+    });
+    p.querySelector('.c9-empty').style.display = any ? 'none' : 'block';
+  };
+  mks.forEach(b => b.addEventListener('click', () => { b.classList.toggle('off'); upd(); }));
+  cts.forEach(c => c.addEventListener('click', () => { cts.forEach(x => x.classList.toggle('on', x === c)); upd(); }));
+  p.querySelectorAll('.c9-so .chip').forEach(c => c.addEventListener('click', () => p.querySelectorAll('.c9-so .chip').forEach(x => x.classList.toggle('on', x === c))));
+})();
+</script>
