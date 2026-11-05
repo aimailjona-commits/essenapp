@@ -26,6 +26,12 @@ Mockups: [`docs/ui/mockups/redesign-v9-entwurf.html`](../ui/mockups/redesign-v9-
 - [ ] Gericht-Aktionsleiste (Kochen · Tauschen · Liste · Teilen · Mehr) + ein gemeinsames Gericht-Menü, in Woche, Start, Rezepte, Swipe
 - [ ] Angebots-Aktionen (Merken · Auf Liste · Rezepte damit) in jeder Angebotszeile
 
+## 22.2b Mehr per Sprache (Nutzerwunsch 2026-11-05)
+
+- [x] Vorrat per Sprache (Mikrofon im Vorrat, „3 Tomaten, Milch bis Freitag“)
+- [x] Merkliste per Sprache (Suchbegriffe sprechen)
+- [x] Ein Sprach-Knopf in „Alles“: Ziel aus dem Satz („… in den Vorrat“, „merk dir …“, sonst Einkaufsliste), vor dem Hinzufügen umschaltbar
+
 ## 22.3 Prüfen
 
 - [ ] Build, CI-Screenshots ↔ Mockup

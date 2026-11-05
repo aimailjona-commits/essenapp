@@ -74,9 +74,9 @@ struct ProfileView: View {
     static let goals = Labels.goals + [("eigenes", "Eigenes", "Werte selbst festlegen")]
     static let suggestion = ["ausgewogen": (2000, 80), "proteinreich": (2200, 140), "kalorienarm": (1600, 90)]  // = Backend GOAL_DEFAULTS
 
-    // Mockup-Maße (e.html S15)
-    private let blob = (right: CGFloat(-120), top: CGFloat(-90), size: CGFloat(300))
-    private let avatar = (right: CGFloat(28), top: CGFloat(70), size: CGFloat(84))
+    // Mockup-Maße (e.html S15); top relativ zum Inhalt (Mockup zählt ab Bildschirmrand inkl. Statusleiste)
+    private let blob = (right: CGFloat(-120), top: CGFloat(-150), size: CGFloat(300))
+    private let avatar = (right: CGFloat(28), top: CGFloat(4), size: CGFloat(72))
     private let firstColumn: CGFloat = 78
     private let toggleSize: CGFloat = 28
 
@@ -100,20 +100,20 @@ struct ProfileView: View {
             .padding(.horizontal, Theme.pagePadding)
             .padding(.top, 4)
             .padding(.bottom, 16)
-        }
-        .background(alignment: .topTrailing) {
-            Color.clear
-                .pinned(right: avatar.right, top: avatar.top) {
-                    Text(p.emoji).font(.system(size: avatar.size)).contentTransition(.opacity).accessibilityHidden(true)
-                }
-                .edgeForm(.circle, Theme.C.rose, width: blob.size, height: blob.size, right: blob.right, top: blob.top)
-                .ignoresSafeArea()
-        }
-        .overlay(alignment: .topTrailing) {  // Avatar antippen → Avatar & Name
-            Button { sheet = .avatar } label: { Color.clear.frame(width: 110, height: 110).contentShape(Rectangle()) }
-                .padding(.trailing, avatar.right - 12).padding(.top, avatar.top - 52 - 10)
-                .accessibilityLabel("Avatar und Name ändern")
-                .disabled(loaded != true)
+            // Deko scrollt mit dem Inhalt: Kreis und Avatar bleiben beim Kopf und liegen nie über der kcal-Zahl.
+            .background(alignment: .topTrailing) {
+                Color.clear
+                    .pinned(right: avatar.right, top: avatar.top) {
+                        Text(p.emoji).font(.system(size: avatar.size)).contentTransition(.opacity).accessibilityHidden(true)
+                    }
+                    .edgeForm(.circle, Theme.C.rose, width: blob.size, height: blob.size, right: blob.right, top: blob.top)
+            }
+            .overlay(alignment: .topTrailing) {  // Avatar antippen → Avatar & Name
+                Button { sheet = .avatar } label: { Color.clear.frame(width: 96, height: 96).contentShape(Rectangle()) }
+                    .padding(.trailing, avatar.right - 12).padding(.top, max(avatar.top - 8, 0))
+                    .accessibilityLabel("Avatar und Name ändern")
+                    .disabled(loaded != true)
+            }
         }
         .scrollDismissesKeyboard(.immediately)
         .ctaBar(bottom: 34) {
@@ -130,10 +130,11 @@ struct ProfileView: View {
     }
 
     @ViewBuilder private var form: some View {
-        Segmented8(options: Self.goals.map { ($0.0, $0.1) }, selection: Binding(get: { p.goal }, set: { g in
+        // Chips statt Segment: vier Ziele passen nicht ungekürzt in eine Zeile (iPhone-Fehler 57).
+        ChipFlow(items: Self.goals.map { ($0.0, $0.1) }, selected: [p.goal]) { g in
             p.goal = g
             if let s = Self.suggestion[g] { p.kcal = s.0; p.proteinG = s.1 }
-        }))
+        }
         .padding(.top, 28)
         .sensoryFeedback(.selection, trigger: p.goal)
         VStack(spacing: 6) {

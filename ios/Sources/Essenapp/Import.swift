@@ -26,6 +26,20 @@ struct OfferNutritionDTO: Decodable {
     var perPack: NutritionDTO?
 }
 
+/// `convertFromSnakeCase` macht aus „per_100g“ per `capitalized` „per100G“ – ohne eigene Schlüssel bliebe `per100g` immer nil
+/// (iPhone: grauer Platzhalter statt Werten). Beide Schreibweisen annehmen; im Extension, damit der Memberwise-Init bleibt.
+extension OfferNutritionDTO {
+    private enum Keys: String, CodingKey { case status, food, perPack, per100g, per100G }
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: Keys.self)
+        status = try c.decode(String.self, forKey: .status)
+        food = try c.decodeIfPresent(String.self, forKey: .food) ?? ""
+        per100g = try c.decodeIfPresent(NutritionDTO.self, forKey: .per100G) ?? c.decodeIfPresent(NutritionDTO.self, forKey: .per100g)
+        perPack = try c.decodeIfPresent(NutritionDTO.self, forKey: .perPack)
+    }
+}
+
 extension AppStore {
     func pairingCode() async throws -> PairingCodeDTO {
         if demo { return PairingCodeDTO(code: "482913", expiresAt: Date.now.addingTimeInterval(9 * 60 + 12).formatted(.iso8601)) }
@@ -341,7 +355,7 @@ struct OfferNutritionCard: View {
                             small("Protein", "\(num(n.protein)) g")
                             small("KH", "\(num(n.carbs)) g")
                             small("Fett", "\(num(n.fat)) g")
-                        } else {
+                        } else if d.status == "pending" {
                             Skeleton8(height: 56)
                         }
                     }

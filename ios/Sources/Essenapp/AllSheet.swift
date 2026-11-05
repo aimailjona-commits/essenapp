@@ -102,6 +102,8 @@ struct AllSheet: View {
     @State private var query = ""
     @State private var path: [String] = []
     @State private var sheet: Sheet?
+    @State private var voiceOpen = false
+    @State private var voiceTarget = VoiceTarget.list
     let go: (Go) -> Void
 
     var body: some View {
@@ -150,6 +152,14 @@ struct AllSheet: View {
                 .onTapGesture { go(.close) }
                 .accessibilityLabel("Alles schließen")
                 .accessibilityAddTraits(.isButton)
+        }
+        .overlay {
+            if voiceOpen {
+                VoiceAddOverlay(target: $voiceTarget, switchable: true) { spoken in
+                    withAnimation(Theme.spring) { voiceOpen = false }
+                    Task { await store.addSpoken(spoken, target: voiceTarget) }
+                } close: { withAnimation(Theme.spring) { voiceOpen = false } }
+            }
         }
         .sheet(item: $sheet) { s in sheetView(s) }
     }
@@ -302,7 +312,10 @@ struct AllSheet: View {
         case "barcode": go(.barcode)
         case "review": go(.review)
         case "forYou": go(.tab(.angebote))
-        case "list", "voice": go(.tab(.einkauf))  // Sprach-Eingabe sitzt im Feld der Einkaufsliste
+        case "list": go(.tab(.einkauf))
+        case "voice":
+            voiceTarget = .list
+            withAnimation(Theme.spring) { voiceOpen = true }
         case "rests": go(.tab(.woche))  // Reste-Karte steht im Wochenplan
         case "newRecipe": sheet = .newRecipe
         case "import": sheet = .importing

@@ -2,6 +2,7 @@ import SwiftUI
 
 // Maße aus dem Mockup (Oberkante der Wisch-Fläche = 0, Seite 530 hoch)
 private enum WK {
+    static let page: CGFloat = 530
     static let cy: CGFloat = 170, row: CGFloat = 62, wheel: CGFloat = 150
     static let railX: CGFloat = 33, itemX: CGFloat = 27, dotX: CGFloat = 24, dot: CGFloat = 21, threadX: CGFloat = 44, thread: CGFloat = 120
     static let blob: CGFloat = 400, blobX: CGFloat = 150, blobY: CGFloat = -40
@@ -41,7 +42,8 @@ struct WeekWheel<More: View>: View {
         ZStack(alignment: .topLeading) {
             ScrollView {
                 VStack(spacing: 0) {
-                    ForEach(0..<7, id: \.self) { d in dayPage(d, p).containerRelativeFrame(.vertical).id(d) }
+                    // Seitenhöhe = gemessene Höhe der Scroll-Fläche (containerRelativeFrame zog auf dem iPhone Safe-Area ab → nächster Tag ragte ins Bild)
+                    ForEach(0..<7, id: \.self) { d in dayPage(d, p).frame(height: pageH).id(d) }
                     more.padding(.top, 28).padding(.bottom, 40)
                         .frame(maxWidth: .infinity, minHeight: pageH, alignment: .top).id(7)
                 }
@@ -49,7 +51,7 @@ struct WeekWheel<More: View>: View {
                 .onGeometryChange(for: CGFloat.self) { g in -g.frame(in: .scrollView).minY } action: { y in offset = y }
             }
             .scrollIndicators(.hidden)
-            .scrollTargetBehavior(WeekSnap())
+            .scrollTargetBehavior(WeekSnap(page: pageH))
             .scrollPosition(id: $page)
             .onGeometryChange(for: CGFloat.self) { g in g.size.height } action: { h in pageH = h }
 
@@ -93,18 +95,26 @@ struct WeekWheel<More: View>: View {
             Circle().fill(past ? Theme.C.ink : Theme.C.bg)
                 .overlay(Circle().strokeBorder(past ? Theme.C.ink : Theme.C.ink3, lineWidth: 2))
                 .frame(width: 13, height: 13).offset(y: -6)
-            Text(on ? Labels.dayNames[d] : Labels.days[d])
-                .font(on ? Theme.F.serif(20, relativeTo: .title3) : Theme.F.text(15, .bold))
-                .foregroundStyle(on ? Theme.C.ink : Theme.C.ink2)
-                .fixedSize()
-                .frame(height: 30, alignment: .bottomLeading)
-                .offset(x: 22, y: -34)
-            Text(on ? date(d) : PlanWeek.main(plan, d)?.recipe.title ?? "frei")
-                .font(Theme.F.text(12, .bold, relativeTo: .caption))
-                .foregroundStyle(on ? Theme.C.ink : Theme.C.ink3)
-                .lineLimit(1)
-                .frame(width: WK.wheel - WK.itemX - 22, alignment: .leading)
-                .offset(x: 22, y: 5)
+            // aktiver Tag: Name + Datum über der Linie, damit der Strich zum Teller nichts durchkreuzt
+            VStack(alignment: .leading, spacing: 0) {
+                Text(on ? Labels.dayNames[d] : Labels.days[d])
+                    .font(on ? Theme.F.serif(20, relativeTo: .title3) : Theme.F.text(15, .bold))
+                    .foregroundStyle(on ? Theme.C.ink : Theme.C.ink2)
+                if on {
+                    Text(date(d)).font(Theme.F.text(12, .bold, relativeTo: .caption)).foregroundStyle(Theme.C.ink)
+                }
+            }
+            .fixedSize()
+            .frame(height: 50, alignment: .bottomLeading)
+            .offset(x: 22, y: -54)
+            if !on {
+                Text(PlanWeek.main(plan, d)?.recipe.title ?? "frei")
+                    .font(Theme.F.text(12, .bold, relativeTo: .caption))
+                    .foregroundStyle(Theme.C.ink3)
+                    .lineLimit(1)
+                    .frame(width: WK.wheel - WK.itemX - 22, alignment: .leading)
+                    .offset(x: 22, y: 5)
+            }
         }
     }
 
@@ -116,28 +126,33 @@ struct WeekWheel<More: View>: View {
         let meals = PlanWeek.sorted(plan, d)
         let main = PlanWeek.main(plan, d)
         let second = main.flatMap { m in meals.first { $0.mealType != m.mealType } }
+        // Seite kürzer als im Mockup (530): Teller und unterer Rand geben den Platz ab, Text bleibt im Fluss
+        let short = max(0, WK.page - pageH)
+        let plate = max(96, WK.plate - short)
         return ZStack(alignment: .topLeading) {
             Color.clear.edgeForm(.circle, Self.dayColors[d], width: WK.blob, height: WK.blob, left: WK.blobX, top: WK.blobY)
 
-            Button { openDay(d) } label: {
-                Group {
-                    if let main {
-                        PlanPlate(url: mediaURL(main.recipe.imageUrl), size: WK.plate)
-                    } else {
-                        Circle().fill(Theme.C.card).overlay { Ill("pot").padding(36) }.frame(width: WK.plate, height: WK.plate)
+            VStack(alignment: .leading, spacing: 0) {
+                Button { openDay(d) } label: {
+                    Group {
+                        if let main {
+                            PlanPlate(url: mediaURL(main.recipe.imageUrl), size: plate)
+                        } else {
+                            Circle().fill(Theme.C.card).overlay { Ill("pot").padding(plate / 5) }.frame(width: plate, height: plate)
+                        }
                     }
+                    .rotationEffect(.degrees(reduceMotion ? 0 : (Double(d) - Double(p)) * WK.turn))
                 }
-                .rotationEffect(.degrees(reduceMotion ? 0 : (Double(d) - Double(p)) * WK.turn))
+                .buttonStyle(PressableStyle())
+                .padding(.leading, WK.plateX - WK.textX + (WK.plate - plate) / 2).padding(.top, WK.plateY)
+                .accessibilityLabel("\(Labels.dayNames[d]), \(date(d)), Tag im Detail")
+
+                info(main).padding(.top, WK.textTop - WK.plateY - WK.plate)
+                Spacer(minLength: 8)
+                secondRow(d, main: main, second: second)
             }
-            .buttonStyle(PressableStyle())
-            .padding(.leading, WK.plateX).padding(.top, WK.plateY)
-            .accessibilityLabel("\(Labels.dayNames[d]), \(date(d)), Tag im Detail")
-
-            info(main).padding(.leading, WK.textX).padding(.trailing, WK.right).padding(.top, WK.textTop)
-
-            secondRow(d, main: main, second: second)
-                .padding(.leading, WK.textX).padding(.trailing, WK.right).padding(.bottom, WK.abBottom)
-                .frame(maxHeight: .infinity, alignment: .bottom)
+            .padding(.leading, WK.textX).padding(.trailing, WK.right)
+            .padding(.bottom, max(8, WK.abBottom - short))
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .clipped()
@@ -212,8 +227,10 @@ struct WeekWheel<More: View>: View {
 
 /// Rastet pro Wisch genau einen Tag weiter (`scroll-snap-stop: always`); ab Sonntag läuft der Rest frei.
 struct WeekSnap: ScrollTargetBehavior {
+    let page: CGFloat
+
     func updateTarget(_ target: inout ScrollTarget, context: TargetContext) {
-        let h = context.containerSize.height
+        let h = page
         guard h > 0 else { return }
         let last = 6 * h, from = context.originalTarget.rect.minY, y = target.rect.minY
         if y > last && from >= last - 1 { return }

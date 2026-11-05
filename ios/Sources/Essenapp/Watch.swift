@@ -187,6 +187,7 @@ struct WatchListView: View {
     @State private var editing: WatchDTO? = Demo.screen == "watchedit" ? Demo.watches[2] : nil
     @State private var searching = Demo.screen == "watchsearch"
     @State private var newAlarm = false
+    @State private var voiceOpen = false
 
     private enum L {
         static let top: CGFloat = 14  // .scr 66 − 52
@@ -254,6 +255,10 @@ struct WatchListView: View {
                 OutlineButton(title: "Suchen", icon: .search) { searching = true }
                     .fixedSize(horizontal: true, vertical: false)
                     .background(Theme.C.bg, in: Capsule())
+                CircleButton(icon: .mic, size: Theme.S.button2, label: "Begriffe per Sprache merken") {
+                    withAnimation(Theme.spring) { voiceOpen = true }
+                }
+                .background(Theme.C.bg, in: Circle())
                 Button { store.barcode = true } label: {
                     HStack(spacing: 8) { Icon(.barcode, size: 20); Text("Barcode scannen") }
                         .font(Theme.F.button).foregroundStyle(Theme.C.onInk)
@@ -265,6 +270,14 @@ struct WatchListView: View {
             .padding(.horizontal, Theme.pagePadding)
             .padding(.bottom, L.buttons)
             .ignoresSafeArea(edges: .bottom)
+        }
+        .overlay {
+            if voiceOpen {
+                VoiceAddOverlay(target: .constant(.watch)) { spoken in
+                    withAnimation(Theme.spring) { voiceOpen = false }
+                    Task { await store.addSpoken(spoken, target: .watch) }
+                } close: { withAnimation(Theme.spring) { voiceOpen = false } }
+            }
         }
         .animation(Theme.spring, value: store.watches)
         .task { await load() }

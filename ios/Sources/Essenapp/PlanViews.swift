@@ -85,13 +85,16 @@ struct PlanBusyButton: View {
     var disabled = false
     var small = false  // 38 hoch, 14/800 (S27 „Das koche ich heute“)
     var blue = false
+    var busyTitle: String?  // Text neben der Lade-Animation, sonst nur Animation
     let action: () -> Void
 
     var body: some View {
         let light = busy || blue
         Button(action: action) {
             ZStack {
-                if busy {
+                if busy, let busyTitle {
+                    HStack(spacing: 4) { Hop3().scaleEffect(0.6).frame(width: 70); Text(busyTitle).lineLimit(1) }.transition(.opacity)
+                } else if busy {
                     Hop3().scaleEffect(small ? 0.8 : 1).transition(.opacity)
                 } else {
                     HStack(spacing: 8) {
@@ -592,6 +595,7 @@ struct RecipeDetailView: View {
     @State private var rolling = false
     @State private var compact = false  // Titel aus dem Bild → Kopf wie Teil 2/3 (Name in der Mitte, Grund `bg`)
     @State private var deep = false  // Zutaten durchgescrollt → untere Leiste aus Teil 2/3 (Kochen + Bewerten)
+    @State private var titleHeight: CGFloat = 0  // gemessen: langer Titel schiebt den Teller nach unten
     @Environment(\.openURL) private var openURL
 
     init(meal: MealDTO) { given = meal }
@@ -742,7 +746,7 @@ private enum S3Layout {
     static let titleTop: CGFloat = 54  // .t1 margin-top 16 unter der 24er-Kopfzeile: 66 + 24 + 16 − 52
     static let titleSize: CGFloat = 38
     static let blobLeft: CGFloat = -60, blobTop: CGFloat = -80 - 52, blobSize: CGFloat = 430
-    static let plateRight: CGFloat = -50, plateTop: CGFloat = 200 - 52, plateSize: CGFloat = 230
+    static let plateRight: CGFloat = -50, plateTop: CGFloat = 200 - 52, plateSize: CGFloat = 230, plateGap: CGFloat = 8
     static let importedPlateRight: CGFloat = -40, importedPlateTop: CGFloat = 246 - 52, importedPlateSize: CGFloat = 166
     static let statsTop: CGFloat = 30, statsWidth: CGFloat = 140, statSize: CGFloat = 34, statGap: CGFloat = 10
     // Quelle-Zeile: Chip 32 hoch, Pille mit 44er-Tap-Fläche → je 6 oben/unten mehr, darum Abstände um 6 kleiner
@@ -771,12 +775,16 @@ extension RecipeDetailView {
     fileprivate func page(factor: Double, who: ProfileDTO?, mine: Double?, base: Double) -> some View {
         let cents = Int(Double(meal.costCents) * (who == nil ? 1 : mine ?? 1) / base)
         let kcal = nutrition.map { n in Int((n.kcal * (mine ?? 1)).rounded()) }
+        let plateTop = imported ? S3Layout.importedPlateTop : S3Layout.plateTop
+        // Titel reicht bis unter den Teller → Teller (und Zutaten) um so viel tiefer, nie Text unter dem Bild
+        let shift = max(0, S3Layout.titleTop + titleHeight + S3Layout.plateGap - plateTop)
         return VStack(alignment: .leading, spacing: 0) {
             // Teil 1: Titel, Zahlen, Zutaten (Gruppen nur gegen die ViewBuilder-Grenze)
             Group {
                 Text(recipe.title)
                     .font(Theme.F.serif(S3Layout.titleSize, relativeTo: .largeTitle))
                     .lineLimit(3).minimumScaleFactor(0.7)
+                    .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { titleHeight = $0 }
                     .padding(.top, S3Layout.titleTop)
                     .accessibilityAddTraits(.isHeader)
                     .onGeometryChange(for: Bool.self) { p in p.frame(in: .scrollView).maxY < S3Layout.compactAt } action: { v in
@@ -794,7 +802,7 @@ extension RecipeDetailView {
                     Text("für \(num(servings.map { Double($0) } ?? base, 0...2)) · \(recipe.ingredients.count) Stück")
                         .font(S3Layout.small13).foregroundStyle(Theme.C.ink2).contentTransition(.numericText())
                 }
-                .padding(.top, imported ? S3Layout.importedIngredientsTop : S3Layout.ingredientsTop)
+                .padding(.top, (imported ? S3Layout.importedIngredientsTop : S3Layout.ingredientsTop) + shift)
                 .padding(.bottom, 6)
                 ingredients(factor: factor, who: who, mine: mine, base: base)
                 Color.clear.frame(height: 0)
@@ -822,8 +830,7 @@ extension RecipeDetailView {
         .padding(.horizontal, Theme.pagePadding)
         .padding(.bottom, S3Layout.fade)  // Platz für feste Leiste + Verlauf, letzte Zeile bleibt lesbar
         .frame(maxWidth: .infinity, alignment: .leading)
-        .pinned(right: imported ? S3Layout.importedPlateRight : S3Layout.plateRight,
-                top: imported ? S3Layout.importedPlateTop : S3Layout.plateTop) {
+        .pinned(right: imported ? S3Layout.importedPlateRight : S3Layout.plateRight, top: plateTop + shift) {
             let size = imported ? S3Layout.importedPlateSize : S3Layout.plateSize
             PlatePhoto(url: mediaURL(recipe.imageUrl), size: size)
         }
@@ -964,12 +971,12 @@ extension RecipeDetailView {
                 let amount = qty(ing.amount * factor, ing.unit)
                 // Feature 1: Zutat antippen → Angebot (oder passende Angebote)
                 Button { if let offer { openOffer = offer } else { searchIngredient = ing } } label: {
-                    // wie `IRow`, aber Name einzeilig (verkleinert statt mitten im Wort umzubrechen)
+                    // wie `IRow`; lange Namen zweizeilig statt kleiner, damit alle Zeilen gleich groß bleiben
                     HStack(spacing: 14) {
                         ingredientArt(ing.name).frame(width: Theme.S.rowCircle, height: Theme.S.rowCircle)
                             .background(ingredientTint(ing.name, offer: offer, index: index), in: Circle())
                         VStack(alignment: .leading, spacing: 1) {
-                            Text(ing.name).font(Theme.F.rowName).lineLimit(1).minimumScaleFactor(0.6)
+                            Text(ing.name).font(Theme.F.rowName).lineLimit(2)
                             if imported {
                                 Text(amount).font(S3Layout.small13).foregroundStyle(Theme.C.ink2).lineLimit(1)
                                     .contentTransition(.numericText())
@@ -1139,6 +1146,7 @@ extension RecipeDetailView {
             // Verlauf immer (auch Teil 1), damit Zeilen nicht unter der Leiste durchscheinen; voll `bg` ab 45 %
             LinearGradient(stops: [.init(color: Theme.C.bg.opacity(0), location: 0), .init(color: Theme.C.bg, location: 0.45)],
                            startPoint: .top, endPoint: .bottom)
+                .ignoresSafeArea(edges: .bottom)  // vor `frame`: wächst bis an den Bildschirmrand (Home-Balken)
                 .frame(height: S3Layout.fade)
                 .allowsHitTesting(false)
             Group {
@@ -1171,7 +1179,6 @@ extension RecipeDetailView {
             .padding(.horizontal, Theme.pagePadding)
             .padding(.bottom, S3Layout.fixBottom)
         }
-        .ignoresSafeArea(edges: .bottom)
     }
 }
 

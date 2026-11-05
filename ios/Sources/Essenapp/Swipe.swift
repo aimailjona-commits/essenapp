@@ -743,6 +743,9 @@ struct SwipeSelection: View {
                         }
                         .padding(.vertical, 6)
                     }
+                    .scrollClipDisabled()  // Teller-Schatten nicht abschneiden
+                    .contentMargins(.horizontal, Theme.pagePadding, for: .scrollContent)
+                    .padding(.horizontal, -Theme.pagePadding)  // Reihe läuft bis zum Bildschirmrand
                 }
                 if !reserve.isEmpty {
                     (Text("RESERVE · \(reserve.count)  ").font(Theme.F.lbl).foregroundStyle(Theme.C.ink2)
@@ -752,6 +755,7 @@ struct SwipeSelection: View {
             }
             .padding(.horizontal, Theme.pagePadding)
         }
+        .clipped()  // nicht unter die Statusleiste scrollen
         .ctaBar(bottom: 8) {
             VStack(spacing: 10) {
                 PrimaryButton(title: "Verteilen", icon: .swap, action: distribute)
@@ -812,6 +816,7 @@ struct SwipeWeek: View {
             }
             .padding(.horizontal, Theme.pagePadding)
         }
+        .clipped()  // nicht unter die Statusleiste scrollen
         .ctaBar(bottom: 8) {
             VStack(spacing: 10) {
                 if !spare.isEmpty { spareBar }
@@ -822,11 +827,15 @@ struct SwipeWeek: View {
                 HStack {
                     Text(summary).font(Theme.F.text(13, .semibold, relativeTo: .footnote)).foregroundStyle(Theme.C.ink2).lineLimit(2)
                     Spacer()
-                    BigNumber(euro(total), size: 30)
+                    VStack(alignment: .trailing, spacing: 2) {
+                        BigNumber(euro(total), size: 30)
+                        SectionLabel("GESCHÄTZT")
+                    }
                 }
                 PlanBusyButton(title: store.error == nil ? "Plan übernehmen" : "Erneut versuchen", busy: store.generating,
-                               disabled: assign.count < slots.count, action: finish)
+                               disabled: assign.count < slots.count, busyTitle: "Plan wird erstellt …", action: finish)
             }
+            .background(Theme.C.bg.padding(.horizontal, -Theme.pagePadding))  // Liste scheint nicht durch die Leiste
         }
         .task { await distribute() }
     }
@@ -900,6 +909,7 @@ struct SwipeWeek: View {
                         HStack(spacing: 8) {
                             PlanPlate(url: mediaURL(c.imageUrl), size: 34, mini: true)
                             Text(c.title).font(Theme.F.text(12, .bold, relativeTo: .caption)).lineLimit(1)
+                                .frame(maxWidth: 190, alignment: .leading)  // lange Namen enden mit „…“
                         }
                         .padding(.leading, 4).padding(.trailing, 12).frame(height: 44)
                         .background(Theme.C.card, in: Capsule())
@@ -908,7 +918,11 @@ struct SwipeWeek: View {
                         .accessibilityLabel("\(c.title), \(Labels.meal(c.mealType))")
                     }
                 }
+                .padding(.vertical, 4)
             }
+            .scrollClipDisabled()
+            .contentMargins(.horizontal, Theme.pagePadding, for: .scrollContent)
+            .padding(.horizontal, -Theme.pagePadding)  // Leiste über volle Breite
         }
     }
 

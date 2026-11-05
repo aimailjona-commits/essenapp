@@ -228,6 +228,7 @@ struct PantryView: View {
     @State private var loaded = false
     @State private var error: String?
     @State private var adding = false
+    @State private var voiceOpen = false
 
     // Mockup-Lage (S16): Salbei-Kreis oben rechts mit Kühlschrank
     private enum M {
@@ -251,6 +252,9 @@ struct PantryView: View {
                 HStack(spacing: 14) {
                     Text("Vorrat").font(Theme.F.t1).accessibilityAddTraits(.isHeader)
                     CircleButton(icon: .plus, size: 44, filled: true, label: "Zum Vorrat hinzufügen") { adding = true }
+                    CircleButton(icon: .mic, size: 44, label: "Per Sprache zum Vorrat hinzufügen") {
+                        withAnimation(Theme.spring) { voiceOpen = true }
+                    }
                 }
                 if !store.pantry.isEmpty {
                     search.padding(.top, 16)
@@ -318,6 +322,14 @@ struct PantryView: View {
         .refreshable { await load() }
         .task { await load() }
         .sheet(isPresented: $adding) { PantryAddSheet() }
+        .overlay {
+            if voiceOpen {
+                VoiceAddOverlay(target: .constant(.pantry)) { spoken in
+                    withAnimation(Theme.spring) { voiceOpen = false }
+                    Task { await store.addSpoken(spoken, target: .pantry) }
+                } close: { withAnimation(Theme.spring) { voiceOpen = false } }
+            }
+        }
     }
 
     /// Suche (`.field` 44 hoch).

@@ -1097,7 +1097,7 @@ struct OfferDetailView: View {
         static let photoGap: CGFloat = 12  // Titel endet 12 vor dem Foto
         static let titleSize: CGFloat = 34  // .t1
         static let infoRow: CGFloat = 50
-        static let bottom: CGFloat = 120  // Platz für den festen Knopf
+        static let bottom: CGFloat = 32  // Knopf hat per ctaBar eigenen Platz
     }
 
     var body: some View {
@@ -1138,7 +1138,7 @@ struct OfferDetailView: View {
             .overlay(alignment: .top) { if compact { compactBar(watched).transition(.opacity) } }
         }
         .background(Theme.C.bg.ignoresSafeArea())
-        .overlay(alignment: .bottom) {
+        .ctaBar(bottom: 0) {  // eigener Platz + Verlauf: Knopf liegt nie über „Ähnliche Angebote“
             Group {
                 if onList {
                     OutlineButton(title: "Auf der Liste", icon: .check) {}
@@ -1150,7 +1150,6 @@ struct OfferDetailView: View {
                     }
                 }
             }
-            .padding(.horizontal, Theme.pagePadding)
             .sensoryFeedback(.success, trigger: onList)
         }
         .hidesTabBar()
@@ -1365,8 +1364,9 @@ struct OfferDetailView: View {
                             NavigationLink { OfferDetailView(offer: o) } label: { MiniOffer(offer: o) }.buttonStyle(PressableStyle())
                         }
                     }
-                    .padding(.horizontal, Theme.pagePadding)
+                    .padding(.horizontal, Theme.pagePadding).padding(.vertical, 8)  // Platz, damit Kreise/Fotos nicht abgeschnitten werden
                 }
+                .scrollClipDisabled()
                 .padding(.horizontal, -Theme.pagePadding)
                 .padding(.top, 14)
             }
@@ -1563,7 +1563,7 @@ private struct OfferNutrition8: View {
                         macro("Protein", n.protein)
                         macro("KH", n.carbs)
                         macro("Fett", n.fat)
-                    } else {
+                    } else if d.status == "pending" {
                         Skeleton8(height: 54)
                     }
                 }
