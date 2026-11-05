@@ -16,18 +16,18 @@ Ablauf: erst Grundlage (21.1, ein Paket), dann die Screen-Gruppen A–F parallel
 
 ## 21.2 Dunkelmodus (Nutzerwunsch 2026-11-04: mitentwerfen)
 
-- [ ] Dunkel-Mockup v8 (Kern-Screens + Bausteine) in `docs/ui/mockups/redesign-v8-dunkel.html`
+- [x] Dunkel-Mockup v8 (Kern-Screens + Bausteine) in `docs/ui/mockups/redesign-v8-dunkel.html`
 - [ ] 👤 Freigabe
 - [ ] Dunkel-Werte in `Theme.swift` + redesign-v8.md, App folgt wieder dem System
 
 ## 21.3 Screen-Gruppen (parallel, Dateien siehe redesign-v8.md Abschnitt 4)
 
-- [ ] A Start & Planen
-- [ ] B Rezepte & Kochen
-- [ ] C Angebote
-- [ ] D Einkauf, Vorrat, Coupons, Kühlschrank, Live-Aktivität
-- [ ] E Onboarding, Einstellungen, Teilen-Erweiterung, Widget
-- [ ] F Ausgaben, Erfolge, Rückblick
+- [x] A Start & Planen
+- [x] B Rezepte & Kochen
+- [x] C Angebote
+- [x] D Einkauf, Vorrat, Coupons, Kühlschrank, Live-Aktivität
+- [x] E Onboarding, Einstellungen, Teilen-Erweiterung, Widget
+- [x] F Ausgaben, Erfolge, Rückblick
 - [ ] Ohne v8-Mockup nur auf Tokens/Bausteine umgestellt: Paywall, Swipe (→ 👤 Mockup nachreichen?)
 
 ## 21.4 Animationen
@@ -36,7 +36,7 @@ Ablauf: erst Grundlage (21.1, ein Paket), dann die Screen-Gruppen A–F parallel
 
 ## 21.5 Prüfen
 
-- [ ] CI-Screenshots aller Demo-Fälle ↔ Mockup, Abweichungen nachgebaut
+- [x] CI-Screenshots aller Demo-Fälle ↔ Mockup, Abweichungen nachgebaut (3 Läufe, 82 Screens; Rest unten)
 - [ ] 👤 Abnahme auf dem iPhone
 
 ## 21.6 Web-PWA
@@ -46,7 +46,7 @@ Ablauf: erst Grundlage (21.1, ein Paket), dann die Screen-Gruppen A–F parallel
 
 ## 21.7 Abschluss (DoD)
 
-- [ ] Kein Screen nutzt noch v3-Bausteine; `V3Components.swift`, Grain, Fraunces/JetBrains entfernt
+- [x] Kein Screen nutzt noch v3-Bausteine; `V3Components.swift`, Grain, Fraunces/JetBrains entfernt (FlowLayout, hidesTabBar → V8Components)
 - [ ] `design-system.md`/`screens.md` verweisen auf redesign-v8.md
 - [ ] Phase 18 als „abgelöst“ markiert
 
@@ -55,3 +55,8 @@ Ablauf: erst Grundlage (21.1, ein Paket), dann die Screen-Gruppen A–F parallel
 (beim Bau gefundene Lücken hier eintragen)
 
 - PWA: keine eigenen Web-Mockups – zusammengesetzt aus S1/S2, S5b, S6.1, S37, Leer-Zustand; Einkaufsliste beginnt unter dem blauen Blatt (größere Lücke)
+- iOS: ohne Mockup selbst gebaut – Laden/Leer/Fehler-Zustände, Formular Seite 3+4, Rückblick Seiten 4+5, Paywall, Swipe (nur Tokens/Bausteine)
+- iOS: offen 👤 „Plan erstellen“ ohne Plan → Swipe (heute) oder Generator (Mockup-Text)?
+- iOS: Kleinigkeiten – Filter-Badge offersempty 4 statt 3, Drogerie-Monatsaktionen 1 statt 3, Live-Aktivität „5/12“ abgeschnitten, Zutaten ohne Zeichnung zeigen Blatt-Icon
+- iOS: Erweiterungen (Teilen, Widget) ohne eigene Schriften → Systemschrift
+- Vorfall 2026-11-05: Prüfbau-Befehle der Agenten liefen als `rsync --delete … /`; gestoppt, kein Schaden an Repo/Nutzerdaten; `build.sh` verweigert jetzt Ziele außerhalb `~/build/`

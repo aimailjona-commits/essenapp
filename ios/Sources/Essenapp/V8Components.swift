@@ -860,3 +860,61 @@ struct NotchTabBar: View {
         .accessibilityAddTraits(active ? .isSelected : [])
     }
 }
+
+// Aus v3 übernommen (noch genutzt)
+
+/// Zeilenumbruch für beliebige Views (Chips, Wörter + Sticker im Tages-Satz), Zeilen vertikal zentriert.
+struct FlowLayout: Layout {
+    var spacing: CGFloat = 8
+    var lineSpacing: CGFloat?  // Standard: wie `spacing`
+
+    private func rows(_ width: CGFloat, _ subviews: Subviews) -> [(range: Range<Int>, height: CGFloat, width: CGFloat)] {
+        var rows: [(Range<Int>, CGFloat, CGFloat)] = []
+        var start = 0, x: CGFloat = 0, h: CGFloat = 0
+        for (i, v) in subviews.enumerated() {
+            let s = v.sizeThatFits(.unspecified)
+            if x > 0 && x + spacing + s.width > width {
+                rows.append((start..<i, h, x)); start = i; x = 0; h = 0
+            }
+            x += (x > 0 ? spacing : 0) + s.width
+            h = max(h, s.height)
+        }
+        if start < subviews.count { rows.append((start..<subviews.count, h, x)) }
+        return rows
+    }
+
+    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
+        let width = proposal.width ?? .infinity
+        let r = rows(width, subviews)
+        let height = r.map(\.height).reduce(0, +) + (lineSpacing ?? spacing) * CGFloat(max(r.count - 1, 0))
+        return CGSize(width: proposal.width ?? (r.map(\.width).max() ?? 0), height: height)
+    }
+
+    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
+        var y = bounds.minY
+        for row in rows(bounds.width, subviews) {
+            var x = bounds.minX
+            for i in row.range {
+                let s = subviews[i].sizeThatFits(.unspecified)
+                subviews[i].place(at: CGPoint(x: x, y: y + (row.height - s.height) / 2), proposal: ProposedViewSize(s))
+                x += s.width + spacing
+            }
+            y += row.height + (lineSpacing ?? spacing)
+        }
+    }
+}
+
+/// Blendet die Tab-Leiste aus, solange die View sichtbar ist (Zähler, weil Seiten gestapelt sein können).
+struct HidesTabBar: ViewModifier {
+    @Environment(AppStore.self) private var store
+
+    func body(content: Content) -> some View {
+        content
+            .onAppear { withAnimation(Theme.spring) { store.tabBarHiders += 1 } }
+            .onDisappear { withAnimation(Theme.spring) { store.tabBarHiders = max(0, store.tabBarHiders - 1) } }
+    }
+}
+
+extension View {
+    func hidesTabBar() -> some View { modifier(HidesTabBar()) }
+}
