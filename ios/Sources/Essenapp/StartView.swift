@@ -89,24 +89,17 @@ struct StartView: View {
             }
             .padding(.leading, Theme.pagePadding).padding(.top, K.top)
 
-            todayBlock(meal)
-                .frame(width: K.mealWidth, alignment: .leading)
-                .padding(.leading, Theme.pagePadding).padding(.top, K.mealTop)
-                .opacity(shown ? 1 : 0).offset(y: shown ? 0 : 14)
-                .animation(reduceMotion ? nil : .easeOut(duration: 0.45).delay(0.2), value: shown)
-
-            if let plan = store.plan {
-                VStack(spacing: 12) {
-                    StatF(label: "Diese Woche", value: euro(plan.totalCents), size: 52, roll: 0.15)
-                    if plan.savedCents > 0 {
-                        NavigationLink { SavingsView() } label: {  // S11 Ersparnis
-                            StatF(label: "Gespart", value: euro(plan.savedCents), size: 40, valueColor: Theme.C.deal, mute: true, roll: 0.3)
-                        }
-                        .buttonStyle(PressableStyle())
-                    }
-                }
-                .padding(.horizontal, Theme.pagePadding).padding(.top, K.statsTop)
+            // Gericht ab y 380, Zahlen ab y 578 – bei langem Namen schieben sie nach unten statt zu überlappen
+            VStack(alignment: .leading, spacing: 0) {
+                todayBlock(meal)
+                    .frame(width: K.mealWidth, alignment: .leading)
+                    .padding(.leading, Theme.pagePadding).padding(.bottom, 16)
+                    .opacity(shown ? 1 : 0).offset(y: shown ? 0 : 14)
+                    .animation(reduceMotion ? nil : .easeOut(duration: 0.45).delay(0.2), value: shown)
+                    .frame(minHeight: K.statsTop - K.mealTop, alignment: .top)
+                if let plan = store.plan { stats(plan) }
             }
+            .padding(.top, K.mealTop)
         }
         .frame(maxWidth: .infinity, minHeight: K.hero, alignment: .topLeading)
         .overlay(alignment: .topTrailing) { avatarRow.padding(.top, K.top).padding(.trailing, Theme.pagePadding) }
@@ -122,14 +115,33 @@ struct StartView: View {
         }
     }
 
+    /// Schriftgröße des Gerichtsnamens: 28 wie im Mockup, bei langen Wörtern kleiner, damit kein Wort mitten umbricht.
+    private func titleSize(_ title: String) -> CGFloat {
+        let longest = title.split(whereSeparator: { $0 == " " || $0 == "-" }).map(\.count).max() ?? 0
+        return min(28, max(18, K.mealWidth / (CGFloat(longest + 1) * 0.55)))
+    }
+
+    private func stats(_ plan: PlanDTO) -> some View {
+        VStack(spacing: 12) {
+            StatF(label: "Diese Woche", value: euro(plan.totalCents), size: 52, roll: 0.15)
+            if plan.savedCents > 0 {
+                NavigationLink { SavingsView() } label: {  // S11 Ersparnis
+                    StatF(label: "Gespart", value: euro(plan.savedCents), size: 40, valueColor: Theme.C.deal, mute: true, roll: 0.3)
+                }
+                .buttonStyle(PressableStyle())
+            }
+        }
+        .padding(.horizontal, Theme.pagePadding)
+    }
+
     @ViewBuilder private func todayBlock(_ meal: MealDTO?) -> some View {
         VStack(alignment: .leading, spacing: 0) {
             if let meal {
                 Text("Heute \(Labels.meal(meal.mealType))".uppercased())
                     .font(Theme.F.lbl).tracking(11 * 0.08).foregroundStyle(Theme.C.blue3)
                 NavigationLink { RecipeDetailView(meal: meal) } label: {
-                    Text(meal.recipe.title).font(Theme.F.serif(28, relativeTo: .title)).foregroundStyle(Theme.C.ink)
-                        .multilineTextAlignment(.leading).fixedSize(horizontal: false, vertical: true)
+                    Text(meal.recipe.title).font(Theme.F.serif(titleSize(meal.recipe.title), relativeTo: .title)).foregroundStyle(Theme.C.ink)
+                        .multilineTextAlignment(.leading).lineLimit(3).minimumScaleFactor(0.7)
                 }
                 .buttonStyle(.plain)
                 .padding(.top, 4)
@@ -180,7 +192,7 @@ struct StartView: View {
                 }
             }
             .padding(.top, 36)
-            FavoriteDealsCard().padding(.top, 28)  // Lieblingsrezepte günstig (Recipes.swift)
+            FavoriteDealsCard().padding(.top, 12)  // Lieblingsrezepte günstig (Recipes.swift)
             FieldBox(icon: .search) {
                 TextField("Gericht oder Angebot suchen", text: $search)
                 if !search.isEmpty {
@@ -188,12 +200,12 @@ struct StartView: View {
                         .buttonStyle(.plain).accessibilityLabel("Suche leeren")
                 }
             }
-            .padding(.top, 36)
+            .padding(.top, 24)
             if !search.isEmpty { searchResults.padding(.top, 14) }
             // Kochbuch unter den Zeilen (Mockup: Bild links 10, sandfarbener Kreis 80 weiter links, 60 tiefer) – im Fluss, damit nichts überdeckt
             Ill("cookbook").frame(width: 200)
                 .edgeForm(.circle, Theme.C.sand, width: 330, height: 330, left: -80, top: 60)
-                .padding(.leading, 10 - Theme.pagePadding).padding(.top, 24)
+                .padding(.leading, 10 - Theme.pagePadding).padding(.top, 8)
         }
         .padding(.horizontal, Theme.pagePadding)
         .padding(.top, 64)

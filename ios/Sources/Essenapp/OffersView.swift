@@ -436,20 +436,36 @@ private struct OffersForms: ViewModifier {
             content
                 .pinned(left: 262, top: 46) { Ill("bag").frame(width: 110) }
                 .edgeForm(.quarter, Theme.C.rose, width: 190, height: 190, right: 0, top: 0)
+                .modifier(Overscroll(color: Theme.C.rose, width: 190))
         } else if nextWeek {
             content
                 .pinned(left: 222, top: 58) { look(Ill("binoculars").frame(width: 160)) }
                 .edgeForm(.leaf(130), Theme.C.blue1, width: 200, height: 240, right: 0, top: 0)
+                .modifier(Overscroll(color: Theme.C.blue1, width: 200))
         } else {
             content
                 .pinned(left: 200, top: 56) { look(Ill("binoculars").frame(width: 200)) }
                 .edgeForm(.leaf(150), Theme.C.blue1, width: 240, height: 290, right: 0, top: 0)
+                .modifier(Overscroll(color: Theme.C.blue1, width: 240))
         }
     }
 
     private func look(_ v: some View) -> some View {
         v.opacity(looking ? 0 : 1).offset(y: looking ? -24 : 0)
             .animation(.spring(response: 0.5, dampingFraction: 0.6), value: looking)
+    }
+}
+
+/// Verlängert die Rand-Form nach oben, damit beim Herunterziehen keine Lücke über der Form entsteht.
+private struct Overscroll: ViewModifier {
+    let color: Color
+    let width: CGFloat
+    private static let reach: CGFloat = 600
+
+    func body(content: Content) -> some View {
+        content.background(alignment: .topTrailing) {
+            color.frame(width: width, height: Self.reach).offset(y: -Self.reach)
+        }
     }
 }
 
@@ -463,14 +479,15 @@ private struct PullPeek: View {
 
     var body: some View {
         let p = refreshing ? 1 : min(1, pull / threshold)
-        ZStack(alignment: .topLeading) {
-            Circle().fill(Theme.C.blue)
-            Ill("binoculars").frame(width: 170)
-                .rotationEffect(.degrees(sway && !reduceMotion ? 7 : -7 * (refreshing && !reduceMotion ? 1 : 0)), anchor: UnitPoint(x: 0.5, y: 0.92))
-                .offset(x: -50, y: 3 + (refreshing ? 0 : 60))
-        }
-        .frame(width: 72, height: 72)
-        .clipShape(Circle())
+        Color.clear
+            .frame(width: 72, height: 72)
+            .overlay(alignment: .topLeading) {
+                Ill("binoculars").frame(width: 170)
+                    .rotationEffect(.degrees(sway && !reduceMotion ? 7 : -7 * (refreshing && !reduceMotion ? 1 : 0)), anchor: UnitPoint(x: 0.5, y: 0.92))
+                    .offset(x: -50, y: 3 + (refreshing ? 0 : 60))
+            }
+            .background(Circle().fill(Theme.C.blue))
+            .clipShape(Circle())
         .scaleEffect(0.6 + 0.4 * p)
         .offset(y: refreshing ? -8 : -140 * (1 - p))
         .padding(.top, 56)
@@ -581,11 +598,24 @@ struct OfferArt: View {
     let title: String
     let url: String
 
+    /// Prospektfoto (eckig, mit Preis-Aufdruck): ganz sichtbar auf weißem Plättchen statt der Zeichnung.
+    static let photoRadius: CGFloat = 18
+    static let photoInset: CGFloat = 8
+
+    static func hasPhoto(_ title: String, url: String) -> Bool { ill(title) == nil && !url.isEmpty }
+
     var body: some View {
         if let ill = Self.ill(title) {
             Ill(ill)
+        } else if url.isEmpty {
+            Ill("bag")
         } else {
             RemoteImage(url: URL(string: url)) { Ill("bag") }
+                .padding(Self.photoInset)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .background(Theme.C.plate, in: RoundedRectangle(cornerRadius: Self.photoRadius, style: .continuous))
+                .clipShape(RoundedRectangle(cornerRadius: Self.photoRadius, style: .continuous))
+                .softShadow()
         }
     }
 
@@ -624,6 +654,8 @@ struct OfferRow8: View {
         static let artLeft: CGFloat = 12
         static let artTop: CGFloat = -4
         static let artWidth: CGFloat = 118
+        static let photo: CGFloat = 100  // Foto-Plättchen passt in die Lasche (112 hoch)
+        static let photoLeft: CGFloat = 30  // rechts vom „+“, das Foto bleibt ganz sichtbar
         static let plus = CGPoint(x: 194, y: 46)
         static let textWidth: CGFloat = 186
     }
@@ -651,11 +683,13 @@ struct OfferRow8: View {
             EdgeForm(.tab(Theme.R.offer)).fill(OfferArt.tint(offer.title, category: offer.category))
                 .frame(width: Theme.S.offerTab.width, height: Theme.S.offerTab.height)
                 .overlay(alignment: .topLeading) {
+                    let photo = OfferArt.hasPhoto(offer.title, url: offer.imageUrl)
+                    let size = photo ? L.photo : L.artWidth
                     OfferArt(title: offer.title, url: offer.imageUrl)
-                        .frame(width: L.artWidth, height: L.artWidth)
+                        .frame(width: size, height: size)
                         .onGeometryChange(for: CGRect.self) { g in g.frame(in: .global) } action: { f in artFrame = f }
                         .opacity(gone ? 0 : 1).scaleEffect(gone ? 0.6 : 1)
-                        .offset(x: L.artLeft, y: L.artTop)
+                        .offset(x: photo ? L.photoLeft : L.artLeft, y: photo ? (Theme.S.offerTab.height - L.photo) / 2 : L.artTop)
                 }
                 .accessibilityHidden(true)
         }
@@ -839,6 +873,8 @@ struct OfferDetailView: View {
     private enum L {
         static let top: CGFloat = 14
         static let titleWidth: CGFloat = 200  // Titel läuft nicht in die Zeichnung
+        static let photo: CGFloat = 170  // Foto-Plättchen rechts oben
+        static let photoGap: CGFloat = 12  // Titel endet 12 vor dem Foto
         static let titleSize: CGFloat = 34  // .t1
         static let infoRow: CGFloat = 50
         static let bottom: CGFloat = 120  // Platz für den festen Knopf
@@ -847,6 +883,7 @@ struct OfferDetailView: View {
     var body: some View {
         let onList = store.isOnList(offer)
         let watched = store.watch(for: offer) != nil
+        let photo = OfferArt.hasPhoto(offer.title, url: offer.imageUrl)
         GeometryReader { g in
             ScrollView {
                 VStack(alignment: .leading, spacing: 0) {
@@ -855,7 +892,7 @@ struct OfferDetailView: View {
                         Spacer()
                         FavButton(on: watched) { Task { await store.toggleWatch(offer) } }
                     }
-                    top
+                    top(photo ? g.size.width - 2 * Theme.pagePadding - L.photo - L.photoGap : L.titleWidth, photo: photo)
                     infoRows
                     PriceHistoryCard(offer: offer).padding(.top, 40)
                     StockupTip(offer: offer).padding(.top, 56)
@@ -869,7 +906,8 @@ struct OfferDetailView: View {
                 .padding(.top, g.safeAreaInsets.top + L.top)
                 .padding(.bottom, L.bottom)
                 .pinned(left: 176, top: 92) {
-                    OfferArt(title: offer.title, url: offer.imageUrl).frame(width: 230, height: 230)
+                    // Foto steht im Fluss neben dem Titel (`top`), hier nur die Zeichnung
+                    if !photo { OfferArt(title: offer.title, url: offer.imageUrl).frame(width: 230, height: 230) }
                 }
                 .edgeForm(.circle, Theme.C.sand, width: 380, height: 380, left: 160, top: -110)
                 .onGeometryChange(for: Bool.self) { p in p.frame(in: .scrollView).minY < -260 } action: { c in
@@ -923,25 +961,37 @@ struct OfferDetailView: View {
 
     /// t1 inkl. Dynamic Type, aber so klein, dass das längste Wort (echt gemessen) in eine Zeile passt:
     /// Umbruch nur zwischen Wörtern, nie mitten im Wort.
-    private var titleSize: CGFloat {
+    private func titleSize(_ width: CGFloat) -> CGFloat {
         let size = UIFontMetrics(forTextStyle: .largeTitle).scaledValue(for: L.titleSize)
         guard let font = UIFont(name: "DMSerifDisplay-Regular", size: size) else { return size }
         let widest = offer.title.split(whereSeparator: \.isWhitespace)
             .map { (String($0) as NSString).size(withAttributes: [.font: font]).width }.max() ?? 0
-        return widest > L.titleWidth ? floor(size * L.titleWidth / widest * 0.98) : size  // 2 % Luft für Rundung
+        return widest > width ? floor(size * width / widest * 0.98) : size  // 2 % Luft für Rundung
     }
 
-    private var top: some View {
+    /// Mit Prospektfoto steht das Plättchen rechts neben Titel und Untertitel, Titel endet 12 davor.
+    private func top(_ titleWidth: CGFloat, photo: Bool) -> some View {
         VStack(alignment: .leading, spacing: 0) {
-            if let d = offer.discount { DealPill(text: "−\(d) %").padding(.top, 30) }
-            Text(offer.title)
-                .font(.custom("DMSerifDisplay-Regular", fixedSize: titleSize))
-                .lineLimit(3)
-                .frame(maxWidth: L.titleWidth, alignment: .leading)
-                .padding(.top, 8)
-                .accessibilityAddTraits(.isHeader)
-            let sub = [offer.brand.isEmpty ? nil : offer.brand, offer.amountText].compactMap { $0 }.joined(separator: " · ")
-            if !sub.isEmpty { Text(sub).font(Theme.F.small).foregroundStyle(Theme.C.ink2).padding(.top, 4) }
+            HStack(alignment: .top, spacing: L.photoGap) {
+                VStack(alignment: .leading, spacing: 0) {
+                    if let d = offer.discount { DealPill(text: "−\(d) %").padding(.top, 30) }
+                    Text(offer.title)
+                        .font(.custom("DMSerifDisplay-Regular", fixedSize: titleSize(titleWidth)))
+                        .lineLimit(3)
+                        .frame(maxWidth: titleWidth, alignment: .leading)
+                        .padding(.top, 8)
+                        .accessibilityAddTraits(.isHeader)
+                    let sub = [offer.brand.isEmpty ? nil : offer.brand, offer.amountText].compactMap { $0 }.joined(separator: " · ")
+                    if !sub.isEmpty { Text(sub).font(Theme.F.small).foregroundStyle(Theme.C.ink2).padding(.top, 4) }
+                }
+                if photo {
+                    Spacer(minLength: 0)
+                    OfferArt(title: offer.title, url: offer.imageUrl)
+                        .frame(width: L.photo, height: L.photo)
+                        .padding(.top, 12)
+                        .accessibilityHidden(true)
+                }
+            }
             HStack(spacing: 5) {
                 if let n = offer.nutriScore { NutriPill(score: n) }
                 if offer.vegan == true { SoftPill(text: "Vegan", icon: .leaf, tint: Theme.C.sage) }

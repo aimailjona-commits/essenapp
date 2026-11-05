@@ -275,6 +275,7 @@ struct VarietyChip: View {
 /// Wochenplan: „Reste: 3 verplant, 1 übrig (Sahne 100 ml)“ mit Vorschlag.
 struct LeftoversCard: View {
     let leftovers: LeftoversDTO
+    @State private var open = false  // zu: nur 2 Hinweise
 
     var body: some View {
         let left = leftovers.left
@@ -284,12 +285,22 @@ struct LeftoversCard: View {
                  tint: Theme.C.sage) {
                 Icon(.refresh, size: 22).foregroundStyle(Theme.C.ink)
             }
-            ForEach(left, id: \.self) { l in
+            ForEach(open ? left : Array(left.prefix(2)), id: \.self) { l in
                 Text("\(l.name): \(l.suggestion)").font(Theme.F.text(13, .semibold, relativeTo: .footnote)).foregroundStyle(Theme.C.ink2)
+                    .lineLimit(open ? nil : 1)
                     .padding(.leading, Theme.S.rowCircle + 14).padding(.bottom, 6)
             }
+            if left.count > 2 {
+                Button { withAnimation(Theme.spring) { open.toggle() } } label: {
+                    Text(open ? "weniger anzeigen" : "alle \(left.count) anzeigen")
+                        .font(Theme.F.text(13, .extrabold, relativeTo: .footnote)).foregroundStyle(Theme.C.blue3)
+                        .frame(minHeight: 44).contentShape(Rectangle())
+                }
+                .buttonStyle(PressableStyle())
+                .padding(.leading, Theme.S.rowCircle + 14)
+            }
         }
-        .accessibilityElement(children: .combine)
+        .accessibilityElement(children: .contain)
     }
 }
 
