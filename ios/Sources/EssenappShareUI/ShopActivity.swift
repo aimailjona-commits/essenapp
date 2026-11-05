@@ -32,10 +32,10 @@ public struct ShopAttributes: ActivityAttributes, Sendable {
         self.chain = chain; self.name = name; self.short = short; self.tint = tint; self.started = started
     }
 
-    public static let demo = ShopAttributes(chain: "rewe", name: "Rewe", short: "R", tint: 0xFF6B4A, started: .now)
-    public static let demoState = ContentState(done: 5, total: 12, next: [.init(id: 1, name: "Hähnchenbrustfilet", amount: "400 g"),
-                                                                         .init(id: 3, name: "Rispentomaten", amount: "700 g"),
-                                                                         .init(id: 4, name: "Feta", amount: "200 g")])
+    public static let demo = ShopAttributes(chain: "rewe", name: "Rewe", short: "R", tint: 0xF2CFC8, started: .now)
+    public static let demoState = ContentState(done: 5, total: 12, next: [.init(id: 1, name: "Basmatireis", amount: "1 kg"),
+                                                                         .init(id: 3, name: "Kaffee", amount: "500 g"),
+                                                                         .init(id: 4, name: "Olivenöl", amount: "1 Flasche")])
 }
 
 /// Abhaken aus der Live-Aktivität. `LiveActivityIntent` → läuft im App-Prozess; die App setzt `handler` beim Start
@@ -61,7 +61,7 @@ public struct CheckItemIntent: LiveActivityIntent {
     }
 }
 
-/// Kürzel auf der Laden-Farbe (wie `StoreLogo` ohne Logo).
+/// Kürzel im Laden-Kreis (`.circle` in Pastell, Tinte), wie `StoreCircle` ohne Logo.
 public struct ShopBadge: View {
     let attributes: ShopAttributes
     var size: CGFloat = 36
@@ -72,16 +72,21 @@ public struct ShopBadge: View {
     }
 
     public var body: some View {
-        Text(attributes.chain.isEmpty ? "🧺" : attributes.short)
-            .font(.system(size: size * 0.45, weight: .bold)).foregroundStyle(.white)
-            .frame(width: size, height: size)
-            .background(attributes.chain.isEmpty ? ST.surface : Color(hex: attributes.tint),
-                        in: RoundedRectangle(cornerRadius: size * 0.28, style: .continuous))
-            .accessibilityLabel(attributes.name)
+        Group {
+            if attributes.chain.isEmpty {
+                Image(systemName: "basket").font(.system(size: size * 0.42, weight: .semibold))
+            } else {
+                Text(attributes.short).font(ST.text(size * 0.42, .bold))
+            }
+        }
+        .foregroundStyle(ST.ink)
+        .frame(width: size, height: size)
+        .background(attributes.chain.isEmpty ? ST.blue1 : Color(hex: attributes.tint), in: Circle())
+        .accessibilityLabel(attributes.name)
     }
 }
 
-/// Sperrbildschirm / Mitteilungszentrale.
+/// Sperrbildschirm / Mitteilungszentrale (d.html S40): Laden, „5 von 12“, Balken, die nächsten 3 zum Abhaken.
 public struct ShopLockView: View {
     let attributes: ShopAttributes
     let state: ShopAttributes.ContentState
@@ -94,41 +99,51 @@ public struct ShopLockView: View {
     }
 
     public var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            HStack(spacing: 10) {
+        VStack(alignment: .leading, spacing: 0) {
+            HStack(spacing: 12) {
                 ShopBadge(attributes: attributes)
-                Text(attributes.name).font(ST.headline).foregroundStyle(ST.text1)
-                Spacer()
-                Text("\(state.done) von \(state.total)").font(.system(.title3, design: .rounded, weight: .bold)).monospacedDigit()
-                    .foregroundStyle(ST.text1).contentTransition(.numericText())
+                Text(attributes.name).font(ST.text(17, .bold)).frame(maxWidth: .infinity, alignment: .leading)
+                Text("\(state.done) von \(state.total)").font(ST.text(17, .bold)).monospacedDigit().contentTransition(.numericText())
             }
-            ProgressView(value: Double(state.done), total: Double(max(state.total, 1))).tint(ST.accent)
+            .foregroundStyle(ST.ink)
+            Capsule().fill(ST.line).frame(height: 8)
+                .overlay(alignment: .leading) {
+                    GeometryReader { g in
+                        Capsule().fill(ST.blue3).frame(width: g.size.width * Double(state.done) / Double(max(state.total, 1)))
+                    }
+                }
+                .clipShape(Capsule())
+                .padding(.top, 12)
+                .accessibilityHidden(true)
             if stale {
-                Text("Einkauf vorbei? In der App beenden.").font(ST.caption).foregroundStyle(ST.text2)
+                Text("Einkauf vorbei? In der App beenden.").font(ST.text(13)).foregroundStyle(ST.ink2).padding(.top, 6)
             }
-            ForEach(state.next, id: \.id) { item in ShopItemRow(item: item, dark: false) }
+            VStack(spacing: 0) {
+                ForEach(state.next, id: \.id) { item in ShopItemRow(item: item, dark: false) }
+            }
+            .padding(.top, 6)
         }
-        .padding(14)
+        .padding(.top, 16).padding(.horizontal, 18).padding(.bottom, 10)
         .activityBackgroundTint(ST.card)
-        .activitySystemActionForegroundColor(ST.text1)
+        .activitySystemActionForegroundColor(ST.ink)
         .widgetURL(URL(string: "essenapp://list/\(attributes.chain)"))
     }
 }
 
-/// Artikel mit Abhak-Knopf (App Intent).
+/// Artikel mit Abhak-Knopf (App Intent): Kreis 22 in Blau, Name 15, Menge 13.
 struct ShopItemRow: View {
     let item: ShopAttributes.ContentState.Item
     let dark: Bool
 
     var body: some View {
         Button(intent: CheckItemIntent(item: item.id)) {
-            HStack(spacing: 8) {
-                Image(systemName: "circle").font(.system(size: 17, weight: .semibold)).foregroundStyle(ST.accent)
-                Text(item.name).font(ST.callout).foregroundStyle(dark ? .white : ST.text1).lineLimit(1)
+            HStack(spacing: 12) {
+                Circle().strokeBorder(ST.blue3, lineWidth: 2).frame(width: 22, height: 22)
+                Text(item.name).font(ST.text(15)).foregroundStyle(dark ? ST.onInk : ST.ink).lineLimit(1)
                 Spacer(minLength: 4)
-                Text(item.amount).font(ST.caption).foregroundStyle(dark ? .white.opacity(0.6) : ST.text2)
+                Text(item.amount).font(ST.text(13)).foregroundStyle(dark ? ST.onInk.opacity(0.6) : ST.ink2)
             }
-            .frame(minHeight: 24)
+            .frame(height: 40)
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
@@ -136,7 +151,7 @@ struct ShopItemRow: View {
     }
 }
 
-/// Teile der Dynamic Island (immer dunkler Grund).
+/// Teile der Dynamic Island (immer dunkler Grund): kompakt Kürzel links, „5/12“ in Blau rechts.
 public struct ShopIsland: View {
     public enum Part: Sendable { case leading, trailing, bottom, compactLeading, compactTrailing, minimal }
 
@@ -155,23 +170,20 @@ public struct ShopIsland: View {
         case .leading:
             HStack(spacing: 8) {
                 ShopBadge(attributes: attributes, size: 30)
-                Text(attributes.name).font(ST.headline).foregroundStyle(.white).lineLimit(1)
+                Text(attributes.name).font(ST.text(17, .bold)).foregroundStyle(ST.onInk).lineLimit(1)
             }
         case .trailing:
-            Text("\(state.done) von \(state.total)").font(.system(.headline, design: .rounded, weight: .bold)).monospacedDigit()
-                .foregroundStyle(ST.accent)
+            Text("\(state.done) von \(state.total)").font(ST.text(17, .bold)).monospacedDigit().foregroundStyle(ST.blue)
         case .bottom:
-            VStack(spacing: 2) {
+            VStack(spacing: 0) {
                 ForEach(state.next, id: \.id) { item in ShopItemRow(item: item, dark: true) }
             }
         case .compactLeading:
             ShopBadge(attributes: attributes, size: 22)
         case .compactTrailing:
-            Text("\(state.done)/\(state.total)").font(.system(.footnote, design: .rounded, weight: .bold)).monospacedDigit()
-                .foregroundStyle(ST.accent)
+            Text("\(state.done)/\(state.total)").font(ST.text(14, .bold)).monospacedDigit().foregroundStyle(ST.blue)
         case .minimal:
-            Text("\(state.total - state.done)").font(.system(.footnote, design: .rounded, weight: .bold)).monospacedDigit()
-                .foregroundStyle(ST.accent)
+            Text("\(state.total - state.done)").font(ST.text(14, .bold)).monospacedDigit().foregroundStyle(ST.blue)
                 .accessibilityLabel("\(state.total - state.done) offen")
         }
     }

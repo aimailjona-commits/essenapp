@@ -61,40 +61,47 @@ struct PaywallSheet: View {
         VStack(alignment: .leading, spacing: 18) {
             HStack {
                 Spacer()
-                RoundIconButton(systemName: "xmark", label: "Schließen") { dismiss() }
+                CloseButton { dismiss() }
             }
-            DisplayHeader(line1: "Kochpilot", line2: "Pro")
+            VStack(alignment: .leading, spacing: 0) {
+                Text("Kochpilot").font(Theme.F.t1)
+                Text("Pro").font(Theme.F.t1).foregroundStyle(Theme.C.blue3)
+            }
+            .accessibilityElement(children: .combine)
             if !reason.isEmpty {
                 Text(reason.replacingOccurrences(of: "Pro: ", with: "") + " gehört zu Pro.")
-                    .font(Theme.F.callout).foregroundStyle(Theme.C.text1)
+                    .font(Theme.F.text(15, relativeTo: .subheadline)).foregroundStyle(Theme.C.ink)
             }
-            VStack(alignment: .leading, spacing: 8) {
+            VStack(alignment: .leading, spacing: 0) {
                 ForEach(features, id: \.self) { f in
-                    Label(f, systemImage: "checkmark.circle.fill").font(Theme.F.caption).foregroundStyle(Theme.C.text1)
+                    HStack(spacing: 12) {
+                        CheckCircle(on: true)
+                        Text(f).font(Theme.F.text(15, relativeTo: .subheadline)).foregroundStyle(Theme.C.ink)
+                        Spacer(minLength: 0)
+                    }
+                    .frame(minHeight: 44)
+                    .accessibilityElement(children: .combine)
+                    Hairline()
                 }
             }
-            .padding(16).frame(maxWidth: .infinity, alignment: .leading).card()
             VStack(alignment: .leading, spacing: 4) {
-                Text(product.map { "\($0.displayPrice) im Monat" } ?? store.pro?.price ?? "3 € im Monat")
-                    .font(.system(size: 34, weight: .bold, design: .rounded))
+                BigNumber(product.map { "\($0.displayPrice) im Monat" } ?? store.pro?.price ?? "3 € im Monat", size: 34)
                 if let offer = product?.subscription?.introductoryOffer, offer.paymentMode == .freeTrial {
                     Text("\(offer.period.value) \(unit(offer.period.unit)) gratis testen, danach \(product?.displayPrice ?? "") im Monat. Wir erinnern dich 2 Tage vor Ende.")
-                        .font(Theme.F.caption).foregroundStyle(Theme.C.text2)
+                        .font(Theme.F.text(13, relativeTo: .footnote)).foregroundStyle(Theme.C.ink2)
                 }
                 Text("Gilt für alle im Haushalt. Jederzeit in den iOS-Einstellungen kündbar.")
-                    .font(Theme.F.caption).foregroundStyle(Theme.C.text2)
+                    .font(Theme.F.text(13, relativeTo: .footnote)).foregroundStyle(Theme.C.ink2)
             }
             Spacer()
-            Button(action: buy) {
-                HStack {
-                    if busy { ProgressView().tint(Theme.C.onAction) }
-                    Text(busy ? "Einen Moment …" : "Pro holen")
-                }
+            if busy {
+                Hop3().frame(maxWidth: .infinity, minHeight: Theme.S.button)
+                    .accessibilityLabel("Einen Moment")
+            } else {
+                PrimaryButton(title: "Pro holen", disabled: product == nil, action: buy)
             }
-            .buttonStyle(PrimaryButtonStyle())
-            .disabled(product == nil || busy)
             Button("Käufe wiederherstellen", action: restore)
-                .font(Theme.F.caption).frame(maxWidth: .infinity, minHeight: 44)
+                .font(Theme.F.button2).foregroundStyle(Theme.C.ink).frame(maxWidth: .infinity, minHeight: 44)
                 .disabled(busy)
         }
         .padding(.horizontal, Theme.pagePadding).padding(.vertical, 16)

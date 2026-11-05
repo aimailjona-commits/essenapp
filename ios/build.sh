@@ -5,6 +5,8 @@
 set -e
 src="$(cd "$(dirname "$0")" && pwd)"
 dst="${BUILD_DIR:-$HOME/build/essenapp-ios}"
+# rsync --delete nur in ~/build/<name> – ein leerer/falscher Pfad hat sonst / gelöscht (Vorfall 2026-11-05)
+case "$dst" in *..*) false ;; "$HOME"/build/[!/]*) [ -n "$HOME" ] ;; *) false ;; esac || { echo "build.sh: BUILD_DIR muss unter \$HOME/build/ liegen: '$dst'" >&2; exit 1; }
 mkdir -p "$dst"
 rsync -a --delete --exclude .build --exclude xtool --exclude tools "$src/" "$dst/"
 cd "$dst"

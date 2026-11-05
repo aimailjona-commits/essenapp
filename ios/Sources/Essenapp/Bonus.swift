@@ -264,7 +264,7 @@ struct BarcodeView: View {
                 }
             }
             if type != "qr" {
-                Text(code).font(.system(.title3, design: .monospaced, weight: .semibold)).foregroundStyle(Theme.C.onBright)
+                Text(code).font(Theme.F.text(15, .semibold)).tracking(2).foregroundStyle(Theme.C.ink)
                     .lineLimit(2).minimumScaleFactor(0.6).textSelection(.enabled)
             }
         }
@@ -351,146 +351,195 @@ extension AppStore {
 
 // MARK: Bausteine
 
-/// Partner-Logo: Laden-Logo, sonst Programm-Emoji im getönten Quadrat (Payback, Aral …).
+/// Partner im Kreis (`.d-row .c` / `.d-p`): Payback und Programme ohne Laden als Serif-Buchstabe auf Pastellblau,
+/// sonst echtes Laden-Logo im Pastell-Kreis.
 struct CouponLogo: View {
     let chain: String
     let program: String
-    var size: CGFloat = 44
+    var name = ""
+    var size: CGFloat = Theme.S.rowCircle
 
     var body: some View {
-        if !chain.isEmpty {
-            StoreLogo(chain: chain, size: size)
-        } else {
-            Text(Coupons.emoji(program)).font(.system(size: size * 0.48))
+        if program == "payback" || chain.isEmpty {
+            Text(program == "payback" ? "P" : String((name.isEmpty ? Coupons.program(program) : name).prefix(1)).uppercased())
+                .font(Theme.F.serif(size * 0.5))
+                .foregroundStyle(Theme.C.ink)
                 .frame(width: size, height: size)
-                .background(Theme.C.accentSoft, in: RoundedRectangle(cornerRadius: size * 0.28, style: .continuous))
+                .background(Theme.C.blue1, in: Circle())
                 .accessibilityHidden(true)
+        } else {
+            StoreCircle(chain: chain, size: size)
         }
     }
 }
 
-/// Badge „🎟 10fach“ am Artikel / Merklisten-Eintrag; antippen = Kassen-Vollbild.
+/// Weiche Pille mit eigener Text-Farbe bzw. nur Umriss (`.soft` mit `style`): „läuft So ab“, „ziemlich“.
+struct SoftTag: View {
+    let text: String
+    var icon: Icon8?
+    var tint: Color? = Theme.C.blue1  // nil = nur Haarlinie
+    var color = Theme.C.ink
+
+    var body: some View {
+        HStack(spacing: 5) {
+            if let icon { Icon(icon, size: 12) }
+            Text(text)
+        }
+        .font(Theme.F.soft)
+        .foregroundStyle(color)
+        .padding(.horizontal, 10)
+        .frame(height: Theme.S.softPill)
+        .background(tint ?? .clear, in: Capsule())
+        .overlay { if tint == nil { Capsule().strokeBorder(Theme.C.line, lineWidth: Theme.S.hair) } }
+    }
+}
+
+/// Coupon am Artikel / Merklisten-Eintrag (`.soft` mit Barcode „10fach“); antippen = Kassen-Vollbild.
 struct CouponTag: View {
     @Environment(AppStore.self) private var store
     let coupon: CouponBadgeDTO
 
     var body: some View {
-        Button { store.checkoutCoupon = coupon.id } label: { DealBadge(text: coupon.text, style: .ok) }
-            .buttonStyle(PressableStyle())
-            .padding(.vertical, 11).contentShape(Rectangle()).padding(.vertical, -11)  // Tap-Fläche 44 pt ohne größere Zeile
-            .accessibilityLabel("Coupon \(coupon.partner.isEmpty ? Coupons.program(coupon.program) : coupon.partner) an der Kasse zeigen")
-    }
-}
-
-/// Coupon-Leiste oben in der Laden-Liste (38d): passende gültige Coupons, antippen = Kasse.
-struct CouponBar: View {
-    @Environment(AppStore.self) private var store
-    let coupons: [CouponDTO]
-
-    var body: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 8) {
-                ForEach(coupons) { c in
-                    Button { store.checkoutCoupon = c.id } label: {
-                        HStack(spacing: 8) {
-                            Text(c.badge).font(Theme.F.callout).foregroundStyle(Theme.C.accentDeep)
-                            VStack(alignment: .leading, spacing: 0) {
-                                Text(c.short).font(Theme.F.micro).foregroundStyle(Theme.C.text1).lineLimit(1)
-                                if let e = c.expiryText { Text(e).font(Theme.F.micro).foregroundStyle(c.soon ? Theme.C.deal : Theme.C.text2) }
-                            }
-                        }
-                        .padding(.horizontal, 14).frame(minHeight: 44)
-                        .background(Theme.C.accentSoft, in: Capsule())
-                    }
-                    .buttonStyle(PressableStyle())
-                    .accessibilityLabel("\(c.programName)-Coupon \(c.short) an der Kasse zeigen")
-                }
-            }
-            .padding(.horizontal, Theme.pagePadding)
+        Button { store.checkoutCoupon = coupon.id } label: {
+            SoftTag(text: coupon.text.replacingOccurrences(of: "🎟", with: "").trimmingCharacters(in: .whitespaces), icon: .barcode)
         }
-        .padding(.horizontal, -Theme.pagePadding)
-        .appear()
+        .buttonStyle(PressableStyle())
+        .padding(.vertical, 10).contentShape(Rectangle()).padding(.vertical, -10)  // Tap-Fläche 44 pt ohne größere Zeile
+        .accessibilityLabel("Coupon \(coupon.partner.isEmpty ? Coupons.program(coupon.program) : coupon.partner) an der Kasse zeigen")
     }
 }
 
-/// Zeile im Wallet: Logo, Vorteil, Programm · wofür, Ablauf, Mindestumsatz.
+/// Coupon-Zeile (`.d-row`): Partner im Kreis, Vorteil, „Programm · Produkt · Ablauf“; rechts Ablauf-Hinweis (bald) oder Code-Symbol.
 struct CouponRow: View {
     let coupon: CouponDTO
 
+    private var sub: String {
+        let until = (coupon.validUntil ?? "").split(separator: "-").compactMap { s in Int(s) }
+        let parts: [String?] = [
+            coupon.programName,
+            coupon.product.isEmpty && coupon.category.isEmpty ? nil : coupon.subject,
+            coupon.minSpendCents.map { m in "ab \(euro(m))" },
+            coupon.expired ? "abgelaufen" : coupon.soon || until.count != 3 ? nil : "bis \(until[2]).\(until[1]).",
+        ]
+        return parts.compactMap { $0 }.joined(separator: " · ")
+    }
+
     var body: some View {
-        HStack(spacing: 12) {
-            CouponLogo(chain: coupon.chain, program: coupon.program)
-            VStack(alignment: .leading, spacing: 3) {
-                Text(coupon.title).font(.system(.headline, design: .rounded, weight: .bold)).foregroundStyle(Theme.C.text1).lineLimit(1)
-                Text("\(coupon.programName) · \(coupon.subject)").font(Theme.F.caption).foregroundStyle(Theme.C.text2).lineLimit(1)
-                HStack(spacing: 6) {
-                    if let e = coupon.expiryText {
-                        if coupon.soon { DealBadge(text: e, style: .soft) } else { Text(e).font(Theme.F.micro).foregroundStyle(Theme.C.text2) }
-                    }
-                    if let m = coupon.minSpendCents { Text("ab \(euro(m)) Einkauf").font(Theme.F.micro).foregroundStyle(Theme.C.text2) }
-                }
+        HStack(spacing: 14) {
+            CouponLogo(chain: coupon.chain, program: coupon.program, name: coupon.programName)
+            VStack(alignment: .leading, spacing: 0) {
+                Text(coupon.title).font(Theme.F.text(16, .extrabold)).lineLimit(1)
+                Text(sub).font(Theme.F.text(12)).foregroundStyle(Theme.C.ink2).lineLimit(1)
             }
-            Spacer(minLength: 0)
-            Image(systemName: coupon.code.isEmpty ? "chevron.right" : coupon.codeType == "qr" ? "qrcode" : "barcode")
-                .font(.system(size: 18, weight: .semibold)).foregroundStyle(Theme.C.text3)
+            Spacer(minLength: 8)
+            if coupon.soon, let e = coupon.expiryText {
+                SoftTag(text: e, tint: Theme.C.rose, color: Theme.C.deal)
+            } else if !coupon.expired {
+                Icon(coupon.code.isEmpty ? .chev : coupon.codeType == "qr" ? .qr : .barcode)
+            }
         }
-        .padding(12)
-        .card(radius: Theme.R.tile)
-        .grayscale(coupon.expired ? 1 : 0)
-        .opacity(coupon.expired ? 0.5 : 1)
+        .foregroundStyle(coupon.expired ? Theme.C.ink3 : Theme.C.ink)
+        .opacity(coupon.expired ? 0.6 : 1)
+        .padding(.vertical, 7)
+        .overlay(alignment: .top) { Hairline() }
+        .contentShape(Rectangle())
         .accessibilityElement(children: .combine)
     }
 }
 
 // MARK: S31 Coupons (Wallet)
 
-/// Einkauf › Pille „Coupons“: Bonus-Konten, gültige Coupons (bald ablaufende oben), „Abgelaufen“ grau.
+/// Einkauf › „Coupons“ (d.html S31): Bonus-Konten als große Zahlen, Coupons als Zeilen, Abgelaufene in einer Zusammenfassung.
 struct CouponWalletView: View {
     @Environment(AppStore.self) private var store
+    @Binding var page: Int
     @State private var loaded = false
     @State private var error: String?
     @State private var adding = false
     @State private var editing: CouponDTO?
+    @State private var showExpired = false
     @State private var account: BonusAccountDTO? = Demo.screen == "bonus" ? Demo.bonus[0] : nil
+
+    // Mockup-Lage (S31): Blatt oben rechts mit Tasche
+    private enum M {
+        static let leaf = CGSize(width: 126, height: 210), leafRadius: CGFloat = 100
+        static let bag: CGFloat = 104, bagRight: CGFloat = 10, bagTop: CGFloat = 62
+    }
 
     var body: some View {
         let active = store.coupons.filter { c in !c.expired }
         let expired = store.coupons.filter(\.expired)
         ScrollView {
-            VStack(alignment: .leading, spacing: 14) {
-                HStack(alignment: .bottom) {
-                    DisplayHeader(line1: "Coupons", line2: "\(active.count) gültig")
-                    RoundIconButton(systemName: "plus", dark: true, label: "Coupon hinzufügen") { adding = true }
+            VStack(alignment: .leading, spacing: 0) {
+                ShopTabs(page: $page)
+                Text("\(active.count) gültig").font(Theme.F.small).foregroundStyle(Theme.C.ink2).padding(.top, 16)
+                HStack(spacing: 14) {
+                    Text("Coupons").font(Theme.F.t1).accessibilityAddTraits(.isHeader)
+                    CircleButton(icon: .plus, size: 44, filled: true, label: "Coupon hinzufügen") { adding = true }
                 }
                 if !store.bonusAccounts.isEmpty {
-                    HStack(spacing: 12) { ForEach(store.bonusAccounts) { a in bonusCard(a) } }.appear()
+                    VStack(spacing: 10) { ForEach(store.bonusAccounts) { a in bonusStat(a) } }.padding(.top, 22)
                 }
                 if store.coupons.isEmpty {
                     if !loaded {
-                        ForEach(0..<3, id: \.self) { _ in SkeletonCard(height: 76) }
+                        VStack(spacing: 12) { ForEach(0..<3, id: \.self) { _ in Skeleton8(height: 54) } }.padding(.top, 28)
                     } else if let error {
-                        ErrorState(message: error) { Task { await load() } }
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("Coupons nicht geladen").font(Theme.F.t2)
+                            Text(error).font(Theme.F.small).foregroundStyle(Theme.C.ink2)
+                            OutlineButton(title: "Erneut versuchen", icon: .refresh) { Task { await load() } }.padding(.top, 8)
+                        }
+                        .padding(.top, 28)
                     } else {
-                        EmptyState(emoji: "🎟", title: "Noch keine Coupons",
-                                   text: "Fotografiere Payback-, Rewe- oder dm-Coupons – an der Kasse zeigst du hier den Barcode.",
-                                   buttonTitle: "Coupon hinzufügen") { adding = true }
+                        VStack(spacing: 8) {  // ohne Mockup: Leer-Zustand mit Zeichnung
+                            Ill("bag").frame(width: 140, height: 140)
+                            Text("Noch keine Coupons").font(Theme.F.t2)
+                            Text("Fotografiere Payback-, Rewe- oder dm-Coupons – an der Kasse zeigst du hier den Barcode.")
+                                .font(Theme.F.small).foregroundStyle(Theme.C.ink2).multilineTextAlignment(.center)
+                            PrimaryButton(title: "Coupon hinzufügen", icon: .plus) { adding = true }.padding(.top, 8)
+                        }
+                        .frame(maxWidth: .infinity)
+                        .padding(.top, 28)
                     }
                 }
-                ForEach(Array(active.enumerated()), id: \.element.id) { i, c in row(c).appear(delay: Double(i) * 0.04) }
-                if !expired.isEmpty {
-                    Label { Text("Abgelaufen").font(Theme.F.headline) } icon: { Text("⌛️") }.padding(.top, 8)
-                    ForEach(expired) { c in row(c) }
+                VStack(spacing: 0) {
+                    ForEach(Array(active.enumerated()), id: \.element.id) { i, c in row(c).appear(delay: Double(i) * 0.04) }
+                    if !expired.isEmpty {
+                        Button { withAnimation(Theme.spring) { showExpired.toggle() } } label: {
+                            HStack(spacing: 14) {
+                                Icon(.clock).frame(width: Theme.S.rowCircle, height: Theme.S.rowCircle)
+                                    .overlay(Circle().strokeBorder(Theme.C.line, lineWidth: Theme.S.hair))
+                                Text("Abgelaufen").font(Theme.F.text(16, .bold))
+                                Spacer()
+                                Text(expired.count == 1 ? "1 Coupon" : "\(expired.count) Coupons").font(Theme.F.text(13))
+                                Icon(.chev, size: 18).rotationEffect(.degrees(showExpired ? 90 : 0))
+                            }
+                            .foregroundStyle(Theme.C.ink3)
+                            .padding(.vertical, 7)
+                            .overlay(alignment: .top) { Hairline() }
+                            .contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain)
+                        if showExpired { ForEach(expired) { c in row(c) } }
+                    }
                 }
+                .padding(.top, 28)
             }
             .padding(.horizontal, Theme.pagePadding)
-            .padding(.bottom, 120)
+            .padding(.top, 14)
+            .padding(.bottom, Theme.S.nav)
             .animation(Theme.spring, value: store.coupons)
+        }
+        .backdrop8 {
+            Color.clear
+                .pinned(right: M.bagRight, top: M.bagTop) { Ill("bag").frame(width: M.bag) }
+                .edgeForm(.leaf(M.leafRadius), Theme.C.blue1, width: M.leaf.width, height: M.leaf.height, right: 0, top: 0)
         }
         .refreshable { await load() }
         .task { await load() }
-        .sheet(isPresented: $adding) { CouponAddSheet().presentationDetents([.large]).presentationCornerRadius(Theme.R.sheet) }
-        .sheet(item: $editing) { c in CouponAddSheet(editing: c).presentationDetents([.large]).presentationCornerRadius(Theme.R.sheet) }
-        .sheet(item: $account) { a in BonusSheet(account: a).presentationCornerRadius(Theme.R.sheet) }
+        .sheet(isPresented: $adding) { CouponAddSheet() }
+        .sheet(item: $editing) { c in CouponAddSheet(editing: c) }
+        .sheet(item: $account) { a in BonusSheet(account: a) }
     }
 
     private func row(_ c: CouponDTO) -> some View {
@@ -504,25 +553,19 @@ struct CouponWalletView: View {
             .accessibilityAction(named: "Bearbeiten") { editing = c }
     }
 
-    /// Karte „Payback 1.240 °P ≈ 12,40 €“ / „Rewe Bonus 8,50 €“ → Plus/Minus-Sheet.
-    private func bonusCard(_ a: BonusAccountDTO) -> some View {
+    /// „Payback ± 1.240 °P ≈ 12,40 €“ als große Zahl → Plus/Minus-Sheet.
+    private func bonusStat(_ a: BonusAccountDTO) -> some View {
         Button { account = a } label: {
-            VStack(alignment: .leading, spacing: 4) {
-                HStack {
-                    Text(Coupons.emoji(a.program)).font(.system(size: 18))
-                        .frame(width: 34, height: 34).background(Theme.C.accentSoft, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
-                    Spacer()
-                    Image(systemName: "plus.forwardslash.minus").font(.system(size: 13, weight: .bold)).foregroundStyle(Theme.C.text3)
+            VStack(alignment: .trailing, spacing: 4) {
+                StatNumber(label: "\(a.name) ±", value: a.balanceText, size: 40)
+                if a.points {
+                    Text("≈ \(euro(a.valueCents))").font(Theme.F.text(12)).foregroundStyle(Theme.C.ink2)
+                } else if a.earnedMonthCents > 0 {
+                    Text("+\(euro(a.earnedMonthCents)) im Monat").font(Theme.F.text(12)).foregroundStyle(Theme.C.success)
                 }
-                Text(a.name).font(Theme.F.caption).foregroundStyle(Theme.C.text2).padding(.top, 4)
-                Text(a.balanceText).font(.system(.title2, design: .rounded, weight: .bold)).monospacedDigit()
-                    .lineLimit(1).minimumScaleFactor(0.7).contentTransition(.numericText()).foregroundStyle(Theme.C.text1)
-                Text(a.points ? "≈ \(euro(a.valueCents))" : a.earnedMonthCents > 0 ? "+\(euro(a.earnedMonthCents)) im Monat" : " ")
-                    .font(Theme.F.micro).foregroundStyle(a.points ? Theme.C.text2 : Theme.C.success)
             }
-            .padding(14)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .card(radius: Theme.R.tile)
+            .foregroundStyle(Theme.C.ink)
+            .contentShape(Rectangle())
         }
         .buttonStyle(PressableStyle())
         .accessibilityLabel("\(a.name): \(a.balanceText), Punkte oder Guthaben ändern")
@@ -540,9 +583,9 @@ struct CouponWalletView: View {
     }
 }
 
-// MARK: Kasse
+// MARK: S31b Kasse
 
-/// Kassen-Vollbild: Barcode neu gerendert auf weißem Plättchen, maximale Helligkeit, Partner-Logo.
+/// Kassen-Vollbild (d.html S31b): weißes Plättchen auf großem Kreis, Vorteil riesig, Barcode, Ablauf, Mindestumsatz.
 struct CouponCheckoutView: View {
     @Environment(AppStore.self) private var store
     @Environment(\.dismiss) private var dismiss
@@ -551,35 +594,48 @@ struct CouponCheckoutView: View {
     @State private var editing: CouponDTO?
     @State private var brightness: CGFloat?
 
+    // Mockup-Lage (S31b): Kreis 510 unten
+    private enum M { static let blob: CGFloat = 510, blobLeft: CGFloat = -60, blobTop: CGFloat = 440, plateTop: CGFloat = 34 }
+
     private var screen: UIScreen? { UIApplication.shared.connectedScenes.compactMap { s in (s as? UIWindowScene)?.screen }.first }
 
     var body: some View {
         let coupon = store.coupons.first { c in c.id == id }
         ScrollView {
-            VStack(spacing: 16) {
+            VStack(alignment: .leading, spacing: 0) {
                 HStack {
-                    Text("An der Kasse zeigen").font(Theme.F.headline)
+                    Text("An der Kasse zeigen").font(Theme.F.t2)
                     Spacer()
-                    RoundIconButton(systemName: "xmark", label: "Schließen") { dismiss() }
+                    CloseButton { dismiss() }
                 }
-                if let c = coupon {
-                    plate(c).appear()
-                    if c.code.isEmpty {
-                        Text("Kein Barcode gespeichert – zeig den Coupon in der \(c.programName)-App oder scanne ihn hier ein.")
-                            .font(Theme.F.caption).foregroundStyle(Theme.C.text2).multilineTextAlignment(.center)
-                            .fixedSize(horizontal: false, vertical: true)
-                        Button { editing = c } label: { Label("Barcode ergänzen", systemImage: "barcode.viewfinder") }
-                            .buttonStyle(SecondaryButtonStyle())
+                Group {
+                    if let c = coupon {
+                        plate(c).appear()
+                        if c.code.isEmpty {
+                            VStack(spacing: 12) {
+                                Text("Kein Barcode gespeichert – zeig den Coupon in der \(c.programName)-App oder scanne ihn hier ein.")
+                                    .font(Theme.F.small).foregroundStyle(Theme.C.ink2).multilineTextAlignment(.center)
+                                    .fixedSize(horizontal: false, vertical: true)
+                                OutlineButton(title: "Barcode ergänzen", icon: .barcode) { editing = c }
+                            }
+                            .padding(.top, 20)
+                        }
+                    } else if failed {
+                        VStack(alignment: .leading, spacing: 6) {
+                            Text("Coupon nicht gefunden").font(Theme.F.t2)
+                            Text("Er wurde vielleicht gelöscht.").font(Theme.F.small).foregroundStyle(Theme.C.ink2)
+                        }
+                    } else {
+                        Skeleton8(height: 360)
                     }
-                } else if failed {
-                    EmptyState(emoji: "🎟", title: "Coupon nicht gefunden", text: "Er wurde vielleicht gelöscht.")
-                } else {
-                    SkeletonCard(height: 360)
                 }
+                .padding(.top, M.plateTop)
             }
-            .padding(Theme.pagePadding)
+            .padding(.horizontal, Theme.pagePadding)
+            .padding(.top, 14)
+            .padding(.bottom, 40)
         }
-        .background(Theme.C.bg)
+        .backdrop8 { Color.clear.edgeForm(.circle, Theme.C.blue1, width: M.blob, height: M.blob, left: M.blobLeft, top: M.blobTop) }
         .task {
             guard coupon == nil else { return }
             try? await store.loadCoupons()
@@ -591,36 +647,45 @@ struct CouponCheckoutView: View {
             screen.brightness = 1  // Kassenscanner lesen hell besser
         }
         .onDisappear { if let brightness { screen?.brightness = brightness } }
-        .sheet(item: $editing) { c in CouponAddSheet(editing: c).presentationDetents([.large]).presentationCornerRadius(Theme.R.sheet) }
+        .sheet(item: $editing) { c in CouponAddSheet(editing: c) }
     }
 
-    /// Immer hell (Kontrast für den Scanner), auch im Dunkelmodus.
+    private static func big(_ c: CouponDTO) -> (String, String) {
+        if let m = c.multiplier { return ("\(m)fach", "Punkte für \(c.subject)") }
+        if let b = c.bonusCents { return (euro(b), "Bonus für \(c.subject)") }
+        if let p = c.percent { return ("\(p) %", "Rabatt auf \(c.subject)") }
+        return (c.title, "für \(c.subject)")
+    }
+
+    /// Immer weiß (Kontrast für den Scanner).
     private func plate(_ c: CouponDTO) -> some View {
-        VStack(spacing: 16) {
+        let big = Self.big(c)
+        return VStack(alignment: .leading, spacing: 0) {
             HStack(spacing: 12) {
-                CouponLogo(chain: c.chain, program: c.program, size: 52)
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(c.partner.isEmpty ? c.programName : c.partner).font(Theme.F.title).lineLimit(1)
-                    Text(c.programName).font(Theme.F.caption).foregroundStyle(Theme.C.text2)
+                CouponLogo(chain: c.chain, program: c.program, name: c.programName, size: 44)
+                VStack(alignment: .leading, spacing: 0) {
+                    Text(c.partner.isEmpty || c.program != "sonstige" ? c.programName : c.partner).font(Theme.F.text(16, .extrabold))
+                    Text(c.chain.isEmpty || c.chain == c.program ? "Coupon" : "bei \(Labels.chain(c.chain)) · Coupon")
+                        .font(Theme.F.text(12)).foregroundStyle(Theme.C.ink2)
                 }
-                Spacer(minLength: 0)
             }
-            VStack(spacing: 4) {
-                Text(c.title).font(.system(.largeTitle, design: .rounded, weight: .heavy)).multilineTextAlignment(.center)
-                    .minimumScaleFactor(0.6)
-                Text("für \(c.subject)").font(Theme.F.callout).foregroundStyle(Theme.C.text2)
-            }
-            if !c.code.isEmpty { BarcodeView(code: c.code, type: c.codeType) }
+            BigNumber(big.0, size: 80).padding(.top, 24)
+            Text(big.1).font(Theme.F.text(17, .bold)).padding(.top, 8)
+            if !c.code.isEmpty { BarcodeView(code: c.code, type: c.codeType, height: 120).padding(.top, 26) }
             HStack(spacing: 8) {
-                if let e = c.expiryText { DealBadge(text: e, style: c.soon || c.expired ? .strong : .ok) }
-                if let m = c.minSpendCents { DealBadge(text: "ab \(euro(m)) Einkauf", style: .ok) }
+                if let e = c.expiryText {
+                    if c.soon || c.expired { SoftTag(text: e, tint: Theme.C.rose, color: Theme.C.deal) } else { SoftTag(text: e, tint: nil) }
+                }
+                if let m = c.minSpendCents { SoftTag(text: "ab \(euro(m)) Einkauf", tint: nil) }
             }
+            .frame(maxWidth: .infinity)
+            .padding(.top, 20)
         }
-        .foregroundStyle(Theme.C.text1)
-        .padding(20)
-        .background(Theme.C.plate, in: RoundedRectangle(cornerRadius: Theme.R.card, style: .continuous))
-        .floatShadow()
-        .environment(\.colorScheme, .light)
+        .foregroundStyle(Theme.C.ink)
+        .padding(24)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Theme.C.plate, in: RoundedRectangle(cornerRadius: 28, style: .continuous))
+        .shadow(color: Theme.C.ink.opacity(0.16), radius: 25, y: 24)
     }
 }
 
@@ -667,7 +732,8 @@ struct CouponForm: Equatable {
         out.percent = kind == "prozent" ? amount : nil
         out.minSpendCents = Self.number(minSpend).map { e in Int((e * 100).rounded()) }.flatMap { m in m > 0 ? m : nil }
         out.validUntil = expires ? until.formatted(PantryDTO.day) : nil
-        var benefit = c.benefit.trimmingCharacters(in: .whitespaces)
+        // Vorteil-Text: bei Xfach/Bonus/Rabatt aus der Zahl (S31c hat kein Textfeld mehr), sonst der eingegebene Text
+        var benefit = kind.isEmpty ? c.benefit.trimmingCharacters(in: .whitespaces) : ""
         if benefit.isEmpty, let a = amount {  // „10fach Punkte“, „0,50 € Bonus“, „20 % Rabatt“
             benefit = kind == "fach" ? "\(a)fach Punkte" : kind == "bonus" ? "\(euro(a)) Bonus" : "\(a) % Rabatt"
         }
@@ -679,7 +745,7 @@ struct CouponForm: Equatable {
     }
 }
 
-/// Coupon hinzufügen: Foto (KI liest), Barcode (VisionKit) oder manuell → Prüfen/Bearbeiten → Speichern.
+/// Coupon hinzufügen (S31c): Foto (KI liest), Barcode (VisionKit) oder manuell → Prüfen/Bearbeiten → Speichern.
 struct CouponAddSheet: View {
     enum Stage { case choose, reading, failed, form }
     @Environment(AppStore.self) private var store
@@ -692,6 +758,8 @@ struct CouponAddSheet: View {
     @State private var scanner = false
     @State private var readError = ""
     @State private var saving = false
+    @State private var height: CGFloat = 360
+    @State private var open: String?  // aufgeklappte Zeile: datum | minimum | barcode
 
     init(editing: CouponDTO? = nil) {
         self.editing = editing
@@ -700,36 +768,52 @@ struct CouponAddSheet: View {
         _form = State(initialValue: CouponForm(editing.map(CouponIn.init) ?? (demo ? Demo.couponScan : CouponIn())))
     }
 
+    private var title: String {
+        editing != nil ? "Coupon bearbeiten" : stage == .form ? (form.c.source == "foto" ? "Coupon prüfen" : "Neuer Coupon") : "Coupon hinzufügen"
+    }
+
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 14) {
+            VStack(alignment: .leading, spacing: 0) {
                 HStack(alignment: .top) {
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text(editing != nil ? "Coupon bearbeiten" : form.c.source == "foto" ? "Coupon prüfen" : "Neuer Coupon").font(Theme.F.title)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(title).font(Theme.F.t2)
                         if stage == .form, form.c.source == "foto", editing == nil {
-                            Text("Aus dem Foto gelesen – bitte kurz prüfen.").font(Theme.F.caption).foregroundStyle(Theme.C.text2)
+                            Text("Aus dem Foto gelesen – bitte kurz prüfen.").font(Theme.F.text(13)).foregroundStyle(Theme.C.ink2)
                         }
                     }
                     Spacer()
-                    RoundIconButton(systemName: "xmark", label: "Schließen") { dismiss() }
+                    CloseButton { dismiss() }
                 }
                 switch stage {
-                case .choose: choosePage
+                case .choose: choosePage.padding(.top, 16)
                 case .reading:
-                    SkeletonCard(height: 180)
-                    Label("Coupon wird gelesen …", systemImage: "text.viewfinder").font(Theme.F.caption).foregroundStyle(Theme.C.text2)
+                    VStack(spacing: 14) {
+                        Hop3(names: ["tomato", "bag", "basil"]).frame(height: 60)
+                        Text("Coupon wird gelesen …").font(Theme.F.small).foregroundStyle(Theme.C.ink2)
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 40)
                 case .failed:
-                    EmptyState(emoji: "📸", title: "Das hat nicht geklappt", text: readError)
-                    Button("Anderes Foto") { withAnimation(Theme.spring) { stage = .choose } }.buttonStyle(PrimaryButtonStyle())
-                    Button("Manuell eingeben") { withAnimation(Theme.spring) { stage = .form } }.buttonStyle(SecondaryButtonStyle())
+                    VStack(alignment: .leading, spacing: 10) {
+                        Text("Das hat nicht geklappt").font(Theme.F.t2)
+                        Text(readError).font(Theme.F.small).foregroundStyle(Theme.C.ink2)
+                        PrimaryButton(title: "Anderes Foto") { withAnimation(Theme.spring) { stage = .choose } }.padding(.top, 8)
+                        OutlineButton(title: "Manuell eingeben") { withAnimation(Theme.spring) { stage = .form } }
+                    }
+                    .padding(.top, 20)
                 case .form: formPage
                 }
             }
-            .padding(Theme.pagePadding)
+            .padding(.horizontal, Theme.pagePadding)
+            .padding(.bottom, 40)
             .animation(Theme.spring, value: stage)
+            .onGeometryChange(for: CGFloat.self) { g in g.size.height } action: { h in height = h }
         }
+        .scrollBounceBehavior(.basedOnSize)
         .scrollDismissesKeyboard(.immediately)
-        .presentationBackground(Theme.C.bg)
+        .presentationDetents(stage == .form ? [.large] : [.height(height + 33)])
+        .sheet8()
         .fullScreenCover(isPresented: $camera) {
             CameraPicker { image in
                 camera = false
@@ -754,138 +838,203 @@ struct CouponAddSheet: View {
         }
     }
 
+    /// Drei Wege als `.irow` (68 hoch) mit Farb-Kreis.
     private var choosePage: some View {
-        VStack(spacing: 12) {
-            option("📸", "Coupon fotografieren", "Wir lesen Partner, Vorteil, Mindestumsatz und Gültigkeit") {
+        VStack(alignment: .leading, spacing: 0) {
+            option(.cam, Theme.C.blue, "Coupon fotografieren") {
                 if UIImagePickerController.isSourceTypeAvailable(.camera) { camera = true } else { store.flash("Keine Kamera – wähle ein Foto aus") }
             }
             PhotosPicker(selection: $pick, matching: .images) {
-                Label("Foto aus der Mediathek", systemImage: "photo.on.rectangle").font(Theme.F.callout)
-                    .frame(maxWidth: .infinity, minHeight: 48)
-                    .background(Theme.C.card, in: Capsule())
-                    .overlay(Capsule().strokeBorder(Theme.C.line, lineWidth: 0.5))
+                HStack(spacing: 6) {
+                    Icon(.photo, size: 16)
+                    Text("Foto aus der Mediathek")
+                }
+                .font(Theme.F.text(13, .bold, relativeTo: .footnote))
+                .foregroundStyle(Theme.C.ink2)
+                .padding(.horizontal, 15)
+                .frame(height: 32)
+                .overlay(Capsule().strokeBorder(Theme.C.line, lineWidth: Theme.S.hair))
             }
-            option("▦", "Barcode scannen", "Code 128, EAN oder QR – wird an der Kasse neu angezeigt") { scanner = true }
-            option("✏️", "Manuell eingeben", "Partner und Vorteil selbst eintragen") {
+            .tapArea(6)  // außerhalb des Labels: PhotosPicker-Label ist nonisolated
+            .padding(.leading, 62).padding(.bottom, 14)
+            option(.barcode, Theme.C.sand, "Barcode scannen") { scanner = true }
+            option(.edit, Theme.C.sage, "Manuell eingeben") {
                 form.c.source = "manuell"
                 withAnimation(Theme.spring) { stage = .form }
             }
         }
     }
 
-    private func option(_ emoji: String, _ title: String, _ text: String, action: @escaping () -> Void) -> some View {
+    private func option(_ icon: Icon8, _ tint: Color, _ title: String, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             HStack(spacing: 14) {
-                Text(emoji).font(.system(size: 24)).frame(width: 52, height: 52)
-                    .background(Theme.C.accentSoft, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(title).font(Theme.F.callout).foregroundStyle(Theme.C.text1)
-                    Text(text).font(Theme.F.micro).foregroundStyle(Theme.C.text2).multilineTextAlignment(.leading)
-                }
-                Spacer(minLength: 0)
-                Image(systemName: "chevron.right").font(.system(size: 12, weight: .bold)).foregroundStyle(Theme.C.text3)
+                Icon(icon).frame(width: Theme.S.rowCircle, height: Theme.S.rowCircle).background(tint, in: Circle())
+                Text(title).font(Theme.F.rowName)
+                Spacer()
+                Icon(.chev).foregroundStyle(Theme.C.ink3)
             }
-            .padding(14).card(radius: Theme.R.tile)
+            .foregroundStyle(Theme.C.ink)
+            .frame(minHeight: 68)
+            .overlay(alignment: .top) { Hairline() }
+            .contentShape(Rectangle())
         }
         .buttonStyle(PressableStyle())
     }
 
+    /// Zusammenfassungs-Zeile (`.row.between.hr`) mit Chevron, klappt Inhalt auf.
+    private func summary(_ key: String, _ title: String, sub: String? = nil, value: String? = nil, minHeight: CGFloat = 60) -> some View {
+        Button { withAnimation(Theme.spring) { open = open == key ? nil : key } } label: {
+            HStack(spacing: 8) {
+                VStack(alignment: .leading, spacing: 0) {
+                    Text(title).font(Theme.F.text(16, .bold))
+                    if let sub { Text(sub).font(Theme.F.text(12)).foregroundStyle(Theme.C.ink2) }
+                }
+                Spacer()
+                if let value { Text(value).foregroundStyle(Theme.C.ink2) }
+                Icon(.chev, size: 18).foregroundStyle(Theme.C.ink3).rotationEffect(.degrees(open == key ? 90 : 0))
+            }
+            .foregroundStyle(Theme.C.ink)
+            .frame(minHeight: minHeight)
+            .overlay(alignment: .top) { Hairline() }
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+    }
+
     @ViewBuilder private var formPage: some View {
         let household = Labels.chains.filter { c in store.household?.stores.contains { s in s.chain == c.key && s.enabled } ?? true }
-        section("🏷️", "Partner") {
-            ChipFlow(items: Coupons.programs, selected: [form.c.program], color: Theme.C.accent) { p in
-                form.c.program = p
-                let known = ["rewe_bonus": ("REWE", "rewe"), "dm": ("dm", "dm"), "rossmann": ("Rossmann", "rossmann")][p]
-                if let known, form.c.partner.isEmpty { form.c.partner = known.0; form.c.chain = known.1 }
-            }
-            field("Partner, z. B. REWE oder Aral", $form.c.partner)
-            HStack {
-                Text("Laden").font(Theme.F.callout).foregroundStyle(Theme.C.text2)
-                Spacer()
-                Picker("Laden", selection: $form.c.chain) {
-                    Text("Kein bestimmter").tag("")
-                    ForEach(household, id: \.key) { c in Text(c.name).tag(c.key) }
+        let code = form.c.code ?? ""
+        let codeType = (form.c.codeType ?? "").isEmpty ? Barcode.guess(code) : form.c.codeType ?? ""
+        // Gruppe 1: Partner und Laden
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 8) {
+                ForEach(Coupons.programs, id: \.0) { p in
+                    Chip8(title: p.1, on: form.c.program == p.0) {
+                        form.c.program = p.0
+                        let known = ["rewe_bonus": ("REWE", "rewe"), "dm": ("dm", "dm"), "rossmann": ("Rossmann", "rossmann")][p.0]
+                        if let known, form.c.partner.isEmpty { form.c.partner = known.0; form.c.chain = known.1 }
+                    }
                 }
-                .pickerStyle(.menu).tint(Theme.C.text1)
             }
-            Text("Im passenden Laden erinnern wir an den Coupon und zeigen ihn oben in der Liste.")
-                .font(Theme.F.micro).foregroundStyle(Theme.C.text2)
+            .padding(.horizontal, Theme.pagePadding)
         }
-        section("🎁", "Vorteil") {
-            Picker("Art", selection: $form.kind) {
-                Text("Xfach").tag("fach"); Text("€ Bonus").tag("bonus"); Text("% Rabatt").tag("prozent"); Text("Sonstiges").tag("")
+        .padding(.horizontal, -Theme.pagePadding)
+        .padding(.top, 24)
+        if form.c.program == "sonstige" {
+            FieldBox { TextField("Partner, z. B. Aral", text: $form.c.partner) }.padding(.top, 10)
+        }
+        Menu {
+            Picker("Laden", selection: $form.c.chain) {
+                Text("Kein bestimmter").tag("")
+                ForEach(household, id: \.key) { c in Text(c.name).tag(c.key) }
             }
-            .pickerStyle(.segmented)
+        } label: {
+            HStack(spacing: 2) {
+                Text("Laden").font(Theme.F.text(16, .bold)).foregroundStyle(Theme.C.ink)
+                Spacer()
+                Text(form.c.chain.isEmpty ? "Kein bestimmter" : Labels.chain(form.c.chain)).foregroundStyle(Theme.C.ink2)
+                Icon(.chev, size: 18).foregroundStyle(Theme.C.ink3)
+            }
+            .frame(minHeight: 48)
+            .overlay(alignment: .top) { Hairline() }
+            .contentShape(Rectangle())
+        }
+        .padding(.top, 12)
+        .accessibilityHint("Im passenden Laden erinnern wir an den Coupon und zeigen ihn in der Liste.")
+
+        // Gruppe 2: Vorteil
+        Segmented8(options: [("fach", "Xfach"), ("bonus", "€ Bonus"), ("prozent", "% Rabatt"), ("", "Sonstiges")], selection: $form.kind)
+            .padding(.top, 28)
+        if form.kind.isEmpty {
+            FieldBox { TextField("Vorteil, z. B. Gratis-Kaffee", text: $form.c.benefit) }.padding(.top, 10)
+        }
+        HStack(spacing: 8) {
             if !form.kind.isEmpty {
-                HStack(spacing: 10) {
+                FieldBox {
                     TextField(form.kind == "fach" ? "10" : form.kind == "bonus" ? "0,50" : "20", text: $form.value)
                         .keyboardType(form.kind == "bonus" ? .decimalPad : .numberPad)
-                        .font(.system(.title3, design: .rounded, weight: .bold)).monospacedDigit()
-                        .padding(.horizontal, 14).frame(height: 44).background(Theme.C.surface, in: Capsule())
-                    Text(form.kind == "fach" ? "fach Punkte" : form.kind == "bonus" ? "€ Bonus" : "% Rabatt").font(Theme.F.callout)
+                }
+                .frame(width: 82)
+            }
+            FieldBox { TextField("Produkt (leer = ganzer Einkauf)", text: $form.c.product) }
+        }
+        .padding(.top, 10)
+
+        // Gruppe 3: Gültigkeit, Mindestumsatz, Barcode
+        VStack(alignment: .leading, spacing: 0) {
+            if form.c.product.trimmingCharacters(in: .whitespaces).isEmpty {
+                Menu {
+                    Picker("Kategorie", selection: $form.c.category) {
+                        Text("Keine").tag("")
+                        ForEach(Labels.categories, id: \.0) { c in Text(Labels.categoryName(c.0)).tag(c.0) }
+                    }
+                } label: {
+                    HStack(spacing: 2) {
+                        Text("Kategorie").font(Theme.F.text(16, .bold)).foregroundStyle(Theme.C.ink)
+                        Spacer()
+                        Text(form.c.category.isEmpty ? "Keine" : Labels.categoryName(form.c.category)).foregroundStyle(Theme.C.ink2)
+                        Icon(.chev, size: 18).foregroundStyle(Theme.C.ink3)
+                    }
+                    .frame(minHeight: 52)
+                    .overlay(alignment: .top) { Hairline() }
+                    .contentShape(Rectangle())
                 }
             }
-            field("Text, z. B. 10fach Punkte auf Kaffee", $form.c.benefit)
-            field("Produkt oder Marke (leer = ganzer Einkauf)", $form.c.product)
             HStack {
-                Text("Kategorie").font(Theme.F.callout).foregroundStyle(Theme.C.text2)
-                Spacer()
-                Picker("Kategorie", selection: $form.c.category) {
-                    Text("Keine").tag("")
-                    ForEach(Labels.categories, id: \.0) { c in Text(c.1).tag(c.0) }
+                Button {
+                    if form.expires { withAnimation(Theme.spring) { open = open == "datum" ? nil : "datum" } }
+                } label: {
+                    VStack(alignment: .leading, spacing: 0) {
+                        Text(form.expires ? "Gültig bis \(PantryDTO.dayText(form.until))" : "Ohne Ablaufdatum").font(Theme.F.text(16, .bold))
+                        if form.expires { Text("Erinnerung 2 Tage vorher").font(Theme.F.text(12)).foregroundStyle(Theme.C.ink2) }
+                    }
+                    .foregroundStyle(Theme.C.ink)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .contentShape(Rectangle())
                 }
-                .pickerStyle(.menu).tint(Theme.C.text1)
+                .buttonStyle(.plain)
+                Toggle(isOn: $form.expires.animation(Theme.spring)) { EmptyView() }.toggleStyle(.v8).fixedSize()
+                    .accessibilityLabel("Gültig bis")
             }
-            HStack(spacing: 10) {
-                Text("Mindestumsatz").font(Theme.F.callout).foregroundStyle(Theme.C.text2)
-                Spacer()
-                TextField("optional", text: $form.minSpend).keyboardType(.decimalPad).multilineTextAlignment(.trailing)
-                    .padding(.horizontal, 14).frame(width: 120, height: 44).background(Theme.C.surface, in: Capsule())
-                Text("€").font(Theme.F.callout)
+            .frame(minHeight: 60)
+            .overlay(alignment: .top) { Hairline() }
+            if form.expires && open == "datum" {
+                DatePicker("Gültig bis", selection: $form.until, displayedComponents: .date).datePickerStyle(.graphical).tint(Theme.C.ink)
             }
-        }
-        section("📅", "Gültigkeit") {
-            Toggle("Gültig bis", isOn: $form.expires.animation(Theme.spring)).font(Theme.F.callout).tint(Theme.C.accent)
-            if form.expires { DatePicker("Datum", selection: $form.until, displayedComponents: .date) }
-            Text("2 Tage vor Ablauf kommt eine Erinnerung.").font(Theme.F.micro).foregroundStyle(Theme.C.text2)
-        }
-        section("▦", "Barcode") {
-            let code = form.c.code ?? ""
-            if !code.isEmpty {
-                BarcodeView(code: code, type: (form.c.codeType ?? "").isEmpty ? Barcode.guess(code) : form.c.codeType ?? "", height: 70)
-                    .padding(12)
-                    .background(Theme.C.plate, in: RoundedRectangle(cornerRadius: Theme.R.tile, style: .continuous))
-                Picker("Typ", selection: Binding(get: { (form.c.codeType ?? "").isEmpty ? Barcode.guess(code) : form.c.codeType ?? "" },
-                                                 set: { t in form.c.codeType = t })) {
-                    ForEach(Coupons.codeTypes, id: \.0) { t in Text(t.1).tag(t.0) }
+            summary("minimum", "Mindestumsatz", value: form.minSpend.isEmpty ? "keiner" : "\(form.minSpend) €", minHeight: 52)
+            if open == "minimum" {
+                FieldBox {
+                    TextField("z. B. 20,00", text: $form.minSpend).keyboardType(.decimalPad)
+                    Text("€").foregroundStyle(Theme.C.ink2)
                 }
-                .pickerStyle(.segmented)
+                .padding(.bottom, 10)
             }
-            field("Code eintippen (optional)", Binding(get: { form.c.code ?? "" }, set: { v in form.c.code = v; form.c.codeType = nil }))
-                .keyboardType(.asciiCapable).textInputAutocapitalization(.never).autocorrectionDisabled()
-            Button { scanner = true } label: { Label(code.isEmpty ? "Barcode scannen" : "Neu scannen", systemImage: "barcode.viewfinder") }
-                .buttonStyle(SecondaryButtonStyle())
+            summary("barcode", "Barcode", sub: code.isEmpty ? "Noch keiner" : "\(Coupons.codeTypes.first { t in t.0 == codeType }?.1 ?? codeType) · \(code)")
+            if open == "barcode" {
+                VStack(spacing: 10) {
+                    if !code.isEmpty {
+                        BarcodeView(code: code, type: codeType, height: 70)
+                            .padding(12)
+                            .background(Theme.C.plate, in: RoundedRectangle(cornerRadius: Theme.R.tile, style: .continuous))
+                        Segmented8(options: Coupons.codeTypes, selection: Binding(get: { codeType }, set: { t in form.c.codeType = t }))
+                    }
+                    FieldBox {
+                        TextField("Code eintippen (optional)", text: Binding(get: { form.c.code ?? "" }, set: { v in form.c.code = v; form.c.codeType = nil }))
+                            .keyboardType(.asciiCapable).textInputAutocapitalization(.never).autocorrectionDisabled()
+                    }
+                    OutlineButton(title: code.isEmpty ? "Barcode scannen" : "Neu scannen", icon: .barcode) { scanner = true }
+                }
+                .padding(.bottom, 10)
+            }
         }
-        Button(action: save) { Text(saving ? "Speichere …" : "Speichern") }
-            .buttonStyle(PrimaryButtonStyle())
-            .disabled(!form.valid || saving).opacity(form.valid ? 1 : 0.5)
+        .padding(.top, 28)
+        PrimaryButton(title: saving ? "Speichere …" : "Speichern", disabled: !form.valid || saving, action: save).padding(.top, 24)
         if let c = editing {
-            Button("Löschen", role: .destructive) { Task { await store.deleteCoupon(c); dismiss() } }
+            Button("Coupon löschen", role: .destructive) { Task { await store.deleteCoupon(c); dismiss() } }
+                .font(Theme.F.button2).foregroundStyle(Theme.C.deal)
                 .frame(maxWidth: .infinity, minHeight: 44)
+                .padding(.top, 8)
         }
-    }
-
-    private func field(_ placeholder: String, _ text: Binding<String>) -> some View {
-        TextField(placeholder, text: text)
-            .padding(12).background(Theme.C.surface, in: RoundedRectangle(cornerRadius: Theme.R.chip))
-    }
-
-    private func section(_ emoji: String, _ title: String, @ViewBuilder content: () -> some View) -> some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Label { Text(title).font(Theme.F.headline) } icon: { Text(emoji) }
-            content()
-        }
-        .padding(16).card()
     }
 
     /// Foto → JPEG (≤ 5 MB, Backend-Grenze) → KI liest die Felder.
@@ -922,15 +1071,15 @@ struct CouponAddSheet: View {
     }
 }
 
-// MARK: Plus/Minus-Sheet
+// MARK: S31d Plus/Minus-Sheet
 
-/// Nach dem Einkauf: „Heute bekommen: +60 °P“, eingelöst oder Kontostand korrigieren.
+/// Nach dem Einkauf (d.html S31d): „Heute bekommen: +60 °P“, eingelöst oder Kontostand korrigieren.
 struct BonusSheet: View {
     @Environment(AppStore.self) private var store
     @Environment(\.dismiss) private var dismiss
     let account: BonusAccountDTO
     @State private var mode = "plus"  // plus | minus | set
-    @State private var value = ""
+    @State private var value = Demo.screen == "bonus" ? "60" : ""
     @State private var saving = false
     @State private var height: CGFloat = 480
 
@@ -944,48 +1093,52 @@ struct BonusSheet: View {
     var body: some View {
         let current = store.bonusAccounts.first { a in a.program == account.program } ?? account
         ScrollView {
-            VStack(alignment: .leading, spacing: 16) {
+            VStack(alignment: .leading, spacing: 0) {
                 HStack {
-                    Label { Text(current.name).font(Theme.F.title) } icon: { Text(Coupons.emoji(current.program)) }
+                    HStack(spacing: 12) {
+                        CouponLogo(chain: current.program == "rewe_bonus" ? "rewe" : "", program: current.program, name: current.name, size: 40)
+                        Text(current.name).font(Theme.F.t2)
+                    }
                     Spacer()
-                    RoundIconButton(systemName: "xmark", label: "Schließen") { dismiss() }
+                    CloseButton { dismiss() }
                 }
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(current.balanceText).font(.system(size: 40, weight: .bold, design: .rounded)).monospacedDigit()
-                        .contentTransition(.numericText())
-                    if current.points { Text("≈ \(euro(current.valueCents))").font(Theme.F.caption).foregroundStyle(Theme.C.text2) }
+                StatNumber(label: "Kontostand", value: current.balanceText, size: 56).padding(.top, 20)
+                if current.points {
+                    Text("≈ \(euro(current.valueCents))").font(Theme.F.text(13)).foregroundStyle(Theme.C.ink2)
+                        .frame(maxWidth: .infinity, alignment: .trailing).padding(.top, 6)
                 }
-                PillSegment(options: [("plus", "Bekommen"), ("minus", "Eingelöst"), ("set", "Korrigieren")], selection: $mode)
-                HStack(spacing: 10) {
-                    Text(mode == "plus" ? "+" : mode == "minus" ? "−" : "=").font(.system(.title2, design: .rounded, weight: .bold))
-                        .foregroundStyle(mode == "plus" ? Theme.C.success : Theme.C.text1)
+                Segmented8(options: [("plus", "Bekommen"), ("minus", "Eingelöst"), ("set", "Korrigieren")], selection: $mode).padding(.top, 16)
+                FieldBox {
+                    Text(mode == "plus" ? "+" : mode == "minus" ? "−" : "=").font(Theme.F.num(28)).foregroundStyle(Theme.C.ink)
                     TextField(account.points ? "60" : "0,50", text: $value)
                         .keyboardType(account.points ? .numberPad : .decimalPad)
-                        .font(.system(.title2, design: .rounded, weight: .bold)).monospacedDigit()
-                        .padding(.horizontal, 16).frame(height: 52).background(Theme.C.surface, in: Capsule())
-                    Text(account.points ? "°P" : "€").font(Theme.F.headline)
+                        .font(Theme.F.text(20, .bold))
+                    Text(account.points ? "°P" : "€").foregroundStyle(Theme.C.ink2)
                 }
+                .padding(.top, 12)
                 if mode != "set" {
-                    HStack(spacing: 8) {
-                        ForEach(account.points ? ["10", "50", "100", "500"] : ["0,50", "1,00", "2,00", "5,00"], id: \.self) { v in
-                            FilterChip(label: account.points ? "\(v) °P" : "\(v) €", selected: value == v) { value = v }
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(spacing: 8) {
+                            ForEach(account.points ? ["10", "50", "100", "500"] : ["0,50", "1,00", "2,00", "5,00"], id: \.self) { v in
+                                Chip8(title: account.points ? "\(v) °P" : "\(v) €", on: value == v) { value = v }
+                            }
                         }
                     }
+                    .padding(.top, 12)
                 }
-                Button(action: save) { Text(saving ? "Speichere …" : title) }
-                    .buttonStyle(PrimaryButtonStyle())
-                    .disabled(amount == nil || saving).opacity(amount == nil ? 0.5 : 1)
-                Text(mode == "plus" ? "Zählt als Ersparnis „Bonus“ im Monats-Dashboard und bei den Erfolgen."
-                                    : mode == "set" ? "Korrektur zählt nicht als Ersparnis." : "Eingelöstes zieht vom Konto ab.")
-                    .font(Theme.F.micro).foregroundStyle(Theme.C.text2)
+                PrimaryButton(title: saving ? "Speichere …" : title, disabled: amount == nil || saving, action: save).padding(.top, 18)
+                Text(mode == "minus" ? "Eingelöstes zieht vom Konto ab." : "Bekommen zählt als Ersparnis „Bonus“, Korrektur nicht.")
+                    .font(Theme.F.text(12)).foregroundStyle(Theme.C.ink2)
+                    .frame(maxWidth: .infinity).multilineTextAlignment(.center)
+                    .padding(.top, 10)
             }
-            .padding(Theme.pagePadding)
+            .padding(.horizontal, Theme.pagePadding).padding(.bottom, 40)
             .onGeometryChange(for: CGFloat.self) { g in g.size.height } action: { h in height = h }
         }
         .scrollBounceBehavior(.basedOnSize)
         .scrollDismissesKeyboard(.immediately)
-        .presentationDetents([.height(height), .large])
-        .presentationBackground(Theme.C.bg)
+        .presentationDetents([.height(height + 33), .large])
+        .sheet8()
         .sensoryFeedback(.selection, trigger: mode)
     }
 

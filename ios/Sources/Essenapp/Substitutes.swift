@@ -65,7 +65,7 @@ extension AppStore {
     }
 }
 
-/// S26 „Ersatz finden“: 2–4 Alternativen mit umgerechneter Menge, Wirkung, „im Vorrat“ / „im Angebot“.
+/// S26 „Ersatz finden“ (b.html): Ersatz-Zeilen mit Name · Wirkung, Mengen in Blau und einem Badge (Angebot oder „im Vorrat“).
 struct SubstituteSheet: View {
     @Environment(AppStore.self) private var store
     @Environment(\.dismiss) private var dismiss
@@ -80,42 +80,46 @@ struct SubstituteSheet: View {
     private var original: IngredientDTO? { meal.recipe.ingredients.indices.contains(index) ? meal.recipe.ingredients[index] : nil }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            HStack(alignment: .top) {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Ersatz für \(original?.name ?? "Zutat")").font(Theme.F.title)
-                    Text(subtitle).font(Theme.F.caption).foregroundStyle(Theme.C.text2)
-                }
+        VStack(alignment: .leading, spacing: 0) {
+            HStack {
+                Text("Ersatz für \(original?.name ?? "Zutat")").font(Theme.F.t2).foregroundStyle(Theme.C.ink)
                 Spacer()
-                RoundIconButton(systemName: "xmark", label: "Schließen") { dismiss() }
+                CloseButton { dismiss() }
             }
+            Text(subtitle).font(Theme.F.text(13, .semibold, relativeTo: .footnote)).foregroundStyle(Theme.C.ink2).padding(.top, 4)
             ScrollView {
-                VStack(alignment: .leading, spacing: 10) {
+                VStack(alignment: .leading, spacing: 0) {
                     if let result {
                         if result.options.isEmpty {
-                            EmptyState(emoji: "🤷", title: "Kein Ersatz gefunden", text: "Für diese Zutat kennen wir gerade keine passende Alternative.")
+                            StateNote8(ill: "binoculars", title: "Kein Ersatz gefunden", text: "Für diese Zutat kennen wir gerade keine passende Alternative.")
                         }
                         ForEach(Array(result.options.enumerated()), id: \.offset) { i, option in
-                            optionCard(i, option).appear(delay: Double(i) * 0.06)
+                            optionRow(i, option).appear(delay: Double(i) * 0.06)
                         }
                         if !result.options.isEmpty {
                             Text("Antippen ersetzt die Zutat nur in diesem Rezept – Nährwerte und Kosten werden neu berechnet.")
-                                .font(Theme.F.micro).foregroundStyle(Theme.C.text2).padding(.top, 4)
+                                .font(Theme.F.text(13, .semibold, relativeTo: .footnote)).lineSpacing(6).foregroundStyle(Theme.C.ink2)
+                                .padding(.top, 12)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .overlay(alignment: .top) { Hairline() }
                         }
                     } else if let error {
-                        ErrorState(message: error) { Task { await load() } }
+                        StateNote8.error(error) { Task { await load() } }
                     } else {
-                        ForEach(0..<3, id: \.self) { _ in SkeletonCard(height: 104) }
-                        Text("Suche passenden Ersatz …").font(Theme.F.caption).foregroundStyle(Theme.C.text2)
-                            .frame(maxWidth: .infinity)
+                        VStack(spacing: 14) {
+                            Hop3()
+                            Text("Suche passenden Ersatz …").font(Theme.F.text(13, .semibold, relativeTo: .footnote)).foregroundStyle(Theme.C.ink2)
+                        }
+                        .frame(maxWidth: .infinity).padding(.top, 30)
                     }
                 }
-                .padding(.bottom, 20)
+                .padding(.top, 28)
+                .padding(.bottom, 40)
             }
         }
-        .padding(Theme.pagePadding)
+        .padding(.horizontal, Theme.pagePadding)
         .frame(maxHeight: .infinity, alignment: .top)
-        .background(Theme.C.bg)
+        .sheet8()
         .sensoryFeedback(.success, trigger: applied)
         .task { if result == nil { await load() } }
     }
@@ -126,39 +130,34 @@ struct SubstituteSheet: View {
         return "\(amount) · \(result.source == "ki" ? "Vorschläge der KI" : "aus unserer Ersatz-Tabelle")"
     }
 
-    private func optionCard(_ i: Int, _ option: SubstitutesDTO.Option) -> some View {
+    /// `.irow` 72: Name (Serif 20) · Wirkung, darunter die Mengen in `blue3`; rechts Angebot oder „im Vorrat“.
+    private func optionRow(_ i: Int, _ option: SubstitutesDTO.Option) -> some View {
         let main = option.ingredients.first?.name ?? ""
+        let offer = option.ingredients.compactMap(\.offer).first
+        let pantry = option.ingredients.contains(where: \.inPantry)
         return Button { Task { await apply(i, option) } } label: {
-            HStack(alignment: .top, spacing: 12) {
-                VStack(alignment: .leading, spacing: 6) {
-                    Text("\(main) statt \(original?.name ?? "")").font(.system(.headline, design: .rounded, weight: .bold))
-                        .foregroundStyle(Theme.C.text1).multilineTextAlignment(.leading)
+            HStack(spacing: 12) {
+                VStack(alignment: .leading, spacing: 2) {
+                    (Text(main).font(Theme.F.serif(20, relativeTo: .title3)).foregroundColor(Theme.C.ink)
+                        + Text(option.note.isEmpty ? "" : " · \(option.note)").font(Theme.F.text(13, .semibold, relativeTo: .footnote))
+                        .foregroundColor(Theme.C.ink2))
+                        .multilineTextAlignment(.leading)
                     Text(option.ingredients.map { g in "\(qty(g.amount, g.unit)) \(g.name)" }.joined(separator: " + "))
-                        .font(Theme.F.callout).monospacedDigit().foregroundStyle(Theme.C.accentDeep)
-                    if !option.note.isEmpty {
-                        Text(option.note).font(Theme.F.caption).foregroundStyle(Theme.C.text2).multilineTextAlignment(.leading)
-                    }
-                    FlowLayout(spacing: 6) {
-                        ForEach(option.ingredients, id: \.self) { g in
-                            if g.inPantry { DealBadge(text: option.ingredients.count > 1 ? "\(g.name) im Vorrat" : "im Vorrat", style: .ok) }
-                            if let offer = g.offer {
-                                DealBadge(text: "im Angebot \(euro(offer.priceCents))")
-                                StoreChip(chain: offer.chain)
-                            }
-                        }
-                    }
+                        .font(Theme.F.text(16, .extrabold)).monospacedDigit().foregroundStyle(Theme.C.blue3).multilineTextAlignment(.leading)
                 }
-                Spacer(minLength: 0)
+                Spacer(minLength: 8)
                 if busy == i {
-                    ProgressView()
-                } else {
-                    Image(systemName: "arrow.left.arrow.right").font(.system(size: 14, weight: .bold)).foregroundStyle(Theme.C.text3)
-                        .accessibilityHidden(true)
+                    Hop3().frame(width: 60)
+                } else if let offer {
+                    DealPill(text: "\(Labels.chain(offer.chain)) \(euro(offer.priceCents))")
+                } else if pantry {
+                    SoftPill(text: "im Vorrat", tint: Theme.C.sage)
                 }
             }
-            .padding(14)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .card(radius: Theme.R.tile)
+            .padding(.vertical, 10)
+            .frame(maxWidth: .infinity, minHeight: 72, alignment: .leading)
+            .overlay(alignment: .top) { Hairline() }
+            .contentShape(Rectangle())
         }
         .buttonStyle(PressableStyle())
         .disabled(busy != nil)

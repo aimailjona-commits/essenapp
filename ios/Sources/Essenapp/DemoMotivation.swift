@@ -45,6 +45,11 @@ extension Demo {
                    purchase(3, "Basmatireis", "rewe", "vorrat", 894, 300, "\(month)-04"),
                    purchase(4, "Waschmittel", "dm", "haushalt", 795, 0, "\(month)-02", estimated: true),
                    purchase(5, "Feta", "lidl", "kuehlung", 495, 160, "\(month)-03")]
+        // weitere Einkäufe über den Monat verteilt (Ersparnis S11: Wochenbalken, Verlauf)
+        let more = [("09", "rewe", 380), ("11", "lidl", 510), ("16", "rewe", 290), ("19", "lidl", 640), ("23", "rewe", 470),
+                    ("26", "lidl", 820), ("30", "rewe", 560)].enumerated().map { i, x in
+            purchase(10 + i, "Einkauf", x.1, "vorrat", 1490, x.2, "\(month)-\(x.0)")
+        }
         return SpendingDTO(
             month: month, totalCents: 18240, estimatedCents: 1260, budgetCents: 25714, savedCents: 2340, bonusCents: 410,
             weeks: [.init(week: "2026-W44", totalCents: 2140), .init(week: "2026-W45", totalCents: 6890), .init(week: "2026-W46", totalCents: 5120),
@@ -54,7 +59,7 @@ extension Demo {
             categories: [.init(category: "fleisch_fisch", totalCents: 5400), .init(category: "obst_gemuese", totalCents: 3900),
                          .init(category: "kuehlung", totalCents: 3600), .init(category: "vorrat", totalCents: 2800),
                          .init(category: "drogerie", totalCents: 1620), .init(category: "haushalt", totalCents: 920)],
-            top: top, prevTotalCents: 16800, changePct: 8.6, items: top)
+            top: top, prevTotalCents: 16800, changePct: 8.6, items: top + more)
     }
 
     static func ach(_ key: String, _ group: String, _ emoji: String, _ title: String, _ target: Int, _ progress: Double, _ unit: String,

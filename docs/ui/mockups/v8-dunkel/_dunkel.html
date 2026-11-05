@@ -1,0 +1,99 @@
+<style>
+/* Dunkelmodus v8: gleiche Token-Namen wie :root, nur auf .dark überschrieben */
+.dark{--bg:#1B1915;--card:#26231E;--ink:#F2ECE0;--ink2:#ADA699;--ink3:#6F695F;--line:#3A362F;--blue:#33426B;--blue1:#272E42;--blue3:#AFC4F2;--sage:#2D3F33;--rose:#4B312C;--sand:#3E362A;--deal:#E0603F;--page:#0F0E0C;color:var(--ink)}
+/* Tinte wird Creme → Schrift auf Tinten-Flächen wird Grund-Farbe */
+.dark .circle,.dark .pill,.dark .chip.on,.dark .ck.on,.dark .seg span.on,.dark .btn,.dark .toast,.dark .potdays i.on{color:var(--bg)}
+.dark .btn.blue{color:var(--ink)}
+.dark .sw::after{background:var(--ink)}.dark .sw.on::after{background:var(--bg)}
+.dark .nav{filter:drop-shadow(0 -6px 14px rgba(0,0,0,.35))}
+.dark .nav svg.bar path{fill:var(--card)}
+.dark .nav .t.on{background:var(--blue3);color:var(--bg)}
+.dark .scrim{background:rgba(0,0,0,.55)}
+.dark .sheet{background:var(--card)}
+/* Illustrationen: feiner Creme-Rand um die Tusche, damit Umriss und lose Striche auf Dunkel lesbar bleiben */
+.dark img[src*="ill-v7"]{filter:drop-shadow(0 0 .6px var(--ink)) drop-shadow(0 0 .6px var(--ink))}
+.chalk .dark img[src*="ill-v7"]{filter:invert(1) hue-rotate(180deg)}
+/* Hell/Dunkel nebeneinander */
+.screen{width:auto}
+.pair{display:flex;gap:20px;flex-wrap:wrap;justify-content:center}
+.kit{position:relative;width:390px;max-width:100%;background:var(--bg);border-radius:40px;padding:28px 24px 32px;box-shadow:0 30px 60px rgba(40,30,20,.14)}
+.kit .sec2:first-child{margin-top:0}
+.mini{position:relative;height:330px;border-radius:28px;overflow:hidden;background:var(--bg);box-shadow:inset 0 0 0 1.5px var(--line);margin-top:8px}
+table.tok{border-collapse:collapse;margin-top:10px;font-size:13px}
+table.tok td,table.tok th{padding:4px 14px 4px 0;text-align:left;border-bottom:1px solid #d3ccbe}
+table.tok i{display:inline-block;width:14px;height:14px;border-radius:50%;vertical-align:-2px;margin-right:6px;box-shadow:0 0 0 1px #0002}
+</style>
+<header class="head">
+  <h1>Essenapp v8 – Dunkelmodus</h1>
+  <p><b>Links hell (freigegeben), rechts dunkel (Vorschlag).</b> Grund ist ein warmes Fast-Schwarz, Flächen wie Sheets und Nav sind eine Stufe heller, Text ist Creme statt Weiß – so bleibt das Papier-Gefühl der hellen Version. Die Pastell-Formen sind stark abgedunkelt (Nachtblau, Moos, Rost, Sand) und heben sich nur leicht vom Grund ab; die Form-Sprache mit Kreisen und Bögen aus dem Rand bleibt, wirkt aber ruhig. <b>Tinten-Knöpfe werden Creme mit dunkler Schrift</b>: so bleibt die Regel „Tinte = stärkster Kontrast“ in beiden Modi gleich, und Blau bleibt für Formen und die aktive Nav reserviert – ein blauer Knopf ginge auf den blauen Formen (Wochenplan, Rezept) unter. Die Nav ist eine dunkle Fläche mit Mulde, der aktive Kreis bleibt Pastellblau mit dunklem Symbol. <b>Illustrationen</b> bleiben unverändert (Creme-Körper, schwarze Tusche); auf Dunkel bekommen sie einen feinen Creme-Rand (CSS-Filter), damit Umriss und lose Striche wie Gras oder Sterne lesbar bleiben – an den Bilddateien ändert sich nichts.</p>
+  <div class="open"><b>Dunkel-Tokens</b> (gleiche Namen wie hell; Text auf Grund: ink 14,9 : 1, ink2 7,3 : 1)
+    <table class="tok">
+      <tr><th>Token</th><th>hell</th><th>dunkel</th><th>Gebrauch</th></tr>
+      <tr><td>--bg</td><td>#F3EEE4</td><td><i style="background:#1B1915"></i>#1B1915</td><td>Grund</td></tr>
+      <tr><td>--card</td><td>#FBF8F2</td><td><i style="background:#26231E"></i>#26231E</td><td>Flächen, Sheet, Nav-Leiste</td></tr>
+      <tr><td>--ink</td><td>#151515</td><td><i style="background:#F2ECE0"></i>#F2ECE0</td><td>Text, Tinten-Knöpfe</td></tr>
+      <tr><td>--ink2</td><td>#7C776D</td><td><i style="background:#ADA699"></i>#ADA699</td><td>Nebentext</td></tr>
+      <tr><td>--ink3</td><td>#B9B3A7</td><td><i style="background:#6F695F"></i>#6F695F</td><td>leise, aus, Vergleichswert</td></tr>
+      <tr><td>--line</td><td>#DCD5C7</td><td><i style="background:#3A362F"></i>#3A362F</td><td>Haarlinien</td></tr>
+      <tr><td>--blue</td><td>#AFC4F2</td><td><i style="background:#33426B"></i>#33426B</td><td>große Form</td></tr>
+      <tr><td>--blue1</td><td>#DCE5F8</td><td><i style="background:#272E42"></i>#272E42</td><td>leise Form</td></tr>
+      <tr><td>--blue3</td><td>#7C9BE6</td><td><i style="background:#AFC4F2"></i>#AFC4F2</td><td>Akzent; dunkel auch aktiver Nav-Kreis</td></tr>
+      <tr><td>--sage</td><td>#CFE3D2</td><td><i style="background:#2D3F33"></i>#2D3F33</td><td>Form, „ok“</td></tr>
+      <tr><td>--rose</td><td>#F2CFC8</td><td><i style="background:#4B312C"></i>#4B312C</td><td>Form</td></tr>
+      <tr><td>--sand</td><td>#E7DCC5</td><td><i style="background:#3E362A"></i>#3E362A</td><td>Form</td></tr>
+      <tr><td>--deal</td><td>#E0603F</td><td><i style="background:#E0603F"></i>#E0603F</td><td>Rabatt (bleibt)</td></tr>
+      <tr><td>--page</td><td>#E2DCD0</td><td><i style="background:#0F0E0C"></i>#0F0E0C</td><td>Seiten-Hintergrund (Web)</td></tr>
+      <tr><td>Schleier</td><td>#151515 32 %</td><td>#000000 55 %</td><td>.scrim</td></tr>
+    </table>
+  </div>
+  <div class="open"><b>Bitte entscheiden</b>
+    1. Formen so dunkel und ruhig – oder etwas mehr Farbe?<br>
+    2. Knöpfe Creme (wie hier) oder Pastellblau?<br>
+    3. Illustrationen mit feinem Creme-Rand (wie hier) oder als „Kreide“ (umgekehrt: helle Linien, dunkle Körper)? <label style="font-weight:700;cursor:pointer"><input type="checkbox" onchange="document.body.classList.toggle('chalk',this.checked)"> Kreide zeigen</label>
+  </div>
+</header>
+<!-- SCREENS -->
+<div class="screens">
+  <div class="screen"><div class="kit">
+    <div class="sec2">KNÖPFE</div>
+    <div class="btn">Plan erstellen<svg class="i"><use href="#i-arrow"/></svg></div>
+    <div class="btn blue" style="margin-top:10px"><svg class="i"><use href="#i-sparkle"/></svg>Vorschlag</div>
+    <div class="row" style="margin-top:10px;gap:10px"><div class="btn2" style="flex:1">Später</div><div class="btn off" style="flex:1">Gesperrt</div></div>
+    <div class="sec2">CHIPS</div>
+    <div class="chips"><span class="chip on">Alle</span><span class="chip">Merkliste 3</span><span class="chip">Gemüse</span><span class="soft ok">ok</span></div>
+    <div class="sec2">FELDER</div>
+    <div class="field"><svg class="i"><use href="#i-search"/></svg>Rezept suchen</div>
+    <div class="seg" style="margin-top:10px"><span class="on">Woche</span><span>Monat</span><span>Alle</span></div>
+    <div class="row between" style="margin-top:10px"><span>Personen</span><span class="stepper"><i>−</i>2<i>+</i></span></div>
+    <div class="sec2">SCHALTER</div>
+    <div class="row between"><span>Push bei Angeboten</span><span class="sw on"></span></div>
+    <div class="row between" style="margin-top:10px"><span style="color:var(--ink2)">Ton im Kochmodus</span><span class="sw"></span></div>
+    <div class="sec2">SHEET + TOAST</div>
+    <div class="mini">
+      <div class="blob" style="left:150px;top:-60px;width:300px;height:300px;background:var(--blue)"></div>
+      <div class="toast" style="top:22px;bottom:auto">Zur Liste hinzugefügt</div>
+      <div class="scrim"></div>
+      <div class="sheet" style="padding-bottom:24px">
+        <div class="row between"><div class="t2">Gericht tauschen</div><span class="x"><svg class="i"><use href="#i-x"/></svg></span></div>
+        <div class="irow" style="margin-top:10px"><span class="c" style="background:var(--rose)"><img src="ill-v7/tomato.webp" alt=""></span><span class="nm">Tomaten-Risotto</span><span class="deal">−30 %</span></div>
+        <div class="btn" style="margin-top:12px">Tauschen</div>
+      </div>
+    </div>
+    <div class="sec2">TOPF-LADER</div>
+    <div class="potld" style="margin-top:34px">
+      <svg class="steam" viewBox="0 0 60 70"><path d="M12 66c-8-10 8-16 0-28s8-16 0-28"/><path d="M30 60c-8-10 8-16 0-28s8-14 0-24"/><path d="M48 66c-8-10 8-16 0-28s8-16 0-28"/></svg>
+      <img class="in" src="ill-v7/tomato.webp" style="--n:0" alt=""><img class="in" src="ill-v7/garlic.webp" style="--n:1" alt=""><img class="in" src="ill-v7/basil.webp" style="--n:2" alt=""><img class="in" src="ill-v7/pasta.webp" style="--n:3" alt="">
+      <img class="body" src="ill-v7/pot-body.webp" alt=""><img class="lid" src="ill-v7/pot-lid.webp" alt="">
+    </div>
+    <div class="small" style="text-align:center;margin-top:14px">Plan wird gekocht …</div>
+  </div>
+  <div class="caption"><b>Bausteine</b>Knöpfe, Chips, Felder, Schalter, Sheet mit Schleier, Toast und Topf-Lader.</div></div>
+</div>
+<script>
+// Jede Ansicht doppeln: links hell, rechts dieselbe mit .dark (vor dem Nav-Skript, damit beide Navs gezeichnet werden)
+document.querySelectorAll('.phone, .kit').forEach(p => {
+  const w = document.createElement('div'), d = p.cloneNode(true);
+  w.className = 'pair'; d.classList.add('dark');
+  p.replaceWith(w); w.append(p, d);
+});
+</script>

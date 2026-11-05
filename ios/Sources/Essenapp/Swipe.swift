@@ -126,31 +126,31 @@ struct SwipeView: View {
     private var stack: some View {
         VStack(alignment: .leading, spacing: 0) {
             HStack {
-                RoundIconButton(systemName: "chevron.left", label: "Zurück") { dismiss() }
+                CircleButton(icon: .back, label: "Zurück") { dismiss() }
                 Spacer()
                 if deck?.ready == true {
                     Button("Fertig") { Task { await refresh(); go(.selection) } }
-                        .font(Theme.F.callout).foregroundStyle(Theme.C.onAction)
-                        .padding(.horizontal, 16).frame(height: 36).background(Theme.C.action, in: Capsule())
+                        .font(Theme.F.chip).foregroundStyle(Theme.C.onInk)
+                        .padding(.horizontal, 16).frame(height: Theme.S.chip).background(Theme.C.ink, in: Capsule())
                         .frame(minHeight: 44).buttonStyle(PressableStyle())
                 }
                 if let members = deck?.members, !members.isEmpty {
-                    Text("swipen mit").font(Theme.F.caption).foregroundStyle(Theme.C.text2)
+                    Text("swipen mit").font(Theme.F.text(13, .semibold, relativeTo: .footnote)).foregroundStyle(Theme.C.ink2)
                     HStack(spacing: -6) { ForEach(Array(members.enumerated()), id: \.offset) { i, n in Initial(name: n, index: i) } }
                 }
             }
             Text("Woche \(Calendar(identifier: .iso8601).component(.weekOfYear, from: .now))")
-                .font(Theme.F.display(40)).padding(.top, 6)
+                .font(Theme.F.serif(40, relativeTo: .largeTitle)).padding(.top, 6)
             if let deck { pills(deck) }
             ZStack {
                 if let error, deck == nil {
-                    ErrorState(message: error) { Task { await load() } }
+                    SwipeNote(ill: "binoculars", title: "Das hat nicht geklappt", text: error, button: "Erneut versuchen") { Task { await load() } }
                 } else if let e = deck?.error, !e.isEmpty, pile.isEmpty {
-                    ErrorState(message: e) { Task { await more(force: true) } }
+                    SwipeNote(ill: "binoculars", title: "Das hat nicht geklappt", text: e, button: "Erneut versuchen") { Task { await more(force: true) } }
                 } else if deck == nil || (deck?.loading == true && deck?.cards.isEmpty == true) {
-                    SkeletonCard(height: 440).clipShape(RoundedRectangle(cornerRadius: Theme.R.sheet, style: .continuous))
+                    VStack(spacing: 18) { PotLoader(); Skeleton8(width: 200, height: 20) }
                 } else if pile.isEmpty {
-                    EmptyState(emoji: "🃏", title: "Stapel lädt nach …", text: "Neue Ideen aus den Angeboten")
+                    VStack(spacing: 14) { Hop3(); SwipeNote(ill: "cookbook", title: "Stapel lädt nach …", text: "Neue Ideen aus den Angeboten") }
                 } else {
                     let top = Array(pile.prefix(3))
                     ForEach(Array(top.enumerated()).reversed(), id: \.element.id) { i, card in
@@ -171,7 +171,7 @@ struct SwipeView: View {
             .padding(.horizontal, 4).padding(.top, 18).padding(.bottom, 14)
             buttons
             Text("Würfel = „Überrasch mich“: KI plant den Rest")
-                .font(Theme.F.caption).foregroundStyle(Theme.C.text2).frame(maxWidth: .infinity).padding(.top, 8)
+                .font(Theme.F.text(13, .semibold, relativeTo: .footnote)).foregroundStyle(Theme.C.ink2).frame(maxWidth: .infinity).padding(.top, 8)
         }
         .padding(.horizontal, Theme.pagePadding)
         .padding(.bottom, 8)
@@ -197,17 +197,17 @@ struct SwipeView: View {
                         HStack(spacing: 6) {
                             Text(deck.done(m) && !on ? "\(Labels.meal(m)) ✓" : "\(Labels.meal(m)) \(h)/\(n)")
                             if on {
-                                Capsule().fill(Theme.C.onInk2).frame(width: 34, height: 4)
+                                Capsule().fill(Theme.C.ink3).frame(width: 34, height: 4)
                                     .overlay(alignment: .leading) {
-                                        Capsule().fill(Theme.C.lime).frame(width: 34 * CGFloat(h) / CGFloat(max(n, 1)))
+                                        Capsule().fill(Theme.C.blue).frame(width: 34 * CGFloat(h) / CGFloat(max(n, 1)))
                                     }
                             }
                         }
-                        .font(.system(.footnote, weight: .heavy)).monospacedDigit()
-                        .foregroundStyle(on ? Theme.C.onAction : deck.done(m) ? Theme.C.onBright : Theme.C.text2)
-                        .padding(.horizontal, 12).frame(height: 34)
-                        .background(on ? Theme.C.action : deck.done(m) ? Theme.C.mint : .clear, in: Capsule())
-                        .overlay(Capsule().strokeBorder(on || deck.done(m) ? .clear : Theme.C.chipBorder, lineWidth: 1.5))
+                        .font(Theme.F.chip).monospacedDigit()
+                        .foregroundStyle(on ? Theme.C.onInk : deck.done(m) ? Theme.C.ink : Theme.C.ink2)
+                        .padding(.horizontal, 15).frame(height: Theme.S.chip)
+                        .background(on ? Theme.C.ink : deck.done(m) ? Theme.C.sage : .clear, in: Capsule())
+                        .overlay(Capsule().strokeBorder(on || deck.done(m) ? .clear : Theme.C.line, lineWidth: Theme.S.hair))
                         .frame(minHeight: 44)
                     }
                     .buttonStyle(PressableStyle())
@@ -268,38 +268,43 @@ struct SwipeView: View {
 
     private var buttons: some View {
         HStack(alignment: .top, spacing: 0) {
-            small("arrow.uturn.backward", "Rückgängig") { Task { await undo() } }
+            small(nil, "arrow.uturn.backward", "Rückgängig") { Task { await undo() } }
             Spacer()
-            act("xmark", "Nicht", size: 72) { if let c = pile.first { decide(c, "nein") } }
+            act(.x, "", "Nicht", size: 72) { if let c = pile.first { decide(c, "nein") } }
             Spacer()
-            act("hand.thumbsdown", "Mag ich nicht", size: 58) { if let c = pile.first { decide(c, "mag_nicht") } }
+            act(nil, "hand.thumbsdown", "Mag ich nicht", size: 58) { if let c = pile.first { decide(c, "mag_nicht") } }
             Spacer()
-            act("checkmark", "Diese Woche", size: 72, dark: true) { if let c = pile.first { decide(c, "ja") } }
+            act(.check, "", "Diese Woche", size: 72, dark: true) { if let c = pile.first { decide(c, "ja") } }
             Spacer()
-            small("dice", "Überrasch mich") { planBefore = store.plan?.id; surprise = true }
+            small(.dice, "", "Überrasch mich") { planBefore = store.plan?.id; surprise = true }
         }
         .disabled(deck == nil)
     }
 
-    private func act(_ symbol: String, _ label: String, size: CGFloat, dark: Bool = false, action: @escaping () -> Void) -> some View {
+    /// Icon8, sonst SF-Symbol (Daumen runter, Rückgängig gibt es im v8-Satz nicht).
+    @ViewBuilder private func glyph(_ icon: Icon8?, _ symbol: String, _ size: CGFloat) -> some View {
+        if let icon { Icon(icon, size: size) } else { Image(systemName: symbol).font(.system(size: size * 0.85, weight: .semibold)) }
+    }
+
+    private func act(_ icon: Icon8?, _ symbol: String, _ label: String, size: CGFloat, dark: Bool = false, action: @escaping () -> Void) -> some View {
         VStack(spacing: 6) {
             Button(action: action) {
-                Image(systemName: symbol).font(.system(size: size > 60 ? 26 : 20, weight: .bold))
-                    .foregroundStyle(dark ? Theme.C.onAction : Theme.C.text1)
+                glyph(icon, symbol, size > 60 ? 28 : 22)
+                    .foregroundStyle(dark ? Theme.C.onInk : Theme.C.ink)
                     .frame(width: size, height: size)
-                    .background(dark ? Theme.C.action : Theme.C.card, in: Circle())
-                    .softShadow()
+                    .background(dark ? Theme.C.ink : Theme.C.card, in: Circle())
+                    .overlay { if !dark { Circle().strokeBorder(Theme.C.line, lineWidth: Theme.S.hair) } }
             }
             .buttonStyle(PressableStyle())
             .accessibilityLabel(label)
-            Text(label).font(Theme.F.micro).foregroundStyle(Theme.C.text2).lineLimit(1).fixedSize()
+            Text(label).font(Theme.F.text(12, .bold, relativeTo: .caption)).foregroundStyle(Theme.C.ink2).lineLimit(1).fixedSize()
         }
         .disabled(pile.isEmpty)
     }
 
-    private func small(_ symbol: String, _ label: String, action: @escaping () -> Void) -> some View {
+    private func small(_ icon: Icon8?, _ symbol: String, _ label: String, action: @escaping () -> Void) -> some View {
         Button(action: action) {
-            Image(systemName: symbol).font(.system(size: 18, weight: .semibold)).foregroundStyle(Theme.C.text2)
+            glyph(icon, symbol, 22).foregroundStyle(Theme.C.ink2)
                 .frame(width: 44, height: 44)
         }
         .buttonStyle(PressableStyle())
@@ -420,31 +425,31 @@ struct SwipeCardFace: View {
         VStack(alignment: .leading, spacing: 0) {
             HStack(alignment: .top) {
                 Text(card.source == "rezept" ? "Dein Rezept" : "KI-Idee")
-                    .font(.system(.caption, weight: .heavy)).foregroundStyle(Theme.C.ink)
-                    .padding(.horizontal, 10).frame(height: 26).background(Theme.C.plate, in: Capsule())
+                    .font(Theme.F.soft).foregroundStyle(Theme.C.ink)
+                    .padding(.horizontal, 10).frame(height: Theme.S.softPill).background(Theme.C.card, in: Capsule())
                 Spacer()
                 VStack(alignment: .trailing, spacing: 0) {
-                    Text(euro(card.costCents)).font(Theme.F.burst(26)).monospacedDigit()
-                    Text("pro Portion").font(Theme.F.caption).opacity(0.6)
+                    BigNumber(euro(card.costCents), size: 30)
+                    Text("pro Portion").font(Theme.F.text(12, .semibold, relativeTo: .caption)).foregroundStyle(Theme.C.ink2)
                 }
-                .foregroundStyle(Theme.C.onBright)  // steht auf dem Pastell-Kreis, auch dunkel
+                .foregroundStyle(Theme.C.ink)
             }
-            Plate(url: mediaURL(card.imageUrl), size: 200, seed: card.title).frame(maxWidth: .infinity).padding(.top, 2)
+            PlanPlate(url: mediaURL(card.imageUrl), size: 200).frame(maxWidth: .infinity).padding(.top, 8)
             Spacer(minLength: 10)
-            Text(card.title).font(Theme.F.cardTitle(26)).lineLimit(2).minimumScaleFactor(0.8)
+            Text(card.title).font(Theme.F.serif(26, relativeTo: .title)).lineLimit(2).minimumScaleFactor(0.8)
                 .fixedSize(horizontal: false, vertical: true)
             HStack(spacing: 14) {
-                if card.prepMinutes > 0 { Label("\(card.prepMinutes) min", systemImage: "clock") }
-                if card.deals > 0 { Label("\(card.deals) im Angebot", systemImage: "tag") }
+                if card.prepMinutes > 0 { HStack(spacing: 4) { Icon(.clock, size: 16); Text("\(card.prepMinutes) min") } }
+                if card.deals > 0 { HStack(spacing: 4) { Icon(.tag, size: 16); Text("\(card.deals) im Angebot") }.foregroundStyle(Theme.C.deal) }
                 if !card.chain.isEmpty { Text(Labels.chain(card.chain)) }
             }
-            .font(.system(.footnote, weight: .bold)).foregroundStyle(Theme.C.text2).padding(.top, 8)
+            .font(Theme.F.text(13, .bold, relativeTo: .footnote)).foregroundStyle(Theme.C.ink2).padding(.top, 8)
             if let n = days {
                 HStack {
-                    Text("An wie vielen Tagen?").font(Theme.F.callout)
+                    Text("An wie vielen Tagen?").font(Theme.F.text(15, .bold, relativeTo: .body))
                     Spacer()
                     step("minus", n - 1, n > 1)
-                    Text("\(n)×").font(Theme.F.burst(20)).monospacedDigit().frame(minWidth: 34).contentTransition(.numericText())
+                    Text("\(n)×").font(Theme.F.text(15, .extrabold)).monospacedDigit().frame(minWidth: 34).contentTransition(.numericText())
                     step("plus", n + 1, n < maxDays)
                 }
                 .padding(.top, 10)
@@ -453,24 +458,24 @@ struct SwipeCardFace: View {
         .padding(22)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(alignment: .topLeading) {
-            Circle().fill(Theme.C.day[abs(card.id) % Theme.C.day.count]).frame(width: 420, height: 420).offset(x: -60, y: -90)
+            Circle().fill(swipeTints[abs(card.id) % swipeTints.count]).frame(width: 420, height: 420).offset(x: -60, y: -90)
         }
         .background(Theme.C.card)
         .clipShape(RoundedRectangle(cornerRadius: Theme.R.sheet, style: .continuous))
-        .softShadow()
-        .overlay(alignment: .topLeading) { stamp("DIESE WOCHE", Theme.C.success, -12, max(drag.width, 0)).padding(.top, 40).padding(.leading, 24) }
-        .overlay(alignment: .topTrailing) { stamp("NICHT", Theme.C.text2, 12, max(-drag.width, 0)).padding(.top, 40).padding(.trailing, 24) }
+        .overlay(RoundedRectangle(cornerRadius: Theme.R.sheet, style: .continuous).strokeBorder(Theme.C.line, lineWidth: Theme.S.hair))
+        .overlay(alignment: .topLeading) { stamp("DIESE WOCHE", Theme.C.ink, -12, max(drag.width, 0)).padding(.top, 40).padding(.leading, 24) }
+        .overlay(alignment: .topTrailing) { stamp("NICHT", Theme.C.ink2, 12, max(-drag.width, 0)).padding(.top, 40).padding(.trailing, 24) }
         .overlay(alignment: .bottom) {
-            stamp("MAG ICH NICHT", Theme.C.danger, 0, abs(drag.height) > abs(drag.width) ? max(-drag.height, 0) : 0).padding(.bottom, 150)
+            stamp("MAG ICH NICHT", Theme.C.deal, 0, abs(drag.height) > abs(drag.width) ? max(-drag.height, 0) : 0).padding(.bottom, 150)
         }
     }
 
     private func stamp(_ text: String, _ color: Color, _ angle: Double, _ pull: CGFloat) -> some View {
-        Text(text).font(.system(size: 20, weight: .heavy)).tracking(0.8).lineLimit(1).fixedSize()
+        Text(text).font(Theme.F.text(18, .extrabold)).tracking(0.8).lineLimit(1).fixedSize()
             .foregroundStyle(color)
-            .padding(.horizontal, 14).padding(.vertical, 6)
-            .background(Theme.C.card.opacity(0.85), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
-            .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous).strokeBorder(color, lineWidth: 3))
+            .padding(.horizontal, 16).frame(height: 40)
+            .background(Theme.C.bg, in: Capsule())
+            .overlay(Capsule().strokeBorder(color, lineWidth: 2.5))
             .rotationEffect(.degrees(angle))
             .opacity(Double(min(pull / 110, 1)))
             .accessibilityHidden(true)
@@ -478,8 +483,9 @@ struct SwipeCardFace: View {
 
     private func step(_ symbol: String, _ value: Int, _ enabled: Bool) -> some View {
         Button { withAnimation(Theme.spring) { days = value } } label: {
-            Image(systemName: symbol).font(.system(size: 13, weight: .bold)).foregroundStyle(Theme.C.onAction)
-                .frame(width: 30, height: 30).background(Theme.C.action, in: Circle())
+            Icon(symbol == "plus" ? .plus : .minus, size: 16).foregroundStyle(Theme.C.ink)
+                .frame(width: Theme.S.stepperKnob, height: Theme.S.stepperKnob).background(Theme.C.card, in: Circle())
+                .overlay(Circle().strokeBorder(Theme.C.line, lineWidth: Theme.S.hair))
                 .frame(minWidth: 44, minHeight: 44)
         }
         .buttonStyle(PressableStyle())
@@ -497,9 +503,9 @@ struct Initial: View {
 
     var body: some View {
         Text(String(name.prefix(1)).uppercased())
-            .font(.system(size: size * 0.4, weight: .heavy)).foregroundStyle(Theme.C.ink)
+            .font(Theme.F.serif(size * 0.5)).foregroundStyle(Theme.C.ink)
             .frame(width: size, height: size)
-            .background(Theme.C.day[(index * 3 + 1) % Theme.C.day.count], in: Circle())
+            .background(swipeTints[(index + 1) % swipeTints.count], in: Circle())
             .overlay(Circle().strokeBorder(Theme.C.bg, lineWidth: 2.5))
             .accessibilityLabel(name)
     }
@@ -515,14 +521,14 @@ struct MatchView: View {
 
     var body: some View {
         ZStack {
-            Theme.C.sky  // Kreis als Overlay: sprengt das Layout nicht
-                .overlay { Circle().fill(Theme.C.plate.opacity(0.45)).frame(width: 560, height: 560).offset(y: -90) }
+            Theme.C.bg  // Kreis als Overlay: sprengt das Layout nicht
+                .overlay { Circle().fill(Theme.C.blue).frame(width: 560, height: 560).offset(y: -90) }
                 .ignoresSafeArea()
             VStack(spacing: 12) {
                 Spacer()
-                Text(members.count > 2 ? "IHR ALLE WOLLT" : "IHR BEIDE WOLLT").font(Theme.F.micro).tracking(1.4)
-                Text("Match!").font(Theme.F.display(52))
-                Plate(url: mediaURL(card.imageUrl), size: 250, seed: card.title)
+                Text(members.count > 2 ? "IHR ALLE WOLLT" : "IHR BEIDE WOLLT").font(Theme.F.lbl).tracking(11 * 0.08)
+                Text("Match!").font(Theme.F.serif(52, relativeTo: .largeTitle))
+                PlanPlate(url: mediaURL(card.imageUrl), size: 250)
                     .overlay(alignment: .bottom) {
                         HStack {
                             ForEach(Array(members.prefix(2).enumerated()), id: \.offset) { i, n in
@@ -534,14 +540,14 @@ struct MatchView: View {
                     }
                     .scaleEffect(pop ? 1 : 0.6).opacity(pop ? 1 : 0)
                     .padding(.vertical, 10)
-                Text(card.title).font(Theme.F.cardTitle(26)).multilineTextAlignment(.center)
+                Text(card.title).font(Theme.F.serif(26, relativeTo: .title)).multilineTextAlignment(.center)
                 Text("\(euro(card.costCents)) p. P. · \(card.prepMinutes) min · \(card.deals) Zutaten im Angebot")
-                    .font(Theme.F.caption).opacity(0.7)
+                    .font(Theme.F.text(13, .semibold, relativeTo: .footnote)).foregroundStyle(Theme.C.ink2)
                 Spacer()
-                Button("Weiter swipen", action: close).buttonStyle(PrimaryButtonStyle(color: Theme.C.ink))
-                Text("Matches kommen zuerst in den Plan").font(Theme.F.caption).opacity(0.7)
+                PrimaryButton(title: "Weiter swipen", action: close)
+                Text("Matches kommen zuerst in den Plan").font(Theme.F.text(13, .semibold, relativeTo: .footnote)).foregroundStyle(Theme.C.ink2)
             }
-            .foregroundStyle(Theme.C.onBright)
+            .foregroundStyle(Theme.C.ink)
             .padding(.horizontal, Theme.pagePadding)
             .padding(.bottom, 12)
         }
@@ -564,10 +570,10 @@ struct SwipeSelection: View {
         let units = picked.values.joined().map { c in (c, SwipeDTO.repeats.contains(c.mealType) ? c.days : 1) }
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
-                RoundIconButton(systemName: "chevron.left", label: "Weiter swipen", action: back)
+                CircleButton(icon: .back, label: "Weiter swipen", action: back)
                 VStack(alignment: .leading, spacing: 0) {
-                    Text("Alle Stapel voll").font(Theme.F.callout).foregroundStyle(Theme.C.text2)
-                    Text("Eure Woche").font(Theme.F.display(46))
+                    Text("Alle Stapel voll").font(Theme.F.small).foregroundStyle(Theme.C.ink2)
+                    Text("Eure Woche").font(Theme.F.serif(46, relativeTo: .largeTitle))
                 }
                 HStack(alignment: .top, spacing: 28) {
                     stat("\(deck.need.values.reduce(0, +))", "GERICHTE")
@@ -575,18 +581,18 @@ struct SwipeSelection: View {
                     stat(euro(units.reduce(0) { $0 + $1.0.costCents * $1.1 } * persons), "GESCHÄTZT")
                 }
                 ForEach(deck.types, id: \.self) { m in
-                    Text("\(Labels.meal(m).uppercased()) · \(deck.need[m] ?? 0)").font(Theme.F.micro).tracking(1).foregroundStyle(Theme.C.text2)
+                    SectionLabel("\(Labels.meal(m)) · \(deck.need[m] ?? 0)", big: true)
                         .padding(.top, 6)
                     ScrollView(.horizontal, showsIndicators: false) {
                         HStack(alignment: .top, spacing: 12) {
                             ForEach(picked[m] ?? []) { c in
                                 VStack(spacing: 6) {
-                                    Plate(url: mediaURL(c.imageUrl), size: 64, seed: c.title)
-                                    Text(c.title).font(.system(.caption, weight: .bold)).multilineTextAlignment(.center).lineLimit(2)
+                                    PlanPlate(url: mediaURL(c.imageUrl), size: 64)
+                                    Text(c.title).font(Theme.F.text(12, .bold, relativeTo: .caption)).multilineTextAlignment(.center).lineLimit(2)
                                     if c.match {
-                                        Text("♥ MATCH").font(Theme.F.micro).foregroundStyle(Theme.C.deal)
+                                        Text("♥ MATCH").font(Theme.F.lbl).foregroundStyle(Theme.C.deal)
                                     } else if SwipeDTO.repeats.contains(m) {
-                                        Text("\(c.days)×").font(Theme.F.micro).foregroundStyle(Theme.C.deal)
+                                        Text("\(c.days)×").font(Theme.F.lbl).foregroundStyle(Theme.C.deal)
                                     }
                                 }
                                 .frame(width: 84)
@@ -596,8 +602,8 @@ struct SwipeSelection: View {
                     }
                 }
                 if !reserve.isEmpty {
-                    (Text("RESERVE · \(reserve.count)  ").font(Theme.F.micro).foregroundStyle(Theme.C.text2)
-                        + Text("mehr gemocht als Plätze").font(Theme.F.caption).foregroundStyle(Theme.C.text3))
+                    (Text("RESERVE · \(reserve.count)  ").font(Theme.F.lbl).foregroundStyle(Theme.C.ink2)
+                        + Text("mehr gemocht als Plätze").font(Theme.F.text(13, .semibold, relativeTo: .footnote)).foregroundStyle(Theme.C.ink3))
                         .tracking(0.5)
                 }
             }
@@ -605,16 +611,16 @@ struct SwipeSelection: View {
         }
         .ctaBar(bottom: 8) {
             VStack(spacing: 10) {
-                Button(action: distribute) { Label("Verteilen", systemImage: "shuffle") }.buttonStyle(PrimaryButtonStyle())
-                Button("Selbst eintragen", action: manual).buttonStyle(SecondaryButtonStyle())
+                PrimaryButton(title: "Verteilen", icon: .swap, action: distribute)
+                OutlineButton(title: "Selbst eintragen", action: manual)
             }
         }
     }
 
-    private func stat(_ value: String, _ label: String, _ color: Color = Theme.C.text1) -> some View {
+    private func stat(_ value: String, _ label: String, _ color: Color = Theme.C.ink) -> some View {
         VStack(alignment: .leading, spacing: 2) {
-            Text(value).font(Theme.F.burst(30)).monospacedDigit().foregroundStyle(color)
-            Text(label).font(Theme.F.micro).tracking(1).foregroundStyle(Theme.C.text2)
+            BigNumber(value, size: 30).foregroundStyle(color)
+            SectionLabel(label)
         }
     }
 }
@@ -642,23 +648,23 @@ struct SwipeWeek: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 0) {
                 HStack {
-                    RoundIconButton(systemName: "chevron.left", label: "Zurück", action: back)
+                    CircleButton(icon: .back, label: "Zurück", action: back)
                     Spacer()
-                    Button { seed += 1; Task { await distribute() } } label: { Label("Neu mischen", systemImage: "shuffle") }
-                        .font(Theme.F.callout).foregroundStyle(Theme.C.text1).frame(minHeight: 44)
+                    Button { seed += 1; Task { await distribute() } } label: { HStack(spacing: 6) { Icon(.swap, size: 20); Text("Neu mischen") } }
+                        .font(Theme.F.text(15, .bold, relativeTo: .body)).foregroundStyle(Theme.C.ink).frame(minHeight: 44)
                         .disabled(busy || store.generating)
                 }
-                Text("So sieht's aus").font(Theme.F.display(40)).padding(.top, 6)
-                Text("Halten und ziehen zum Tauschen").font(Theme.F.caption).foregroundStyle(Theme.C.text2).padding(.bottom, 10)
+                Text("So sieht's aus").font(Theme.F.serif(40, relativeTo: .largeTitle)).padding(.top, 6)
+                Text("Halten und ziehen zum Tauschen").font(Theme.F.small).foregroundStyle(Theme.C.ink2).padding(.bottom, 10)
                 ForEach(Array(Set(rows.map(\.day))).sorted(), id: \.self) { d in
                     HStack(alignment: .top, spacing: 10) {
-                        Text(Labels.days[d]).font(Theme.F.cardTitle(22)).frame(width: 44, alignment: .leading).padding(.top, 12)
+                        Text(Labels.days[d]).font(Theme.F.serif(22, relativeTo: .title2)).frame(width: 44, alignment: .leading).padding(.top, 12)
                         VStack(spacing: 6) {
                             ForEach(rows.filter { $0.day == d }.sorted { order($0) < order($1) }, id: \.self) { s in slot(s) }
                         }
                     }
                     .padding(.vertical, 9)
-                    .overlay(alignment: .top) { Rectangle().fill(Theme.C.line).frame(height: 1.5) }
+                    .overlay(alignment: .top) { Hairline() }
                 }
             }
             .padding(.horizontal, Theme.pagePadding)
@@ -667,22 +673,16 @@ struct SwipeWeek: View {
             VStack(spacing: 10) {
                 if !spare.isEmpty { spareBar }
                 if let e = store.error, !store.generating, !busy {
-                    ErrorState(message: e) { finish() }
+                    Text(e).font(Theme.F.text(13, .semibold, relativeTo: .footnote)).foregroundStyle(Theme.C.deal)
+                        .frame(maxWidth: .infinity, alignment: .leading)
                 }
                 HStack {
-                    Text(summary).font(Theme.F.caption).foregroundStyle(Theme.C.text2).lineLimit(2)
+                    Text(summary).font(Theme.F.text(13, .semibold, relativeTo: .footnote)).foregroundStyle(Theme.C.ink2).lineLimit(2)
                     Spacer()
-                    Text(euro(total)).font(Theme.F.priceLarge)
+                    BigNumber(euro(total), size: 30)
                 }
-                Button(action: finish) {
-                    if store.generating {
-                        HStack(spacing: 10) { ProgressView().tint(Theme.C.onAction); Text("Dein Plan entsteht …") }
-                    } else {
-                        Text("Plan übernehmen")
-                    }
-                }
-                .buttonStyle(PrimaryButtonStyle())
-                .disabled(assign.count < slots.count || store.generating)
+                PlanBusyButton(title: store.error == nil ? "Plan übernehmen" : "Erneut versuchen", busy: store.generating,
+                               disabled: assign.count < slots.count, action: finish)
             }
         }
         .task { await distribute() }
@@ -694,34 +694,31 @@ struct SwipeWeek: View {
         let on = target == s
         Group {
             if on {
-                Text("↓ hier ablegen").font(Theme.F.caption).foregroundStyle(Theme.C.text1)
+                Text("↓ hier ablegen").font(Theme.F.text(13, .bold, relativeTo: .footnote)).foregroundStyle(Theme.C.ink)
                     .frame(maxWidth: .infinity, minHeight: 50)
-                    .background(Theme.C.sky.opacity(0.5), in: RoundedRectangle(cornerRadius: Theme.R.tile, style: .continuous))
-                    .overlay(RoundedRectangle(cornerRadius: Theme.R.tile, style: .continuous)
-                        .strokeBorder(Theme.C.sky, style: StrokeStyle(lineWidth: 1.5, dash: [5, 4])))
+                    .background(Theme.C.blue1, in: Capsule())
+                    .overlay(Capsule().strokeBorder(Theme.C.blue3, style: StrokeStyle(lineWidth: Theme.S.hair, dash: [5, 4])))
             } else if let c = assign[s].flatMap({ cards[$0] }) {
                 HStack(spacing: 10) {
-                    Plate(url: mediaURL(c.imageUrl), size: 38, seed: c.title)
+                    PlanPlate(url: mediaURL(c.imageUrl), size: 38, mini: true)
                     VStack(alignment: .leading, spacing: 3) {
-                        Text(c.title).font(Theme.F.callout).lineLimit(1)
+                        Text(c.title).font(Theme.F.serif(17, relativeTo: .body)).lineLimit(1)
                         HStack(spacing: 6) {
-                            Text(Labels.meal(s.mealType)).font(Theme.F.micro).foregroundStyle(Theme.C.text1)
-                                .padding(.horizontal, 7).frame(height: 18).background(Theme.C.surface, in: Capsule())
-                            if c.match { Text("♥ Match").font(Theme.F.micro).foregroundStyle(Theme.C.deal) }
+                            SoftPill(text: Labels.meal(s.mealType))
+                            if c.match { Text("♥ Match").font(Theme.F.lbl).foregroundStyle(Theme.C.deal) }
                         }
                     }
                     Spacer(minLength: 0)
-                    Image(systemName: "line.3.horizontal").foregroundStyle(Theme.C.text3).accessibilityHidden(true)
+                    Icon(.dots, size: 20).foregroundStyle(Theme.C.ink3).accessibilityHidden(true)
                 }
                 .frame(minHeight: 50)
                 .contentShape(Rectangle())
-                .draggable(s.key) { Plate(url: mediaURL(c.imageUrl), size: 54, seed: c.title) }
+                .draggable(s.key) { PlanPlate(url: mediaURL(c.imageUrl), size: 54) }
                 .accessibilityElement(children: .combine)
             } else {
-                Text("\(Labels.meal(s.mealType)) – hierher ziehen").font(Theme.F.caption).foregroundStyle(Theme.C.text3)
+                Text("\(Labels.meal(s.mealType)) – hierher ziehen").font(Theme.F.text(13, .semibold, relativeTo: .footnote)).foregroundStyle(Theme.C.ink3)
                     .frame(maxWidth: .infinity, minHeight: 50)
-                    .overlay(RoundedRectangle(cornerRadius: Theme.R.tile, style: .continuous)
-                        .strokeBorder(Theme.C.text3, style: StrokeStyle(lineWidth: 1.5, dash: [5, 4])))
+                    .overlay(Capsule().strokeBorder(Theme.C.ink3, style: StrokeStyle(lineWidth: Theme.S.hair, dash: [5, 4])))
             }
         }
         .dropDestination(for: String.self) { items, _ in drop(items.first ?? "", on: s) } isTargeted: { t in
@@ -753,17 +750,18 @@ struct SwipeWeek: View {
 
     private var spareBar: some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text(manual ? "DEINE AUSWAHL" : "RESERVE").font(Theme.F.micro).tracking(1).foregroundStyle(Theme.C.text2)
+            SectionLabel(manual ? "Deine Auswahl" : "Reserve")
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 10) {
                     ForEach(spare) { c in
                         HStack(spacing: 8) {
-                            Plate(url: mediaURL(c.imageUrl), size: 34, seed: c.title)
-                            Text(c.title).font(.system(.caption, weight: .bold)).lineLimit(1)
+                            PlanPlate(url: mediaURL(c.imageUrl), size: 34, mini: true)
+                            Text(c.title).font(Theme.F.text(12, .bold, relativeTo: .caption)).lineLimit(1)
                         }
                         .padding(.leading, 4).padding(.trailing, 12).frame(height: 44)
                         .background(Theme.C.card, in: Capsule())
-                        .draggable("card:\(c.id)") { Plate(url: mediaURL(c.imageUrl), size: 54, seed: c.title) }
+                        .overlay(Capsule().strokeBorder(Theme.C.line, lineWidth: Theme.S.hair))
+                        .draggable("card:\(c.id)") { PlanPlate(url: mediaURL(c.imageUrl), size: 54) }
                         .accessibilityLabel("\(c.title), \(Labels.meal(c.mealType))")
                     }
                 }
@@ -824,9 +822,31 @@ struct SwipeWeek: View {
         Task {
             await store.runPlanJob { try await store.api.request("POST", "/swipe/finish", body: body) }
             if store.error == nil {
-                store.flash("Dein Wochenplan ist fertig 🎉")
+                store.flash("Dein Wochenplan ist fertig")
                 finished()
             }
         }
+    }
+}
+
+/// Pastell-Kreise der Swipe-Karten und Köpfe (v8-Töne).
+private let swipeTints = [Theme.C.blue1, Theme.C.sand, Theme.C.rose, Theme.C.sage]
+
+/// Leer/Fehler im Swipe (v8): Illustration, t2, Text, optional Knopf.
+private struct SwipeNote: View {
+    let ill: String
+    let title: String
+    let text: String
+    var button: String?
+    var action: () -> Void = {}
+
+    var body: some View {
+        VStack(spacing: 10) {
+            Ill(ill).frame(width: 150)
+            Text(title).font(Theme.F.t2).multilineTextAlignment(.center)
+            Text(text).font(Theme.F.small).foregroundStyle(Theme.C.ink2).multilineTextAlignment(.center)
+            if let button { PrimaryButton(title: button, action: action).padding(.top, 8) }
+        }
+        .frame(maxWidth: .infinity)
     }
 }

@@ -61,7 +61,12 @@ struct PlanOptions: Encodable {
     var saveAsDefault = false
 }
 
-/// Abschnitte des Formulars, einzeln ein-/ausblendbar.
+/// Abschnitte der Präferenzen; Einstellungs-Zeilen springen direkt dorthin (S13).
+enum PrefsSection: String, Hashable {
+    case persons, diet, meals, cuisines, budget, goal
+}
+
+/// Formular der Präferenzen (ohne eigenes Mockup: Abschnitte mit `.lbl`, Chips, Regler, Zeilen wie S6/S13).
 struct PreferencesForm: View {
     @Binding var prefs: Prefs
     var showDiet = true
@@ -70,151 +75,213 @@ struct PreferencesForm: View {
     @State private var use = ""
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            section("🍽️", "Mahlzeiten & Tage") {
-                ChipFlow(items: Labels.mealTypes, selected: prefs.mealTypes, color: Theme.C.kcal) { prefs.mealTypes.formSymmetricDifference([$0]) }
-                HStack(spacing: 6) {
-                    ForEach(0..<7, id: \.self) { d in
-                        let on = prefs.planDays.contains(d)
-                        Button { withAnimation(Theme.spring) { prefs.planDays.formSymmetricDifference([d]) } } label: {
-                            Text(Labels.days[d]).font(.system(.caption, design: .rounded, weight: .bold))
-                                .frame(maxWidth: .infinity, minHeight: 38)
-                                .foregroundStyle(on ? Theme.C.onAction : Theme.C.text1)
-                                .background(on ? Theme.C.action : Theme.C.surface, in: Circle())
-                        }
-                        .buttonStyle(PressableStyle())
+        VStack(alignment: .leading, spacing: 0) {
+            label("Mahlzeiten & Tage").id(PrefsSection.meals)
+            ChipFlow(items: Labels.mealTypes, selected: prefs.mealTypes) { prefs.mealTypes.formSymmetricDifference([$0]) }
+            HStack(spacing: 6) {
+                ForEach(0..<7, id: \.self) { d in
+                    let on = prefs.planDays.contains(d)
+                    Button { withAnimation(Theme.spring) { prefs.planDays.formSymmetricDifference([d]) } } label: {
+                        Text(Labels.days[d]).font(Theme.F.text(13, .extrabold, relativeTo: .footnote))
+                            .foregroundStyle(on ? Theme.C.onInk : Theme.C.ink3)
+                            .frame(maxWidth: .infinity).frame(height: 38)
+                            .background(on ? Theme.C.ink : .clear, in: Circle())
+                            .overlay { if !on { Circle().strokeBorder(Theme.C.line, lineWidth: Theme.S.hair) } }
+                            .frame(minHeight: 44).contentShape(Circle())
                     }
+                    .buttonStyle(PressableStyle())
+                    .accessibilityLabel(Labels.dayNames[d])
+                    .accessibilityAddTraits(on ? .isSelected : [])
                 }
-                .sensoryFeedback(.selection, trigger: prefs.planDays)
             }
-            section("🌍", "Küche (leer = gemischt)") {
-                ChipFlow(items: Labels.cuisines.map { ($0, $0) }, selected: prefs.cuisines, color: Theme.C.accent) { prefs.cuisines.formSymmetricDifference([$0]) }
+            .padding(.top, 10)
+            .sensoryFeedback(.selection, trigger: prefs.planDays)
+
+            label("Küchen (leer = gemischt)").id(PrefsSection.cuisines)
+            ChipFlow(items: Labels.cuisines.map { ($0, $0) }, selected: prefs.cuisines) { prefs.cuisines.formSymmetricDifference([$0]) }
+
+            StatNumber(label: "Budget pro Woche", value: euro(Int(prefs.budgetEuro) * 100), size: 52).padding(.top, 28).id(PrefsSection.budget)
+            ERange(value: $prefs.budgetEuro, range: 20...200, step: 5, label: "Budget pro Woche").padding(.top, 8)
+
+            label("Ziel").id(PrefsSection.goal)
+            Segmented8(options: Labels.goals.map { ($0.0, $0.1) }, selection: $prefs.goal)
+            StatNumber(label: "Kochzeit", value: "max. \(Int(prefs.maxCook)) min", size: 40).padding(.top, 28)
+            ERange(value: $prefs.maxCook, range: 10...120, step: 5, label: "Kochzeit in Minuten").padding(.top, 8)
+            ERow("Personen", lead: .icon(.users), tint: Theme.C.blue1, chevron: false) {
+                Stepper8(value: $prefs.persons, range: 1...20)
             }
-            section("💶", "Budget pro Woche") {
-                HStack {
-                    Text(euro(Int(prefs.budgetEuro) * 100)).font(.system(.title2, design: .rounded, weight: .bold)).monospacedDigit()
-                        .contentTransition(.numericText()).animation(Theme.spring, value: prefs.budgetEuro)
-                    Spacer()
-                }
-                Slider(value: $prefs.budgetEuro, in: 20...200, step: 5).tint(Theme.C.accent)
-            }
-            section("🎯", "Ziel") {
-                Picker("Ziel", selection: $prefs.goal) {
-                    ForEach(Labels.goals, id: \.0) { Text($0.1).tag($0.0) }
-                }
-                .pickerStyle(.segmented)
-            }
-            section("⏱️", "Kochzeit & Personen") {
-                HStack {
-                    Text("max. \(Int(prefs.maxCook)) min").font(Theme.F.callout).contentTransition(.numericText())
-                    Spacer()
-                    Stepper("", value: $prefs.persons, in: 1...20).labelsHidden()
-                    Text("\(prefs.persons) Pers.").font(Theme.F.callout).contentTransition(.numericText()).frame(width: 64, alignment: .trailing)
-                }
-                Slider(value: $prefs.maxCook, in: 10...120, step: 5).tint(Theme.C.kcal)
-            }
+            .padding(.top, 28).id(PrefsSection.persons)
+
             if showDiet {
-                section("🥗", "Ernährung & Allergien") {
-                    ChipFlow(items: Labels.diets.map { ($0.0, $0.1) }, selected: [prefs.diet]) { prefs.diet = $0 }
-                    // feste Allergien + eigene (19.2: „Meine Allergie war nicht dabei“)
-                    let custom = prefs.allergies.subtracting(Labels.allergies).sorted()
-                    ChipFlow(items: (Labels.allergies + custom).map { ($0, $0) }, selected: prefs.allergies, color: Theme.C.protein) { prefs.allergies.formSymmetricDifference([$0]) }
-                    TextField("Andere Allergie, z.B. Senf", text: $newAllergy)
+                label("Ernährung").id(PrefsSection.diet)
+                ChipFlow(items: Labels.diets.map { ($0.0, $0.1) }, selected: [prefs.diet]) { prefs.diet = $0 }
+                label("Allergien")
+                // feste Allergien + eigene (19.2: „Meine Allergie war nicht dabei“)
+                let custom = prefs.allergies.subtracting(Labels.allergies).sorted()
+                ChipFlow(items: (Labels.allergies + custom).map { ($0, $0) }, selected: prefs.allergies) { prefs.allergies.formSymmetricDifference([$0]) }
+                FieldBox(icon: .plus) {
+                    TextField("Andere Allergie, z. B. Senf", text: $newAllergy)
                         .submitLabel(.done)
                         .onSubmit {
                             let a = newAllergy.trimmingCharacters(in: .whitespaces)
                             if !a.isEmpty { prefs.allergies.insert(a) }
                             newAllergy = ""
                         }
-                        .padding(12).background(Theme.C.surface, in: RoundedRectangle(cornerRadius: Theme.R.chip))
-                    TextField("Mag ich nicht, z.B. Koriander, Pilze", text: $prefs.dislikes)
-                        .padding(12).background(Theme.C.surface, in: RoundedRectangle(cornerRadius: Theme.R.chip))
                 }
-                section("🔁", "Immer statt") {
-                    ForEach(prefs.productRules, id: \.self) { r in
-                        HStack {
-                            Text("\(r.use) statt \(r.instead)").font(Theme.F.callout)
-                            Spacer()
-                            Button {
-                                prefs.productRules.removeAll { $0 == r }
-                            } label: { Image(systemName: "xmark.circle.fill").foregroundStyle(Theme.C.text3).frame(minWidth: 44, minHeight: 44) }
-                            .accessibilityLabel("Regel \(r.use) statt \(r.instead) löschen")
-                        }
-                    }
-                    HStack(spacing: 8) {
-                        TextField("Hafermilch", text: $use)
-                            .padding(12).background(Theme.C.surface, in: RoundedRectangle(cornerRadius: Theme.R.chip))
-                        Text("statt").font(Theme.F.callout)
-                        TextField("Milch", text: $instead)
-                            .padding(12).background(Theme.C.surface, in: RoundedRectangle(cornerRadius: Theme.R.chip))
-                        Button {
-                            let r = ProductRuleDTO(instead: instead.trimmingCharacters(in: .whitespaces), use: use.trimmingCharacters(in: .whitespaces))
-                            if !r.instead.isEmpty, !r.use.isEmpty, !prefs.productRules.contains(r) { prefs.productRules.append(r) }
-                            instead = ""; use = ""
-                        } label: { Image(systemName: "plus.circle.fill").font(.title2).frame(minWidth: 44, minHeight: 44) }
-                        .accessibilityLabel("Regel hinzufügen")
+                .padding(.top, 10)
+                label("Mag ich nicht")
+                FieldBox { TextField("z. B. Koriander, Pilze", text: $prefs.dislikes) }
+                label("Immer statt")
+                ForEach(prefs.productRules, id: \.self) { r in
+                    ERow("\(r.use) statt \(r.instead)", chevron: false) {
+                        CircleButton(icon: .x, label: "Regel \(r.use) statt \(r.instead) löschen") { prefs.productRules.removeAll { $0 == r } }
                     }
                 }
+                HStack(spacing: 8) {
+                    FieldBox { TextField("Hafermilch", text: $use) }
+                    Text("statt").font(Theme.F.text(15, .bold, relativeTo: .subheadline)).foregroundStyle(Theme.C.ink2)
+                    FieldBox { TextField("Milch", text: $instead) }
+                    CircleButton(icon: .plus, filled: true, label: "Regel hinzufügen") {
+                        let r = ProductRuleDTO(instead: instead.trimmingCharacters(in: .whitespaces), use: use.trimmingCharacters(in: .whitespaces))
+                        if !r.instead.isEmpty, !r.use.isEmpty, !prefs.productRules.contains(r) { prefs.productRules.append(r) }
+                        instead = ""; use = ""
+                    }
+                }
+                .padding(.top, 10)
             }
         }
     }
 
-    private func section(_ emoji: String, _ title: String, @ViewBuilder content: () -> some View) -> some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Label { Text(title).font(Theme.F.headline) } icon: { Text(emoji) }
-            content()
-        }
-        .padding(16)
-        .card()
+    private func label(_ text: String) -> some View {
+        SectionLabel(text).padding(.top, 28).padding(.bottom, 8)
     }
 }
 
-/// Einstellungen › Präferenzen: jederzeit änderbar, speichert als Standard.
+/// Einstellungen › Präferenzen: jederzeit änderbar, speichert als Standard. `focus` springt zum Abschnitt der Zeile.
 struct PreferencesView: View {
     @Environment(AppStore.self) private var store
     @Environment(\.dismiss) private var dismiss
+    var focus: PrefsSection?
     @State private var prefs = Prefs()
-    @State private var variety = VarietyDTO()  // Abwechslung (12)
     @State private var saving = false
 
     var body: some View {
-        ZStack(alignment: .bottom) {
-            Theme.C.bg.ignoresSafeArea()
+        ScrollViewReader { proxy in
             ScrollView {
-                VStack(alignment: .leading, spacing: 14) {
-                    RoundIconButton(systemName: "chevron.left", label: "Zurück") { dismiss() }
-                    DisplayHeader(line1: "Präferenzen", line2: "für deine Pläne")
+                VStack(alignment: .leading, spacing: 0) {
+                    EBack()
+                    Text("Präferenzen").font(Theme.F.t1).padding(.top, 10)
+                    Text("für deine Pläne").font(Theme.F.text(14, relativeTo: .subheadline)).foregroundStyle(Theme.C.ink2)
                     PreferencesForm(prefs: $prefs)
-                    VarietyForm(rules: $variety)
                 }
                 .padding(.horizontal, Theme.pagePadding)
+                .padding(.top, 4)
                 .padding(.bottom, 16)
             }
-            .defaultScrollAnchor(Demo.screen == "variety" ? .bottom : .top)  // Demo: Abwechslung im Bild
             .scrollDismissesKeyboard(.immediately)
-            .ctaBar {
-            Button {
+            .onAppear {
+                if let h = store.household { prefs = Prefs(h) }
+                if let focus { proxy.scrollTo(focus, anchor: .top) }
+            }
+        }
+        .ctaBar(bottom: 34) {
+            PrimaryButton(title: saving ? "Speichere …" : "Speichern", disabled: saving) {
                 saving = true
                 Task {
                     defer { saving = false }
                     do {
-                        var patch = prefs.patch
-                        patch.variety = variety
-                        try await store.save(patch)
+                        try await store.save(prefs.patch)
                         store.flash("Präferenzen gespeichert")
                         dismiss()
                     } catch {
                         store.flash(error.localizedDescription)
                     }
                 }
-            } label: { Text(saving ? "Speichere …" : "Speichern") }
-            .buttonStyle(PrimaryButtonStyle())
-            .disabled(saving)
             }
         }
+        .background(Theme.C.bg)
         .toolbar(.hidden, for: .navigationBar)
-        .onAppear {
-            if let h = store.household { prefs = Prefs(h); variety = h.variety ?? VarietyDTO() }
+        .hidesTabBar()
+    }
+}
+
+/// Präferenzen › Abwechslung (e.html): drei Gruppen ohne Überschrift, nur durch Luft getrennt; Werte im Stepper.
+struct VarietyView: View {
+    @Environment(AppStore.self) private var store
+    @Environment(\.dismiss) private var dismiss
+    @State private var rules = VarietyDTO()
+    @State private var saving = false
+
+    // Mockup-Maße: Kreis sage rechts −110 / oben −130, Basilikum rechts 0 / oben 26
+    private let blob = (right: CGFloat(-110), top: CGFloat(-130), size: CGFloat(300))
+    private let ill = (right: CGFloat(0), top: CGFloat(26), width: CGFloat(140))
+    private let introWidth: CGFloat = 250
+    private let rowHeight: CGFloat = 52
+
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 0) {
+                EBack()
+                Text("Abwechslung").font(Theme.F.t1).padding(.top, 10)
+                Text("Der Planer hält diese Regeln ein – Verstöße zeigt der Plan-Kopf.")
+                    .font(Theme.F.text(14, relativeTo: .subheadline)).lineSpacing(4).foregroundStyle(Theme.C.ink2)
+                    .frame(maxWidth: introWidth, alignment: .leading).padding(.top, 4)
+                group {
+                    row("Pasta", "höchstens pro Woche", $rules.maxPasta, 0...14) { "\($0)×" }
+                    row("Reis", "höchstens pro Woche", $rules.maxRice, 0...14) { "\($0)×" }
+                    row("Kartoffeln", "höchstens pro Woche", $rules.maxPotato, 0...14) { "\($0)×" }
+                }
+                group {
+                    row("Fisch", "mindestens pro Woche", $rules.minFish, 0...3) { "\($0)×" }
+                    row("Vegetarische Tage", "pro Woche", $rules.veggieDays, 0...7) { "\($0)" }
+                    row("Rotes Fleisch", "höchstens pro Woche", $rules.maxRedMeat, 0...14) { "\($0)×" }
+                }
+                group {
+                    row("Gleiches Gericht", "frühestens nach Wochen", $rules.repeatWeeks, 1...12) { "\($0)" }
+                    ERow("Gleiche Küche nicht zwei Tage hintereinander", chevron: false, minHeight: rowHeight) {
+                        ESwitch(isOn: $rules.noSameCuisineRow, label: "Gleiche Küche nicht zwei Tage hintereinander")
+                    }
+                }
+            }
+            .padding(.horizontal, Theme.pagePadding)
+            .padding(.top, 4)
+            .padding(.bottom, 16)
+        }
+        .background(alignment: .topTrailing) {
+            Color.clear
+                .pinned(right: ill.right, top: ill.top) { Ill("basil").frame(width: ill.width) }
+                .edgeForm(.circle, Theme.C.sage, width: blob.size, height: blob.size, right: blob.right, top: blob.top)
+                .ignoresSafeArea()
+        }
+        .ctaBar(bottom: 34) {
+            PrimaryButton(title: saving ? "Speichere …" : "Speichern", disabled: saving) {
+                saving = true
+                Task {
+                    defer { saving = false }
+                    do {
+                        try await store.save(HouseholdPatch(variety: rules))
+                        store.flash("Abwechslung gespeichert")
+                        dismiss()
+                    } catch {
+                        store.flash(error.localizedDescription)
+                    }
+                }
+            }
+        }
+        .background(Theme.C.bg)
+        .toolbar(.hidden, for: .navigationBar)
+        .hidesTabBar()
+        .onAppear { rules = store.household?.variety ?? VarietyDTO() }
+    }
+
+    private func group(@ViewBuilder _ rows: () -> some View) -> some View {
+        VStack(spacing: 0) { rows() }.padding(.top, 28)
+    }
+
+    private func row(_ title: String, _ sub: String, _ value: Binding<Int>, _ range: ClosedRange<Int>,
+                     _ text: @escaping (Int) -> String) -> some View {
+        ERow(title, sub: sub, chevron: false, minHeight: rowHeight) {
+            Stepper8(value: value, range: range, format: text)
         }
     }
 }

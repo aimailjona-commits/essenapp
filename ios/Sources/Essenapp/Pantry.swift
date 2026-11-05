@@ -153,47 +153,146 @@ extension AppStore {
     }
 }
 
-/// S16 Vorrat.
+extension PantryDTO {
+    private static let months = ["Jan", "Feb", "März", "Apr", "Mai", "Juni", "Juli", "Aug", "Sep", "Okt", "Nov", "Dez"]
+
+    /// „Mi, 12. Nov“ (Sheets S16, Coupon S31c).
+    static func dayText(_ d: Date) -> String {
+        let c = Calendar.current.dateComponents([.weekday, .day, .month], from: d)
+        return "\(Labels.days[((c.weekday ?? 2) + 5) % 7]), \(c.day ?? 1). \(months[((c.month ?? 1) - 1) % 12])"
+    }
+
+    /// „bis 8.11.“, weiter weg „bis 03/2027“.
+    static func untilText(_ iso: String?, days: Int?) -> String? {
+        let p = (iso ?? "").split(separator: "-").compactMap { s in Int(s) }
+        guard p.count == 3 else { return nil }
+        return (days ?? 0) > 60 ? "bis \(String(format: "%02d", p[1]))/\(p[0])" : "bis \(p[2]).\(p[1])."
+    }
+
+    /// Haltbarkeit: bald (≤ 3 Tage) gelb, abgelaufen rot, sonst grau.
+    static func expiry(_ days: Int) -> (text: String, color: Color) {
+        let text = days < 0 ? "abgelaufen" : days == 0 ? "läuft heute ab" : days == 1 ? "läuft morgen ab"
+            : days <= 3 ? "läuft in \(days) Tagen ab" : "noch \(days) Tage"
+        return (text, days < 0 ? Theme.C.deal : days <= 3 ? Theme.C.warning : Theme.C.ink2)
+    }
+
+    static func locationName(_ key: String?) -> String? { ScanLabels.modes.first { m in m.0 == key }?.1 }
+}
+
+/// Zeichnung bzw. Icon und Kreis-Farbe (`.d-row .c`) für Vorrat, Kategorien und Prüf-Bildschirm (S16/S24).
+struct PantryArt {
+    var ill: String?
+    var icon: Icon8 = .box
+    var tint: Color
+
+    static func of(name: String, category: String, basic: Bool = false) -> PantryArt {
+        let n = name.lowercased()
+        func has(_ words: [String]) -> Bool { words.contains { w in n.contains(w) } }
+        if basic { return PantryArt(icon: .leaf, tint: Theme.C.sand) }
+        if has(["tomate"]) { return PantryArt(ill: "tomato", tint: Theme.C.rose) }
+        if has(["basilikum", "petersilie", "kräuter", "schnittlauch", "minze", "koriander"]) { return PantryArt(ill: "basil", tint: Theme.C.sage) }
+        if has(["knoblauch"]) { return PantryArt(ill: "garlic", tint: Theme.C.sand) }
+        if has(["spaghetti", "nudel", "pasta", "penne", "fusilli", "lasagne"]) { return PantryArt(ill: "pasta", tint: Theme.C.blue1) }
+        return Self.category(category)
+    }
+
+    static func category(_ key: String) -> PantryArt {
+        switch key {
+        case "obst_gemuese": PantryArt(ill: "tomato", tint: Theme.C.rose)
+        case "kuehlung": PantryArt(tint: Theme.C.blue1)
+        case "vorrat": PantryArt(ill: "pasta", tint: Theme.C.blue1)
+        case "fleisch_fisch": PantryArt(tint: Theme.C.rose)
+        case "getraenke": PantryArt(tint: Theme.C.blue1)
+        case "basics": PantryArt(icon: .leaf, tint: Theme.C.sand)
+        default: PantryArt(tint: Theme.C.sand)
+        }
+    }
+
+    /// Kreis mit Zeichnung (Bild 40 in 48) bzw. Icon.
+    func circle(_ size: CGFloat = Theme.S.rowCircle, image: CGFloat = Theme.S.rowImage) -> some View {
+        Group {
+            if let ill { Ill(ill).frame(width: image, height: image) } else { Icon(icon) }
+        }
+        .foregroundStyle(Theme.C.ink)
+        .frame(width: size, height: size)
+        .background(tint, in: Circle())
+    }
+}
+
+/// S16 Vorrat (d.html „S16 Vorrat“).
 struct PantryView: View {
     @Environment(AppStore.self) private var store
+    @Binding var page: Int
     @State private var query = ""
     @State private var category: String?
     @State private var loaded = false
     @State private var error: String?
     @State private var adding = false
 
+    // Mockup-Lage (S16): Salbei-Kreis oben rechts mit Kühlschrank
+    private enum M {
+        static let blob: CGFloat = 240, blobRight: CGFloat = -112, blobTop: CGFloat = -56
+        static let fridge: CGFloat = 116, fridgeRight: CGFloat = 6, fridgeTop: CGFloat = 50
+    }
+
+    private static let catNames = ["obst_gemuese": "Gemüse", "fleisch_fisch": "Fleisch", "kuehlung": "Kühlung", "vorrat": "Vorrat",
+                                   "getraenke": "Getränke", "drogerie": "Drogerie", "haushalt": "Haushalt", "basics": "Basics"]
+
     var body: some View {
         let shown = store.pantry.filter { p in
             (category == nil || p.category == category) && (query.isEmpty || p.name.localizedCaseInsensitiveContains(query))
         }
         let keys = Set(store.pantry.map(\.category))
-        let all: [(key: String, label: String, emoji: String)] = Labels.categories.map { c in
-            (key: c.0, label: String(c.1.split(separator: " ").dropFirst().joined(separator: " ")), emoji: Theme.hue(category: c.0).emoji)
-        } + [(key: "basics", label: "Basics", emoji: "🧂")]
+        let cats = (Labels.categories.map(\.0) + ["basics"]).filter { k in keys.contains(k) }
         List {
-            Group {
-                HStack(alignment: .bottom) {
-                    DisplayHeader(line1: "Vorrat", line2: "\(store.pantry.count) Sachen zu Hause")
-                    RoundIconButton(systemName: "plus", dark: true, label: "Zum Vorrat hinzufügen") { adding = true }
+            VStack(alignment: .leading, spacing: 0) {
+                ShopTabs(page: $page)
+                Text("\(store.pantry.count) Sachen zu Hause").font(Theme.F.small).foregroundStyle(Theme.C.ink2).padding(.top, 16)
+                HStack(spacing: 14) {
+                    Text("Vorrat").font(Theme.F.t1).accessibilityAddTraits(.isHeader)
+                    CircleButton(icon: .plus, size: 44, filled: true, label: "Zum Vorrat hinzufügen") { adding = true }
                 }
                 if !store.pantry.isEmpty {
-                    SearchField(text: $query, placeholder: "Vorrat durchsuchen")
-                    CategoryCircles(items: all.filter { keys.contains($0.key) }, selected: $category)
+                    search.padding(.top, 16)
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(alignment: .top, spacing: 14) {
+                            catButton(nil, "Alle")
+                            ForEach(cats, id: \.self) { k in catButton(k, Self.catNames[k] ?? Labels.categoryName(k)) }
+                        }
+                        .padding(.horizontal, Theme.pagePadding)
+                    }
+                    .padding(.horizontal, -Theme.pagePadding)
+                    .padding(.top, 16)
+                    .sensoryFeedback(.selection, trigger: category)
                 }
                 if store.pantry.isEmpty {
                     if !loaded {
-                        ForEach(0..<4, id: \.self) { _ in SkeletonCard(height: 68) }
+                        VStack(spacing: 12) { ForEach(0..<4, id: \.self) { _ in Skeleton8(height: 54) } }.padding(.top, 28)
                     } else if let error {
-                        ErrorState(message: error) { Task { await load() } }
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("Vorrat nicht geladen").font(Theme.F.t2)
+                            Text(error).font(Theme.F.small).foregroundStyle(Theme.C.ink2)
+                            OutlineButton(title: "Erneut versuchen", icon: .refresh) { Task { await load() } }.padding(.top, 8)
+                        }
+                        .padding(.top, 28)
                     } else {
-                        EmptyState(emoji: "📸", title: "Kühlschrank fotografieren",
-                                   text: "Noch nichts im Vorrat. Fotografiere Kühlschrank, Vorrat oder Gefrierfach – wir erkennen, was da ist.",
-                                   buttonTitle: "📸 Kühlschrank fotografieren") { store.scanning = true }
+                        VStack(spacing: 8) {  // ohne Mockup: Leer-Zustand mit Zeichnung
+                            Ill("fridge").frame(width: 160, height: 160)
+                            Text("Noch nichts im Vorrat").font(Theme.F.t2)
+                            Text("Fotografiere Kühlschrank, Vorrat oder Gefrierfach – wir erkennen, was da ist.")
+                                .font(Theme.F.small).foregroundStyle(Theme.C.ink2).multilineTextAlignment(.center)
+                            PrimaryButton(title: "Kühlschrank fotografieren", icon: .cam) { store.scanning = true }.padding(.top, 8)
+                        }
+                        .frame(maxWidth: .infinity)
+                        .padding(.top, 28)
                     }
                 } else if shown.isEmpty {
-                    EmptyState(emoji: "🔍", title: "Nichts gefunden", text: "Anderen Begriff oder andere Kategorie probieren.")
+                    Text("Nichts gefunden – anderen Begriff oder andere Kategorie probieren.")
+                        .font(Theme.F.small).foregroundStyle(Theme.C.ink2).padding(.top, 28)
                 }
             }
+            .padding(.top, 14)
+            .padding(.bottom, shown.isEmpty ? 0 : 28)
             .pantryRow()
             ForEach(shown) { p in
                 PantryRow(item: p)
@@ -205,15 +304,62 @@ struct PantryView: View {
                     }
                     .pantryRow()
             }
-            Color.clear.frame(height: 100).pantryRow()  // Platz für die Tab-Leiste
+            Color.clear.frame(height: Theme.S.nav).pantryRow()  // Platz für die Nav
         }
         .listStyle(.plain)
         .scrollContentBackground(.hidden)
         .scrollDismissesKeyboard(.immediately)
         .environment(\.defaultMinListRowHeight, 0)
+        .backdrop8 {
+            Color.clear
+                .pinned(right: M.fridgeRight, top: M.fridgeTop) { Ill("fridge").frame(width: M.fridge) }
+                .edgeForm(.circle, Theme.C.sage, width: M.blob, height: M.blob, right: M.blobRight, top: M.blobTop)
+        }
         .refreshable { await load() }
         .task { await load() }
-        .sheet(isPresented: $adding) { PantryAddSheet().presentationDetents([.large]).presentationCornerRadius(Theme.R.sheet) }
+        .sheet(isPresented: $adding) { PantryAddSheet() }
+    }
+
+    /// Suche (`.field` 44 hoch).
+    private var search: some View {
+        HStack(spacing: 10) {
+            Icon(.search, size: 20).foregroundStyle(Theme.C.ink2)
+            TextField("", text: $query, prompt: Text("Suchen").foregroundStyle(Theme.C.ink2)).submitLabel(.search)
+            if !query.isEmpty {
+                Button { query = "" } label: { Icon(.x, size: 18).foregroundStyle(Theme.C.ink2).tapArea() }
+                    .buttonStyle(.plain).accessibilityLabel("Suche leeren")
+            }
+        }
+        .font(Theme.F.text(15))
+        .foregroundStyle(Theme.C.ink)
+        .padding(.horizontal, 18)
+        .frame(minHeight: 44)
+        .background(Theme.C.card, in: Capsule())
+        .overlay(Capsule().strokeBorder(Theme.C.line, lineWidth: Theme.S.hair))
+    }
+
+    /// Kategorie-Kreis (`.d-cat`): 56er-Kreis mit Zeichnung, Label 12/700; „Alle“ aktiv = Tinte.
+    private func catButton(_ key: String?, _ label: String) -> some View {
+        let on = category == key
+        let art = key.map(PantryArt.category)
+        return Button { withAnimation(Theme.spring) { category = key } } label: {
+            VStack(spacing: 6) {
+                Group {
+                    if let art {
+                        art.circle(56, image: 46)
+                            .overlay { if on { Circle().strokeBorder(Theme.C.ink, lineWidth: 2) } }
+                    } else {
+                        Icon(.box).foregroundStyle(on ? Theme.C.onInk : Theme.C.ink)
+                            .frame(width: 56, height: 56)
+                            .background(on ? Theme.C.ink : Theme.C.card, in: Circle())
+                            .overlay { if !on { Circle().strokeBorder(Theme.C.line, lineWidth: Theme.S.hair) } }
+                    }
+                }
+                Text(label).font(Theme.F.text(12, .bold, relativeTo: .caption)).foregroundStyle(on ? Theme.C.ink : Theme.C.ink2).lineLimit(1)
+            }
+        }
+        .buttonStyle(PressableStyle())
+        .accessibilityAddTraits(on ? .isSelected : [])
     }
 
     private func load() async {
@@ -229,50 +375,71 @@ struct PantryView: View {
 
 private extension View {
     func pantryRow() -> some View {
-        listRowInsets(EdgeInsets(top: 5, leading: Theme.pagePadding, bottom: 5, trailing: Theme.pagePadding))
+        listRowInsets(EdgeInsets(top: 0, leading: Theme.pagePadding, bottom: 0, trailing: Theme.pagePadding))
             .listRowSeparator(.hidden)
             .listRowBackground(Color.clear)
     }
 }
 
-/// Zeile im Vorrat: Emoji, Name, Menge mit Stepper bzw. Basic-Schalter, Haltbarkeits-Chip.
+/// Zeile im Vorrat (`.d-row`): Zeichnung im Farb-Kreis, Name, Haltbarkeit bzw. Ort, rechts Stepper oder Basic-Schalter.
 struct PantryRow: View {
     @Environment(AppStore.self) private var store
     let item: PantryDTO
 
+    private var sub: (text: String, color: Color)? {
+        let loc = PantryDTO.locationName(item.location)
+        if item.isBasic {
+            return item.amount == 0 ? ("leer – steht auf der Liste", Theme.C.deal) : (["Basic", loc].compactMap { $0 }.joined(separator: " · "), Theme.C.ink2)
+        }
+        if let d = item.daysLeft, d <= 3 { return PantryDTO.expiry(d) }
+        let parts = [loc, PantryDTO.untilText(item.bestBefore, days: item.daysLeft)].compactMap { $0 }
+        return parts.isEmpty ? nil : (parts.joined(separator: " · "), Theme.C.ink2)
+    }
+
+    private var amountLabel: String {
+        guard let a = item.amount else { return "–" }
+        return ["stk", ""].contains(item.unit) ? num(a) : "\(num(a)) \(item.unit)"
+    }
+
     var body: some View {
-        HStack(spacing: 12) {
-            Text(item.emoji).font(.system(size: 22))
-                .frame(width: 44, height: 44)
-                .background(Theme.hue(category: item.category).tint, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-            VStack(alignment: .leading, spacing: 4) {
-                Text(item.name).font(.system(.body, weight: .semibold)).lineLimit(1)
-                HStack(spacing: 6) {
-                    Text(item.isBasic ? (item.amount == 0 ? "leer" : "vorhanden") : item.amountText)
-                        .font(Theme.F.micro).monospacedDigit()
-                        .foregroundStyle(item.isBasic && item.amount == 0 ? Theme.C.danger : Theme.C.text2)
-                        .contentTransition(.numericText())
-                    if let d = item.daysLeft { ExpiryChip(days: d) }
-                    if let loc = item.location, let label = ScanLabels.modes.first(where: { m in m.0 == loc })?.1 {
-                        Text("\(ScanLabels.modeEmoji[loc] ?? "") \(label)").font(Theme.F.micro).foregroundStyle(Theme.C.text2).lineLimit(1)
-                    }
-                }
+        HStack(spacing: 14) {
+            PantryArt.of(name: item.name, category: item.category, basic: item.isBasic).circle()
+            VStack(alignment: .leading, spacing: 0) {
+                Text(item.name).font(Theme.F.serif(19, relativeTo: .title3)).lineLimit(1)
+                if let sub { Text(sub.text).font(Theme.F.text(12)).foregroundStyle(sub.color).lineLimit(1) }
             }
-            Spacer(minLength: 0)
+            Spacer(minLength: 8)
             if item.isBasic {
-                Toggle("\(item.name) vorhanden", isOn: Binding(get: { item.amount != 0 }, set: { on in
+                Toggle(isOn: Binding(get: { item.amount != 0 }, set: { on in
                     Task { if on { await store.setPantryAmount(item, nil) } else { await store.emptyBasic(item) } }
-                }))
-                .labelsHidden()
-                .tint(Theme.C.success)
+                })) { EmptyView() }
+                .toggleStyle(.v8)
+                .fixedSize()
+                .accessibilityLabel("\(item.name) vorhanden")
             } else {
-                Stepper("Menge \(item.name)", onIncrement: { change(+1) }, onDecrement: { change(-1) }).labelsHidden()
+                HStack(spacing: 6) {
+                    knob(.minus, "weniger \(item.name)") { change(-1) }
+                    Text(amountLabel).font(Theme.F.text(16, .extrabold)).monospacedDigit().contentTransition(.numericText())
+                    knob(.plus, "mehr \(item.name)") { change(+1) }
+                }
+                .padding(.horizontal, 4)
+                .frame(height: 36)
+                .overlay(Capsule().strokeBorder(Theme.C.line, lineWidth: Theme.S.hair))
             }
         }
-        .padding(12)
-        .card(radius: Theme.R.tile)
+        .foregroundStyle(Theme.C.ink)
+        .padding(.vertical, 10)
+        .overlay(alignment: .top) { Hairline() }
         .animation(Theme.spring, value: item.amount)
         .sensoryFeedback(.selection, trigger: item.amount)
+    }
+
+    private func knob(_ icon: Icon8, _ label: String, _ action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Icon(icon, size: 14).frame(width: 28, height: 28).background(Theme.C.card, in: Circle()).tapArea(8)
+        }
+        .buttonStyle(PressableStyle())
+        .accessibilityLabel(label)
     }
 
     /// Schritte je Einheit: g/ml in 10ern (ab 100 in 50ern), Stück einzeln. 0 → Eintrag weg.
@@ -292,21 +459,17 @@ struct PantryRow: View {
     }
 }
 
-/// Haltbarkeit: bald (≤ 3 Tage) orange, abgelaufen rot, sonst grau.
+/// Haltbarkeit als Text (S16 zweite Zeile): bald gelb, abgelaufen rot, sonst grau.
 struct ExpiryChip: View {
     let days: Int
 
     var body: some View {
-        let text = days < 0 ? "abgelaufen" : days == 0 ? "läuft heute ab" : days == 1 ? "läuft morgen ab"
-            : days <= 3 ? "läuft in \(days) Tagen ab" : "noch \(days) Tage"
-        let color = days < 0 ? Theme.C.danger : days <= 3 ? Theme.C.accent : Theme.C.text2
-        Text(text).font(Theme.F.micro).foregroundStyle(color)
-            .padding(.horizontal, 8).frame(height: 22)
-            .background(color.opacity(0.12), in: Capsule())
+        let e = PantryDTO.expiry(days)
+        Text(e.text).font(Theme.F.text(12)).foregroundStyle(e.color)
     }
 }
 
-/// „+“ im Vorrat: Name, Menge, Einheit, Haltbarkeit (optional), Basic.
+/// „+“ im Vorrat (d.html „S16 + Sheet“): Name, Menge mit Einheit, Haltbarkeit (optional), Basic.
 struct PantryAddSheet: View {
     @Environment(AppStore.self) private var store
     @Environment(\.dismiss) private var dismiss
@@ -314,45 +477,72 @@ struct PantryAddSheet: View {
     @State private var amount = ""
     @State private var unit = "g"
     @State private var hasDate = false
+    @State private var showCal = false
     @State private var date = Date.now.addingTimeInterval(7 * 86400)
     @State private var basic = false
     @State private var saving = false
+    @State private var height: CGFloat = 520
 
     private var trimmed: String { String(name.trimmingCharacters(in: .whitespaces).prefix(100)) }
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 14) {
-                Text("Zum Vorrat").font(Theme.F.title)
-                VStack(alignment: .leading, spacing: 12) {
-                    TextField("Name, z. B. Reis", text: $name)
-                        .padding(12).background(Theme.C.surface, in: RoundedRectangle(cornerRadius: Theme.R.chip))
-                    if !basic {
-                        TextField("Menge (optional)", text: $amount).keyboardType(.decimalPad)
-                            .padding(12).background(Theme.C.surface, in: RoundedRectangle(cornerRadius: Theme.R.chip))
-                        Picker("Einheit", selection: $unit) {
-                            Text("g").tag("g"); Text("ml").tag("ml"); Text("Stück").tag("stk"); Text("ohne").tag("")
-                        }
-                        .pickerStyle(.segmented)
+            VStack(alignment: .leading, spacing: 0) {
+                HStack {
+                    Text("Neu im Vorrat").font(Theme.F.t2)
+                    Spacer()
+                    CloseButton { dismiss() }
+                }
+                SectionLabel("Name").padding(.top, 18).padding(.leading, 4).padding(.bottom, 6)
+                FieldBox { TextField("z. B. Joghurt", text: $name) }
+                if !basic {
+                    SectionLabel("Menge · optional").padding(.top, 16).padding(.leading, 4).padding(.bottom, 6)
+                    HStack(spacing: 10) {
+                        FieldBox { TextField("500", text: $amount).keyboardType(.decimalPad) }.frame(width: 96)
+                        Segmented8(options: [("g", "g"), ("ml", "ml"), ("stk", "Stück"), ("", "ohne")], selection: $unit)
                     }
                 }
-                .padding(16).card()
-                VStack(alignment: .leading, spacing: 12) {
-                    Toggle("Haltbarkeit angeben", isOn: $hasDate.animation(Theme.spring)).tint(Theme.C.accent)
-                    if hasDate { DatePicker("Haltbar bis", selection: $date, displayedComponents: .date) }
-                    Toggle("Basic (Salz, Öl, Gewürze …)", isOn: $basic.animation(Theme.spring)).tint(Theme.C.accent)
-                    Text("Basics gelten als vorhanden, bis du sie leer meldest – dann kommen sie auf die Liste.")
-                        .font(Theme.F.micro).foregroundStyle(Theme.C.text2)
+                SectionLabel("Haltbarkeit · optional").padding(.top, 16).padding(.leading, 4).padding(.bottom, 6)
+                FieldBox {
+                    Button {
+                        hasDate = true
+                        withAnimation(Theme.spring) { showCal.toggle() }
+                    } label: {
+                        Text(hasDate ? "bis \(PantryDTO.dayText(date))" : "Datum wählen")
+                            .foregroundStyle(hasDate ? Theme.C.ink : Theme.C.ink2)
+                            .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+                            .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                    if hasDate {
+                        Button { hasDate = false; showCal = false } label: { Icon(.x, size: 18).foregroundStyle(Theme.C.ink2).tapArea() }
+                            .buttonStyle(.plain).accessibilityLabel("Haltbarkeit entfernen")
+                    }
                 }
-                .padding(16).card()
-                Button(action: save) { Text(saving ? "Speichere …" : "Hinzufügen") }
-                    .buttonStyle(PrimaryButtonStyle())
-                    .disabled(trimmed.isEmpty || saving).opacity(trimmed.isEmpty ? 0.5 : 1)
+                if showCal && hasDate {
+                    DatePicker("Haltbar bis", selection: $date, displayedComponents: .date).datePickerStyle(.graphical).tint(Theme.C.ink)
+                }
+                HStack {
+                    VStack(alignment: .leading, spacing: 0) {
+                        Text("Basic").font(Theme.F.text(16, .extrabold))
+                        Text("immer da – leer kommt auf die Liste").font(Theme.F.text(12)).foregroundStyle(Theme.C.ink2)
+                    }
+                    Spacer()
+                    Toggle(isOn: $basic.animation(Theme.spring)) { EmptyView() }.toggleStyle(.v8).fixedSize()
+                        .accessibilityLabel("Basic")
+                }
+                .padding(.top, 12)
+                .overlay(alignment: .top) { Hairline() }
+                .padding(.top, 18)
+                PrimaryButton(title: saving ? "Speichere …" : "Hinzufügen", disabled: trimmed.isEmpty || saving, action: save).padding(.top, 20)
             }
-            .padding(Theme.pagePadding)
+            .padding(.horizontal, Theme.pagePadding).padding(.bottom, 40)
+            .onGeometryChange(for: CGFloat.self) { g in g.size.height } action: { h in height = h }
         }
+        .scrollBounceBehavior(.basedOnSize)
         .scrollDismissesKeyboard(.immediately)
-        .presentationBackground(Theme.C.bg)
+        .presentationDetents([.height(height + 33), .large])
+        .sheet8()
     }
 
     private func save() {

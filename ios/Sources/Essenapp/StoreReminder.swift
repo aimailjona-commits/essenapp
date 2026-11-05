@@ -166,38 +166,50 @@ final class StoreReminder: NSObject, CLLocationManagerDelegate {
     }
 }
 
-/// Einstellungen › Benachrichtigungen: „Erinnern, wenn ich in einem Laden bin“ (36). Einschalten ohne „Immer“ → Erklär-Sheet.
+/// Einstellungen › Mitteilungen, Abschnitt „Im Laden“ (e.html S13): Schalter-Zeile, Erklärtext, Status (36).
+/// Einschalten ohne „Immer“ → Erklär-Sheet.
 struct StoreReminderCard: View {
     @Environment(\.openURL) private var openURL
     @State private var reminder = StoreReminder.shared
     @State private var ask = Demo.screen == "storeask"
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Toggle("Erinnern, wenn ich in einem Laden bin", isOn: Binding(get: { reminder.enabled }, set: { on in
+        VStack(alignment: .leading, spacing: 0) {
+            SectionLabel("Im Laden").padding(.top, 28).padding(.bottom, 4)
+            Toggle(isOn: Binding(get: { reminder.enabled }, set: { on in
                 if on && reminder.status != .authorizedAlways { ask = true } else { reminder.enabled = on }
-            }))
-            .font(.system(.body, weight: .semibold))
-            Text("Bis zu 20 deiner Läden (nächste zuerst), 8–21 Uhr, höchstens einmal pro Laden und Tag – nur wenn dort etwas auf der Liste steht oder ein Coupon gilt.")
-                .font(Theme.F.micro).foregroundStyle(Theme.C.text2)
-            if reminder.enabled {
-                if reminder.status != .authorizedAlways {
-                    Text(reminder.status == .authorizedWhenInUse ? "Standort steht auf „Beim Verwenden“ – für Erinnerungen „Immer“ wählen."
-                                                                  : "Standort ist in iOS nicht erlaubt.")
-                        .font(Theme.F.caption).foregroundStyle(Theme.C.danger)
-                    Button("In iOS-Einstellungen öffnen") { if let url = URL(string: UIApplication.openSettingsURLString) { openURL(url) } }
-                        .buttonStyle(SecondaryButtonStyle())
-                } else if reminder.watched == 0 {
-                    Text("Noch kein Laden mit Standort – wähle deine Läden auf der Karte (Einstellungen › Läden & Filialen).")
-                        .font(Theme.F.caption).foregroundStyle(Theme.C.text2)
-                } else {
-                    Label("\(reminder.watched) \(reminder.watched == 1 ? "Laden" : "Läden") überwacht", systemImage: "location.fill")
-                        .font(Theme.F.caption).foregroundStyle(Theme.C.success)
+            })) {
+                HStack(spacing: 12) {
+                    Icon(.pin, size: 18).frame(width: 32, height: 32).background(Theme.C.sage, in: Circle())
+                    Text("Erinnern, wenn ich in einem Laden bin").font(Theme.F.text(15, .bold)).multilineTextAlignment(.leading)
                 }
             }
+            .toggleStyle(.v8)
+            .foregroundStyle(Theme.C.ink)
+            .frame(minHeight: 42)
+            .padding(.vertical, 4)
+            .overlay(alignment: .top) { Hairline() }
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Bis zu 20 deiner Läden (nächste zuerst), 8–21 Uhr, höchstens einmal pro Laden und Tag – nur wenn dort etwas auf der Liste steht oder ein Coupon gilt.")
+                    .font(Theme.F.text(12)).foregroundStyle(Theme.C.ink2).lineSpacing(3)
+                if reminder.enabled {
+                    if reminder.status != .authorizedAlways {
+                        Text(reminder.status == .authorizedWhenInUse ? "Standort steht auf „Beim Verwenden“ – für Erinnerungen „Immer“ wählen."
+                                                                      : "Standort ist in iOS nicht erlaubt.")
+                            .font(Theme.F.text(12, .bold)).foregroundStyle(Theme.C.deal)
+                        OutlineButton(title: "In iOS-Einstellungen öffnen") {
+                            if let url = URL(string: UIApplication.openSettingsURLString) { openURL(url) }
+                        }
+                    } else if reminder.watched == 0 {
+                        Text("Noch kein Laden mit Standort – wähle deine Läden auf der Karte (Einstellungen › Läden & Filialen).")
+                            .font(Theme.F.text(12)).foregroundStyle(Theme.C.ink2)
+                    } else {
+                        SoftPill(text: "\(reminder.watched) \(reminder.watched == 1 ? "Laden" : "Läden") überwacht", icon: .pin, tint: Theme.C.sage)
+                    }
+                }
+            }
+            .padding(.leading, 44).padding(.top, 2).padding(.bottom, 8)
         }
-        .tint(Theme.C.accent)
-        .padding(16).card()
         .animation(Theme.spring, value: reminder.enabled)
         .sheet(isPresented: $ask) {
             PushPermissionSheet(emoji: "📍", title: "Erinnerung im Laden",

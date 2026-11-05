@@ -5,6 +5,7 @@ extension IngredientDTO: Identifiable {
 }
 
 /// Feature 1: Zutat ohne verknüpftes Angebot → passende Angebote der Woche (sonst Normalpreis-Schätzung).
+/// Ohne eigenes v8-Mockup: Sheet-Look und Zeilen wie S10 „Produkt merken“.
 struct IngredientOffersSheet: View {
     @Environment(AppStore.self) private var store
     @Environment(\.dismiss) private var dismiss
@@ -25,31 +26,47 @@ struct IngredientOffersSheet: View {
     var body: some View {
         NavigationStack {
             ScrollView {
-                VStack(alignment: .leading, spacing: 12) {
-                    Text("Angebote für").font(Theme.F.caption).foregroundStyle(Theme.C.text2)
-                    Text(ingredient.name).font(Theme.F.title)
+                VStack(alignment: .leading, spacing: 0) {
+                    HStack(alignment: .top) {
+                        VStack(alignment: .leading, spacing: 0) {
+                            Text("Angebote für").font(Theme.F.text(13, .semibold, relativeTo: .footnote)).foregroundStyle(Theme.C.ink2)
+                            Text(ingredient.name).font(Theme.F.t2)
+                        }
+                        Spacer()
+                        CloseButton { dismiss() }
+                    }
                     if matches.isEmpty {
-                        EmptyState(emoji: "🔍", title: "Diese Woche nicht im Angebot",
-                                   text: ingredient.packPriceCents.map { "Normalpreis ca. \(euro($0)) (Schätzung)" } ?? "In keinem Prospekt deiner Läden.")
+                        Ill("binoculars").frame(width: 160).frame(maxWidth: .infinity).padding(.top, 24)
+                        Text("Diese Woche nicht im Angebot").font(Theme.F.t2).padding(.top, 16)
+                        Text(ingredient.packPriceCents.map { "Normalpreis ca. \(euro($0)) (Schätzung)" } ?? "In keinem Prospekt deiner Läden.")
+                            .font(Theme.F.text(15, .semibold, relativeTo: .body)).foregroundStyle(Theme.C.ink2).padding(.top, 6)
                         if let list = store.householdList {
-                            Button {
+                            PrimaryButton(title: "Zur Einkaufsliste", icon: .bag) {
                                 Task { await store.addItem(name: ingredient.name, to: list.id) }
                                 store.flash("„\(ingredient.name)“ auf der Liste")
                                 dismiss()
-                            } label: { Label("Zur Einkaufsliste", systemImage: "cart.badge.plus") }
-                            .buttonStyle(PrimaryButtonStyle())
+                            }
+                            .padding(.top, 16)
                         }
                     } else {
+                        SectionLabel("Diese Woche im Angebot", big: true).padding(.top, 22).padding(.bottom, 4)
                         ForEach(matches) { o in
-                            Button { open = o } label: { OfferRow(offer: o) }.buttonStyle(PressableStyle())
+                            Button { open = o } label: {
+                                OfferLine(offer: o, parts: [Labels.chain(o.chain), o.amountText]) {
+                                    Text(euro(o.priceCents)).font(Theme.F.text(17, .bold, relativeTo: .headline)).monospacedDigit()
+                                }
+                            }
+                            .buttonStyle(PressableStyle())
                         }
                     }
                 }
-                .padding(Theme.pagePadding)
+                .padding(.horizontal, Theme.pagePadding)
+                .padding(.bottom, 40)
             }
             .background(Theme.C.bg)
             .navigationDestination(item: $open) { OfferDetailView(offer: $0) }
             .toolbar(.hidden, for: .navigationBar)
         }
+        .sheet8()
     }
 }

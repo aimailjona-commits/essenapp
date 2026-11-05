@@ -181,59 +181,119 @@ extension AppStore {
 /// Tab „Angebote“, Segment „Merkliste“: „Diese Woche günstig“, „Beobachtet“, „Preisalarme“; unten „Suchen“ + „Barcode scannen“.
 struct WatchListView: View {
     @Environment(AppStore.self) private var store
+    let showOffers: () -> Void  // Segment „Angebote“
     @State private var loaded = false
     @State private var error: String?
-    @State private var editing: WatchDTO?
-    @State private var searching = false
+    @State private var editing: WatchDTO? = Demo.screen == "watchedit" ? Demo.watches[2] : nil
+    @State private var searching = Demo.screen == "watchsearch"
     @State private var newAlarm = false
+
+    private enum L {
+        static let top: CGFloat = 14  // .scr 66 − 52
+        static let segWidth: CGFloat = 230
+        static let buttons: CGFloat = 100  // Knopf-Reihe über der Nav (bottom 100)
+    }
 
     var body: some View {
         let cheap = store.watches.filter { w in w.kind == "produkt" && !w.hits.isEmpty }
         let watched = store.watches.filter { w in w.kind == "produkt" && w.hits.isEmpty }
         let alarms = store.watches.filter { w in w.kind == "zutat" }
-        VStack(alignment: .leading, spacing: 14) {
-            if store.watches.isEmpty {
-                if !loaded && !store.demo {
-                    ForEach(0..<3, id: \.self) { _ in SkeletonCard(height: 72) }
-                } else if let error {
-                    ErrorState(message: error) { Task { await load() } }
-                } else {
-                    EmptyState(emoji: "🤍", title: "Noch nichts gemerkt",
-                               text: "Merk dir Lieblingsprodukte – wir sagen Bescheid, wenn sie im Angebot sind.")
+        GeometryReader { g in
+            ScrollView {
+                VStack(alignment: .leading, spacing: 0) {
+                    Text("\(store.watches.count) beobachtet").font(Theme.F.small).foregroundStyle(Theme.C.ink2)
+                    Text("Merkliste").font(Theme.F.t1).accessibilityAddTraits(.isHeader)
+                    Segmented8(options: [(false, "Angebote"), (true, "Merkliste · \(store.watches.count)")],
+                               selection: Binding(get: { true }, set: { on in if !on { showOffers() } }))
+                        .frame(width: L.segWidth)
+                        .padding(.top, 14)
+
+                    if store.watches.isEmpty { state }
+                    if !cheap.isEmpty {
+                        header(.tag, "Diese Woche günstig")
+                        ForEach(cheap) { w in hitRow(w) }
+                    }
+                    if !watched.isEmpty {
+                        header(.eye, "Beobachtet")
+                        ForEach(watched) { w in watchRow(w) }
+                    }
+                    HStack(spacing: 6) {
+                        Icon(.bell, size: 16)
+                        SectionLabel("Preisalarme", big: true)
+                        Spacer()
+                        Button { newAlarm = true } label: {
+                            HStack(spacing: 6) { Icon(.plus, size: 14); Text("Zutat") }
+                                .font(Theme.F.text(12, .bold, relativeTo: .caption)).foregroundStyle(Theme.C.onInk)
+                                .padding(.horizontal, 12).frame(height: 26)
+                                .background(Theme.C.ink, in: Capsule())
+                                .frame(minHeight: 44).contentShape(Rectangle())
+                        }
+                        .buttonStyle(PressableStyle())
+                        .accessibilityLabel("Preisalarm für eine Zutat anlegen")
+                    }
+                    .foregroundStyle(Theme.C.ink2)
+                    .padding(.top, 18)
+                    if alarms.isEmpty {
+                        Text("Z. B. „Butter unter 1,49 €“ oder „Hähnchenbrust unter 7 €/kg“ – auch per langem Druck auf eine Rezept-Zutat.")
+                            .font(Theme.F.text(13, .semibold, relativeTo: .footnote)).foregroundStyle(Theme.C.ink2)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                    ForEach(alarms) { w in alarmRow(w) }
                 }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, Theme.pagePadding)
+                .padding(.top, g.safeAreaInsets.top + L.top)
+                .padding(.bottom, L.buttons + Theme.S.button2 + 24)
+                .pinned(left: 268, top: 44) { Ill("bag").frame(width: 104) }
+                .edgeForm(.quarter, Theme.C.sage, width: 180, height: 180, right: 0, top: 0)
             }
-            if !cheap.isEmpty {
-                header("🔥", "Diese Woche günstig")
-                ForEach(Array(cheap.enumerated()), id: \.element.id) { i, w in hitRow(w).appear(delay: Double(i) * 0.04) }
-            }
-            if !watched.isEmpty {
-                header("👀", "Beobachtet")
-                ForEach(Array(watched.enumerated()), id: \.element.id) { i, w in watchRow(w).appear(delay: Double(i) * 0.04) }
-            }
-            HStack {
-                header("🔔", "Preisalarme")
-                Spacer()
-                Button { newAlarm = true } label: { Label("Zutat", systemImage: "plus").font(Theme.F.callout).frame(minHeight: 44) }
-                    .accessibilityLabel("Preisalarm für eine Zutat anlegen")
-            }
-            if alarms.isEmpty {
-                Text("Z. B. „Butter unter 1,49 €“ oder „Hähnchenbrust unter 7 €/kg“ – auch per langem Druck auf eine Rezept-Zutat.")
-                    .font(Theme.F.caption).foregroundStyle(Theme.C.text2).fixedSize(horizontal: false, vertical: true)
-            }
-            ForEach(Array(alarms.enumerated()), id: \.element.id) { i, w in alarmRow(w).appear(delay: Double(i) * 0.04) }
+            .ignoresSafeArea(edges: .top)
+        }
+        .overlay(alignment: .bottom) {
             HStack(spacing: 10) {
-                Button { searching = true } label: { Label("Suchen", systemImage: "magnifyingglass") }
-                    .buttonStyle(SecondaryButtonStyle())
-                Button { store.barcode = true } label: { Label("Barcode scannen", systemImage: "barcode.viewfinder") }
-                    .buttonStyle(PrimaryButtonStyle())
+                OutlineButton(title: "Suchen", icon: .search) { searching = true }
+                    .fixedSize(horizontal: true, vertical: false)
+                    .background(Theme.C.bg, in: Capsule())
+                Button { store.barcode = true } label: {
+                    HStack(spacing: 8) { Icon(.barcode, size: 20); Text("Barcode scannen") }
+                        .font(Theme.F.button).foregroundStyle(Theme.C.onInk)
+                        .frame(maxWidth: .infinity, minHeight: Theme.S.button2)
+                        .background(Theme.C.ink, in: Capsule())
+                }
+                .buttonStyle(PressableStyle())
             }
-            .padding(.top, 6)
+            .padding(.horizontal, Theme.pagePadding)
+            .padding(.bottom, L.buttons)
+            .ignoresSafeArea(edges: .bottom)
         }
         .animation(Theme.spring, value: store.watches)
         .task { await load() }
-        .sheet(item: $editing) { w in WatchSheet(watch: w).presentationDetents([.large]).presentationCornerRadius(Theme.R.sheet) }
-        .sheet(isPresented: $newAlarm) { WatchSheet(ingredient: "").presentationDetents([.large]).presentationCornerRadius(Theme.R.sheet) }
-        .sheet(isPresented: $searching) { WatchSearchSheet().presentationDetents([.large]).presentationCornerRadius(Theme.R.sheet) }
+        .sheet(item: $editing) { w in WatchSheet(watch: w).presentationDetents([.large]) }
+        .sheet(isPresented: $newAlarm) { WatchSheet(ingredient: "").presentationDetents([.large]) }
+        .sheet(isPresented: $searching) { WatchSearchSheet().presentationDetents([.large]) }
+    }
+
+    /// Laden / Fehler / Leer (ohne Mockup, mit v8-Bausteinen).
+    @ViewBuilder private var state: some View {
+        if !loaded && !store.demo {
+            VStack(spacing: 12) { ForEach(0..<3, id: \.self) { _ in Skeleton8(height: 56) } }.padding(.top, 28)
+        } else if let error {
+            VStack(alignment: .leading, spacing: 0) {
+                Text("Merkliste nicht geladen").font(Theme.F.t2)
+                Text(error).font(Theme.F.text(15, .semibold, relativeTo: .body)).foregroundStyle(Theme.C.ink2).padding(.top, 6)
+                OutlineButton(title: "Erneut versuchen", icon: .refresh) { Task { await load() } }
+                    .fixedSize(horizontal: true, vertical: false).padding(.top, 16)
+            }
+            .padding(.top, 40)
+        } else {
+            VStack(alignment: .leading, spacing: 0) {
+                Text("Noch nichts gemerkt").font(Theme.F.t2)
+                Text("Merk dir Lieblingsprodukte – wir sagen Bescheid, wenn sie im Angebot sind.")
+                    .font(Theme.F.text(15, .semibold, relativeTo: .body)).foregroundStyle(Theme.C.ink2)
+                    .fixedSize(horizontal: false, vertical: true).padding(.top, 6)
+            }
+            .padding(.top, 40)
+        }
     }
 
     private func load() async {
@@ -247,88 +307,83 @@ struct WatchListView: View {
         loaded = true
     }
 
-    private func header(_ emoji: String, _ title: String) -> some View {
-        Label { Text(title).font(Theme.F.headline) } icon: { Text(emoji) }.padding(.top, 4)
+    private func header(_ icon: Icon8, _ title: String) -> some View {
+        HStack(spacing: 6) { Icon(icon, size: 16); SectionLabel(title, big: true) }
+            .foregroundStyle(Theme.C.ink2)
+            .padding(.top, 28).padding(.bottom, 4)
     }
 
-    private func thumb(_ w: WatchDTO, _ url: String) -> some View {
-        let hue = Theme.hue(category: w.category)
-        return RemoteImage(url: URL(string: url)) { Text(w.kind == "zutat" ? "🔔" : hue.emoji).font(.system(size: 24)) }
-            .padding(6).frame(width: 52, height: 52).background(hue.tint, in: RoundedRectangle(cornerRadius: 14))
+    /// Zeile `.c-r2`: zwei Textzeilen, höchstens ein Zusatz rechts.
+    private func row(_ title: String, _ sub: Text, lead: AnyView? = nil, trail: AnyView? = nil, pad: CGFloat = 8) -> some View {
+        HStack(spacing: 14) {
+            if let lead { lead }
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title).font(Theme.F.text(16, .bold, relativeTo: .body)).foregroundStyle(Theme.C.ink).lineLimit(1)
+                sub.font(Theme.F.text(12, .semibold, relativeTo: .caption)).lineLimit(2).multilineTextAlignment(.leading)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            if let trail { trail }
+        }
+        .padding(.vertical, pad)
+        .frame(minHeight: 44)
+        .overlay(alignment: .top) { Hairline() }
+        .contentShape(Rectangle())
     }
 
-    /// „Diese Woche günstig“: bester Preis + Laden, Rabatt, → Angebot.
+    /// „Diese Woche günstig“: Zeichnung bzw. Logo, „0,99 € bei Rewe“, Rabatt → Angebot.
     private func hitRow(_ w: WatchDTO) -> some View {
         let o = w.hits[0]
+        let lead: AnyView = OfferArt.ill(w.label) != nil
+            ? AnyView(OfferArt(title: w.label, url: "").frame(width: 60, height: 60).frame(width: 48, height: 48)
+                .background(OfferArt.tint(w.label, category: w.category), in: Circle()).clipShape(Circle()))
+            : AnyView(LogoCircle(chain: o.chain))
         return NavigationLink { OfferDetailView(offer: o) } label: {
-            HStack(spacing: 12) {
-                thumb(w, o.imageUrl.isEmpty ? w.imageUrl : o.imageUrl)
-                VStack(alignment: .leading, spacing: 3) {
-                    Text(w.label).font(.system(.subheadline, weight: .semibold)).foregroundStyle(Theme.C.text1).lineLimit(1)
-                    HStack(spacing: 6) {
-                        Text("\(euro(o.priceCents)) bei \(Labels.chain(o.chain))").font(Theme.F.micro).monospacedDigit()
-                            .foregroundStyle(Theme.C.text2)
-                        DealBadge(text: o.discount.map { d in "−\(d) %" } ?? "Angebot")
-                        if let c = w.coupon { CouponTag(coupon: c) }
-                    }
-                }
-                Spacer(minLength: 0)
-                Image(systemName: "chevron.right").font(.system(size: 12, weight: .bold)).foregroundStyle(Theme.C.text3)
-            }
-            .padding(10)
-            .card(radius: Theme.R.tile)
+            row(w.label, Text("\(euro(o.priceCents)) bei \(Labels.chain(o.chain))").foregroundStyle(Theme.C.ink2), lead: lead,
+                trail: AnyView(HStack(spacing: 6) {
+                    DealPill(text: o.discount.map { d in "−\(d) %" } ?? "Angebot")
+                    if let c = w.coupon { couponPill(c) }
+                }), pad: 2)
         }
         .buttonStyle(PressableStyle())
         .contextMenu { menu(w) }
     }
 
-    /// „Beobachtet“: Wunschpreis, Verbrauchsrhythmus.
+    /// „Beobachtet“: Wunschpreis + zuletzt im Angebot; Rhythmus steht im Bearbeiten-Sheet.
     private func watchRow(_ w: WatchDTO) -> some View {
-        let parts = [w.alarmText.map { a in "Alarm \(a)" }, w.lastsWeeks.map { n in "hält ca. \(num(n)) Wochen" },
-                     w.emptyOn.map { d in "leer ca. \(shortDate(d))" }, w.lastOfferText].compactMap { s in s }
+        let last = w.lastOfferWeek.map { wk in
+            "zuletzt KW \(wk.suffix(2))" + (w.lastOfferChain.map { c in " bei \(Labels.chain(c))" } ?? "")
+                + (w.lastOfferPriceCents.map { p in " (\(euro(p)))" } ?? "")
+        }
+        let parts = [w.alarmText, last].compactMap { $0 }
         return Button { editing = w } label: {
-            HStack(spacing: 12) {
-                thumb(w, w.imageUrl)
-                VStack(alignment: .leading, spacing: 3) {
-                    Text(w.brand.isEmpty ? w.label : "\(w.label) · \(w.brand)").font(.system(.subheadline, weight: .semibold))
-                        .foregroundStyle(Theme.C.text1).lineLimit(1)
-                    Text(parts.isEmpty ? "gerade nicht im Angebot" : parts.joined(separator: " · "))
-                        .font(Theme.F.micro).foregroundStyle(Theme.C.text2).lineLimit(3).multilineTextAlignment(.leading)
-                    if let c = w.coupon { CouponTag(coupon: c) }
-                }
-                Spacer(minLength: 0)
-                Image(systemName: "chevron.right").font(.system(size: 12, weight: .bold)).foregroundStyle(Theme.C.text3)
-            }
-            .padding(10)
-            .card(radius: Theme.R.tile)
+            row(w.brand.isEmpty ? w.label : "\(w.label) · \(w.brand)",
+                Text(parts.isEmpty ? "gerade nicht im Angebot" : parts.joined(separator: " · ")).foregroundStyle(Theme.C.ink2),
+                trail: w.coupon.map { c in AnyView(couponPill(c)) })
         }
         .buttonStyle(PressableStyle())
         .contextMenu { menu(w) }
     }
 
-    /// „Preisalarme“ (Zutat): „Butter unter 1,49 €“, greift → Angebot.
+    /// „Preisalarme“ (Zutat): „Butter unter 1,49 €“, greift → grün.
     private func alarmRow(_ w: WatchDTO) -> some View {
         Button { editing = w } label: {
-            HStack(spacing: 12) {
-                thumb(w, "")
-                VStack(alignment: .leading, spacing: 3) {
-                    Text("\(w.label) \(w.alarmText ?? "")").font(.system(.subheadline, weight: .semibold))
-                        .foregroundStyle(Theme.C.text1).lineLimit(1)
-                    if let o = w.hits.first {
-                        Text("greift: \(euro(o.priceCents)) bei \(Labels.chain(o.chain)) – \(o.title)").font(Theme.F.micro)
-                            .foregroundStyle(Theme.C.success).lineLimit(1)
-                    } else {
-                        Text("wartet auf ein passendes Angebot").font(Theme.F.micro).foregroundStyle(Theme.C.text2)
-                    }
-                }
-                Spacer(minLength: 0)
-                Image(systemName: "chevron.right").font(.system(size: 12, weight: .bold)).foregroundStyle(Theme.C.text3)
-            }
-            .padding(10)
-            .card(radius: Theme.R.tile)
+            row("\(w.label) \(w.alarmText ?? "")", w.hits.first.map { o in
+                Text("greift: \(euro(o.priceCents)) bei \(Labels.chain(o.chain)) – \(o.title)")
+                    .font(Theme.F.text(12, .extrabold, relativeTo: .caption)).foregroundStyle(Theme.C.success)
+            } ?? Text("wartet auf ein passendes Angebot").foregroundStyle(Theme.C.ink2))
         }
         .buttonStyle(PressableStyle())
         .contextMenu { menu(w) }
+    }
+
+    /// Coupon (59) als weiche Pille; antippen = Kassen-Vollbild.
+    private func couponPill(_ c: CouponBadgeDTO) -> some View {
+        Button { store.checkoutCoupon = c.id } label: {
+            SoftPill(text: "Coupon \(c.text.replacingOccurrences(of: "🎟", with: "").trimmingCharacters(in: .whitespaces))")
+                .frame(minHeight: 44).contentShape(Rectangle())
+        }
+        .buttonStyle(PressableStyle())
+        .accessibilityLabel("Coupon \(c.partner.isEmpty ? Coupons.program(c.program) : c.partner) an der Kasse zeigen")
     }
 
     @ViewBuilder private func menu(_ w: WatchDTO) -> some View {
@@ -337,10 +392,10 @@ struct WatchListView: View {
     }
 }
 
-// MARK: Eintrag bearbeiten / Preisalarm anlegen
+// MARK: Eintrag bearbeiten / Preisalarm anlegen (S10 Bearbeiten)
 
-/// Wunschpreis (Packung oder Grundpreis), Läden, „Hält ca. X Wochen“ + „zuletzt gekauft“ (58). Ohne `watch`: neuer
-/// Preisalarm für eine Zutat (40), Name aus `ingredient`.
+/// Wunschpreis groß + Einheit im Segment, Läden und Verbrauchsrhythmus (58) als aufklappbare Zusammenfassungs-Zeilen.
+/// Ohne `watch`: neuer Preisalarm für eine Zutat (40), Name aus `ingredient`.
 struct WatchSheet: View {
     @Environment(AppStore.self) private var store
     @Environment(\.dismiss) private var dismiss
@@ -354,6 +409,7 @@ struct WatchSheet: View {
     @State private var bought: Bool
     @State private var boughtDate: Date
     @State private var saving = false
+    @State private var open: String?  // aufgeklappte Zeile: "laeden" | "rhythmus"
 
     init(watch: WatchDTO) {
         self.watch = watch
@@ -390,85 +446,139 @@ struct WatchSheet: View {
         let isProduct = watch?.kind == "produkt"
         let household = Labels.chains.map(\.key).filter { c in store.household?.stores.contains { s in s.chain == c && s.enabled } ?? false }
         ScrollView {
-            VStack(alignment: .leading, spacing: 14) {
+            VStack(alignment: .leading, spacing: 0) {
                 HStack(alignment: .top) {
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text(watch == nil ? "Preisalarm" : watch!.label).font(Theme.F.title).lineLimit(2)
+                    VStack(alignment: .leading, spacing: 0) {
+                        Text(watch?.label ?? "Preisalarm").font(Theme.F.t2).lineLimit(2)
                         Text(isProduct ? (watch!.brand.isEmpty ? "Merkliste" : watch!.brand) : "Für eine Zutat – jede passende Marke und Packung")
-                            .font(Theme.F.caption).foregroundStyle(Theme.C.text2)
+                            .font(Theme.F.text(13, .semibold, relativeTo: .footnote)).foregroundStyle(Theme.C.ink2)
                     }
                     Spacer()
-                    RoundIconButton(systemName: "xmark", label: "Schließen") { dismiss() }
+                    CloseButton { dismiss() }
                 }
-                if watch == nil {
-                    TextField("Zutat, z. B. Butter", text: $name)
-                        .padding(12).background(Theme.C.surface, in: RoundedRectangle(cornerRadius: Theme.R.chip))
+                if watch == nil {  // ohne Mockup: Name der Zutat
+                    FieldBox(icon: .search) { TextField("Zutat, z. B. Butter", text: $name) }.padding(.top, 16)
                 }
-                VStack(alignment: .leading, spacing: 10) {
-                    Label { Text("Wunschpreis").font(Theme.F.headline) } icon: { Text("🔔") }
-                    HStack(spacing: 10) {
-                        Text("unter").font(Theme.F.callout).foregroundStyle(Theme.C.text2)
-                        TextField(isProduct ? "optional, z. B. 2,00" : "z. B. 1,49", text: $price).keyboardType(.decimalPad)
-                            .font(.system(.title3, design: .rounded, weight: .bold)).monospacedDigit()
-                            .padding(.horizontal, 12).frame(height: 44).background(Theme.C.surface, in: Capsule())
-                        Text("€").font(Theme.F.callout)
-                    }
-                    Picker("Bezug", selection: $basis) {
-                        Text("Packung").tag(""); Text("pro kg").tag("kg"); Text("pro l").tag("l"); Text("pro Stück").tag("stk")
-                    }
-                    .pickerStyle(.segmented)
-                    Text(basis.isEmpty ? "Alarm, wenn eine Packung darunter im Angebot ist."
-                                       : "Grundpreis-Alarm: gilt für jede Packungsgröße (g → kg, ml → l).")
-                        .font(Theme.F.micro).foregroundStyle(Theme.C.text2)
-                }
-                .padding(16).card()
-                VStack(alignment: .leading, spacing: 10) {
-                    Label { Text("Läden").font(Theme.F.headline) } icon: { Text("🏪") }
-                    ChipFlow(items: [("", "Alle")] + household.map { c in (c, Labels.chain(c)) },
-                             selected: chains.isEmpty ? [""] : chains, color: Theme.C.accent) { c in
-                        if c.isEmpty { chains = [] } else { chains.formSymmetricDifference([c]) }
-                    }
-                }
-                .padding(16).card()
-                if isProduct, let w = watch {
-                    VStack(alignment: .leading, spacing: 10) {
-                        Toggle(isOn: $rhythm.animation(Theme.spring)) {
-                            Label { Text("Verbrauchsrhythmus").font(Theme.F.headline) } icon: { Text("🔁") }
-                        }
-                        if rhythm {
-                            HStack {
-                                Text("Hält ca. \(weeks) \(weeks == 1 ? "Woche" : "Wochen")").font(Theme.F.callout)
-                                    .contentTransition(.numericText())
-                                Spacer()
-                                Stepper("Wochen", value: $weeks, in: 1...52).labelsHidden()
-                            }
-                            .sensoryFeedback(.selection, trigger: weeks)
-                            if let s = w.lastsWeeksSuggestion {
-                                Text("Vorschlag: \(num(s)) Wochen").font(Theme.F.micro).foregroundStyle(Theme.C.text2)
-                            }
-                            Toggle("Zuletzt gekauft", isOn: $bought.animation(Theme.spring)).font(Theme.F.callout)
-                            if bought { DatePicker("am", selection: $boughtDate, in: ...Date.now, displayedComponents: .date) }
-                            Text("Wird automatisch gesetzt, wenn du es auf der Liste abhakst. 2 Wochen vor „leer“ melden wir Angebote, 3 Tage vorher kommt es auf die Liste.")
-                                .font(Theme.F.micro).foregroundStyle(Theme.C.text2).fixedSize(horizontal: false, vertical: true)
+                // Wunschpreis als große Zahl (`.stat`), direkt eintippbar
+                VStack(spacing: 6) {
+                    Hairline(color: Theme.C.ink)
+                    HStack(alignment: .top) {
+                        Text("Wunschpreis\nunter").font(Theme.F.text(12, .bold, relativeTo: .caption))
+                        Spacer(minLength: 8)
+                        HStack(alignment: .firstTextBaseline, spacing: 4) {
+                            TextField(isProduct ? "–" : "1,49", text: $price)
+                                .keyboardType(.decimalPad)
+                                .multilineTextAlignment(.trailing)
+                                .font(Theme.F.num(64)).tracking(Theme.F.numTracking(64))
+                                .minimumScaleFactor(0.5)
+                            Text("€").font(Theme.F.num(64)).tracking(Theme.F.numTracking(64))
                         }
                     }
-                    .tint(Theme.C.accent)
-                    .padding(16).card()
                 }
-                Button(action: save) { Text(saving ? "Speichere …" : watch == nil ? "Preisalarm anlegen" : "Speichern") }
-                    .buttonStyle(PrimaryButtonStyle())
-                    .disabled(!valid || saving).opacity(valid ? 1 : 0.5)
+                .foregroundStyle(Theme.C.ink)
+                .accessibilityElement(children: .combine)
+                .accessibilityLabel("Wunschpreis unter, Euro")
+                .padding(.top, 28)
+                Segmented8(options: [("", "Packung"), ("kg", "pro kg"), ("l", "pro l"), ("stk", "pro Stück")], selection: $basis)
+                    .padding(.top, 14)
+                Text(basis.isEmpty ? "Alarm, wenn eine Packung darunter im Angebot ist."
+                                   : "Grundpreis-Alarm gilt für jede Packungsgröße.")
+                    .font(Theme.F.text(12, .semibold, relativeTo: .caption)).foregroundStyle(Theme.C.ink2).padding(.top, 8)
+
+                VStack(spacing: 0) {
+                    summary("laeden", "Läden", chains.isEmpty ? "Alle Läden" : Labels.chains.map(\.key).filter(chains.contains).map(Labels.chain).joined(separator: ", "))
+                    if open == "laeden" {
+                        ScrollView(.horizontal, showsIndicators: false) {
+                            HStack(spacing: 8) {
+                                Chip8(title: "Alle", on: chains.isEmpty) { chains = [] }
+                                ForEach(household, id: \.self) { c in
+                                    Chip8(title: Labels.chain(c), on: chains.contains(c)) { chains.formSymmetricDifference([c]) }
+                                }
+                            }
+                            .padding(.horizontal, Theme.pagePadding)
+                        }
+                        .padding(.horizontal, -Theme.pagePadding)
+                        .padding(.bottom, 8)
+                    }
+                    if isProduct, let w = watch {
+                        summary("rhythmus", "Verbrauchsrhythmus", rhythmText(w))
+                        if open == "rhythmus" { rhythmEditor(w) }
+                    }
+                }
+                .padding(.top, 28)
+
+                PrimaryButton(title: saving ? "Speichere …" : watch == nil ? "Preisalarm anlegen" : "Speichern", disabled: !valid || saving,
+                              action: save)
+                    .padding(.top, 28)
                 if let w = watch {
-                    Button("Entfernen", role: .destructive) {
-                        Task { await store.deleteWatch(w); dismiss() }
+                    Button { Task { await store.deleteWatch(w); dismiss() } } label: {
+                        Text("Entfernen").font(Theme.F.text(15, .extrabold, relativeTo: .body)).foregroundStyle(Theme.C.deal)
+                            .frame(maxWidth: .infinity, minHeight: 44)
                     }
-                    .frame(maxWidth: .infinity, minHeight: 44)
+                    .padding(.top, 12)
                 }
             }
-            .padding(Theme.pagePadding)
+            .padding(.horizontal, Theme.pagePadding)
+            .padding(.bottom, 40)
         }
         .scrollDismissesKeyboard(.immediately)
-        .presentationBackground(Theme.C.bg)
+        .sheet8()
+    }
+
+    /// Zusammenfassungs-Zeile mit Pfeil (antippen = aufklappen).
+    private func summary(_ id: String, _ title: String, _ sub: String) -> some View {
+        Button { withAnimation(Theme.spring) { open = open == id ? nil : id } } label: {
+            HStack(spacing: 14) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(title).font(Theme.F.text(16, .bold, relativeTo: .body)).foregroundStyle(Theme.C.ink)
+                    Text(sub).font(Theme.F.text(12, .semibold, relativeTo: .caption)).foregroundStyle(Theme.C.ink2)
+                        .multilineTextAlignment(.leading)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                Icon(.chev, size: 18).foregroundStyle(Theme.C.ink3).rotationEffect(.degrees(open == id ? 90 : 0))
+            }
+            .padding(.vertical, 11)
+            .overlay(alignment: .top) { Hairline() }
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityAddTraits(open == id ? .isSelected : [])
+    }
+
+    private func rhythmText(_ w: WatchDTO) -> String {
+        guard rhythm else { return w.lastsWeeksSuggestion.map { s in "aus · Vorschlag: \(num(s)) Wochen" } ?? "aus" }
+        var parts = ["hält ca. \(weeks) \(weeks == 1 ? "Woche" : "Wochen")"]
+        if bought {
+            parts.append("gekauft \(dayMonth(boughtDate.formatted(PantryDTO.day)))")
+            if let empty = Calendar.current.date(byAdding: .day, value: weeks * 7, to: boughtDate) {
+                parts.append("leer ca. \(dayMonth(empty.formatted(PantryDTO.day)))")
+            }
+        }
+        return parts.joined(separator: " · ")
+    }
+
+    private func rhythmEditor(_ w: WatchDTO) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Toggle(isOn: $rhythm.animation(Theme.spring)) { Text("Rhythmus merken").font(Theme.F.text(15, .bold, relativeTo: .body)) }
+                .toggleStyle(.v8)
+            if rhythm {
+                HStack {
+                    Text("Hält ca.").font(Theme.F.small).foregroundStyle(Theme.C.ink2)
+                    Spacer()
+                    Stepper8(value: $weeks, range: 1...52) { "\($0) Wo." }
+                }
+                Toggle(isOn: $bought.animation(Theme.spring)) { Text("Zuletzt gekauft").font(Theme.F.text(15, .bold, relativeTo: .body)) }
+                    .toggleStyle(.v8)
+                if bought {
+                    DatePicker("am", selection: $boughtDate, in: ...Date.now, displayedComponents: .date)
+                        .font(Theme.F.small).tint(Theme.C.ink)
+                }
+                Text("Wird automatisch gesetzt, wenn du es auf der Liste abhakst. 2 Wochen vor „leer“ melden wir Angebote, 3 Tage vorher kommt es auf die Liste.")
+                    .font(Theme.F.text(12, .semibold, relativeTo: .caption)).foregroundStyle(Theme.C.ink2)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+        .padding(.bottom, 12)
     }
 
     private func save() {
@@ -499,37 +609,44 @@ struct WatchSheet: View {
     }
 }
 
-/// „Suchen“: Angebote der Woche merken oder ein Produkt per Freitext beobachten.
+// MARK: S10 Suchen
+
+/// „Produkt merken“: Suchwort beobachten oder ein Angebot dieser Woche per Herz merken.
 struct WatchSearchSheet: View {
     @Environment(AppStore.self) private var store
     @Environment(\.dismiss) private var dismiss
-    @State private var query = ""
+    @State private var query = Demo.screen == "watchsearch" ? "Shampoo" : ""
 
     var body: some View {
         let q = query.trimmingCharacters(in: .whitespaces)
         let found = q.count < 2 ? [] : Array(store.offers.filter { o in o.title.localizedCaseInsensitiveContains(q) || o.brand.localizedCaseInsensitiveContains(q) }.prefix(30))
         ScrollView {
-            VStack(alignment: .leading, spacing: 12) {
+            VStack(alignment: .leading, spacing: 0) {
                 HStack {
-                    Text("Produkt merken").font(Theme.F.title)
+                    Text("Produkt merken").font(Theme.F.t2)
                     Spacer()
-                    RoundIconButton(systemName: "xmark", label: "Schließen") { dismiss() }
+                    CloseButton { dismiss() }
                 }
-                SearchField(text: $query, placeholder: "Name oder Marke, z. B. Shampoo")
+                FieldBox(icon: .search) { TextField("Name oder Marke, z. B. Shampoo", text: $query).submitLabel(.search) }
+                    .padding(.top, 16)
                 if q.count >= 2 {
-                    Button {
+                    PrimaryButton(title: "„\(q)“ beobachten", icon: .eye) {
                         Task { if await store.addWatch(WatchIn(label: String(q.prefix(200)))) { dismiss() } }
-                    } label: { Label("„\(q)“ beobachten", systemImage: "eye") }
-                    .buttonStyle(PrimaryButtonStyle())
-                    if !found.isEmpty { Text("Diese Woche im Angebot").font(Theme.F.headline).padding(.top, 4) }
+                    }
+                    .padding(.top, 14)
+                    if !found.isEmpty {
+                        SectionLabel("Diese Woche im Angebot", big: true).padding(.top, 22).padding(.bottom, 4)
+                    }
                     ForEach(found) { o in
                         let on = store.watch(for: o) != nil
-                        HStack(spacing: 8) {
-                            OfferRow(offer: o)
+                        OfferLine(offer: o, parts: [euro(o.priceCents), Labels.chain(o.chain), o.amountText]) {
                             Button { Task { await store.toggleWatch(o) } } label: {
-                                Image(systemName: on ? "heart.fill" : "heart").font(.system(size: 18, weight: .semibold))
-                                    .foregroundStyle(on ? Theme.C.accent : Theme.C.text1).frame(width: 44, height: 44)
-                                    .contentTransition(.symbolEffect(.replace))
+                                ZStack {
+                                    if on { Icon8.heart.path(.stroke).fill(Theme.C.ink).frame(width: 24, height: 24) }
+                                    Icon(.heart)
+                                }
+                                .foregroundStyle(Theme.C.ink)
+                                .frame(width: 44, height: 44).contentShape(Rectangle())
                             }
                             .buttonStyle(PressableStyle())
                             .sensoryFeedback(.impact(weight: .medium), trigger: on)
@@ -538,19 +655,21 @@ struct WatchSearchSheet: View {
                     }
                 } else {
                     Text("Tippe mindestens 2 Buchstaben – wir zeigen passende Angebote, oder du beobachtest den Begriff.")
-                        .font(Theme.F.caption).foregroundStyle(Theme.C.text2).fixedSize(horizontal: false, vertical: true)
+                        .font(Theme.F.text(13, .semibold, relativeTo: .footnote)).foregroundStyle(Theme.C.ink2)
+                        .fixedSize(horizontal: false, vertical: true).padding(.top, 14)
                 }
             }
-            .padding(Theme.pagePadding)
+            .padding(.horizontal, Theme.pagePadding)
+            .padding(.bottom, 40)
         }
         .scrollDismissesKeyboard(.immediately)
-        .presentationBackground(Theme.C.bg)
+        .sheet8()
     }
 }
 
 // MARK: Barcode-Scanner (VisionKit)
 
-/// Vollbild-Kamera mit Orange-Eckrahmen; Treffer → Open Food Facts → Sheet „Auf Merkliste?“.
+/// Vollbild-Kamera, dunkel; Rahmen-Ecken in Pastellblau, unten eine Glas-Pille mit Hinweis. Treffer → „Auf Merkliste?“.
 struct BarcodeScanView: View {
     @Environment(AppStore.self) private var store
     @Environment(\.dismiss) private var dismiss
@@ -560,12 +679,18 @@ struct BarcodeScanView: View {
     /// Coupon-Barcode (38a): Code128/EAN/QR, Treffer geht mit Typ zurück, kein Merklisten-Sheet.
     var coupon: ((String, String) -> Void)? = nil
 
+    private enum L {
+        static let frame = CGSize(width: 270, height: 170)
+        static let hint: CGFloat = 120  // Glas-Pille über unten
+    }
+
     var body: some View {
         ZStack {
-            Color.black.ignoresSafeArea()
-            if store.demo {
-                HeroImage(name: "table").ignoresSafeArea().overlay(Color.black.opacity(0.35).ignoresSafeArea())
-            } else if camera == true {
+            // shortcut: Kamera-Grund #1E1C19/#4A4640 fehlt in Theme – aus Tinte angenähert
+            RadialGradient(colors: [Theme.C.ink2.opacity(0.55), Theme.C.ink], center: UnitPoint(x: 0.5, y: 0.46), startRadius: 0, endRadius: 420)
+                .background(Theme.C.ink)
+                .ignoresSafeArea()
+            if !store.demo, camera == true {
                 DataScanner(paused: ean != nil, symbologies: coupon == nil ? [.ean8, .ean13, .upce] : [.code128, .ean13, .ean8, .qr],
                             digitsOnly: coupon == nil) { code, symbology in
                     if let coupon {
@@ -577,32 +702,54 @@ struct BarcodeScanView: View {
                 }
                 .ignoresSafeArea()
             } else if camera == false {
-                VStack(spacing: 12) {
-                    Text("📷").font(.system(size: 44))
+                VStack(spacing: 16) {
                     Text(DataScannerViewController.isSupported ? "Kamera ist nicht erlaubt." : "Dieses iPhone kann keine Barcodes scannen.")
-                        .font(Theme.F.headline).foregroundStyle(.white)
+                        .font(Theme.F.t2).foregroundStyle(Theme.C.onInk).multilineTextAlignment(.center)
                     if DataScannerViewController.isSupported {
-                        Button("In iOS-Einstellungen öffnen") { if let url = URL(string: UIApplication.openSettingsURLString) { openURL(url) } }
-                            .buttonStyle(SecondaryButtonStyle()).frame(maxWidth: 280)
+                        PrimaryButton(title: "In iOS-Einstellungen öffnen", style: .blue) {
+                            if let url = URL(string: UIApplication.openSettingsURLString) { openURL(url) }
+                        }
+                        .frame(maxWidth: 300)
                     }
                 }
                 .padding(Theme.pagePadding)
+                .offset(y: 160)
             }
-            CornerFrame().stroke(Theme.C.lime, style: StrokeStyle(lineWidth: 5, lineCap: .round))
-                .frame(width: 270, height: 170)
-                .accessibilityHidden(true)
+            ZStack {
+                if store.demo || camera != true { BarcodeStripes().stroke(Theme.C.onInk.opacity(0.35), lineWidth: 3) }
+                ScanCorners().stroke(Theme.C.blue, style: StrokeStyle(lineWidth: 5, lineCap: .round))
+            }
+            .frame(width: L.frame.width, height: L.frame.height)
+            .accessibilityHidden(true)
             VStack {
                 HStack {
-                    Text(coupon == nil ? "Barcode scannen" : "Coupon-Barcode scannen").font(Theme.F.headline).foregroundStyle(.white)
+                    Text(coupon == nil ? "Barcode scannen" : "Coupon-Barcode scannen").font(Theme.F.t2).foregroundStyle(Theme.C.onInk)
                     Spacer()
-                    RoundIconButton(systemName: "xmark", label: "Schließen") { dismiss() }
+                    Button { dismiss() } label: {
+                        Icon(.x, size: 18).foregroundStyle(Theme.C.onInk)
+                            .frame(width: Theme.S.close, height: Theme.S.close)
+                            .overlay(Circle().strokeBorder(Theme.C.onInk.opacity(0.45), lineWidth: Theme.S.hair))
+                            .frame(minWidth: 44, minHeight: 44).contentShape(Circle())
+                    }
+                    .buttonStyle(PressableStyle())
+                    .accessibilityLabel("Schließen")
                 }
                 Spacer()
-                Text(coupon == nil ? "Strichcode in den Rahmen halten" : "Barcode oder QR-Code in den Rahmen halten").font(Theme.F.callout).foregroundStyle(Theme.C.text1)
-                    .padding(.horizontal, 16).frame(minHeight: 40).glass(Capsule())
-                    .padding(.bottom, 24)
+                HStack(spacing: 10) {
+                    Icon(.barcode, size: 18)
+                    Text(coupon == nil ? "Strichcode in den Rahmen halten" : "Barcode oder QR-Code in den Rahmen halten").lineLimit(1)
+                }
+                .font(Theme.F.text(14, .semibold, relativeTo: .subheadline))
+                .foregroundStyle(Theme.C.onInk)
+                .padding(.horizontal, 20).frame(height: 48)
+                .background(Theme.C.onInk.opacity(0.14), in: Capsule())
+                .background(.ultraThinMaterial, in: Capsule())
+                .overlay(Capsule().strokeBorder(Theme.C.onInk.opacity(0.2), lineWidth: 1))
+                .environment(\.colorScheme, .dark)
+                .padding(.bottom, L.hint)
+                .ignoresSafeArea(edges: .bottom)
             }
-            .padding(.horizontal, Theme.pagePadding).padding(.top, 8)
+            .padding(.horizontal, Theme.pagePadding).padding(.top, 14)
         }
         .task {
             guard !store.demo else { return }
@@ -614,7 +761,7 @@ struct BarcodeScanView: View {
                 ean = nil
                 if added { dismiss() }
             }
-            .presentationDetents([.medium, .large]).presentationCornerRadius(Theme.R.sheet)
+            .presentationDetents([.medium, .large])
         }
         .sensoryFeedback(.success, trigger: ean)
     }
@@ -622,7 +769,34 @@ struct BarcodeScanView: View {
 
 private struct ScannedCode: Identifiable { var id: String }
 
-/// „Auf Merkliste?“: Produkt aus Open Food Facts (Name, Marke, Bild, Nutri-Score); unbekannt → Namen eintippen.
+/// Rahmen-Ecken (Mockup-Pfad auf 270 × 170).
+private struct ScanCorners: Shape {
+    func path(in r: CGRect) -> Path {
+        let sx = r.width / 270, sy = r.height / 170
+        func p(_ x: CGFloat, _ y: CGFloat) -> CGPoint { CGPoint(x: r.minX + x * sx, y: r.minY + y * sy) }
+        var path = Path()
+        path.move(to: p(4, 40)); path.addLine(to: p(4, 16)); path.addQuadCurve(to: p(16, 4), control: p(4, 4)); path.addLine(to: p(40, 4))
+        path.move(to: p(230, 4)); path.addLine(to: p(254, 4)); path.addQuadCurve(to: p(266, 16), control: p(266, 4)); path.addLine(to: p(266, 40))
+        path.move(to: p(266, 130)); path.addLine(to: p(266, 154)); path.addQuadCurve(to: p(254, 166), control: p(266, 166)); path.addLine(to: p(230, 166))
+        path.move(to: p(40, 166)); path.addLine(to: p(16, 166)); path.addQuadCurve(to: p(4, 154), control: p(4, 166)); path.addLine(to: p(4, 130))
+        return path
+    }
+}
+
+/// Angedeuteter Strichcode im Rahmen (nur ohne Live-Kamera).
+private struct BarcodeStripes: Shape {
+    func path(in r: CGRect) -> Path {
+        let sx = r.width / 270, sy = r.height / 170
+        var path = Path()
+        for x: CGFloat in [70, 80, 86, 98, 104, 118, 124, 134, 146, 152, 164, 176, 182, 194, 200] {
+            path.move(to: CGPoint(x: r.minX + x * sx, y: r.minY + 50 * sy))
+            path.addLine(to: CGPoint(x: r.minX + x * sx, y: r.minY + 120 * sy))
+        }
+        return path
+    }
+}
+
+/// „Auf Merkliste?“: Packung im Kreis, Nutri-Score als Ampel-Leiste, EAN und Datenquelle; unbekannt → Namen eintippen.
 struct ScanResultSheet: View {
     @Environment(AppStore.self) private var store
     let ean: String
@@ -634,48 +808,69 @@ struct ScanResultSheet: View {
 
     var body: some View {
         let label = String((product?.found == true ? product!.name : name).trimmingCharacters(in: .whitespaces).prefix(200))
-        VStack(alignment: .leading, spacing: 14) {
-            Text("Auf Merkliste?").font(Theme.F.title)
-            if let p = product, p.found {
-                HStack(spacing: 14) {
-                    RemoteImage(url: URL(string: p.imageUrl)) { Text("🛒").font(.system(size: 30)) }
-                        .padding(6).frame(width: 72, height: 72).background(Theme.C.imageBg, in: RoundedRectangle(cornerRadius: 16))
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text(p.name).font(Theme.F.headline).fixedSize(horizontal: false, vertical: true)
-                        if !p.brand.isEmpty { Text(p.brand).font(Theme.F.caption).foregroundStyle(Theme.C.text2) }
-                        HStack(spacing: 6) {
-                            if let n = p.nutriScore { NutriBadge(score: n) }
-                            Text("EAN \(p.ean)").font(Theme.F.micro).foregroundStyle(Theme.C.text3)
+        ScrollView {
+            VStack(alignment: .leading, spacing: 0) {
+                HStack {
+                    Text("Auf Merkliste?").font(Theme.F.t2)
+                    Spacer()
+                    CloseButton { done(false) }
+                }
+                if let p = product, p.found {
+                    HStack(spacing: 18) {
+                        Group {
+                            if OfferArt.ill(p.name) != nil {
+                                OfferArt(title: p.name, url: p.imageUrl).frame(width: 130, height: 130)
+                            } else {
+                                RemoteImage(url: URL(string: p.imageUrl)) { Ill("bag").frame(width: 90) }.frame(width: 76, height: 76)
+                            }
+                        }
+                        .frame(width: 104, height: 104)
+                        .background(Theme.C.sand, in: Circle())
+                        .clipShape(Circle())
+                        VStack(alignment: .leading, spacing: 0) {
+                            Text(p.name).font(Theme.F.t2).fixedSize(horizontal: false, vertical: true)
+                            if !p.brand.isEmpty {
+                                Text(p.brand).font(Theme.F.text(13, .semibold, relativeTo: .footnote)).foregroundStyle(Theme.C.ink2)
+                            }
+                            if let n = p.nutriScore { NutriStrip(score: n).padding(.top, 10) }
                         }
                     }
+                    .padding(.top, 18)
+                    VStack(spacing: 0) {
+                        info("EAN") { Text(groupedEAN(p.ean)).font(Theme.F.num(16, relativeTo: .body)) }
+                        info("Daten") { Text("Open Food Facts (ODbL)").font(Theme.F.text(14, .bold, relativeTo: .subheadline)) }
+                    }
+                    .padding(.top, 18)
+                } else if product != nil || error != nil {
+                    Text(error ?? "Unbekanntes Produkt (EAN \(ean)) – wie heißt es?").font(Theme.F.text(13, .semibold, relativeTo: .footnote))
+                        .foregroundStyle(Theme.C.ink2).fixedSize(horizontal: false, vertical: true).padding(.top, 18)
+                    FieldBox { TextField("Name, z. B. Repair Shampoo", text: $name) }.padding(.top, 12)
+                } else {
+                    HStack(spacing: 18) {
+                        Skeleton8(width: 104, height: 104)
+                        VStack(alignment: .leading, spacing: 8) { Skeleton8(height: 22); Skeleton8(width: 120, height: 14) }
+                    }
+                    .padding(.top, 18)
+                    Text("Suche in Open Food Facts …").font(Theme.F.text(12, .semibold, relativeTo: .caption)).foregroundStyle(Theme.C.ink2)
+                        .padding(.top, 8)
                 }
-                Text("Daten: Open Food Facts (ODbL)").font(Theme.F.micro).foregroundStyle(Theme.C.text2)
-            } else if product != nil || error != nil {
-                Text(error ?? "Unbekanntes Produkt (EAN \(ean)) – wie heißt es?").font(Theme.F.caption).foregroundStyle(Theme.C.text2)
-                    .fixedSize(horizontal: false, vertical: true)
-                TextField("Name, z. B. Repair Shampoo", text: $name)
-                    .padding(12).background(Theme.C.surface, in: RoundedRectangle(cornerRadius: Theme.R.chip))
-            } else {
-                SkeletonCard(height: 84)
-                Text("Suche in Open Food Facts …").font(Theme.F.micro).foregroundStyle(Theme.C.text2)
+                PrimaryButton(title: saving ? "Merke …" : "Auf die Merkliste", icon: .heart, disabled: label.isEmpty || saving) {
+                    saving = true
+                    Task {
+                        let p = product
+                        let ok = await store.addWatch(WatchIn(label: label, brand: p?.found == true ? p!.brand : "", ean: ean,
+                                                              imageUrl: p?.found == true ? p!.imageUrl : ""))
+                        saving = false
+                        if ok { done(true) }
+                    }
+                }
+                .padding(.top, 16)
+                OutlineButton(title: "Weiter scannen", icon: .barcode) { done(false) }.padding(.top, 10)
             }
-            Button {
-                saving = true
-                Task {
-                    let p = product
-                    let ok = await store.addWatch(WatchIn(label: label, brand: p?.found == true ? p!.brand : "", ean: ean,
-                                                          imageUrl: p?.found == true ? p!.imageUrl : ""))
-                    saving = false
-                    if ok { done(true) }
-                }
-            } label: { Text(saving ? "Merke …" : "Auf die Merkliste") }
-            .buttonStyle(PrimaryButtonStyle())
-            .disabled(label.isEmpty || saving).opacity(label.isEmpty ? 0.5 : 1)
-            Button("Weiter scannen") { done(false) }.buttonStyle(SecondaryButtonStyle())
+            .padding(.horizontal, Theme.pagePadding)
+            .padding(.bottom, 40)
         }
-        .padding(Theme.pagePadding)
-        .frame(maxHeight: .infinity, alignment: .top)
-        .presentationBackground(Theme.C.bg)
+        .sheet8()
         .task {
             do {
                 product = try await store.product(ean: ean)
@@ -686,7 +881,51 @@ struct ScanResultSheet: View {
             }
         }
     }
+
+    private func info(_ label: String, @ViewBuilder _ value: () -> some View) -> some View {
+        HStack {
+            Text(label).font(Theme.F.small).foregroundStyle(Theme.C.ink2).frame(maxWidth: .infinity, alignment: .leading)
+            value().foregroundStyle(Theme.C.ink)
+        }
+        .frame(minHeight: 48)
+        .overlay(alignment: .top) { Hairline() }
+        .accessibilityElement(children: .combine)
+    }
+
+    /// „8076800195057“ → „8076 8001 9505 7“
+    private func groupedEAN(_ e: String) -> String {
+        stride(from: 0, to: e.count, by: 4).map { i in
+            String(e.dropFirst(i).prefix(4))
+        }.joined(separator: " ")
+    }
 }
+
+/// Nutri-Score als Ampel-Leiste A–E, aktiver Buchstabe größer (`.c-nss`).
+private struct NutriStrip: View {
+    let score: String
+
+    var body: some View {
+        HStack(spacing: 0) {
+            ForEach(Array(["A", "B", "C", "D", "E"].enumerated()), id: \.offset) { i, l in
+                let on = l == score
+                Text(l)
+                    .font(Theme.F.text(on ? 16 : 12, .extrabold, relativeTo: .caption))
+                    .foregroundStyle(l == "C" ? Theme.C.onBright : Theme.C.onInk)
+                    .frame(width: on ? 30 : 22, height: on ? 34 : 24)
+                    .background(Theme.C.nutri[l] ?? Theme.C.line,
+                                in: UnevenRoundedRectangle(topLeadingRadius: on ? 9 : i == 0 ? 7 : 0, bottomLeadingRadius: on ? 9 : i == 0 ? 7 : 0,
+                                                           bottomTrailingRadius: on ? 9 : i == 4 ? 7 : 0, topTrailingRadius: on ? 9 : i == 4 ? 7 : 0))
+                    .overlay {
+                        if on { RoundedRectangle(cornerRadius: 9).strokeBorder(Theme.C.bg, lineWidth: 2).padding(-2) }
+                    }
+                    .zIndex(on ? 1 : 0)
+            }
+        }
+        .accessibilityElement()
+        .accessibilityLabel("Nutri-Score \(score)")
+    }
+}
+
 
 /// VisionKit `DataScannerViewController`: Merkliste EAN-8/EAN-13/UPC-E (nur Ziffern), Coupons zusätzlich Code128/QR.
 struct DataScanner: UIViewControllerRepresentable {

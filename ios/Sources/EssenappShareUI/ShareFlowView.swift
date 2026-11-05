@@ -39,8 +39,8 @@ final class ShareModel {
         self.demo = demo != nil
         switch demo {
         case .link: stage = .link
-        case .pair: stage = .pair; server = "http://192.168.0.224:8000"; code = "4829"
-        case .importing: stage = .importing; step = 2; link = "https://www.instagram.com/reel/C9xYz12AbCd/"
+        case .pair: stage = .pair; server = "http://192.168.0.224:8000"; code = "482913"; busy = true  // S20: wartet auf Kopplung
+        case .importing: stage = .importing; step = 1; link = "https://www.instagram.com/reel/C9xYz12AbCd/"
         case .result: stage = .result; recipe = Self.demoRecipe; link = "https://www.instagram.com/reel/C9xYz12AbCd/"
         case nil:
             if !link.isEmpty { start() } else if input != nil { linkError = "Im geteilten Inhalt war kein Link." }
@@ -48,11 +48,11 @@ final class ShareModel {
     }
 
     static let demoRecipe = ImportedRecipe(
-        id: 102, title: "One-Pot-Pasta mit Feta", imageUrl: "",
-        ingredients: [.init(name: "Spaghetti", estimated: nil), .init(name: "Kirschtomaten", estimated: nil), .init(name: "Feta", estimated: nil),
-                      .init(name: "Knoblauch", estimated: true), .init(name: "Olivenöl", estimated: true), .init(name: "Basilikum", estimated: nil),
-                      .init(name: "Salz", estimated: true)],
-        steps: ["a", "b", "c", "d"], source: "instagram", sourceAuthor: "@koch_xy")
+        id: 102, title: "Bunte Linsen-Bowl", imageUrl: "",
+        ingredients: [.init(name: "Linsen", estimated: nil), .init(name: "Süßkartoffel", estimated: nil), .init(name: "Feta", estimated: nil),
+                      .init(name: "Spinat", estimated: nil), .init(name: "Kräuter", estimated: true), .init(name: "Öl", estimated: true),
+                      .init(name: "Salz", estimated: true), .init(name: "Zitrone", estimated: nil)],
+        steps: ["a", "b", "c", "d", "e"], source: "instagram", sourceAuthor: "@gruenegabel")
 
     var hasToken: Bool { !(session?.token ?? "").isEmpty }
     var validLink: Bool { URL(string: link).map { u in (u.scheme == "http" || u.scheme == "https") && u.host() != nil } ?? false }
@@ -155,13 +155,20 @@ final class ShareModel {
     private func order(_ type: String) -> Int { ["fruehstueck", "mittag", "abend", "dessert"].firstIndex(of: type) ?? 9 }
 }
 
-/// S20 Teilen-Erweiterung „Essenapp“ (auch „Link einfügen“ in der App, S22): Link → ggf. Kopplung → Import → Ergebnis.
+
+/// S20 Teilen-Erweiterung (Koppeln) und S22 „Link einfügen“ in der App: Link → ggf. Kopplung → Import → Ergebnis.
 public struct ShareFlowView: View {
     @State private var model: ShareModel
     private let onOpen: ((Int) -> Void)?
     private let onClose: () -> Void
     @FocusState private var codeFocus: Bool
-    @State private var spin = false
+
+    // Mockup-Maße (b.html S20/S22)
+    private let resultBlob = (x: CGFloat(190), y: CGFloat(-30), size: CGFloat(300))
+    private let plateSize: CGFloat = 150
+    private let digitWidth: CGFloat = 46
+    private let digitHeight: CGFloat = 62
+    private let stepRow: CGFloat = 52
 
     /// `persist`: Kopplung im Schlüsselbund der Erweiterung speichern. `onOpen` (nur App): „Rezept ansehen“.
     public init(input: ShareInput?, session: ShareSession?, persist: Bool = false, demo: ShareDemo? = nil,
@@ -171,38 +178,54 @@ public struct ShareFlowView: View {
         self.onClose = onClose
     }
 
+    private var floatingClose: Bool {
+        switch model.stage {
+        case .link, .pair: false
+        default: true
+        }
+    }
+
     public var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            HStack(spacing: 10) {
-                Text("🍲").font(.system(size: 18)).frame(width: 34, height: 34).background(ST.accentSoft, in: Circle())
-                Text("Kochpilot").font(ST.headline)
-                Spacer()
-                Button(action: onClose) {
-                    Image(systemName: "xmark").font(.system(size: 15, weight: .semibold)).foregroundStyle(ST.text1)
-                        .frame(width: 44, height: 44).background(ST.card, in: Circle())
-                        .overlay(Circle().strokeBorder(ST.line, lineWidth: 0.5))
-                }
-                .accessibilityLabel("Schließen")
-            }
-            .padding(.horizontal, ST.page).padding(.top, 16).padding(.bottom, 8)
             ScrollView {
-                VStack(alignment: .leading, spacing: 16) { content }
-                    .padding(.horizontal, ST.page).padding(.vertical, 8)
+                VStack(alignment: .leading, spacing: 0) { content }
+                    .padding(.horizontal, ST.page).padding(.top, 16)
                     .frame(maxWidth: .infinity, alignment: .leading)
             }
             .scrollDismissesKeyboard(.interactively)
-            buttons
-                .padding(.horizontal, ST.page).padding(.top, 8).padding(.bottom, 16)
+            .scrollBounceBehavior(.basedOnSize)
+            buttons.padding(.horizontal, ST.page).padding(.top, 8).padding(.bottom, 34)
+        }
+        .background(alignment: .topLeading) {
+            if model.stage == .result {
+                Circle().fill(ST.blue1).frame(width: resultBlob.size, height: resultBlob.size)
+                    .offset(x: resultBlob.x, y: resultBlob.y).accessibilityHidden(true)
+            }
+        }
+        .overlay(alignment: .topTrailing) {
+            if floatingClose { closeButton.padding(.trailing, ST.page - 2).padding(.top, 12) }
         }
         .background(ST.bg.ignoresSafeArea())
-        .foregroundStyle(ST.text1)
-        .tint(ST.accentDeep)
+        .foregroundStyle(ST.ink)
+        .tint(ST.ink)
         .environment(\.locale, Locale(identifier: "de_DE"))
+        .environment(\.colorScheme, .light)  // v8 ist vorerst fest hell
         .onAppear {
             #if DEBUG
             ShareInput.selfTest()
             #endif
         }
+    }
+
+    private var closeButton: some View {
+        Button(action: onClose) {
+            Image(systemName: "xmark").font(.system(size: 15, weight: .semibold)).foregroundStyle(ST.ink)
+                .frame(width: ST.close, height: ST.close)
+                .overlay(Circle().strokeBorder(ST.line, lineWidth: ST.hair))
+                .frame(minWidth: 44, minHeight: 44).contentShape(Circle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("Schließen")
     }
 
     // MARK: Inhalt je Schritt
@@ -215,220 +238,257 @@ public struct ShareFlowView: View {
         case .result: resultPage
         case .plan: planPage
         case .noRecipe:
-            message("🤷", "Kein Rezept gefunden",
+            message("questionmark", "Kein Rezept gefunden",
                     "In der Beschreibung steht kein Rezept – manche Reels zeigen es nur im Video. Probier einen anderen Beitrag oder eine Rezept-Webseite.")
-        case .failed(let text): message("📡", "Das hat nicht geklappt", text)
+        case .failed(let text): message("wifi.slash", "Das hat nicht geklappt", text)
         }
     }
 
+    /// S22 Link einfügen.
     private var linkPage: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            Text("Rezept aus Link").font(ST.title)
-            Text("Instagram-Reel, -Beitrag oder Rezept-Webseite – wir machen daraus ein Rezept in „Meine Rezepte“.")
-                .font(ST.caption).foregroundStyle(ST.text2)
-            HStack(spacing: 8) {
-                TextField("https://www.instagram.com/reel/…", text: $model.link)
+        VStack(alignment: .leading, spacing: 0) {
+            HStack {
+                Text("Rezept aus Link").font(ST.t2)
+                Spacer()
+                closeButton
+            }
+            Text("Link aus Instagram oder einer Rezeptseite einfügen – wir lesen Zutaten und Schritte aus.")
+                .font(ST.text(15)).lineSpacing(4).foregroundStyle(ST.ink2).padding(.top, 8)
+            HStack(spacing: 10) {
+                Image(systemName: "link").font(.system(size: 17, weight: .medium)).foregroundStyle(ST.ink2)
+                TextField("instagram.com/reel/…", text: $model.link)
+                    .font(ST.text(15)).foregroundStyle(ST.ink)
                     .keyboardType(.URL).textInputAutocapitalization(.never).autocorrectionDisabled()
-                    .padding(.horizontal, 16).frame(minHeight: 50)
-                    .background(ST.card, in: Capsule())
-                    .overlay(Capsule().strokeBorder(ST.line, lineWidth: 0.5))
                 PasteButton(payloadType: String.self) { strings in
                     let found = ShareInput.parse(url: nil, text: strings.joined(separator: " "))
                     Task { @MainActor in model.link = found.url.isEmpty ? strings.first ?? "" : found.url }
                 }
-                .labelStyle(.iconOnly).buttonBorderShape(.capsule).tint(ST.pasteTint)
+                .labelStyle(.titleAndIcon).buttonBorderShape(.capsule).tint(ST.ink)
             }
-            if let e = model.linkError { Text(e).font(ST.caption).foregroundStyle(ST.danger) }
+            .padding(.leading, 18).padding(.trailing, 8)
+            .frame(minHeight: ST.field)
+            .background(ST.card, in: Capsule())
+            .overlay(Capsule().strokeBorder(ST.line, lineWidth: ST.hair))
+            .padding(.top, 20)
+            if let e = model.linkError { errorLine(e).padding(.top, 10) }
+            Button("Importieren") { model.start() }
+                .buttonStyle(STPrimary()).disabled(!model.validLink).opacity(model.validLink ? 1 : 0.35)
+                .padding(.top, 22)
         }
     }
 
+    /// S20 Koppeln.
     private var pairPage: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            Text("Mit Kochpilot koppeln").font(ST.title)
-            Text("Einmalig: Öffne in der App Einstellungen › Teilen aus Instagram, tippe „Code erzeugen“ und gib hier Server-Adresse und Code ein.")
-                .font(ST.caption).foregroundStyle(ST.text2)
-            VStack(alignment: .leading, spacing: 6) {
-                Text("SERVER-ADRESSE").font(ST.micro).foregroundStyle(ST.text2)
-                TextField("http://192.168.0.10:8000", text: $model.server)
-                    .keyboardType(.URL).textInputAutocapitalization(.never).autocorrectionDisabled()
-                    .font(.system(.body, design: .monospaced))
-                    .padding(.horizontal, 16).frame(minHeight: 50)
-                    .background(ST.card, in: RoundedRectangle(cornerRadius: ST.tile, style: .continuous))
-            }
-            VStack(alignment: .leading, spacing: 6) {
-                Text("KOPPLUNGSCODE").font(ST.micro).foregroundStyle(ST.text2)
-                ZStack {
-                    TextField("", text: $model.code)
-                        .keyboardType(.numberPad).textContentType(.oneTimeCode)
-                        .focused($codeFocus)
-                        .foregroundStyle(.clear).tint(.clear)
-                        .accessibilityLabel("Kopplungscode, 6 Ziffern")
-                    HStack(spacing: 8) {
-                        ForEach(0..<6, id: \.self) { i in codeBox(i) }
+        VStack(alignment: .leading, spacing: 0) {
+            HStack(spacing: 12) {
+                Group {
+                    if let ill = ShareArt.ill { ill("pot").frame(width: 70, height: 70) } else {
+                        Image(systemName: "fork.knife").font(.system(size: 18, weight: .medium))
                     }
-                    .allowsHitTesting(false)
                 }
-                .frame(height: 64)
-                .contentShape(Rectangle())
-                .onTapGesture { codeFocus = true }
-                .onChange(of: model.code) { _, new in
-                    let digits = String(new.filter(\.isNumber).prefix(6))
-                    if digits != new { model.code = digits }
-                    if digits.count == 6 { Task { await model.pair() } }
+                .frame(width: 44, height: 44).background(ST.blue1).clipShape(Circle())
+                Text("Kochpilot").font(ST.text(17, .extrabold))
+                Spacer()
+                closeButton
+            }
+            Text("Mit Kochpilot koppeln").font(ST.serif(28)).padding(.top, 26)
+            Text("Einmalig: In der App Einstellungen › Teilen aus Instagram einen Code erzeugen und hier eingeben.")
+                .font(ST.text(15)).lineSpacing(4).foregroundStyle(ST.ink2).padding(.top, 8)
+            Text("SERVER-ADRESSE").stLabel().padding(.top, 24)
+            TextField("http://192.168.0.10:8000", text: $model.server)
+                .keyboardType(.URL).textInputAutocapitalization(.never).autocorrectionDisabled()
+                .font(.system(size: 15, weight: .medium, design: .monospaced)).foregroundStyle(ST.ink)
+                .padding(.horizontal, 18).frame(minHeight: ST.field)
+                .background(ST.card, in: Capsule())
+                .overlay(Capsule().strokeBorder(ST.line, lineWidth: ST.hair))
+                .padding(.top, 8)
+            Text("CODE").stLabel().padding(.top, 26)
+            ZStack {
+                TextField("", text: $model.code)
+                    .keyboardType(.numberPad).textContentType(.oneTimeCode)
+                    .focused($codeFocus)
+                    .foregroundStyle(.clear).tint(.clear)
+                    .accessibilityLabel("Kopplungscode, 6 Ziffern")
+                HStack(spacing: 0) {
+                    ForEach(0..<6, id: \.self) { i in
+                        codeDigit(i)
+                        if i < 5 { Spacer(minLength: 4) }
+                    }
                 }
+                .allowsHitTesting(false)
             }
-            if let e = model.pairError {
-                Label(e, systemImage: "exclamationmark.circle.fill").font(ST.caption).foregroundStyle(ST.danger)
-                    .transition(.opacity)
+            .frame(height: digitHeight)
+            .contentShape(Rectangle())
+            .onTapGesture { codeFocus = true }
+            .onChange(of: model.code) { _, new in
+                let digits = String(new.filter(\.isNumber).prefix(6))
+                if digits != new { model.code = digits }
+                if digits.count == 6 { Task { await model.pair() } }
             }
+            .padding(.top, 10)
+            Text("Bei 6 Ziffern koppeln wir automatisch.").font(ST.text(13)).foregroundStyle(ST.ink2).padding(.top, 14)
+            if let e = model.pairError { errorLine(e).padding(.top, 10).transition(.opacity) }
         }
         .onAppear { if !model.demo { codeFocus = true } }
     }
 
-    private func codeBox(_ i: Int) -> some View {
+    private func codeDigit(_ i: Int) -> some View {
         let chars = Array(model.code)
         let active = codeFocus && i == min(chars.count, 5)
-        return Text(i < chars.count ? String(chars[i]) : "")
-            .font(.system(size: 30, weight: .bold, design: .rounded)).monospacedDigit()
-            .frame(maxWidth: .infinity, minHeight: 64)
-            .background(ST.card, in: RoundedRectangle(cornerRadius: ST.tile, style: .continuous))
-            .overlay(RoundedRectangle(cornerRadius: ST.tile, style: .continuous)
-                .strokeBorder(active ? ST.accent : (model.pairError != nil ? ST.danger.opacity(0.5) : ST.line), lineWidth: active ? 2 : 1))
+        let filled = i < chars.count
+        let rule = active ? ST.blue3 : filled ? ST.ink : model.pairError != nil ? ST.deal : ST.ink3
+        return Text(filled ? String(chars[i]) : "")
+            .font(ST.num(52)).tracking(ST.numTracking(52))
+            .frame(width: digitWidth, height: digitHeight - 8)
+            .padding(.bottom, 6)
+            .overlay(alignment: .bottom) { Rectangle().fill(rule).frame(height: 2) }
             .animation(ST.spring, value: active)
     }
 
+    /// S22 Import läuft: Topf-Lader, vier Schritte, alle 2,5 s ein Haken.
     private var importingPage: some View {
         let steps = ["Link öffnen", "Rezept wird gelesen …", "Zutaten & Mengen ordnen", "Foto speichern"]
-        return VStack(spacing: 18) {
-            Text("🍲").font(.system(size: 60))
-                .frame(width: 130, height: 130)
-                .background(Circle().fill(ST.card).shadow(color: .black.opacity(0.08), radius: 12, y: 6))
-                .rotationEffect(.degrees(spin ? 360 : 0))
-                .onAppear { withAnimation(.linear(duration: 6).repeatForever(autoreverses: false)) { spin = true } }
-                .padding(.top, 12)
-            Text("Rezept wird gelesen …").font(ST.title)
-            Text(URL(string: model.link)?.host() ?? model.link).font(ST.caption).foregroundStyle(ST.text2).lineLimit(1)
-            VStack(alignment: .leading, spacing: 14) {
+        return VStack(spacing: 0) {
+            Group {
+                if let pot = ShareArt.potLoader { pot() } else {
+                    Circle().fill(ST.blue1).frame(width: 240, height: 240)
+                        .overlay(Image(systemName: "fork.knife").font(.system(size: 64, weight: .light)))
+                }
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.top, 14)
+            Text("Rezept wird gelesen …").font(ST.t2).multilineTextAlignment(.center).padding(.top, 28)
+            Text(URL(string: model.link)?.host() ?? model.link).font(ST.text(13)).foregroundStyle(ST.ink2).lineLimit(1).padding(.top, 4)
+            VStack(spacing: 0) {
                 ForEach(Array(steps.enumerated()), id: \.offset) { i, s in
-                    HStack(spacing: 12) {
-                        ZStack {
-                            Circle().fill(i < model.step ? ST.accent : ST.surface)
-                            if i < model.step {
-                                Image(systemName: "checkmark").font(.system(size: 12, weight: .bold)).foregroundStyle(.white)
-                                    .transition(.scale.combined(with: .opacity))
-                            } else if i == model.step {
-                                ProgressView().controlSize(.small)
-                            }
+                    HStack(spacing: 14) {
+                        if i == model.step {
+                            Circle().strokeBorder(ST.line, lineWidth: 2)
+                                .overlay(Circle().trim(from: 0, to: 0.75).stroke(ST.ink, lineWidth: 2).rotationEffect(.degrees(-45)).padding(1))
+                                .frame(width: ST.check, height: ST.check)
+                        } else {
+                            STCheck(on: i < model.step)
                         }
-                        .frame(width: 28, height: 28)
-                        Text(s).font(ST.callout).foregroundStyle(i <= model.step ? ST.text1 : ST.text3)
+                        Text(s).font(ST.text(16, i == model.step ? .extrabold : .bold))
+                            .foregroundStyle(i <= model.step ? ST.ink : ST.ink3)
                         Spacer()
                     }
+                    .frame(height: stepRow)
+                    .overlay(alignment: .top) { Rectangle().fill(ST.line).frame(height: ST.hair) }
                     .sensoryFeedback(.success, trigger: i < model.step)
                 }
             }
-            .padding(18).stCard()
+            .padding(.top, 28)
         }
         .frame(maxWidth: .infinity)
     }
 
+    /// S22 Ergebnis.
     @ViewBuilder private var resultPage: some View {
         if let r = model.recipe {
             let estimated = r.ingredients.filter { i in i.estimated == true }.map(\.name)
-            VStack(spacing: 14) {
+            let source: String? = r.sourceAuthor.isEmpty ? nil : "\(r.source == "instagram" ? "Instagram" : "Web") · \(r.sourceAuthor)"
+            VStack(spacing: 0) {
                 AsyncImage(url: ShareAPI.media(r.imageUrl, model.session?.server ?? "")) { phase in
-                    if let image = phase.image { image.resizable().scaledToFill() } else { Text("🍝").font(.system(size: 64)) }
+                    if let image = phase.image { image.resizable().scaledToFill() } else {
+                        ST.plate.overlay(Image(systemName: "fork.knife").font(.system(size: 44, weight: .light)).foregroundStyle(ST.ink3))
+                    }
                 }
-                .frame(width: 150, height: 150)
-                .background(ST.card)
+                .frame(width: plateSize, height: plateSize)
                 .clipShape(Circle())
-                .shadow(color: .black.opacity(0.12), radius: 12, y: 8)
-                Text(r.title).font(ST.title).multilineTextAlignment(.center)
-                if !r.sourceAuthor.isEmpty {
-                    Text("\(r.source == "instagram" ? "Instagram" : "Web") · \(r.sourceAuthor)").font(ST.caption).foregroundStyle(ST.text2)
+                .padding(ST.plateRing)
+                .background(ST.card, in: Circle())
+                .shadow(color: ST.shadow.opacity(0.16), radius: 15, y: 14)
+                .padding(.top, 20)
+                Text(r.title).font(ST.t2).multilineTextAlignment(.center).padding(.top, 22)
+                Text(([source, "\(r.ingredients.count) Zutaten", "\(r.steps.count) Schritte"]).compactMap { $0 }.joined(separator: " · "))
+                    .font(ST.text(13)).foregroundStyle(ST.ink2).multilineTextAlignment(.center).padding(.top, 4)
+                HStack(spacing: 5) {
+                    Image(systemName: "checkmark").font(.system(size: 12, weight: .bold))
+                    Text(model.existed ? "War schon in Meine Rezepte" : "In Meine Rezepte gespeichert")
                 }
-                HStack(spacing: 8) {
-                    chip("\(r.ingredients.count) Zutaten", "list.bullet")
-                    chip("\(r.steps.count) Schritte", "text.alignleft")
-                }
-                Label(model.existed ? "War schon in Meine Rezepte" : "In Meine Rezepte gespeichert", systemImage: "checkmark.circle.fill")
-                    .font(ST.callout).foregroundStyle(ST.success)
-                    .padding(.horizontal, 14).frame(minHeight: 36).background(ST.successSoft, in: Capsule())
+                .font(ST.text(13, .extrabold)).padding(.horizontal, 14).frame(height: 30).background(ST.sage, in: Capsule())
+                .padding(.top, 16)
                 if let planned = model.planned {
-                    Label("Eingeplant: \(planned)", systemImage: "calendar.badge.checkmark")
-                        .font(ST.callout).foregroundStyle(ST.accentDeep)
-                        .padding(.horizontal, 14).frame(minHeight: 36).background(ST.accentSoft, in: Capsule())
+                    STSoft(text: "Eingeplant: \(planned)", symbol: "calendar").padding(.top, 8)
                 }
                 if !estimated.isEmpty {
-                    VStack(alignment: .leading, spacing: 4) {
-                        Label(estimated.count == 1 ? "1 Menge geschätzt" : "\(estimated.count) Mengen geschätzt", systemImage: "exclamationmark.triangle.fill")
-                            .font(ST.callout).foregroundStyle(ST.text1)
-                        Text("\(estimated.joined(separator: ", ")) – im Original stand keine Menge. Bitte beim Kochen prüfen.")
-                            .font(ST.caption).foregroundStyle(ST.text2)
+                    HStack(spacing: 14) {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Mengen geschätzt").font(ST.text(16, .extrabold))
+                            Text("\(estimated.joined(separator: ", ")) – bitte beim Kochen prüfen").font(ST.text(13)).foregroundStyle(ST.ink2)
+                        }
+                        Spacer()
+                        STSoft(text: "\(estimated.count)", tint: ST.warn)
                     }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(14)
-                    .background(ST.warning.opacity(0.14), in: RoundedRectangle(cornerRadius: ST.tile, style: .continuous))
+                    .frame(minHeight: ST.row)
+                    .overlay(alignment: .top) { Rectangle().fill(ST.line).frame(height: ST.hair) }
+                    .overlay(alignment: .bottom) { Rectangle().fill(ST.line).frame(height: ST.hair) }
+                    .padding(.top, 28)
                 }
                 if onOpen == nil {
                     Text("Du findest es in Kochpilot › Rezepte › Meine Rezepte (Filter „Importiert“).")
-                        .font(ST.caption).foregroundStyle(ST.text2).multilineTextAlignment(.center)
+                        .font(ST.text(13)).foregroundStyle(ST.ink2).multilineTextAlignment(.center).padding(.top, 16)
                 }
             }
             .frame(maxWidth: .infinity)
         }
     }
 
+    /// Diese Woche einplanen (ohne Mockup: Zeilen mit Teller-Kreis wie `.irow`).
     @ViewBuilder private var planPage: some View {
-        Text("Diese Woche einplanen").font(ST.title)
-        Text("„\(model.recipe?.title ?? "")“ ersetzt das Gericht im gewählten Slot.").font(ST.caption).foregroundStyle(ST.text2)
-        if let e = model.planError {
-            Label(e, systemImage: "exclamationmark.circle.fill").font(ST.caption).foregroundStyle(ST.danger)
-        }
-        if let entries = model.entries {
-            if entries.isEmpty {
-                message("📅", "Noch kein Wochenplan", "Erstelle zuerst in der App einen Plan – dann kannst du Rezepte einsetzen.")
-            }
-            ForEach(entries) { e in
-                Button { Task { await model.replace(e) } } label: {
-                    HStack(spacing: 12) {
-                        AsyncImage(url: ShareAPI.media(e.recipe.imageUrl, model.session?.server ?? "")) { phase in
-                            if let image = phase.image { image.resizable().scaledToFill() } else { ST.surface }
-                        }
-                        .frame(width: 44, height: 44).clipShape(Circle())
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text("\(days[e.day]) · \(meals[e.mealType] ?? e.mealType)").font(ST.callout)
-                            Text(e.recipe.title).font(ST.caption).foregroundStyle(ST.text2).lineLimit(1)
-                        }
-                        Spacer()
-                        if e.locked { Image(systemName: "lock.fill").foregroundStyle(ST.text3).accessibilityLabel("fixiert") }
-                        Image(systemName: "arrow.triangle.2.circlepath").foregroundStyle(ST.accentDeep).accessibilityHidden(true)
-                    }
-                    .padding(12).frame(minHeight: 44)
-                    .stCard(radius: ST.tile)
+        Text("Diese Woche einplanen").font(ST.t2).padding(.trailing, 52)
+        Text("„\(model.recipe?.title ?? "")“ ersetzt das Gericht im gewählten Slot.").font(ST.text(15)).foregroundStyle(ST.ink2).padding(.top, 8)
+        if let e = model.planError { errorLine(e).padding(.top, 10) }
+        VStack(spacing: 0) {
+            if let entries = model.entries {
+                if entries.isEmpty {
+                    message("calendar", "Noch kein Wochenplan", "Erstelle zuerst in der App einen Plan – dann kannst du Rezepte einsetzen.")
                 }
-                .buttonStyle(.plain)
-                .disabled(model.busy)
+                ForEach(entries) { e in
+                    Button { Task { await model.replace(e) } } label: {
+                        HStack(spacing: 14) {
+                            AsyncImage(url: ShareAPI.media(e.recipe.imageUrl, model.session?.server ?? "")) { phase in
+                                if let image = phase.image { image.resizable().scaledToFill() } else { ST.blue1 }
+                            }
+                            .frame(width: ST.rowCircle, height: ST.rowCircle).clipShape(Circle())
+                            VStack(alignment: .leading, spacing: 1) {
+                                Text("\(days[e.day]) · \(meals[e.mealType] ?? e.mealType)").font(ST.rowName)
+                                Text(e.recipe.title).font(ST.text(13)).foregroundStyle(ST.ink2).lineLimit(1)
+                            }
+                            Spacer()
+                            if e.locked { Image(systemName: "lock").foregroundStyle(ST.ink3).accessibilityLabel("fixiert") }
+                            Image(systemName: "arrow.left.arrow.right").foregroundStyle(ST.ink).accessibilityHidden(true)
+                        }
+                        .frame(minHeight: ST.row)
+                        .overlay(alignment: .top) { Rectangle().fill(ST.line).frame(height: ST.hair) }
+                        .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                    .disabled(model.busy)
+                }
+            } else if model.planError == nil {
+                ForEach(0..<3, id: \.self) { _ in
+                    RoundedRectangle(cornerRadius: 12).fill(ST.line).frame(height: 48).padding(.vertical, 6)
+                }
             }
-        } else if model.planError == nil {
-            ForEach(0..<3, id: \.self) { _ in RoundedRectangle(cornerRadius: ST.tile).fill(ST.surface).frame(height: 68) }
         }
+        .padding(.top, 20)
     }
 
-    private func message(_ emoji: String, _ title: String, _ text: String) -> some View {
-        VStack(spacing: 12) {
-            Text(emoji).font(.system(size: 52)).frame(width: 104, height: 104).background(ST.accentSoft, in: Circle())
-            Text(title).font(ST.headline)
-            Text(text).font(ST.caption).foregroundStyle(ST.text2).multilineTextAlignment(.center)
+    private func message(_ symbol: String, _ title: String, _ text: String) -> some View {
+        VStack(spacing: 0) {
+            Image(systemName: symbol).font(.system(size: 40, weight: .light))
+                .frame(width: 104, height: 104).background(ST.blue1, in: Circle())
+            Text(title).font(ST.t2).multilineTextAlignment(.center).padding(.top, 20)
+            Text(text).font(ST.text(15)).foregroundStyle(ST.ink2).multilineTextAlignment(.center).padding(.top, 8)
         }
         .padding(.vertical, 24)
         .frame(maxWidth: .infinity)
     }
 
-    private func chip(_ text: String, _ symbol: String) -> some View {
-        Label(text, systemImage: symbol).font(ST.callout)
-            .padding(.horizontal, 14).frame(minHeight: 36).background(ST.card, in: Capsule())
-            .overlay(Capsule().strokeBorder(ST.line, lineWidth: 0.5))
+    private func errorLine(_ text: String) -> some View {
+        Label(text, systemImage: "exclamationmark.circle").font(ST.text(13)).foregroundStyle(ST.deal)
     }
 
     // MARK: Knöpfe unten
@@ -436,25 +496,29 @@ public struct ShareFlowView: View {
     @ViewBuilder private var buttons: some View {
         switch model.stage {
         case .link:
-            Button("Importieren") { model.start() }
-                .buttonStyle(STPrimary()).disabled(!model.validLink).opacity(model.validLink ? 1 : 0.5)
+            EmptyView()  // „Importieren“ steht im Mockup direkt unter dem Feld
         case .pair:
             Button { Task { await model.pair() } } label: {
-                if model.busy { ProgressView().tint(ST.onAction) } else { Text("Koppeln") }
+                if model.busy {
+                    if let hop = ShareArt.hop { hop() } else { Text("Koppelt …") }
+                } else {
+                    Text("Koppeln")
+                }
             }
-            .buttonStyle(STPrimary())
-            .disabled(model.code.count < 6 || model.busy).opacity(model.code.count < 6 ? 0.5 : 1)
+            .buttonStyle(STPrimary(color: ST.blue))
+            .disabled(model.code.count < 6 || model.busy)
+            .opacity(model.code.count < 6 ? 0.35 : 1)
+            .accessibilityLabel(model.busy ? "Koppelt" : "Koppeln")
         case .importing:
             Button("Abbrechen", action: onClose).buttonStyle(STSecondary())
         case .result:
             VStack(spacing: 10) {
+                if model.planned == nil {
+                    Button("Diese Woche einplanen") { Task { await model.loadPlan() } }.buttonStyle(STSecondary())
+                }
                 if let onOpen, let id = model.recipe?.id {
                     Button("Rezept ansehen") { onOpen(id) }.buttonStyle(STPrimary())
                 } else {
-                    if model.planned == nil {
-                        Button { Task { await model.loadPlan() } } label: { Label("Diese Woche einplanen", systemImage: "calendar.badge.plus") }
-                            .buttonStyle(STSecondary())
-                    }
                     Button("Fertig", action: onClose).buttonStyle(STPrimary())
                 }
             }

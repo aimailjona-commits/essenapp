@@ -1,22 +1,21 @@
 import SwiftUI
 
-// Bausteine aus docs/ui/redesign-v3.md (Abschnitt 5, v3 „Küchen-Pinnwand“). Neue v3-Bausteine: V3Components.swift.
+// Ältere Bausteine, optisch auf v8 umgestellt (docs/ui/redesign-v8.md). Neue v8-Bausteine: V8Components.swift.
 
 struct DisplayHeader: View {
     let line1: String
     var line2 = ""
-    var size: CGFloat = 46
+    var size: CGFloat = 34  // v8 `.t1`
     var onDark = false
     var color: Color?  // z. B. Tinte auf Pastell (Listenkopf)
 
     var body: some View {
-        VStack(alignment: .leading, spacing: -size * 0.26) {  // Zeilenhöhe 0.95
+        VStack(alignment: .leading, spacing: -size * 0.1) {  // Zeilenhöhe 1.1
             Text(line1).font(Theme.F.display(size)).foregroundStyle(color ?? (onDark ? .white : Theme.C.text1))
             if !line2.isEmpty {
                 Text(line2).font(Theme.F.displayItalic(size)).foregroundStyle(onDark ? Theme.C.tabInactive : Theme.C.text3)
             }
         }
-        .tracking(-size * 0.025)
         .lineLimit(2).minimumScaleFactor(0.6)
         .frame(maxWidth: .infinity, alignment: .leading)
         .accessibilityElement(children: .combine)
@@ -30,8 +29,8 @@ struct SearchField: View {
 
     var body: some View {
         HStack(spacing: 10) {
-            Image(systemName: "magnifyingglass").foregroundStyle(Theme.C.text3)
-            TextField(placeholder, text: $text).submitLabel(.search)
+            Icon(.search, size: 20).foregroundStyle(Theme.C.ink2)
+            TextField(placeholder, text: $text).submitLabel(.search).font(Theme.F.text(15))
             if !text.isEmpty {
                 Button { withAnimation(Theme.spring) { text = "" } } label: {
                     Image(systemName: "xmark.circle.fill").foregroundStyle(Theme.C.text3)
@@ -43,7 +42,7 @@ struct SearchField: View {
         .padding(.horizontal, 18)
         .frame(height: Theme.S.search)
         .background(Theme.C.card, in: Capsule())
-        .overlay(Capsule().strokeBorder(Theme.C.line, lineWidth: 1))
+        .overlay(Capsule().strokeBorder(Theme.C.line, lineWidth: Theme.S.hair))
     }
 }
 
@@ -61,8 +60,9 @@ struct RoundIconButton: View {
             Image(systemName: systemName)
                 .font(.system(size: small ? 14 : 18, weight: .semibold))
                 .frame(width: size, height: size)
-                .foregroundStyle(dark ? Theme.C.onAction : fill == Theme.C.plate ? Theme.C.ink : Theme.C.text1)
-                .background(dark ? Theme.C.action : fill ?? Theme.C.surface, in: Circle())
+                .foregroundStyle(dark ? Theme.C.onInk : Theme.C.ink)
+                .background(dark ? Theme.C.ink : fill ?? .clear, in: Circle())
+                .overlay { if !dark && fill == nil { Circle().strokeBorder(Theme.C.line, lineWidth: Theme.S.hair) } }  // v8 `.x`
                 .frame(minWidth: 44, minHeight: 44)
         }
         .buttonStyle(PressableStyle())
@@ -75,7 +75,7 @@ struct PrimaryButtonStyle: ButtonStyle {
 
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .font(.system(.callout, weight: .bold))
+            .font(Theme.F.button)
             .foregroundStyle(color == Theme.C.lime ? Theme.C.onLime : color == Theme.C.action ? Theme.C.onAction : .white)
             .frame(maxWidth: .infinity, minHeight: Theme.S.button)
             .padding(.horizontal, 26)
@@ -95,11 +95,11 @@ struct AccentButtonStyle: ButtonStyle {
 struct SecondaryButtonStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .font(.system(.callout, weight: .bold))
-            .foregroundStyle(Theme.C.text1)
-            .frame(maxWidth: .infinity, minHeight: Theme.S.button)
-            .padding(.horizontal, 26)
-            .background(Theme.C.surface, in: Capsule())
+            .font(Theme.F.button2)
+            .foregroundStyle(Theme.C.ink)
+            .frame(maxWidth: .infinity, minHeight: Theme.S.button2)
+            .padding(.horizontal, 20)
+            .overlay(Capsule().strokeBorder(Theme.C.ink, lineWidth: Theme.S.hair))  // v8 `.btn2`
             .scaleEffect(configuration.isPressed ? 0.97 : 1)
             .animation(.spring(response: 0.25, dampingFraction: 0.7), value: configuration.isPressed)
     }
@@ -231,7 +231,7 @@ struct RemoteImage<Placeholder: View>: View {
     }
 }
 
-/// Tellerfoto (v3): Kreis, weißer Innenring 4 pt, Teller-Schatten. Ohne Bild: Speisen-Emoji auf `card`.
+/// Tellerfoto (v8 `.plate`): Kreis, 6er-Rand in `card`, Teller-Schatten. Ohne Bild: Speisen-Emoji auf `card`.
 struct Plate: View {
     let url: URL?
     var size: CGFloat = 120
@@ -247,7 +247,8 @@ struct Plate: View {
         }
         .frame(width: size, height: size)
         .clipShape(Circle())
-        .overlay(Circle().strokeBorder(Color.white.opacity(0.95), lineWidth: url == nil ? 0 : 4))
+        .padding(Theme.S.plateRing)
+        .background(Theme.C.card, in: Circle())
         .plateShadow()
         .accessibilityHidden(true)
     }
@@ -262,12 +263,12 @@ struct DealBadge: View {
 
     var body: some View {
         Text(text)
-            .font(.system(.caption, weight: .heavy))
+            .font(style == .strong ? Theme.F.deal : Theme.F.soft)
             .lineLimit(1)
-            .padding(.horizontal, 10)
-            .frame(height: 26)
-            .foregroundStyle(style == .strong ? .white : style == .soft ? Theme.C.deal : Theme.C.accentDeep)
-            .background(style == .strong ? Theme.C.deal : style == .soft ? Theme.C.deal.opacity(0.1) : Theme.C.accentSoft, in: Capsule())
+            .padding(.horizontal, style == .strong ? 8 : 10)
+            .frame(height: style == .strong ? Theme.S.dealPill : Theme.S.softPill)
+            .foregroundStyle(style == .strong ? .white : Theme.C.ink)
+            .background(style == .strong ? Theme.C.deal : style == .soft ? Theme.C.blue1 : Theme.C.sage, in: Capsule())  // v8 `.deal` / `.soft` / `.ok`
     }
 }
 
@@ -281,12 +282,12 @@ struct StoreChip: View {
             Circle().fill(Theme.storeColor(chain)).frame(width: 8, height: 8)
             Text(chain.isEmpty ? "Überall" : Labels.chain(chain)).lineLimit(1)
         }
-        .font(.system(.caption, weight: .bold))
-        .foregroundStyle(onDark ? Color(hex: 0xDDDDDD) : Theme.C.text1)
+        .font(Theme.F.soft)
+        .foregroundStyle(onDark ? Theme.C.onInk : Theme.C.ink)
         .padding(.horizontal, 10)
-        .frame(height: 26)
-        .background(onDark ? Theme.C.inkChip : Theme.C.card, in: Capsule())
-        .overlay(Capsule().strokeBorder(onDark ? Theme.C.inkChipLine : Theme.C.line, lineWidth: 1))
+        .frame(height: Theme.S.softPill)
+        .background(onDark ? Theme.C.inkChip : .clear, in: Capsule())
+        .overlay(Capsule().strokeBorder(onDark ? Theme.C.inkChipLine : Theme.C.line, lineWidth: Theme.S.hair))
     }
 }
 
@@ -301,7 +302,6 @@ struct FilterChip: View {
     let action: () -> Void
 
     var body: some View {
-        let solid = filled && selected
         Button(action: action) {
             HStack(spacing: 8) {
                 Text(label).lineLimit(1)
@@ -309,17 +309,18 @@ struct FilterChip: View {
                     Text("\(count)")
                         .font(.system(.caption, weight: .bold)).monospacedDigit()
                         .padding(.horizontal, 7).frame(minWidth: 24, minHeight: 24)
-                        .foregroundStyle(solid ? Theme.C.onLime : countHighlight ? .white : selected ? Theme.C.onAction : Theme.C.text2)
-                        .background(solid ? Theme.C.lime : countHighlight ? Theme.C.deal : selected ? Theme.C.action : Theme.C.surface, in: Capsule())
+                        .foregroundStyle(countHighlight ? .white : Theme.C.ink)
+                        .background(countHighlight ? Theme.C.deal : selected ? Theme.C.blue : Theme.C.blue1, in: Capsule())
                         .contentTransition(.numericText())
                 }
             }
-            .font(.system(.subheadline, weight: .semibold))
-            .padding(.horizontal, 16)
+            .font(Theme.F.chip)
+            .padding(.horizontal, 15)
             .frame(height: Theme.S.chip)
-            .foregroundStyle(solid ? Theme.C.onAction : selected ? Theme.C.text1 : Theme.C.chipText)
-            .background(solid ? Theme.C.action : .clear, in: Capsule())
-            .overlay(Capsule().strokeBorder(selected ? Theme.C.action : Theme.C.chipBorder, lineWidth: solid ? 0 : selected ? 2 : 1.5))
+            .foregroundStyle(selected ? Theme.C.onInk : Theme.C.ink2)
+            .background(selected ? Theme.C.ink : .clear, in: Capsule())  // v8 `.chip.on`
+            .overlay { if !selected { Capsule().strokeBorder(Theme.C.line, lineWidth: Theme.S.hair) } }
+            .frame(minHeight: 44)
             .contentShape(Capsule())
             .animation(Theme.spring, value: selected)
         }
@@ -336,9 +337,8 @@ struct RatingStars: View {
         HStack(spacing: 12) {
             ForEach(1...5, id: \.self) { star in
                 Button { withAnimation(Theme.spring) { rating = star } } label: {
-                    Image(systemName: star <= rating ? "star.fill" : "star")
-                        .font(.system(size: 34))
-                        .foregroundStyle(star <= rating ? Theme.C.star : Theme.C.starEmpty)
+                    Icon(.star, size: 34)
+                        .foregroundStyle(star <= rating ? Theme.C.ink : Theme.C.ink3)
                         .symbolEffect(.bounce, value: rating == star)
                         .scaleEffect(star <= rating ? 1.05 : 1)
                 }
@@ -360,9 +360,10 @@ struct EmptyState: View {
 
     var body: some View {
         VStack(spacing: 4) {
-            Text(emoji).font(.system(size: 56))
-            Text(title).font(Theme.F.headline).padding(.top, 6).multilineTextAlignment(.center).fixedSize(horizontal: false, vertical: true)
-            Text(text).font(Theme.F.caption).foregroundStyle(Theme.C.text2).multilineTextAlignment(.center)
+            Ill(Self.illustration(emoji)).frame(width: 150, height: 150)  // v8: Tusche-Zeichnung statt Emoji
+                .background(Circle().fill(Theme.C.blue1).frame(width: 130, height: 130))
+            Text(title).font(Theme.F.t2).padding(.top, 6).multilineTextAlignment(.center).fixedSize(horizontal: false, vertical: true)
+            Text(text).font(Theme.F.small).foregroundStyle(Theme.C.ink2).multilineTextAlignment(.center)
                 .fixedSize(horizontal: false, vertical: true)  // mehrzeilig, nie abgeschnitten (Erklär-Sheets)
             if let buttonTitle, let action {
                 Button(buttonTitle, action: action).buttonStyle(PrimaryButtonStyle()).fixedSize().padding(.top, 14)
@@ -370,8 +371,20 @@ struct EmptyState: View {
         }
         .padding(22)
         .frame(maxWidth: .infinity)
-        .card()
         .appear()
+    }
+
+    /// Passende Zeichnung zum bisherigen Emoji.
+    static func illustration(_ emoji: String) -> String {
+        switch emoji {
+        case "🛒", "🧺", "🛍️": "bag"
+        case "🔎", "🔍", "👀": "binoculars"
+        case "🥶", "🧊", "❄️": "fridge"
+        case "📖", "📚": "cookbook"
+        case "😴", "💤": "lying"
+        case "🍝": "pasta"
+        default: "pot"
+        }
     }
 }
 
@@ -382,17 +395,16 @@ struct ErrorState: View {
 
     var body: some View {
         HStack(spacing: 10) {
-            Text("⚠️ \(message)").font(Theme.F.caption).foregroundStyle(Theme.C.text1).fixedSize(horizontal: false, vertical: true)
+            Text(message).font(Theme.F.text(14, .bold)).foregroundStyle(Theme.C.ink).fixedSize(horizontal: false, vertical: true)
             Spacer(minLength: 0)
             Button("Erneut", action: retry)
-                .font(.system(.subheadline, weight: .bold)).foregroundStyle(Theme.C.text1)
+                .font(Theme.F.text(14, .extrabold)).foregroundStyle(Theme.C.onInk)
                 .padding(.horizontal, 16).frame(minHeight: 44)
-                .background(Theme.C.surface, in: Capsule())
+                .background(Theme.C.ink, in: Capsule())
                 .buttonStyle(PressableStyle())
         }
         .padding(.leading, 18).padding(.trailing, 6).padding(.vertical, 6)
-        .background(Theme.C.card, in: Capsule())
-        .overlay(Capsule().strokeBorder(Theme.C.line, lineWidth: 1))
+        .background(Theme.C.warn, in: Capsule())
     }
 }
 
@@ -544,7 +556,7 @@ struct CategoryCircles: View {
     }
 }
 
-/// Segment v3: Kapsel `surface`, Innenabstand 4, aktive Pille schwarz (gleitet mit).
+/// Segment v8 (`.seg`): Haarlinie, Innenabstand 4, aktive Pille Tinte (gleitet mit).
 struct PillSegment<T: Hashable>: View {
     let options: [(T, String)]
     @Binding var selection: T
@@ -556,10 +568,10 @@ struct PillSegment<T: Hashable>: View {
                 let on = selection == value
                 Button { withAnimation(Theme.spring) { selection = value } } label: {
                     Text(label)
-                        .font(.system(.subheadline, weight: .bold))
-                        .foregroundStyle(on ? Theme.C.onAction : Theme.C.text2)
+                        .font(Theme.F.text(13, .bold, relativeTo: .footnote))
+                        .foregroundStyle(on ? Theme.C.onInk : Theme.C.ink2)
                         .lineLimit(1).minimumScaleFactor(0.75)  // „Kühlschrank“ nicht umbrechen
-                        .padding(.horizontal, 12).frame(height: 42)
+                        .padding(.horizontal, 12).frame(minHeight: Theme.S.segment)
                         .frame(maxWidth: .infinity)
                         .background { if on { Capsule().fill(Theme.C.action).matchedGeometryEffect(id: "seg", in: ns) } }
                         .contentShape(Capsule())
@@ -569,7 +581,7 @@ struct PillSegment<T: Hashable>: View {
             }
         }
         .padding(4)
-        .background(Theme.C.surface, in: Capsule())
+        .overlay(Capsule().strokeBorder(Theme.C.line, lineWidth: Theme.S.hair))
         .sensoryFeedback(.selection, trigger: selection)
     }
 }
@@ -606,21 +618,26 @@ extension View {
 
 // MARK: Rezepte (3) & Nährwerte (2)
 
-/// Herz für Favoriten (Rezeptdetail, Karten): hüpft beim Umschalten, mit Haptik.
+/// Herz für Favoriten (v8 `a1-fav`): Umriss Tinte, gemerkt füllt es sich von unten rosé und springt kurz.
 struct HeartButton: View {
     let on: Bool
-    var fill: Color = Theme.C.surface
+    var fill: Color = .clear
     let action: () -> Void
 
     var body: some View {
         Button(action: action) {
-            Image(systemName: on ? "heart.fill" : "heart")
-                .font(.system(size: 18, weight: .semibold))
-                .foregroundStyle(Theme.C.text1)
-                .symbolEffect(.bounce, value: on)
-                .frame(width: Theme.S.roundButton, height: Theme.S.roundButton)
-                .background(fill, in: Circle())
-                .contentTransition(.symbolEffect(.replace))
+            ZStack {
+                Icon8.heart.path(.stroke).fill(Theme.C.rose)
+                    .frame(width: 24, height: 24)
+                    .mask(alignment: .bottom) { Rectangle().frame(height: on ? 24 : 0) }
+                Icon(.heart)
+            }
+            .scaleEffect(on ? 1 : 0.94)
+            .animation(.spring(response: 0.4, dampingFraction: 0.5), value: on)
+            .foregroundStyle(Theme.C.ink)
+            .frame(width: Theme.S.roundButton, height: Theme.S.roundButton)
+            .background(fill, in: Circle())
+            .overlay { if fill == .clear { Circle().strokeBorder(Theme.C.line, lineWidth: Theme.S.hair) } }
         }
         .buttonStyle(PressableStyle())
         .sensoryFeedback(.impact(weight: .medium), trigger: on)
@@ -641,7 +658,7 @@ struct StarsView: View {
             }
         }
         .font(.system(size: size, weight: .semibold))
-        .foregroundStyle(Theme.C.star)
+        .foregroundStyle(Theme.C.ink)
         .accessibilityElement()
         .accessibilityLabel("\(num(value)) von 5 Sternen")
     }
@@ -656,7 +673,7 @@ struct PersonPicker: View {
         let who = store.profiles.first { $0.memberId == (person ?? store.profile?.memberId) } ?? store.profile
         if let who {
             HStack(spacing: 8) {
-                Text("Für:").font(Theme.F.callout).foregroundStyle(Theme.C.text2)
+                Text("Für:").font(Theme.F.callout).foregroundStyle(Theme.C.ink2)
                 Menu {
                     ForEach(store.profiles) { p in
                         Button("\(p.emoji) \(p.name)") { withAnimation(Theme.spring) { person = p.memberId } }
@@ -664,11 +681,12 @@ struct PersonPicker: View {
                 } label: {
                     HStack(spacing: 6) {
                         Text("\(who.emoji) \(who.name)")
-                        Image(systemName: "chevron.down").font(.system(size: 11, weight: .bold))
+                        Icon(.chev, size: 14).rotationEffect(.degrees(90))
                     }
-                    .font(Theme.F.callout).foregroundStyle(Theme.C.text1)
-                    .padding(.horizontal, 14).frame(minHeight: 44)
-                    .background(Theme.C.surface, in: Capsule())
+                    .font(Theme.F.chip).foregroundStyle(Theme.C.ink)
+                    .padding(.horizontal, 15).frame(height: Theme.S.chip)
+                    .overlay(Capsule().strokeBorder(Theme.C.line, lineWidth: Theme.S.hair))
+                    .frame(minHeight: 44)
                 }
                 .accessibilityLabel("Für \(who.name), ändern")
             }

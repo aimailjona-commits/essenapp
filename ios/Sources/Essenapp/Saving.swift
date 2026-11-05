@@ -25,11 +25,17 @@ struct StockupDTO: Codable, Hashable {
     var savingCents: Int
     var normalPriceCents: Int
 
-    var text: String {
+    var text: String { "\(headline), sparst \(euro(savingCents))" }
+
+    /// „3 Packungen reichen ~6 Wochen“ (Vorratstipp-Titel, S9); ohne Verbrauchsdaten vorsichtig.
+    var headline: String {
         let packs = packs == 1 ? "1 Packung" : "\(self.packs) Packungen"
-        guard let weeks else { return "\(packs) (vorsichtig geschätzt, noch ohne Verbrauchsdaten), sparst \(euro(savingCents))" }
-        return "\(packs) \(self.packs == 1 ? "reicht" : "reichen") ~\(num(weeks, 0...0)) Wochen, sparst \(euro(savingCents))"
+        guard let weeks else { return "\(packs) (vorsichtig geschätzt, noch ohne Verbrauchsdaten)" }
+        return "\(packs) \(self.packs == 1 ? "reicht" : "reichen") ~\(num(weeks, 0...0)) Wochen"
     }
+
+    /// „sparst 2,40 € zum Normalpreis“.
+    var sub: String { "sparst \(euro(savingCents)) zum Normalpreis" }
 }
 
 /// = StoreComboOut (42).
@@ -184,119 +190,126 @@ extension AppStore {
 
 // MARK: 49 Bio, Vegan, Nutri-Score
 
-/// Kleine Badges auf Karten: Nutri-Score (Originalfarbe), 🌱 vegan, „Bio“.
+/// Siegel als weiche Pillen (`.soft`): „Nutri A“ in Ampelfarbe, „Vegan“ mit Blatt (`.ok`), „Bio“.
 struct LabelBadges: View {
     let offer: OfferDTO
 
     var body: some View {
         if offer.hasLabels {
-            HStack(spacing: 4) {
+            HStack(spacing: 5) {
                 if let n = offer.nutriScore { NutriBadge(score: n) }
-                if offer.vegan == true {
-                    Text("🌱").font(.system(size: 11)).frame(width: 20, height: 20).background(Theme.C.card, in: Circle())
-                        .accessibilityLabel("vegan")
-                }
-                if offer.bio == true {
-                    Text("Bio").font(Theme.F.micro).foregroundStyle(Theme.C.success)
-                        .padding(.horizontal, 6).frame(height: 20)
-                        .background(Theme.C.card, in: Capsule()).background(Theme.C.successSoft, in: Capsule())
-                }
+                if offer.vegan == true { SoftPill(text: "Vegan", icon: .leaf, tint: Theme.C.sage) }
+                if offer.bio == true { SoftPill(text: "Bio", tint: Theme.C.sage) }
             }
         }
     }
 }
 
+/// „Nutri A“ als `.soft`-Pille in der Originalfarbe (`.c-nA`), Schrift weiß, auf C dunkel.
 struct NutriBadge: View {
     let score: String
-    var size: CGFloat = 20
 
     var body: some View {
-        Text(score).font(.system(size: size * 0.6, weight: .heavy, design: .rounded))
-            .foregroundStyle(score == "C" ? Theme.C.onBright : .white)
-            .frame(width: size, height: size)
-            .background(Theme.C.nutri[score] ?? Theme.C.text3, in: RoundedRectangle(cornerRadius: size * 0.3, style: .continuous))
+        Text("Nutri \(score)").font(Theme.F.soft)
+            .foregroundStyle(score == "C" ? Theme.C.onBright : Theme.C.onInk)
+            .padding(.horizontal, 10).frame(height: Theme.S.softPill)
+            .background(Theme.C.nutri[score] ?? Theme.C.ink3, in: Capsule())
             .accessibilityLabel("Nutri-Score \(score)")
     }
 }
 
-/// Angebotsdetail: Erklärung + Quelle der Badges.
+/// Angebotsdetail „Bio, vegan, Nutri-Score“ (S9): Siegel mit Erklärung als Zeilen, Quelle als Zeile mit Pfeil.
 struct LabelsInfoCard: View {
     let offer: OfferDTO
     @Environment(\.openURL) private var openURL
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Text("Bio, vegan, Nutri-Score").font(Theme.F.headline)
-            if let n = offer.nutriScore {
-                line(NutriBadge(score: n, size: 28), "Nutri-Score \(n)", "Nährwert-Ampel von A (günstig) bis E (ungünstig) pro 100 g")
+        let sources = (offer.labelSources ?? []).isEmpty ? "Prospekt" : (offer.labelSources ?? []).joined(separator: " · ")
+        let off = offer.offCode.flatMap { c in c.isEmpty ? nil : URL(string: "https://world.openfoodfacts.org/product/\(c)") }
+        VStack(alignment: .leading, spacing: 0) {
+            Text("Bio, vegan, Nutri-Score").font(Theme.F.t2).padding(.bottom, 8)
+            if let n = offer.nutriScore { line(NutriBadge(score: n), "Nährwert-Ampel von A (günstig) bis E") }
+            if offer.vegan == true { line(SoftPill(text: "Vegan", icon: .leaf, tint: Theme.C.sage), "ohne tierische Zutaten") }
+            if offer.bio == true { line(SoftPill(text: "Bio", tint: Theme.C.sage), "laut Bio-Siegel bzw. „Bio“ im Prospekt") }
+            Button { if let off { openURL(off) } } label: {
+                HStack(spacing: 14) {
+                    Text("Quelle: \(sources)\(off == nil ? "" : " · Open Food Facts (ODbL)")")
+                        .font(Theme.F.text(13, .semibold, relativeTo: .footnote)).foregroundStyle(Theme.C.ink2)
+                        .multilineTextAlignment(.leading).frame(maxWidth: .infinity, alignment: .leading)
+                    if off != nil { Icon(.chev, size: 18).foregroundStyle(Theme.C.ink3) }
+                }
+                .padding(.vertical, 11).frame(minHeight: 44)
+                .overlay(alignment: .top) { Hairline() }
+                .contentShape(Rectangle())
             }
-            if offer.vegan == true {
-                line(Text("🌱").font(.system(size: 18)).frame(width: 28, height: 28), "Vegan", "ohne tierische Zutaten")
-            }
-            if offer.bio == true {
-                line(Text("Bio").font(Theme.F.micro).foregroundStyle(Theme.C.success).frame(width: 28, height: 28)
-                        .background(Theme.C.successSoft, in: RoundedRectangle(cornerRadius: 8, style: .continuous)),
-                     "Bio", "laut Bio-Siegel bzw. „Bio“ im Prospekt")
-            }
-            Text("Quelle: \((offer.labelSources ?? []).isEmpty ? "Prospekttext" : (offer.labelSources ?? []).joined(separator: " · ")). Wir zeigen nur sichere Treffer – lieber kein Badge als ein falsches.")
-                .font(Theme.F.micro).foregroundStyle(Theme.C.text2).fixedSize(horizontal: false, vertical: true)
-            if let code = offer.offCode, !code.isEmpty, let url = URL(string: "https://world.openfoodfacts.org/product/\(code)") {
-                Button { openURL(url) } label: { Label("Bei Open Food Facts ansehen", systemImage: "arrow.up.right.square") }
-                    .font(Theme.F.callout).frame(minHeight: 44)
-            }
+            .buttonStyle(.plain)
+            .disabled(off == nil)
+            .accessibilityHint(off == nil ? "" : "Bei Open Food Facts ansehen")
         }
-        .padding(16)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .card()
     }
 
-    private func line(_ icon: some View, _ title: String, _ text: String) -> some View {
-        HStack(spacing: 12) {
-            icon
-            VStack(alignment: .leading, spacing: 1) {
-                Text(title).font(Theme.F.callout)
-                Text(text).font(Theme.F.micro).foregroundStyle(Theme.C.text2)
-            }
+    private func line(_ pill: some View, _ text: String) -> some View {
+        HStack(spacing: 14) {
+            pill.frame(width: 72)
+            Text(text).font(Theme.F.text(13, .semibold, relativeTo: .footnote)).foregroundStyle(Theme.C.ink)
+                .frame(maxWidth: .infinity, alignment: .leading).fixedSize(horizontal: false, vertical: true)
         }
+        .padding(.vertical, 11)
+        .overlay(alignment: .top) { Hairline() }
         .accessibilityElement(children: .combine)
     }
 }
 
 // MARK: 31 Vorratskauf
 
-/// Angebotsdetail „Vorratstipp: 3 Packungen reichen ~6 Wochen, sparst 4,20 €“ + „3× auf die Liste“ (nur bei Tipp).
+/// Angebotsdetail „Vorratstipp“ (S9) neben der Tasche im Salbei-Kreis; „3× auf die Liste“ (nur bei Tipp).
+/// Volle Breite: Kreis läuft rechts aus dem Rand (Mockup: Kreis 300 bei x 240 / y 520, Tipp bei x 24 / y 524).
 struct StockupTipCard: View {
     @Environment(AppStore.self) private var store
     let offer: OfferDTO
     @State private var tip: StockupDTO?
     @State private var added = false
 
+    private enum L {
+        static let text: CGFloat = 220
+        static let blob: CGFloat = 300, blobLeft: CGFloat = 240 - 24, blobTop: CGFloat = 520 - 524
+        static let ill: CGFloat = 124, illLeft: CGFloat = 258 - 24, illTop: CGFloat = 530 - 524
+    }
+
     var body: some View {
         VStack(spacing: 0) {
             if let tip {
-                VStack(alignment: .leading, spacing: 10) {
-                    HStack(alignment: .top, spacing: 12) {
-                        Text("💡").font(.system(size: 22)).frame(width: 44, height: 44)
-                            .background(Theme.C.successSoft, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text("Vorratstipp").font(Theme.F.headline)
-                            Text(tip.text).font(Theme.F.caption).foregroundStyle(Theme.C.text2).fixedSize(horizontal: false, vertical: true)
-                        }
+                VStack(alignment: .leading, spacing: 0) {
+                    HStack(spacing: 6) {
+                        Icon(.sparkle, size: 15)
+                        Text("VORRATSTIPP").font(Theme.F.lbl).tracking(11 * 0.08)
                     }
+                    .foregroundStyle(Theme.C.ink)
+                    Text(tip.headline).font(Theme.F.t2).padding(.top, 6).fixedSize(horizontal: false, vertical: true)
+                    Text(tip.sub).font(Theme.F.text(13, .semibold, relativeTo: .footnote)).foregroundStyle(Theme.C.ink2).padding(.top, 4)
                     Button {
                         added = true
                         Task { await store.addStockup(tip) }
                     } label: {
-                        Label(added ? "Auf der Liste" : "\(tip.packs)× auf die Liste", systemImage: added ? "checkmark" : "cart.badge.plus")
-                            .contentTransition(.symbolEffect(.replace))
+                        HStack(spacing: 8) {
+                            if added { Icon(.check, size: 18) }
+                            Text(added ? "Auf der Liste" : "\(tip.packs)× auf die Liste")
+                        }
+                        .font(Theme.F.button).foregroundStyle(Theme.C.ink)
+                        .padding(.horizontal, 22).frame(height: 48)
+                        .background(Theme.C.blue, in: Capsule())
                     }
-                    .buttonStyle(PrimaryButtonStyle(color: added ? Theme.C.accentDeep : Theme.C.action))
+                    .buttonStyle(PressableStyle())
                     .disabled(added)
                     .sensoryFeedback(.success, trigger: added)
+                    .padding(.top, 12)
                 }
-                .padding(16)
-                .card()
-                .transition(.scale(scale: 0.96).combined(with: .opacity))
+                .frame(width: L.text, alignment: .leading)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .pinned(left: L.illLeft, top: L.illTop) { Ill("bag").frame(width: L.ill, height: L.ill) }
+                .edgeForm(.circle, Theme.C.sage, width: L.blob, height: L.blob, left: L.blobLeft, top: L.blobTop)
+                .transition(.opacity)
             }
         }
         .animation(Theme.spring, value: tip)
@@ -304,101 +317,91 @@ struct StockupTipCard: View {
     }
 }
 
-/// Start-Karte „💡 Vorrat anlegen lohnt sich“ (max. 3).
+/// Spar-Tipp „Vorrat anlegen lohnt sich“ (max. 3) als Zeilen; „3× auf die Liste“ legt auf die Liste.
 struct StockupCard: View {
     @Environment(AppStore.self) private var store
     @State private var tips: [StockupDTO] = []
     @State private var added: Set<Int> = []
 
     var body: some View {
-        VStack(spacing: 0) {
+        VStack(alignment: .leading, spacing: 0) {
             if !tips.isEmpty {
-                VStack(alignment: .leading, spacing: 12) {
-                    Label { Text("Vorrat anlegen lohnt sich").font(Theme.F.headline) } icon: { Text("💡") }
-                    ForEach(Array(tips.prefix(3).enumerated()), id: \.element.offer.id) { i, t in
-                        row(t).appear(delay: Double(i) * 0.05)
-                        if i < min(tips.count, 3) - 1 { Divider() }
-                    }
-                }
-                .padding(16)
-                .card()
-                .transition(.opacity)
+                SecHead("Vorrat anlegen lohnt sich").padding(.bottom, 6)
+                ForEach(Array(tips.prefix(3).enumerated()), id: \.element.offer.id) { i, t in row(t).appear(delay: Double(i) * 0.05) }
             }
         }
         .task { tips = (try? await store.stockups()) ?? tips }
     }
 
     private func row(_ t: StockupDTO) -> some View {
-        let hue = Theme.hue(category: t.offer.category)
         let done = added.contains(t.offer.id)
-        return HStack(spacing: 12) {
+        return HStack(spacing: 14) {
             NavigationLink { OfferDetailView(offer: t.offer) } label: {
-                HStack(spacing: 12) {
-                    RemoteImage(url: URL(string: t.offer.imageUrl)) { Text(hue.emoji).font(.system(size: 22)) }
-                        .padding(5).frame(width: 48, height: 48).background(hue.tint, in: RoundedRectangle(cornerRadius: 12))
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(t.offer.title).font(Theme.F.callout).foregroundStyle(Theme.C.text1).lineLimit(1)
-                        Text(t.text).font(Theme.F.micro).foregroundStyle(Theme.C.text2).multilineTextAlignment(.leading)
-                            .fixedSize(horizontal: false, vertical: true)
+                HStack(spacing: 14) {
+                    RemoteImage(url: URL(string: t.offer.imageUrl)) { Icon(.tag) }
+                        .frame(width: Theme.S.rowImage, height: Theme.S.rowImage)
+                        .frame(width: Theme.S.rowCircle, height: Theme.S.rowCircle)
+                        .background(Theme.hue(category: t.offer.category).tint, in: Circle())
+                    VStack(alignment: .leading, spacing: 1) {
+                        Text(t.offer.title).font(Theme.F.serif(17, relativeTo: .body)).lineLimit(1)
+                        Text(t.text).font(Theme.F.text(12, .semibold, relativeTo: .caption)).foregroundStyle(Theme.C.ink2)
+                            .multilineTextAlignment(.leading).fixedSize(horizontal: false, vertical: true)
                     }
                     Spacer(minLength: 0)
                 }
+                .foregroundStyle(Theme.C.ink)
             }
             .buttonStyle(PressableStyle())
             Button {
                 withAnimation(Theme.spring) { _ = added.insert(t.offer.id) }
                 Task { await store.addStockup(t) }
             } label: {
-                Text(done ? "✓" : "\(t.packs)×").font(.system(.subheadline, design: .rounded, weight: .bold))
-                    .foregroundStyle(done ? .white : Theme.C.onAction)
-                    .frame(minWidth: 44, minHeight: 44)
-                    .background(done ? Theme.C.success : Theme.C.action, in: Capsule())
-                    .contentTransition(.numericText())
+                Text(done ? "auf der Liste" : "\(t.packs)× auf die Liste").font(Theme.F.text(13, .extrabold, relativeTo: .footnote))
+                    .foregroundStyle(done ? Theme.C.ink3 : Theme.C.blue3).frame(minHeight: 44).contentShape(Rectangle())
             }
             .buttonStyle(PressableStyle())
             .disabled(done)
             .sensoryFeedback(.success, trigger: done)
             .accessibilityLabel(done ? "Auf der Liste" : "\(t.packs)× \(t.offer.title) auf die Liste")
         }
+        .frame(minHeight: 52)
+        .overlay(alignment: .top) { Hairline() }
     }
 }
 
 // MARK: 30 Nächste Woche günstiger
 
-/// Start-Karte „👀 Nächste Woche günstiger“: Kauf verschieben.
+/// Spar-Tipp „Nächste Woche günstiger“ als Zeilen: Kauf verschieben.
 struct NextWeekCard: View {
     @Environment(AppStore.self) private var store
     @State private var deals: [NextWeekDealDTO] = []
     @State private var busy: String?
 
     var body: some View {
-        VStack(spacing: 0) {
+        VStack(alignment: .leading, spacing: 0) {
             if !deals.isEmpty {
-                VStack(alignment: .leading, spacing: 12) {
-                    Label { Text("Nächste Woche günstiger").font(Theme.F.headline) } icon: { Text("👀") }
-                    ForEach(Array(deals.prefix(3).enumerated()), id: \.element.name) { i, d in
-                        row(d).appear(delay: Double(i) * 0.05)
-                        if i < min(deals.count, 3) - 1 { Divider() }
-                    }
-                }
-                .padding(16)
-                .card()
-                .transition(.opacity)
+                SecHead("Nächste Woche günstiger").padding(.bottom, 6)
+                ForEach(Array(deals.prefix(3).enumerated()), id: \.element.name) { i, d in row(d).appear(delay: Double(i) * 0.05) }
             }
         }
         .animation(Theme.spring, value: deals)
+        .sensoryFeedback(.success, trigger: deals.count)
         .task(id: store.householdList?.items.count) { deals = (try? await store.nextWeekDeals()) ?? deals }
     }
 
     private func row(_ d: NextWeekDealDTO) -> some View {
         let now = d.nowChain.isEmpty ? euro(d.nowPriceCents) : "\(euro(d.nowPriceCents)) bei \(Labels.chain(d.nowChain))"
-        return VStack(alignment: .leading, spacing: 8) {
-            HStack(alignment: .top, spacing: 10) {
-                StoreLogo(chain: d.offer.chain, size: 32)
-                (Text(d.name).bold() + Text(" nächste Woche ") + Text("−\(d.savingPct) %").bold().foregroundStyle(Theme.C.deal)
-                    + Text(" bei \(Labels.chain(d.offer.chain)) (\(euro(d.offer.priceCents)) statt \(now)) – Kauf verschieben?"))
-                    .font(Theme.F.caption).foregroundStyle(Theme.C.text1).fixedSize(horizontal: false, vertical: true)
+        return HStack(spacing: 14) {
+            StoreLogo(chain: d.offer.chain, size: 34)
+                .frame(width: Theme.S.rowCircle, height: Theme.S.rowCircle).background(Theme.C.blue1, in: Circle())
+            VStack(alignment: .leading, spacing: 1) {
+                Text(d.name).font(Theme.F.serif(17, relativeTo: .body)).lineLimit(1)
+                (Text("−\(d.savingPct) %").foregroundStyle(Theme.C.deal)
+                    + Text(" bei \(Labels.chain(d.offer.chain)) · \(euro(d.offer.priceCents)) statt \(now)"))
+                    .font(Theme.F.text(12, .semibold, relativeTo: .caption)).foregroundStyle(Theme.C.ink2)
+                    .fixedSize(horizontal: false, vertical: true)
             }
+            Spacer(minLength: 4)
             Button {
                 busy = d.name
                 Task {
@@ -409,22 +412,25 @@ struct NextWeekCard: View {
                     busy = nil
                 }
             } label: {
-                Label(busy == d.name ? "Verschiebe …" : "Auf nächste Woche schieben", systemImage: "calendar.badge.clock")
-                    .font(Theme.F.callout).foregroundStyle(Theme.C.accentDeep)
-                    .padding(.horizontal, 14).frame(minHeight: 44)
-                    .background(Theme.C.accentSoft, in: Capsule())
+                Group {
+                    if busy == d.name { Hop3().frame(width: 60) } else { Text("verschieben") }
+                }
+                .font(Theme.F.text(13, .extrabold, relativeTo: .footnote)).foregroundStyle(Theme.C.blue3)
+                .frame(minHeight: 44).contentShape(Rectangle())
             }
             .buttonStyle(PressableStyle())
             .disabled(busy != nil)
-            .sensoryFeedback(.success, trigger: deals.count)
+            .accessibilityLabel("„\(d.name)“ auf nächste Woche schieben")
         }
+        .frame(minHeight: 52)
+        .overlay(alignment: .top) { Hairline() }
     }
 }
 
 // MARK: 43 Budget-Rest
 
-/// Start-Karte nach dem Plan: „💶 Noch 6,80 € übrig – wie wär's mit …“ (3 Ideen) bzw. „⚠️ 3,20 € über Budget – günstigere
-/// Alternative für Do?“ (würfelt das teuerste Gericht mit Kostengrenze). Bei „ok“ keine Karte.
+/// Start (S1 gescrollt): „Budget-Rest – wie wär's mit …“ als große Zahl mit Ideen-Zeilen bzw. „Über Budget“ mit
+/// günstigerer Alternative (Mockup „Knopf wartet“: Zahl rot, Gericht als Zeile, Knopf blau mit hüpfenden Zutaten). Bei „ok“ nichts.
 struct BudgetHintCard: View {
     @Environment(AppStore.self) private var store
     @State private var budget: BudgetDTO?
@@ -439,7 +445,7 @@ struct BudgetHintCard: View {
             if let b = budget, b.state == "rest" {
                 rest(b).transition(.opacity)
             } else if let b = budget, b.state == "over", let over = b.over {
-                overCard(b, over).transition(.opacity)
+                overView(b, over).transition(.opacity)
             }
         }
         .animation(Theme.spring, value: budget)
@@ -471,33 +477,45 @@ struct BudgetHintCard: View {
     }
 
     private func rest(_ b: BudgetDTO) -> some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("💶 Noch \(euro(b.restCents)) übrig – wie wär's mit …").font(Theme.F.headline)
-                .contentTransition(.numericText())
-            if let ideas {
-                if ideas.isEmpty {
-                    Text("Gerade keine Idee, die ins Restbudget passt.").font(Theme.F.caption).foregroundStyle(Theme.C.text2)
+        VStack(alignment: .leading, spacing: 0) {
+            StatF(label: "Budget-Rest –\nwie wär's mit …", value: euro(b.restCents), size: 52)
+            VStack(spacing: 0) {
+                if let ideas {
+                    if ideas.isEmpty {
+                        Text("Gerade keine Idee, die ins Restbudget passt.").font(Theme.F.text(13, .semibold, relativeTo: .footnote))
+                            .foregroundStyle(Theme.C.ink2).frame(maxWidth: .infinity, alignment: .leading).padding(.vertical, 12)
+                    }
+                    ForEach(Array(ideas.enumerated()), id: \.element.title) { i, idea in ideaRow(idea).appear(delay: Double(i) * 0.06) }
+                } else if let ideasError {
+                    HStack {
+                        Text(ideasError).font(Theme.F.text(13, .semibold, relativeTo: .footnote)).foregroundStyle(Theme.C.ink2)
+                        Spacer()
+                        Button("Erneut versuchen") { Task { await load() } }
+                            .font(Theme.F.text(13, .extrabold, relativeTo: .footnote)).foregroundStyle(Theme.C.blue3).frame(minHeight: 44)
+                    }
+                    .overlay(alignment: .top) { Hairline() }
+                } else {
+                    HStack(spacing: 14) {
+                        Hop3()
+                        Text("Ideen werden gesucht …").font(Theme.F.text(13, .semibold, relativeTo: .footnote)).foregroundStyle(Theme.C.ink2)
+                        Spacer()
+                    }
+                    .frame(minHeight: 52)
+                    .overlay(alignment: .top) { Hairline() }
                 }
-                ForEach(Array(ideas.enumerated()), id: \.element.title) { i, idea in ideaRow(idea).appear(delay: Double(i) * 0.06) }
-            } else if let ideasError {
-                HStack {
-                    Text(ideasError).font(Theme.F.caption).foregroundStyle(Theme.C.text2)
-                    Spacer()
-                    Button("Erneut versuchen") { Task { await load() } }.font(Theme.F.callout).frame(minHeight: 44)
-                }
-            } else {
-                ForEach(0..<3, id: \.self) { _ in SkeletonCard(height: 56) }
-                Text("Ideen werden gesucht …").font(Theme.F.micro).foregroundStyle(Theme.C.text2)
             }
+            .padding(.top, 12)
         }
-        .padding(16)
-        .card()
     }
 
     private func ideaRow(_ idea: BudgetIdeaDTO) -> some View {
-        let emoji = ["dessert": "🍰", "snack": "🥨", "vorrat": "🥫"][idea.kind] ?? "✨"
+        let look: (String, Color) = switch idea.kind {
+        case "vorrat": ("pasta", Theme.C.blue1)
+        case "snack": ("tomato", Theme.C.rose)
+        default: ("pot", Theme.C.sand)
+        }
         let done = added.contains(idea.title)
-        let action = idea.kind == "vorrat" ? "auf die Liste" : "einplanen"
+        let kind = idea.kind == "vorrat" ? "Vorrat\(idea.stockup.map { t in " \(t.packs)×" } ?? "")" : Labels.meal(idea.kind)
         return Button {
             if idea.kind == "vorrat", let t = idea.stockup {
                 withAnimation(Theme.spring) { _ = added.insert(idea.title) }
@@ -506,22 +524,19 @@ struct BudgetHintCard: View {
                 planIdea = idea
             }
         } label: {
-            HStack(spacing: 12) {
-                Text(emoji).font(.system(size: 22)).frame(width: 44, height: 44)
-                    .background(Theme.C.accentSoft, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(idea.title).font(Theme.F.callout).foregroundStyle(Theme.C.text1).multilineTextAlignment(.leading)
-                    Text(idea.kind == "vorrat" ? "Vorratskauf · \(idea.stockup.map { t in "\(t.packs)×" } ?? "")" : Labels.meal(idea.kind))
-                        .font(Theme.F.micro).foregroundStyle(Theme.C.text2)
+            HStack(spacing: 14) {
+                Ill(look.0).frame(width: Theme.S.rowImage, height: Theme.S.rowImage)
+                    .frame(width: Theme.S.rowCircle, height: Theme.S.rowCircle).background(look.1, in: Circle())
+                VStack(alignment: .leading, spacing: 1) {
+                    Text(idea.title).font(Theme.F.serif(17, relativeTo: .body)).foregroundStyle(Theme.C.ink).multilineTextAlignment(.leading)
+                    Text("\(kind) · \(euro(idea.costCents))").font(Theme.F.text(12, .semibold, relativeTo: .caption)).foregroundStyle(Theme.C.ink2)
                 }
                 Spacer(minLength: 4)
-                VStack(alignment: .trailing, spacing: 2) {
-                    Text(euro(idea.costCents)).font(.system(.subheadline, design: .rounded, weight: .bold)).monospacedDigit()
-                        .foregroundStyle(Theme.C.text1)
-                    Text(done ? "✓ erledigt" : action).font(Theme.F.micro).foregroundStyle(done ? Theme.C.success : Theme.C.accentDeep)
-                }
+                Text(done ? "erledigt" : idea.kind == "vorrat" ? "auf die Liste" : "einplanen")
+                    .font(Theme.F.text(13, .extrabold, relativeTo: .footnote)).foregroundStyle(done ? Theme.C.ink3 : Theme.C.blue3)
             }
-            .frame(minHeight: 44)
+            .frame(minHeight: 52)
+            .overlay(alignment: .top) { Hairline() }
             .contentShape(Rectangle())
         }
         .buttonStyle(PressableStyle())
@@ -529,14 +544,28 @@ struct BudgetHintCard: View {
         .sensoryFeedback(.success, trigger: done)
     }
 
-    private func overCard(_ b: BudgetDTO, _ over: BudgetDTO.Over) -> some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Text("⚠️ \(euro(-b.restCents)) über Budget – günstigere Alternative für \(Labels.days[max(0, min(over.day, 6))])?")
-                .font(Theme.F.headline).fixedSize(horizontal: false, vertical: true)
-            Text("„\(over.title)“ kostet \(euro(over.costCents)) – neu würfeln mit höchstens \(euro(over.maxCostCents)).")
-                .font(Theme.F.caption).foregroundStyle(Theme.C.text2).fixedSize(horizontal: false, vertical: true)
+    private func overView(_ b: BudgetDTO, _ over: BudgetDTO.Over) -> some View {
+        let meal = store.plan?.entries.first { e in e.id == over.entryId }
+        return VStack(alignment: .leading, spacing: 0) {
+            StatF(label: "Über Budget", value: euro(-b.restCents), size: 56, valueColor: Theme.C.deal)
+            Text("Günstigere Alternative für \(Labels.dayNames[max(0, min(over.day, 6))])?").font(Theme.F.t2)
+                .fixedSize(horizontal: false, vertical: true).padding(.top, 28)
+            HStack(spacing: 14) {
+                Plate(url: meal.flatMap { m in mediaURL(m.recipe.imageUrl) }, size: 54, seed: over.title)
+                VStack(alignment: .leading, spacing: 1) {
+                    Text(over.title).font(Theme.F.rowName)
+                    Text(([euro(over.costCents)] + (meal.map { m in ["\(m.recipe.prepMinutes) min"] } ?? [])).joined(separator: " · "))
+                        .font(Theme.F.text(13, .semibold, relativeTo: .footnote)).foregroundStyle(Theme.C.ink2)
+                    Text("neu würfeln mit höchstens \(euro(over.maxCostCents))").font(Theme.F.text(13, .semibold, relativeTo: .footnote))
+                        .foregroundStyle(Theme.C.ink2)
+                }
+                Spacer(minLength: 0)
+            }
+            .frame(minHeight: 76)
+            .overlay(alignment: .top) { Hairline() }
+            .padding(.top, 14)
             Button {
-                guard let meal = store.plan?.entries.first(where: { e in e.id == over.entryId }) else { return }
+                guard let meal else { return }
                 rerolling = true
                 Task {
                     await store.reroll(meal, maxCost: over.maxCostCents)
@@ -544,14 +573,19 @@ struct BudgetHintCard: View {
                     if store.error == nil { store.flash("Günstigere Alternative eingeplant") }
                 }
             } label: {
-                if rerolling { ProgressView().tint(Theme.C.onAction) } else { Label("Günstiger würfeln", systemImage: "dice") }
+                ZStack {
+                    if rerolling { Hop3() } else { Text("Günstiger würfeln").font(Theme.F.button).foregroundStyle(Theme.C.onInk) }
+                }
+                .frame(maxWidth: .infinity, minHeight: Theme.S.button)
+                .background(rerolling ? Theme.C.blue : Theme.C.ink, in: Capsule())
+                .animation(.easeInOut(duration: 0.25), value: rerolling)
+                .contentShape(Capsule())
             }
-            .buttonStyle(PrimaryButtonStyle())
-            .disabled(rerolling)
+            .buttonStyle(PressableStyle())
+            .disabled(rerolling || meal == nil)
+            .accessibilityLabel(rerolling ? "Würfelt …" : "Günstiger würfeln")
+            .padding(.top, 22)
         }
-        .padding(16)
-        .background(Theme.C.warning.opacity(0.12), in: RoundedRectangle(cornerRadius: Theme.R.card, style: .continuous))
-        .background(Theme.C.card, in: RoundedRectangle(cornerRadius: Theme.R.card, style: .continuous))
     }
 
     private func plan(_ idea: BudgetIdeaDTO, day: Int) async {
@@ -565,8 +599,8 @@ struct BudgetHintCard: View {
 
 // MARK: 42 Laden-Empfehlung
 
-/// Einkauf-Tab: „🏆 Am günstigsten: alles bei Lidl 41,20 € · Rewe + Lidl 38,90 € (2,30 € gespart, +1 Laden, +1,2 km)“,
-/// „So aufteilen“ ordnet die Liste dem gewählten Vorschlag zu (Standard: der günstigste).
+/// Einkauf (S5): Empfehlungs-Zeile „Rewe + Lidl · 39,50 € / 2,30 € gespart“ mit „So aufteilen“, darunter die zweite
+/// Möglichkeit (antippen = wählen) und „Mehr“ (Weg, Artikel ohne Preis).
 struct StoreAdviceCard: View {
     @Environment(AppStore.self) private var store
     let listId: Int
@@ -574,21 +608,23 @@ struct StoreAdviceCard: View {
     @State private var failed = false
     @State private var picked: [String]?
     @State private var assigning = false
+    @State private var more = false
 
     var body: some View {
         let open = store.listItems.filter { i in !i.checked && i.nextWeek != true }
         VStack(spacing: 0) {
             if let combos, combos.count > 1, !open.isEmpty {
-                card(combos).transition(.opacity)
+                content(combos).transition(.opacity)
             } else if failed {
                 HStack {
-                    Text("Laden-Empfehlung gerade nicht verfügbar.").font(Theme.F.caption).foregroundStyle(Theme.C.text2)
+                    Text("Laden-Empfehlung gerade nicht verfügbar.").font(Theme.F.text(13, .semibold, relativeTo: .footnote)).foregroundStyle(Theme.C.ink2)
                     Spacer()
-                    Button("Erneut versuchen") { Task { await load() } }.font(Theme.F.callout).frame(minHeight: 44)
+                    Button("Erneut versuchen") { Task { await load() } }
+                        .font(Theme.F.text(13, .extrabold, relativeTo: .footnote)).foregroundStyle(Theme.C.blue3).frame(minHeight: 44)
                 }
-                .padding(.horizontal, 16).padding(.vertical, 6).card()
+                .overlay(alignment: .top) { Hairline() }
             } else if combos == nil && !open.isEmpty {
-                SkeletonCard(height: 150)
+                Skeleton8(height: 68)
             }
         }
         .animation(Theme.spring, value: combos)
@@ -605,58 +641,71 @@ struct StoreAdviceCard: View {
         }
     }
 
-    private func card(_ combos: [StoreComboDTO]) -> some View {
+    private func content(_ combos: [StoreComboDTO]) -> some View {
         let single = combos.first { c in c.chains.count == 1 }
         let pair = combos.first { c in c.chains.count == 2 && c.savedCents > 0 }
         let shown = [single, pair].compactMap { c in c }
-        let chosen = picked ?? combos[0].chains
-        return VStack(alignment: .leading, spacing: 10) {
-            Text("🏆 Am günstigsten").font(Theme.F.headline)
-            ForEach(shown, id: \.chains) { c in row(c, on: c.chains == chosen) }
-            if let u = shown.map(\.unpriced).max(), u > 0 {
-                Text(u == 1 ? "1 Artikel ohne bekannten Preis zählt nicht mit." : "\(u) Artikel ohne bekannten Preis zählen nicht mit.")
-                    .font(Theme.F.micro).foregroundStyle(Theme.C.text2)
-            }
-            Button {
-                assigning = true
-                Task {
-                    if await store.assignStores(listId, chosen) { await load() }
-                    assigning = false
-                }
-            } label: { Label(assigning ? "Teile auf …" : "So aufteilen", systemImage: "arrow.triangle.branch") }
-            .buttonStyle(PrimaryButtonStyle())
-            .disabled(assigning)
-            .sensoryFeedback(.success, trigger: assigning)
-        }
-        .padding(16)
-        .card()
-    }
-
-    private func row(_ c: StoreComboDTO, on: Bool) -> some View {
-        let extra = [c.savedCents > 0 ? "\(euro(c.savedCents)) gespart" : nil, c.chains.count > 1 ? "+1 Laden" : nil,
-                     c.chains.count > 1 ? c.extraKm.map { km in "+\(num(km, 1...1)) km" } : c.distanceKm.map { km in "\(num(km, 1...1)) km Weg" }]
-            .compactMap { s in s }
-        return Button { withAnimation(Theme.spring) { picked = c.chains } } label: {
-            HStack(spacing: 12) {
-                Image(systemName: on ? "checkmark.circle.fill" : "circle").font(.system(size: 22))
-                    .foregroundStyle(on ? Theme.C.accent : Theme.C.text3).contentTransition(.symbolEffect(.replace))
-                HStack(spacing: -6) { ForEach(c.chains, id: \.self) { ch in StoreLogo(chain: ch, size: 30) } }
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(c.name).font(Theme.F.callout).foregroundStyle(Theme.C.text1)
-                    if !extra.isEmpty {
-                        Text(extra.joined(separator: " · ")).font(Theme.F.micro).foregroundStyle(c.savedCents > 0 ? Theme.C.success : Theme.C.text2)
+        let chosenChains = picked ?? combos[0].chains
+        let chosen = combos.first { c in c.chains == chosenChains } ?? combos[0]
+        let other = shown.first { c in c.chains != chosen.chains }
+        let way = chosen.chains.count > 1 ? chosen.extraKm.map { km in "+1 Laden, +\(num(km, 1...1)) km" } : chosen.distanceKm.map { km in "\(num(km, 1...1)) km Weg" }
+        let unpriced: String? = chosen.unpriced == 0 ? nil : chosen.unpriced == 1 ? "1 Artikel ohne bekannten Preis zählt nicht mit."
+            : "\(chosen.unpriced) Artikel ohne bekannten Preis zählen nicht mit."
+        let details = [way, unpriced].compactMap { s in s }
+        return VStack(alignment: .leading, spacing: 0) {
+            HStack(spacing: 14) {
+                Icon(.trophy).foregroundStyle(Theme.C.ink)
+                    .frame(width: Theme.S.rowCircle, height: Theme.S.rowCircle).background(Theme.C.blue1, in: Circle())
+                VStack(alignment: .leading, spacing: 1) {
+                    Text("\(chosen.chains.map(Labels.chain).joined(separator: " + ")) · \(euro(chosen.totalCents))")
+                        .font(Theme.F.text(16, .extrabold, relativeTo: .body))
+                    if chosen.savedCents > 0 {
+                        Text("\(euro(chosen.savedCents)) gespart").font(Theme.F.text(12, .semibold, relativeTo: .caption)).foregroundStyle(Theme.C.success)
                     }
                 }
                 Spacer(minLength: 4)
-                Text(euro(c.totalCents)).font(.system(.headline, design: .rounded, weight: .bold)).monospacedDigit()
-                    .foregroundStyle(Theme.C.text1)
+                Button {
+                    assigning = true
+                    Task {
+                        if await store.assignStores(listId, chosen.chains) { await load() }
+                        assigning = false
+                    }
+                } label: {
+                    Group { if assigning { Hop3().frame(width: 70) } else { Pill8(text: "So aufteilen") } }
+                        .frame(minHeight: 44).contentShape(Rectangle())
+                }
+                .buttonStyle(PressableStyle())
+                .disabled(assigning)
+                .sensoryFeedback(.success, trigger: assigning)
+            }
+            .padding(.vertical, 10)
+            .overlay(alignment: .top) { Hairline() }
+            HStack {
+                if let other {
+                    Button { withAnimation(Theme.spring) { picked = other.chains } } label: {
+                        Text("\(other.chains.count == 1 ? "Alles bei \(Labels.chain(other.chains[0]))" : other.name) · \(euro(other.totalCents))")
+                            .font(Theme.F.text(13, .semibold, relativeTo: .footnote)).foregroundStyle(Theme.C.ink2)
+                    }
+                    .buttonStyle(PressableStyle())
+                    .accessibilityHint("Diesen Vorschlag wählen")
+                }
+                Spacer()
+                if !details.isEmpty {
+                    Button { withAnimation(Theme.spring) { more.toggle() } } label: {
+                        HStack(spacing: 0) { Text("Mehr"); Icon(.chev, size: 16).rotationEffect(.degrees(more ? 90 : 0)) }
+                            .font(Theme.F.text(13, .bold, relativeTo: .footnote)).foregroundStyle(Theme.C.ink)
+                    }
+                    .buttonStyle(PressableStyle())
+                }
             }
             .frame(minHeight: 44)
-            .contentShape(Rectangle())
+            .overlay(alignment: .top) { Hairline() }
+            .sensoryFeedback(.selection, trigger: picked)
+            if more {
+                Text(details.joined(separator: " · ")).font(Theme.F.text(12, .semibold, relativeTo: .caption)).foregroundStyle(Theme.C.ink2)
+                    .fixedSize(horizontal: false, vertical: true).padding(.bottom, 8).transition(.opacity)
+            }
         }
-        .buttonStyle(PressableStyle())
-        .sensoryFeedback(.selection, trigger: on)
-        .accessibilityAddTraits(on ? .isSelected : [])
     }
 }
 

@@ -111,6 +111,7 @@ enum PushPermission {
     }
 }
 
+
 /// Fragt einmal freundlich vor der Systemabfrage (nach dem Onboarding bzw. beim ersten Öffnen der Einstellungen).
 struct PushAsk: ViewModifier {
     @Environment(AppStore.self) private var store
@@ -125,42 +126,75 @@ struct PushAsk: ViewModifier {
                 UserDefaults.standard.set(true, forKey: "pushAsked")
                 show = true
             }
-            .sheet(isPresented: $show) { PushPermissionSheet().presentationCornerRadius(Theme.R.sheet) }
+            .sheet(isPresented: $show) { PushPermissionSheet() }
     }
 }
 
-/// Erklär-Sheet vor der iOS-Abfrage.
+/// Erklär-Sheets vor der iOS-Abfrage (e.html): „Nichts verpassen“ (Fernglas, drei Gründe) und – mit `emoji: "📍"` –
+/// „Erinnerung im Laden“ (Einkäufer, Pin-Kreis). Eigener `text` ersetzt Satz und Gründe (z. B. Koch-Timer).
 struct PushPermissionSheet: View {
     @Environment(\.dismiss) private var dismiss
     var emoji = "🔔"
     var title = "Nichts verpassen"
-    var text = "Wir erinnern dich ans Planen der Woche und melden, wenn deine Lieblingsprodukte im Angebot sind. Ruhezeiten stellst du selbst ein."
+    var text: String?
     var allowTitle = "Mitteilungen erlauben"
     var allow: @MainActor () async -> Void = { _ = await PushPermission.request() }
-    @State private var height: CGFloat = 460
+    @State private var height: CGFloat = 560
 
-    /// Höhe passt sich dem Text an (etwa halbe Höhe, mit großer Schrift mehr) – nichts wird abgeschnitten.
+    private var place: Bool { emoji == "📍" }  // Standort-Variante (StoreReminderCard)
+
+    // Mockup-Maße (e.html Erklär-Sheets), relativ zur Sheet-Oberkante unter dem Griff
+    private let titleWidth: CGFloat = 190
+    private let introWidth: CGFloat = 180
+
+    /// Höhe passt sich dem Text an (mit großer Schrift mehr) – nichts wird abgeschnitten.
     var body: some View {
         ScrollView {
-            VStack(spacing: 14) {
-                EmptyState(emoji: emoji, title: title, text: text)
-                Button(allowTitle) { Task { await allow(); dismiss() } }
-                    .buttonStyle(PrimaryButtonStyle())
-                Button("Später") { dismiss() }.buttonStyle(SecondaryButtonStyle())
+            VStack(alignment: .leading, spacing: 0) {
+                if place {
+                    Icon(.pin).foregroundStyle(Theme.C.onInk).frame(width: 48, height: 48).background(Theme.C.ink, in: Circle())
+                        .padding(.top, 10).accessibilityHidden(true)
+                }
+                Text(title).font(Theme.F.t1).frame(maxWidth: titleWidth, alignment: .leading).padding(.top, place ? 14 : 20)
+                if place || text != nil {
+                    Text(text ?? "").font(Theme.F.text(15, relativeTo: .subheadline)).lineSpacing(5).foregroundStyle(Theme.C.ink2)
+                        .padding(.top, place ? 26 : 10)
+                        .frame(maxWidth: place ? .infinity : introWidth + 100, alignment: .leading)
+                } else {
+                    Text("Wir melden uns nur, wenn es sich lohnt.").font(Theme.F.text(15, relativeTo: .subheadline)).lineSpacing(5)
+                        .foregroundStyle(Theme.C.ink2).frame(maxWidth: introWidth, alignment: .leading).padding(.top, 10)
+                    VStack(spacing: 0) {
+                        ERow("Sonntags: Zeit für den Wochenplan", lead: .icon(.cal), tint: Theme.C.sage, chevron: false)
+                        ERow("Angebote von deiner Merkliste", lead: .icon(.tag), tint: Theme.C.rose, chevron: false)
+                        ERow("Lunchbox am Vorabend", lead: .icon(.box), tint: Theme.C.sand, chevron: false)
+                    }
+                    .padding(.top, 34)
+                }
+                PrimaryButton(title: allowTitle, icon: place ? .pin : .bell) { Task { await allow(); dismiss() } }
+                    .padding(.top, place ? 24 : 22)
+                OutlineButton(title: "Später") { dismiss() }.padding(.top, 10)
             }
-            .padding(Theme.pagePadding)
-            .onGeometryChange(for: CGFloat.self) { g in g.size.height } action: { h in height = h }
+            .padding(.horizontal, Theme.pagePadding)
+            .padding(.bottom, 40)
+            .background(alignment: .topTrailing) {
+                Color.clear
+                    .pinned(right: place ? 18 : 4, top: place ? 20 - 33 : 26 - 33) {
+                        Ill(place ? "shopper" : "binoculars").frame(width: place ? 150 : 160)
+                    }
+                    .edgeForm(.circle, place ? Theme.C.sage : Theme.C.blue1, width: place ? 270 : 250, height: place ? 270 : 250,
+                              right: place ? -90 : -70, top: place ? -40 - 33 : -30 - 33)
+            }
+            .onGeometryChange(for: CGFloat.self) { g in g.size.height } action: { h in height = h + 33 }
         }
         .scrollBounceBehavior(.basedOnSize)
+        .sheet8()
         .presentationDetents([.height(height)])
-        .presentationBackground(Theme.C.bg)
     }
 }
 
-/// Einstellungen › Benachrichtigungen.
+/// S13 › Mitteilungen: Hauptschalter mit Test-Push, Arten und Ruhezeit als Schalter-Zeilen, Erinnerung im Laden.
 struct NotificationsView: View {
     @Environment(AppStore.self) private var store
-    @Environment(\.dismiss) private var dismiss
     @Environment(\.openURL) private var openURL
     @Environment(\.scenePhase) private var scenePhase
     @State private var status = UNAuthorizationStatus.notDetermined
@@ -168,105 +202,139 @@ struct NotificationsView: View {
     @State private var error: String?
     @State private var testing = false
 
+    // Mockup-Maße (e.html S13 › Mitteilungen)
+    private let blob = (right: CGFloat(-110), top: CGFloat(-110), size: CGFloat(290))
+    private let ill = (right: CGFloat(6), top: CGFloat(56), width: CGFloat(124))
+    private let indent: CGFloat = 44
+
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 14) {
-                RoundIconButton(systemName: "chevron.left", label: "Zurück") { dismiss() }
-                DisplayHeader(line1: "Benachrichtigungen", line2: "Erinnerungen & Angebote")
-                permissionCard
+            VStack(alignment: .leading, spacing: 0) {
+                EBack()
+                Text("Mitteilungen").font(Theme.F.t1).padding(.top, 10)
+                permission.padding(.top, 28)
                 if let s = Binding($settings) {
-                    settingsCard(s)
+                    kinds(s)
                     StoreReminderCard()
                 } else if let error {
-                    ErrorState(message: error) { Task { await load() } }
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text(error).font(Theme.F.text(13, relativeTo: .footnote)).foregroundStyle(Theme.C.deal)
+                        OutlineButton(title: "Erneut versuchen") { Task { await load() } }
+                    }
+                    .padding(.top, 28)
                 } else {
-                    SkeletonCard(height: 220)
+                    VStack(spacing: 10) { ForEach(0..<4, id: \.self) { _ in Skeleton8(height: 44) } }.padding(.top, 28)
                 }
             }
             .padding(.horizontal, Theme.pagePadding)
-            .padding(.bottom, 120)
+            .padding(.top, 4)
+            .padding(.bottom, 40)
+        }
+        .background(alignment: .topTrailing) {
+            Color.clear
+                .pinned(right: ill.right, top: ill.top) { Ill("binoculars").frame(width: ill.width) }
+                .edgeForm(.circle, Theme.C.blue1, width: blob.size, height: blob.size, right: blob.right, top: blob.top)
+                .ignoresSafeArea()
         }
         .background(Theme.C.bg)
         .toolbar(.hidden, for: .navigationBar)
+        .hidesTabBar()
         .task { await load() }
         .onChange(of: scenePhase) { if scenePhase == .active { Task { await loadStatus() } } }  // zurück aus den iOS-Einstellungen
         .onChange(of: settings) { old, new in
             if old != nil, let new { Task { await store.savePushSettings(new) } }  // sofort speichern (S13)
         }
+        .animation(Theme.spring, value: settings)
     }
 
-    private var permissionCard: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack(spacing: 12) {
-                Image(systemName: status == .authorized ? "bell.badge.fill" : "bell.slash.fill")
-                    .font(.system(size: 15, weight: .semibold))
-                    .foregroundStyle(status == .authorized ? Theme.C.success : Theme.C.text2)
-                    .frame(width: 34, height: 34)
-                    .background((status == .authorized ? Theme.C.success : Theme.C.text2).opacity(0.14), in: RoundedRectangle(cornerRadius: 10))
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("Mitteilungen").font(.system(.body, weight: .semibold))
-                    Text(status == .authorized ? "an" : status == .denied ? "in iOS ausgeschaltet" : "noch nicht erlaubt")
-                        .font(Theme.F.caption).foregroundStyle(Theme.C.text2)
-                }
-                Spacer()
-            }
-            switch status {
-            case .denied:
-                Button("In iOS-Einstellungen öffnen") {
-                    if let url = URL(string: UIApplication.openNotificationSettingsURLString) { openURL(url) }
-                }
-                .buttonStyle(SecondaryButtonStyle())
-            case .notDetermined:
-                Button("Mitteilungen erlauben") { Task { _ = await PushPermission.request(); await loadStatus() } }
-                    .buttonStyle(PrimaryButtonStyle())
-            default:
-                Button {
-                    testing = true
-                    Task { await store.testPush(); testing = false }
-                } label: { Label(testing ? "Sende …" : "Test-Push senden", systemImage: "paperplane.fill") }
-                .buttonStyle(SecondaryButtonStyle())
-                .disabled(testing)
+    /// Hauptschalter (Push an/aus beim Server) und je nach iOS-Erlaubnis: erlauben, iOS-Einstellungen oder Test-Push.
+    @ViewBuilder private var permission: some View {
+        ERow("Mitteilungen", sub: status == .authorized ? "In iOS erlaubt" : status == .denied ? "In iOS ausgeschaltet" : "Noch nicht erlaubt",
+             lead: .icon(.bell), tint: Theme.C.blue1, chevron: false) {
+            if settings != nil {
+                ESwitch(isOn: Binding(get: { settings?.pushEnabled ?? false }, set: { settings?.pushEnabled = $0 }), label: "Mitteilungen")
             }
         }
-        .padding(14).card()
+        switch status {
+        case .denied:
+            OutlineButton(title: "In iOS-Einstellungen öffnen") {
+                if let url = URL(string: UIApplication.openNotificationSettingsURLString) { openURL(url) }
+            }
+            .padding(.top, 6)
+        case .notDetermined:
+            PrimaryButton(title: "Mitteilungen erlauben", icon: .bell) { Task { _ = await PushPermission.request(); await loadStatus() } }
+                .padding(.top, 6)
+        default:
+            Button {
+                testing = true
+                Task { await store.testPush(); testing = false }
+            } label: {
+                Text(testing ? "Sende …" : "Test-Push senden").font(Theme.F.button2).foregroundStyle(Theme.C.ink)
+                    .frame(maxWidth: .infinity, minHeight: 44)
+                    .overlay(Capsule().strokeBorder(Theme.C.ink, lineWidth: Theme.S.hair))
+                    .contentShape(Capsule())
+            }
+            .buttonStyle(PressableStyle())
+            .disabled(testing)
+            .padding(.top, 6)
+        }
     }
 
-    private func settingsCard(_ s: Binding<PushSettingsDTO>) -> some View {
-        VStack(alignment: .leading, spacing: 14) {
-            Toggle("Push-Mitteilungen", isOn: s.pushEnabled).font(.system(.body, weight: .semibold))
-            Divider()
-            Toggle("Erinnerung: Wochenplan erstellen", isOn: s.planPromptEnabled)
-            if s.wrappedValue.planPromptEnabled {
+    @ViewBuilder private func kinds(_ s: Binding<PushSettingsDTO>) -> some View {
+        SectionLabel("Worüber").padding(.top, 28).padding(.bottom, 4)
+        ERow("Wochenplan-Erinnerung", sub: "\(Labels.dayNames[s.wrappedValue.planPromptWeekday]) · \(s.wrappedValue.planPromptTime)",
+             lead: .icon(.cal), tint: Theme.C.sage, chevron: false) {
+            ESwitch(isOn: s.planPromptEnabled, label: "Wochenplan-Erinnerung")
+        }
+        if s.wrappedValue.planPromptEnabled {
+            detail("Wochentag") {
                 Picker("Wochentag", selection: s.planPromptWeekday) {
                     ForEach(0..<7, id: \.self) { d in Text(Labels.dayNames[d]).tag(d) }
                 }
-                DatePicker("Uhrzeit", selection: time(s.planPromptTime), displayedComponents: .hourAndMinute)
+                .pickerStyle(.menu)
             }
-            Divider()
-            Toggle("Ruhezeit", isOn: Binding(get: { s.wrappedValue.quietHours != nil }, set: { on in
-                s.wrappedValue.quietHours = on ? PushSettingsDTO.Quiet(start: "22:00", end: "07:00") : nil
-            }))
-            if s.wrappedValue.quietHours != nil {
-                DatePicker("Von", selection: time(Binding(get: { s.wrappedValue.quietHours?.start ?? "22:00" },
-                                                          set: { v in s.wrappedValue.quietHours?.start = v })), displayedComponents: .hourAndMinute)
-                DatePicker("Bis", selection: time(Binding(get: { s.wrappedValue.quietHours?.end ?? "07:00" },
-                                                          set: { v in s.wrappedValue.quietHours?.end = v })), displayedComponents: .hourAndMinute)
-                Text("In der Ruhezeit kommen keine Mitteilungen.").font(Theme.F.micro).foregroundStyle(Theme.C.text2)
-            }
-            Divider()
-            Toggle("Lunchbox-Erinnerung am Vorabend", isOn: Binding(get: { s.wrappedValue.lunchboxPush != nil }, set: { on in
-                s.wrappedValue.lunchboxPush = on ? "20:00" : nil
-            }))
-            if s.wrappedValue.lunchboxPush != nil {
-                DatePicker("Uhrzeit", selection: time(Binding(get: { s.wrappedValue.lunchboxPush ?? "20:00" },
-                                                              set: { v in s.wrappedValue.lunchboxPush = v })), displayedComponents: .hourAndMinute)
-            }
-            Text("🥡 „Lunchbox für morgen vorbereiten“ – nur am Abend vor deinen Lunchbox-Tagen (Mein Profil).")
-                .font(Theme.F.micro).foregroundStyle(Theme.C.text2)
+            detail("Uhrzeit") { timePicker("Uhrzeit Wochenplan", s.planPromptTime) }
         }
-        .tint(Theme.C.accent)
-        .padding(16).card()
-        .animation(Theme.spring, value: s.wrappedValue)
+        ERow("Lunchbox-Erinnerung", sub: s.wrappedValue.lunchboxPush.map { "am Vorabend · \($0)" } ?? "am Vorabend deiner Lunchbox-Tage",
+             lead: .icon(.box), tint: Theme.C.blue1, chevron: false) {
+            ESwitch(isOn: Binding(get: { s.wrappedValue.lunchboxPush != nil }, set: { on in s.wrappedValue.lunchboxPush = on ? "20:00" : nil }),
+                    label: "Lunchbox-Erinnerung")
+        }
+        if s.wrappedValue.lunchboxPush != nil {
+            detail("Uhrzeit") {
+                timePicker("Uhrzeit Lunchbox", Binding(get: { s.wrappedValue.lunchboxPush ?? "20:00" }, set: { v in s.wrappedValue.lunchboxPush = v }))
+            }
+        }
+        ERow("Ruhezeit", sub: s.wrappedValue.quietHours.map { "\($0.start) – \($0.end)" } ?? "keine Mitteilungen in der Nacht",
+             lead: .icon(.clock), tint: Theme.C.rose, chevron: false) {
+            ESwitch(isOn: Binding(get: { s.wrappedValue.quietHours != nil }, set: { on in
+                s.wrappedValue.quietHours = on ? PushSettingsDTO.Quiet(start: "22:00", end: "07:00") : nil
+            }), label: "Ruhezeit")
+        }
+        if s.wrappedValue.quietHours != nil {
+            detail("Von") {
+                timePicker("Ruhezeit von", Binding(get: { s.wrappedValue.quietHours?.start ?? "22:00" }, set: { v in s.wrappedValue.quietHours?.start = v }))
+            }
+            detail("Bis") {
+                timePicker("Ruhezeit bis", Binding(get: { s.wrappedValue.quietHours?.end ?? "07:00" }, set: { v in s.wrappedValue.quietHours?.end = v }))
+            }
+        }
+    }
+
+    /// Unterzeile einer Schalter-Zeile (eingerückt wie der Erklärtext im Mockup).
+    private func detail(_ title: String, @ViewBuilder _ control: () -> some View) -> some View {
+        HStack {
+            Text(title).font(Theme.F.text(13, .bold, relativeTo: .footnote)).foregroundStyle(Theme.C.ink2)
+            Spacer()
+            control()
+        }
+        .tint(Theme.C.ink)
+        .frame(minHeight: 44)
+        .padding(.leading, indent)
+    }
+
+    private func timePicker(_ label: String, _ text: Binding<String>) -> some View {
+        DatePicker(label, selection: time(text), displayedComponents: .hourAndMinute).labelsHidden()
     }
 
     /// "HH:MM" ↔ Date für den DatePicker.

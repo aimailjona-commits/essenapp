@@ -74,20 +74,19 @@ extension AppStore {
     var shareSession: ShareSession { ShareSession(server: api.baseURL, token: api.token ?? "") }
 }
 
-/// Schritt-Bild 16:10; leer = wird noch erzeugt → Schimmer.
+/// Schritt-Bild 16:10; leer = wird noch erzeugt → schimmernder Platzhalter (`.sk`).
 struct StepImage: View {
     let path: String
-    var dark = false
+    var dark = false  // früher Kochmodus dunkel; v8 ist überall hell
 
     var body: some View {
-        let base = dark ? Theme.C.cookSurface : Theme.C.surface
         Color.clear
             .aspectRatio(16 / 10, contentMode: .fit)
             .overlay {
                 if path.isEmpty {
-                    base.modifier(Shimmer(active: true))
+                    Skeleton8(height: 400)
                 } else {
-                    RemoteImage(url: mediaURL(path), contentMode: .fill) { base }
+                    RemoteImage(url: mediaURL(path), contentMode: .fill) { Theme.C.card }
                 }
             }
             .clipShape(RoundedRectangle(cornerRadius: Theme.R.tile, style: .continuous))
@@ -95,7 +94,7 @@ struct StepImage: View {
     }
 }
 
-// MARK: S21 Teilen aus Instagram / S38 Widget einrichten (Einstellungen) – gleiche Kopplung (E53/E83)
+// MARK: S21 Teilen aus Instagram / S38 Widget einrichten (e.html) – gleiche Kopplung (E53/E83)
 
 struct InstagramShareView: View {
     var widget = false
@@ -107,49 +106,65 @@ struct InstagramShareView: View {
     @State private var tokens: [PairedTokenDTO]?
     @State private var error: String?
     @State private var revoke: PairedTokenDTO?
+    @State private var showDevices = false
 
     private static let steps = [
-        "Unten „Code erzeugen“ tippen.",
-        "In Instagram beim Reel oder Beitrag auf Teilen (Papierflieger) › „Teilen über …“ › „Essenapp“. Fehlt Kochpilot, unter „Mehr“ einschalten.",
-        "Beim ersten Mal Server-Adresse und Code eingeben – danach geht es mit einem Tipp.",
-        "Das Rezept landet in Meine Rezepte (Filter „Importiert“).",
+        "Unten „Neuen Code erzeugen“ tippen.",
+        "In Instagram Teilen › „Teilen über …“ › Essenapp – ggf. unter „Mehr“ einschalten.",
+        "Beim ersten Mal Server-Adresse und Code eintragen.",
+        "Das Rezept landet in Meine Rezepte.",
     ]
     private static let widgetSteps = [
-        "Unten „Code erzeugen“ tippen.",
-        "Home-Bildschirm lange drücken › „Bearbeiten“ › „Widget hinzufügen“ › „Essenapp“ (klein, mittel oder Sperrbildschirm).",
-        "Widget lange drücken › „Widget bearbeiten“ › Server-Adresse und Kopplungscode eintragen.",
-        "Das Widget lädt das heutige Gericht selbst, etwa alle 30 Minuten. Weitere Widgets brauchen nur die Server-Adresse.",
+        "„Code erzeugen“ tippen.",
+        "Home-Bildschirm lange drücken › Bearbeiten › Widget hinzufügen › Essenapp.",
+        "Widget lange drücken › Widget bearbeiten › Server-Adresse und Code eintragen.",
+        "Lädt selbst etwa alle 30 Minuten; weitere Widgets brauchen nur die Adresse.",
     ]
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 14) {
-                RoundIconButton(systemName: "chevron.left", label: "Zurück") { dismiss() }
-                DisplayHeader(line1: widget ? "Widget" : "Teilen aus", line2: widget ? "einrichten" : "Instagram")
-                Text(widget ? "Heutiges Gericht, nächste Mahlzeit und offene Artikel auf Home- und Sperrbildschirm."
-                            : "Reels und Rezept-Webseiten direkt aus dem Teilen-Menü in Meine Rezepte holen.")
-                    .font(Theme.F.caption).foregroundStyle(Theme.C.text2)
-
-                section("So geht's") {
-                    ForEach(Array((widget ? Self.widgetSteps : Self.steps).enumerated()), id: \.offset) { i, s in
-                        HStack(alignment: .top, spacing: 12) {
-                            Text("\(i + 1)").font(.system(.footnote, design: .rounded, weight: .bold)).foregroundStyle(Theme.C.onAction)
-                                .frame(width: 26, height: 26).background(Theme.C.action, in: Circle())
-                            Text(s).font(Theme.F.body).fixedSize(horizontal: false, vertical: true)
-                        }
+            VStack(alignment: .leading, spacing: 0) {
+                Button { dismiss() } label: { Icon(.back).frame(width: 44, height: 44, alignment: .leading) }
+                    .buttonStyle(PressableStyle()).accessibilityLabel("Zurück")
+                Text(widget ? "Widget\neinrichten" : "Teilen aus\nInstagram").font(Theme.F.t1).padding(.top, 0)
+                Text(widget ? "Gericht und offene Artikel – klein, mittel oder auf dem Sperrbildschirm."
+                            : "Rezepte aus Reels landen direkt in Meine Rezepte.")
+                    .font(Theme.F.text(14, .semibold, relativeTo: .subheadline)).lineSpacing(4).foregroundStyle(Theme.C.ink2)
+                    .frame(width: widget ? 190 : 200, alignment: .leading).padding(.top, 6)
+                SectionLabel("So geht's").padding(.top, 28).padding(.bottom, 4)
+                ForEach(Array((widget ? Self.widgetSteps : Self.steps).enumerated()), id: \.offset) { i, s in
+                    HStack(alignment: .firstTextBaseline, spacing: 14) {
+                        Text("\(i + 1)").font(Theme.F.num(24)).tracking(Theme.F.numTracking(24)).frame(width: 20, alignment: .leading)
+                        Text(s).font(Theme.F.text(13, .semibold, relativeTo: .footnote)).lineSpacing(4).fixedSize(horizontal: false, vertical: true)
+                        Spacer(minLength: 0)
                     }
+                    .padding(.vertical, 7)
+                    .overlay(alignment: .top) { Hairline() }
                 }
-                section("Kopplungscode") { codeCard }
-                section("Gekoppelte Geräte") { devices }
+                codeBlock
+                serverRow
+                devices.padding(.top, 28)
             }
+            .foregroundStyle(Theme.C.ink)
             .padding(.horizontal, Theme.pagePadding)
+            .padding(.top, 4)
             .padding(.bottom, 120)
         }
-        .background(Theme.C.bg)
+        .backdrop8 {
+            if widget {
+                Color.clear
+                    .pinned(right: 6, top: 84) { Ill("table").frame(width: 150) }
+                    .edgeForm(.leaf(120), Theme.C.sage, width: 170, height: 250, right: 0, top: 0)
+            } else {
+                Color.clear
+                    .pinned(right: 20, top: 62) { Ill("cookbook").frame(width: 116) }
+                    .edgeForm(.circle, Theme.C.blue1, width: 320, height: 320, right: -110, top: -110)
+            }
+        }
         .toolbar(.hidden, for: .navigationBar)
         .refreshable { await loadTokens() }
         .task {
-            if ["instagram", "widgetsetup"].contains(Demo.screen ?? "") { code = try? await store.pairingCode() }
+            if ["instagram", "widgetsetup"].contains(Demo.screen ?? "") && !widget { code = try? await store.pairingCode() }
             await loadTokens()
         }
         .onChange(of: scenePhase) { _, phase in if phase == .active { Task { await loadTokens() } } }  // zurück aus Instagram
@@ -165,91 +180,108 @@ struct InstagramShareView: View {
         }
     }
 
-    @ViewBuilder private var codeCard: some View {
+    /// Mit Code: riesige Zahl mit Restzeit und „neu“ (S21); ohne: „Code erzeugen“ (S38).
+    @ViewBuilder private var codeBlock: some View {
         if let code {
             let expires = Self.date(code.expiresAt)
             TimelineView(.periodic(from: .now, by: 1)) { context in
                 let left = Int(expires.timeIntervalSince(context.date))
-                VStack(alignment: .leading, spacing: 10) {
-                    Text(left > 0 ? "\(code.code.prefix(3)) \(code.code.suffix(3))" : "– – –  – – –")
-                        .font(.system(size: 46, weight: .bold, design: .rounded)).monospacedDigit().tracking(4)
-                        .foregroundStyle(left > 0 ? Theme.C.text1 : Theme.C.text3)
-                        .frame(maxWidth: .infinity)
-                        .accessibilityLabel(left > 0 ? "Code \(code.code.map(String.init).joined(separator: " "))" : "Code abgelaufen")
-                    Text(left > 0 ? "gültig noch \(left / 60):\(String(format: "%02d", left % 60)) · nur einmal benutzbar" : "Code abgelaufen")
-                        .font(Theme.F.caption).foregroundStyle(left > 0 ? Theme.C.text2 : Theme.C.danger).monospacedDigit()
-                        .frame(maxWidth: .infinity)
+                VStack(spacing: 8) {
+                    StatNumber(label: "Kopplungs-\ncode", value: left > 0 ? "\(code.code.prefix(3)) \(code.code.suffix(3))" : "––– –––",
+                               size: 60, mute: left <= 0)
+                        .accessibilityLabel(left > 0 ? "Kopplungscode \(code.code.map(String.init).joined(separator: " "))" : "Code abgelaufen")
+                    HStack {
+                        Text(left > 0 ? "gültig noch \(left / 60):\(String(format: "%02d", left % 60)) · nur einmal benutzbar" : "Code abgelaufen")
+                            .font(Theme.F.text(13, .semibold, relativeTo: .footnote)).foregroundStyle(left > 0 ? Theme.C.ink2 : Theme.C.deal)
+                            .monospacedDigit()
+                        Spacer()
+                        if creating {
+                            Hop3().frame(width: 60)
+                        } else {
+                            CircleButton(icon: .refresh, label: "Neuen Code erzeugen") { Task { await create() } }
+                        }
+                    }
                 }
             }
-            serverRow
-            Button { Task { await create() } } label: { Text(creating ? "Erzeuge …" : "Neuen Code erzeugen") }
-                .buttonStyle(SecondaryButtonStyle()).disabled(creating)
+            .padding(.top, 28)
         } else {
-            Text("Der Code ist 10 Minuten gültig und koppelt ein Gerät mit deinem Konto.").font(Theme.F.caption).foregroundStyle(Theme.C.text2)
-            serverRow
-            Button { Task { await create() } } label: { Label(creating ? "Erzeuge …" : "Code erzeugen", systemImage: "key.fill") }
-                .buttonStyle(PrimaryButtonStyle()).disabled(creating)
+            PrimaryButton(title: creating ? "Erzeuge …" : "Code erzeugen", icon: .link, disabled: creating) { Task { await create() } }
+                .padding(.top, 28)
         }
     }
 
     /// Die Erweiterung kennt die Server-Adresse der App nicht (kein geteilter Speicher, E48) → hier zum Abtippen/Kopieren.
     private var serverRow: some View {
         HStack(spacing: 12) {
-            VStack(alignment: .leading, spacing: 2) {
-                Text("Server-Adresse").font(Theme.F.micro).foregroundStyle(Theme.C.text2)
+            VStack(alignment: .leading, spacing: 1) {
+                Text("Server-Adresse").font(Theme.F.text(15, .bold))
                 Text(store.api.baseURL.isEmpty ? "nicht eingestellt" : store.api.baseURL)
-                    .font(.system(.callout, design: .monospaced, weight: .semibold)).lineLimit(1).minimumScaleFactor(0.7)
+                    .font(.system(size: 12, weight: .medium, design: .monospaced)).foregroundStyle(Theme.C.ink2)
+                    .lineLimit(1).minimumScaleFactor(0.7)
             }
             Spacer()
             Button {
                 UIPasteboard.general.string = store.api.baseURL
                 store.flash("Adresse kopiert")
             } label: {
-                Label("Kopieren", systemImage: "doc.on.doc").font(Theme.F.callout)
-                    .padding(.horizontal, 12).frame(minHeight: 44).background(Theme.C.surface, in: Capsule())
+                Pill8(text: "Kopieren", icon: .copy).frame(minHeight: 44).contentShape(Capsule())
             }
             .buttonStyle(PressableStyle())
             .disabled(store.api.baseURL.isEmpty)
         }
-        .padding(12)
-        .background(Theme.C.bg, in: RoundedRectangle(cornerRadius: Theme.R.tile, style: .continuous))
+        .padding(.vertical, 4)
+        .frame(minHeight: 42)
+        .overlay(alignment: .top) { Hairline() }
+        .padding(.top, 8)
     }
 
+    /// „Gekoppelte Geräte“ als eine Zeile; aufgeklappt die Liste mit Widerrufen.
     @ViewBuilder private var devices: some View {
         if let tokens {
-            if tokens.isEmpty {
-                Text("Noch kein Gerät gekoppelt.").font(Theme.F.caption).foregroundStyle(Theme.C.text2)
-            }
-            ForEach(tokens) { t in
-                HStack(spacing: 12) {
-                    Image(systemName: t.label == "Widget" ? "square.grid.2x2.fill" : "square.and.arrow.up.fill")
-                        .font(.system(size: 15, weight: .semibold)).foregroundStyle(Theme.C.accent)
-                        .frame(width: 34, height: 34).background(Theme.C.accent.opacity(0.14), in: RoundedRectangle(cornerRadius: 10))
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(t.label).font(.system(.body, weight: .semibold))
-                        Text("gekoppelt am \(shortDate(t.createdAt))").font(Theme.F.micro).foregroundStyle(Theme.C.text2)
+            VStack(spacing: 0) {
+                Button { withAnimation(Theme.spring) { showDevices.toggle() } } label: {
+                    HStack(spacing: 12) {
+                        Icon(widget ? .widget : .share, size: 18)
+                            .frame(width: 32, height: 32).background(widget ? Theme.C.blue1 : Theme.C.rose, in: Circle())
+                        VStack(alignment: .leading, spacing: 1) {
+                            Text("Gekoppelte Geräte").font(Theme.F.text(15, .bold))
+                            Text(tokens.isEmpty ? "Noch kein Gerät gekoppelt" : tokens.map(\.label).joined(separator: ", "))
+                                .font(Theme.F.text(12, .semibold, relativeTo: .caption)).foregroundStyle(Theme.C.ink2).lineLimit(1)
+                        }
+                        Spacer()
+                        Text("\(tokens.count)").font(Theme.F.text(14, .semibold)).foregroundStyle(Theme.C.ink2)
+                        Icon(.chev, size: 18).foregroundStyle(Theme.C.ink3).rotationEffect(.degrees(showDevices ? 90 : 0))
                     }
-                    Spacer()
-                    Button("Widerrufen", role: .destructive) { revoke = t }
-                        .font(Theme.F.callout).frame(minHeight: 44)
+                    .padding(.vertical, 4)
+                    .frame(minHeight: 44)
+                    .overlay(alignment: .top) { Hairline() }
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(PressableStyle())
+                .disabled(tokens.isEmpty)
+                if showDevices {
+                    ForEach(tokens) { t in
+                        HStack(spacing: 12) {
+                            VStack(alignment: .leading, spacing: 1) {
+                                Text(t.label).font(Theme.F.text(15, .bold))
+                                Text("gekoppelt am \(shortDate(t.createdAt))").font(Theme.F.text(12, .semibold, relativeTo: .caption))
+                                    .foregroundStyle(Theme.C.ink2)
+                            }
+                            Spacer()
+                            Button("Widerrufen") { revoke = t }
+                                .font(Theme.F.text(14, .extrabold)).foregroundStyle(Theme.C.deal).frame(minHeight: 44)
+                        }
+                        .padding(.leading, 44)
+                        .overlay(alignment: .top) { Hairline() }
+                        .transition(.opacity)
+                    }
                 }
             }
         } else if let error {
-            ErrorState(message: error) { Task { await loadTokens() } }
+            StateNote8.error(error) { Task { await loadTokens() } }
         } else {
-            SkeletonCard(height: 52)
+            Skeleton8(height: 42)
         }
-    }
-
-    private func section(_ title: String, @ViewBuilder content: () -> some View) -> some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text(title).font(Theme.F.headline)
-            content()
-        }
-        .padding(16)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .card()
-        .appear()
     }
 
     private func create() async {
@@ -283,9 +315,9 @@ struct InstagramShareView: View {
     }
 }
 
-// MARK: Nährwerte im Angebotsdetail (2)
+// MARK: Nährwerte im Angebotsdetail (2) – S9 (c.html)
 
-/// Pro 100 g / pro Packung, nur bei sicherer Zuordnung; „pending“ → Schimmer und später neu laden; „none“ → nichts.
+/// Pro 100 g / pro Packung, nur bei sicherer Zuordnung; „pending“ → Platzhalter und später neu laden; „none“ → nichts.
 struct OfferNutritionCard: View {
     @Environment(AppStore.self) private var store
     let offer: OfferDTO
@@ -296,32 +328,43 @@ struct OfferNutritionCard: View {
         VStack(spacing: 0) {
             if let d = data, d.status != "none" {
                 let values = perPack ? d.perPack : d.per100g
-                VStack(alignment: .leading, spacing: 12) {
-                    Text("Nährwerte").font(Theme.F.headline)
+                VStack(alignment: .leading, spacing: 0) {
+                    Text("Nährwerte").font(Theme.F.t2)
                     if d.perPack != nil {
-                        PillSegment(options: [(false, "pro 100 g"), (true, "pro Packung\(offer.amountText.map { a in " (\(a))" } ?? "")")],
-                                    selection: $perPack)
+                        Segmented8(options: [(false, "pro 100 g"), (true, "pro Packung\(offer.amountText.map { a in " (\(a))" } ?? "")")],
+                                   selection: $perPack)
+                            .padding(.top, 12)
                     }
-                    HStack(spacing: 8) {
+                    HStack(alignment: .bottom, spacing: 14) {
                         if let n = values {
-                            NutrientTile(nutrient: .kcal, value: "\(Int(n.kcal.rounded()))")
-                            NutrientTile(nutrient: .protein, value: "\(num(n.protein)) g")
-                            NutrientTile(nutrient: .carbs, value: "\(num(n.carbs)) g")
-                            NutrientTile(nutrient: .fat, value: "\(num(n.fat)) g")
+                            StatNumber(label: "kcal", value: "\(Int(n.kcal.rounded()))", size: 44).frame(width: 120)
+                            small("Protein", "\(num(n.protein)) g")
+                            small("KH", "\(num(n.carbs)) g")
+                            small("Fett", "\(num(n.fat)) g")
                         } else {
-                            ForEach(0..<4, id: \.self) { _ in SkeletonCard(height: 92) }
+                            Skeleton8(height: 56)
                         }
                     }
+                    .padding(.top, 18)
                     .animation(Theme.spring, value: perPack)
                     Text(d.status == "pending" ? "Nährwerte werden zugeordnet …" : "Quelle: USDA FoodData Central · „\(d.food)“")
-                        .font(Theme.F.micro).foregroundStyle(Theme.C.text2)
+                        .font(Theme.F.text(12, .semibold, relativeTo: .caption)).foregroundStyle(Theme.C.ink2).padding(.top, 8)
                 }
-                .padding(16)
-                .card()
+                .foregroundStyle(Theme.C.ink)
+                .frame(maxWidth: .infinity, alignment: .leading)
                 .transition(.opacity)
             }
         }
         .task(id: offer.id) { await load() }
+    }
+
+    private func small(_ label: String, _ value: String) -> some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Text(label).font(Theme.F.text(12, .semibold, relativeTo: .caption)).foregroundStyle(Theme.C.ink2)
+            Text(value).font(Theme.F.text(17, .bold))
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .accessibilityElement(children: .combine)
     }
 
     private func load() async {

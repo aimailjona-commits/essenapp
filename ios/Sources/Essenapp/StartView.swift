@@ -1,366 +1,457 @@
 import SwiftUI
 
-/// S1 Start (v3, redesign-v3.md 6.1): schwarzer Kopf mit Tages-Satz, darunter Creme-Sheet „Diese Woche“.
+/// S1 Start (a.html): Begrüßung, Tisch-Illustration auf blauem Kreis, heutiges Gericht, Woche und Ersparnis.
+/// Weiter unten (S1 gescrollt): Budget-Rest, Ausgaben, weitere Spar-Tipps, Wochenrückblick.
 struct StartView: View {
     @Environment(AppStore.self) private var store
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Binding var showGenerator: Bool
     @Binding var planWeek: Bool  // Woche per Swipe (20)
-    @Binding var quickOpen: Bool  // Schnell-Aktionen hinter dem „+“ im Kopf (v8)
+    @Binding var quickOpen: Bool  // Schnell-Aktionen hinter dem „+“ im Kopf
     @State private var search = ""
     @State private var banner: SpecialDTO?  // Feiertag/Saison in ≤ 14 Tagen (25)
     @State private var noMood = false  // „Keine Lust“ (16)
+    @State private var shown = false  // Auftritt `a1-num`
+    @State private var tips = 0  // weitere Spar-Tipps (30, 31)
+    @State private var showTips = false
+
+    // Maße aus dem Mockup (Bildschirm-Oberkante = 0)
+    private enum K {
+        static let top: CGFloat = 66
+        static let mealTop: CGFloat = 380, mealWidth: CGFloat = 190
+        static let statsTop: CGFloat = 578
+        static let hero: CGFloat = 724  // 844 − Nav 120
+    }
 
     var body: some View {
         ScrollViewReader { proxy in
-        ScrollView {
-            VStack(alignment: .leading, spacing: 0) {
-                header
-                VStack(alignment: .leading, spacing: 20) {
-                    sheetContent
+            ScrollView {
+                if store.plan == nil {
+                    PlanEmptyHero { planWeek = true }
+                        .overlay(alignment: .topTrailing) { avatarRow.padding(.top, K.top).padding(.trailing, Theme.pagePadding) }
+                } else {
+                    VStack(alignment: .leading, spacing: 0) {
+                        hero
+                        more.id("savings")
+                    }
                 }
-                .padding(.horizontal, 22).padding(.top, 22)
-                .padding(.bottom, 120)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .background(Theme.C.startSheet, in: UnevenRoundedRectangle(topLeadingRadius: Theme.R.sheet, topTrailingRadius: Theme.R.sheet, style: .continuous))
             }
-            .background(alignment: .top) { Theme.C.ink.frame(height: 900).offset(y: -400) }  // Tinte auch beim Überziehen oben
+            .ignoresSafeArea(edges: .top)
+            .onAppear {  // Demo: Spar-Bereich (43/30/31) im Bild
+                if ["savings", "budgetover"].contains(Demo.screen ?? "") { proxy.scrollTo("savings", anchor: .top) }
+            }
         }
-        .ignoresSafeArea(edges: .top)
-        .onAppear {  // Demo: Spar-Karten (43/30/31) im Bild
-            if ["savings", "budgetover"].contains(Demo.screen ?? "") { proxy.scrollTo("savings", anchor: .top) }
-        }
-        }
-        .toolbarColorScheme(.dark, for: .navigationBar)
         .scrollDismissesKeyboard(.immediately)
         .refreshable {
             await store.loadAll()
             banner = await store.specials()?.banner
         }
         .task { banner = await store.specials()?.banner }
-        .sheet(isPresented: $noMood) { NoMoodSheet().presentationDetents([.large]).presentationCornerRadius(Theme.R.sheet) }
+        .task(id: store.plan?.id) {
+            let a = (try? await store.nextWeekDeals())?.count ?? 0
+            let b = (try? await store.stockups())?.count ?? 0
+            tips = min(a, 3) + min(b, 3)
+        }
+        .onAppear {
+            guard !shown else { return }
+            if reduceMotion { shown = true } else { withAnimation(.timingCurve(0.3, 1.25, 0.5, 1, duration: 0.6)) { shown = true } }
+        }
+        .sheet(isPresented: $noMood) { NoMoodSheet().presentationDetents([.large]) }
+        .sheet(isPresented: $showTips) { TipsSheet().presentationDetents([.large]) }
     }
 
-    // MARK: Kopf (Tinte)
+    // MARK: Kopf
 
-    private var header: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            HStack(alignment: .top) {
-                DisplayHeader(line1: "Heute", size: 52, onDark: true)
-                HStack(spacing: 10) {
-                    VStack(alignment: .trailing, spacing: 0) {
-                        HStack(spacing: 4) {
-                            Circle().fill(Theme.C.day[store.today]).frame(width: 7, height: 7)
-                            Text("KW \(week)").foregroundStyle(.white)
-                        }
-                        Text(Labels.dayNames[store.today]).foregroundStyle(Theme.C.onInk2)
+    private var name: String { store.profile?.name ?? store.household?.name ?? "" }
+
+    /// Avatar (→ Einstellungen) und „+“ (→ Schnell-Aktionen).
+    private var avatarRow: some View {
+        HStack(spacing: 10) {
+            NavigationLink { SettingsView() } label: {
+                Text(String(name.prefix(1)).uppercased()).font(Theme.F.serif(20)).foregroundStyle(Theme.C.ink)
+                    .frame(width: 44, height: 44)
+                    .background(Theme.C.sand, in: Circle())
+            }
+            .buttonStyle(PressableStyle())
+            .accessibilityLabel("Einstellungen")
+            Button { withAnimation(Theme.spring) { quickOpen = true } } label: { PlanInkCircle(icon: .plus, size: 44, iconSize: 22) }
+                .buttonStyle(PressableStyle())
+                .accessibilityLabel("Schnell-Aktionen")
+        }
+    }
+
+    private var hero: some View {
+        let meal = store.todayMeal
+        return ZStack(alignment: .topLeading) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(name.isEmpty ? "Hey," : "Hey \(name),").font(Theme.F.small).foregroundStyle(Theme.C.ink2)
+                Text("Was kochen\nwir heute?").font(Theme.F.t1)
+            }
+            .padding(.leading, Theme.pagePadding).padding(.top, K.top)
+
+            todayBlock(meal)
+                .frame(width: K.mealWidth, alignment: .leading)
+                .padding(.leading, Theme.pagePadding).padding(.top, K.mealTop)
+                .opacity(shown ? 1 : 0).offset(y: shown ? 0 : 14)
+                .animation(reduceMotion ? nil : .easeOut(duration: 0.45).delay(0.2), value: shown)
+
+            if let plan = store.plan {
+                VStack(spacing: 12) {
+                    StatF(label: "Diese Woche", value: euro(plan.totalCents), size: 52, roll: 0.15)
+                    if plan.savedCents > 0 {
+                        StatF(label: "Gespart", value: euro(plan.savedCents), size: 40, valueColor: Theme.C.deal, mute: true, roll: 0.3)
                     }
-                    .font(.system(.subheadline, weight: .semibold))
-                    NavigationLink { SettingsView() } label: {
-                        Image(systemName: "person").font(.system(size: 15, weight: .semibold)).foregroundStyle(.white)
-                            .frame(width: Theme.S.roundButtonSmall, height: Theme.S.roundButtonSmall)
-                            .background(Theme.C.inkRaised, in: Circle())
-                            .frame(minWidth: 44, minHeight: 44)
+                }
+                .padding(.horizontal, Theme.pagePadding).padding(.top, K.statsTop)
+            }
+        }
+        .frame(maxWidth: .infinity, minHeight: K.hero, alignment: .topLeading)
+        .overlay(alignment: .topTrailing) { avatarRow.padding(.top, K.top).padding(.trailing, Theme.pagePadding) }
+        .pinned(left: 150, top: 190) {
+            Ill("table").frame(width: 250)
+                .opacity(shown ? 1 : 0).offset(y: shown ? 0 : 14)
+                .animation(reduceMotion ? nil : .easeOut(duration: 0.35).delay(0.2), value: shown)
+        }
+        .pinned(left: 130, top: 150) {
+            Circle().fill(Theme.C.blue1).frame(width: 400, height: 400)
+                .scaleEffect(shown ? 1 : 0.001, anchor: .trailing)
+                .accessibilityHidden(true)
+        }
+    }
+
+    @ViewBuilder private func todayBlock(_ meal: MealDTO?) -> some View {
+        VStack(alignment: .leading, spacing: 0) {
+            if let meal {
+                Text("Heute \(Labels.meal(meal.mealType))".uppercased())
+                    .font(Theme.F.lbl).tracking(11 * 0.08).foregroundStyle(Theme.C.blue3)
+                NavigationLink { RecipeDetailView(meal: meal) } label: {
+                    Text(meal.recipe.title).font(Theme.F.serif(28, relativeTo: .title)).foregroundStyle(Theme.C.ink)
+                        .multilineTextAlignment(.leading).fixedSize(horizontal: false, vertical: true)
+                }
+                .buttonStyle(.plain)
+                .padding(.top, 4)
+                Text("\(meal.recipe.prepMinutes) min · \(euro(PlanWeek.perPortion(meal))) p. P.")
+                    .font(Theme.F.text(13, .semibold, relativeTo: .footnote)).foregroundStyle(Theme.C.ink2).padding(.top, 4)
+                HStack(spacing: 10) {
+                    NavigationLink { RecipeDetailView(meal: meal) } label: { PlanInkCircle(icon: .play, size: 56, iconSize: 20) }
+                        .buttonStyle(PressableStyle())
+                        .accessibilityLabel("\(meal.recipe.title) öffnen")
+                    Button { noMood = true } label: {
+                        Text("Keine Lust?").font(Theme.F.text(14, .extrabold, relativeTo: .subheadline)).foregroundStyle(Theme.C.ink)
+                            .lineLimit(1)
+                            .padding(.horizontal, 16).frame(height: 44)
+                            .overlay(Capsule().strokeBorder(Theme.C.ink, lineWidth: Theme.S.hair))
+                            .contentShape(Capsule())
                     }
                     .buttonStyle(PressableStyle())
-                    .accessibilityLabel("Einstellungen")
                 }
-                .padding(.top, 4)
+                .padding(.top, 14)
+            } else {
+                Text("HEUTE").font(Theme.F.lbl).tracking(11 * 0.08).foregroundStyle(Theme.C.blue3)
+                Text("Nichts geplant").font(Theme.F.serif(28, relativeTo: .title)).padding(.top, 4)
+                Text("Heute ist frei.").font(Theme.F.text(13, .semibold, relativeTo: .footnote)).foregroundStyle(Theme.C.ink2).padding(.top, 4)
             }
-            SentenceHero(parts: sentence).padding(.top, 30)
-            if !chains.isEmpty {
-                HStack(spacing: 8) {
-                    Text(chains.count == 1 ? "Aus 1 Prospekt" : "Aus \(chains.count) Prospekten")
-                        .font(.system(.subheadline, weight: .semibold)).foregroundStyle(Theme.C.onInk2).lineLimit(1)
-                    ForEach(chains.prefix(3), id: \.self) { StoreChip(chain: $0, onDark: true) }
+        }
+    }
+
+    // MARK: Weiter unten (S1 gescrollt)
+
+    private var more: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            BudgetHintCard()  // Budget-Rest / über Budget (43, Saving.swift)
+            SpendingCard().padding(.top, 36)  // Ausgaben des Monats (34, Spending.swift)
+            VStack(spacing: 0) {
+                if tips > 0 {
+                    Button { showTips = true } label: {
+                        StartRow(icon: .tag, tint: Theme.C.sand, name: tips == 1 ? "1 weiterer Spar-Tipp" : "\(tips) weitere Spar-Tipps",
+                                 sub: "Nächste Woche günstiger · Vorrat anlegen")
+                    }
+                    .buttonStyle(PressableStyle())
                 }
-                .padding(.top, 22)
+                ReviewRow()  // Wochenrückblick (55)
+                if let banner {
+                    SpecialBanner(banner: banner) {
+                        store.generatorSpecial = banner.key
+                        showGenerator = true
+                    }
+                }
             }
+            .padding(.top, 36)
+            FavoriteDealsCard().padding(.top, 28)  // Lieblingsrezepte günstig (Recipes.swift)
+            FieldBox(icon: .search) {
+                TextField("Gericht oder Angebot suchen", text: $search)
+                if !search.isEmpty {
+                    Button { search = "" } label: { Icon(.x, size: 18).frame(width: 44, height: 44) }
+                        .buttonStyle(.plain).accessibilityLabel("Suche leeren")
+                }
+            }
+            .padding(.top, 36)
+            if !search.isEmpty { searchResults.padding(.top, 14) }
         }
         .padding(.horizontal, Theme.pagePadding)
-        .padding(.top, 66)
-        .padding(.bottom, 46)
-    }
-
-    private var week: String {
-        store.plan.map { String($0.week.suffix(2)) } ?? String(Calendar(identifier: .iso8601).component(.weekOfYear, from: .now))
-    }
-
-    private var chains: [String] {
-        var seen = Set<String>()
-        return (store.household?.stores ?? []).filter(\.enabled).map(\.chain).filter { seen.insert($0).inserted }
-    }
-
-    private var sentence: [SentenceHero.Part] {
-        let name = store.profile?.name ?? store.household?.name ?? ""
-        var parts: [SentenceHero.Part] = [.text(name.isEmpty ? "Hallo!" : "Hallo \(name)!")]
-        guard let today = store.todayMeal else {
-            parts.append(.text(store.plan == nil ? "Noch kein Plan für diese Woche." : "Heute ist nichts geplant."))
-            return parts
-        }
-        parts += [.text("Heute gibt's"), .bold(today.recipe.title),
-                  .sticker(mediaURL(today.recipe.imageUrl), "🍽️", -8)]
-        if let next = tomorrowMeal {
-            parts += [.glue(","), .text("morgen"), .bold(next.recipe.title), .sticker(mediaURL(next.recipe.imageUrl), "🍽️", 7)]
-        }
-        if let saved = store.plan?.savedCents, saved > 0 {
-            parts += [.text("– und mit den Angeboten"), .bold("sparst du"), .amount(euro(saved)), .emoji("🏷️")]
-        } else {
-            parts.append(.glue("."))
-        }
-        return parts
-    }
-
-    private var tomorrowMeal: MealDTO? {
-        let meals = store.plan?.entries.filter { $0.day == (store.today + 1) % 7 } ?? []
-        return meals.first { $0.mealType == store.todayMeal?.mealType } ?? meals.first
-    }
-
-    // MARK: Sheet (Creme)
-
-    @ViewBuilder private var sheetContent: some View {
-        if let plan = store.plan {
-            HStack(alignment: .firstTextBaseline) {
-                Text("Diese Woche").font(Theme.F.section).tracking(-0.66)
-                Spacer()
-                HStack(spacing: 6) {
-                    Text("\(plan.entries.count) Gerichte")
-                    Image(systemName: "line.3.horizontal.decrease")
-                }
-                .font(.system(.subheadline, weight: .semibold)).foregroundStyle(Theme.C.text2)
-            }
-            VStack(spacing: 0) {
-                ForEach(Array(upcoming(plan).enumerated()), id: \.element) { i, meal in
-                    if i > 0 { Theme.C.line.frame(height: 1) }
-                    NavigationLink { RecipeDetailView(meal: meal) } label: { WeekRow(meal: meal, today: meal.day == store.today) }
-                        .buttonStyle(PressableStyle()).appear(delay: Double(i) * 0.04)
-                }
-            }
-            .padding(.top, -8)
-        }
-        // Ab hier noch nicht gemockt (redesign-v3.md 7, Gruppe A) – Bausteine im v3-Stil
-        SearchField(text: $search, placeholder: "Gericht oder Angebot suchen")
-        if search.isEmpty, let banner {
-            SpecialBanner(banner: banner) {
-                store.generatorSpecial = banner.key
-                showGenerator = true
-            }
-            .appear()
-        }
-        if !search.isEmpty {
-            searchResults
-        } else if let error = store.error, store.plan == nil {
-            ErrorState(message: error) { Task { await store.loadAll() } }
-        } else if store.generating && store.plan == nil {
-            SkeletonCard(height: 300)
-            SkeletonCard(height: 160)
-        } else if let plan = store.plan {
-            if store.todayMeal != nil {
-                Button { noMood = true } label: { Text("😮‍💨 Keine Lust") }
-                    .buttonStyle(SecondaryButtonStyle()).appear(delay: 0.05)
-            }
-            BudgetCard(plan: plan, budgetCents: store.household?.budgetFoodWeekCents ?? 0).appear(delay: 0.1).id("savings")
-            BudgetHintCard()  // Budget-Rest / über Budget (43)
-            NextWeekCard()  // nächste Woche günstiger (30)
-            StockupCard()  // Vorrat anlegen lohnt sich (31)
-            SpendingCard()  // Ausgaben des Monats (34)
-            ReviewCard()  // Wochenrückblick (55)
-            FavoriteDealsCard().appear(delay: 0.12)
-            FridgeCard().appear(delay: 0.14)
-            DealsTeaser().appear(delay: 0.15)
-        } else {
-            EmptyState(emoji: "🥘", title: "Noch kein Wochenplan",
-                       text: "Wir planen deine Woche mit den aktuellen Angeboten deiner Läden.",
-                       buttonTitle: "Woche planen") { planWeek = true }
-        }
-    }
-
-    /// Gerichte ab heute, nach Tag und Mahlzeit.
-    private func upcoming(_ plan: PlanDTO) -> [MealDTO] {
-        let order = Labels.slotOrder
-        return plan.entries.filter { $0.day >= store.today }
-            .sorted { ($0.day, order.firstIndex(of: $0.mealType) ?? 9) < ($1.day, order.firstIndex(of: $1.mealType) ?? 9) }
+        .padding(.top, 64)
+        .padding(.bottom, Theme.S.nav)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .pinned(left: 10, top: 540) { Ill("cookbook").frame(width: 200) }
+        .edgeForm(.circle, Theme.C.sand, width: 330, height: 330, left: -70, top: 600)
+        .edgeForm(.circle, Theme.C.blue1, width: 240, height: 240, left: 250, top: -70)
     }
 
     private var searchResults: some View {
         let meals = store.plan?.entries.filter { $0.recipe.title.localizedCaseInsensitiveContains(search) } ?? []
         let offers = store.offers.filter { $0.title.localizedCaseInsensitiveContains(search) }.prefix(20)
-        return VStack(alignment: .leading, spacing: 10) {
-            if !meals.isEmpty { Text("Gerichte").font(Theme.F.headline) }
+        return VStack(alignment: .leading, spacing: 0) {
+            if !meals.isEmpty { SectionLabel("Gerichte").padding(.bottom, 6) }
             ForEach(meals, id: \.self) { meal in
                 NavigationLink { RecipeDetailView(meal: meal) } label: { MealRow(meal: meal) }.buttonStyle(PressableStyle())
             }
-            if !offers.isEmpty { Text("Angebote").font(Theme.F.headline).padding(.top, 6) }
+            if !offers.isEmpty { SectionLabel("Angebote").padding(.top, 18).padding(.bottom, 6) }
             ForEach(Array(offers)) { offer in
-                NavigationLink { OfferDetailView(offer: offer) } label: { OfferRow(offer: offer) }.buttonStyle(PressableStyle())
+                NavigationLink { OfferDetailView(offer: offer) } label: {
+                    IRow(name: offer.title, sub: "\(Labels.chain(offer.chain)) · \(euro(offer.priceCents))",
+                         tint: Theme.hue(category: offer.category).tint) {
+                        RemoteImage(url: URL(string: offer.imageUrl)) { Icon(.tag, size: 22) }.padding(6).clipShape(Circle())
+                    } trail: {
+                        if let d = offer.discount { DealPill(text: "−\(d) %") }
+                    }
+                    .foregroundStyle(Theme.C.ink)
+                }
+                .buttonStyle(PressableStyle())
             }
             if meals.isEmpty && offers.isEmpty {
-                EmptyState(emoji: "🔍", title: "Nichts gefunden", text: "Versuch einen anderen Begriff.")
-            }
-        }
-    }
-}
-
-/// Start-Karte „Kühlschrank scannen“ (69) → Kamera-Sheet.
-struct FridgeCard: View {
-    @Environment(AppStore.self) private var store
-
-    var body: some View {
-        Button { store.scanning = true } label: {
-            HStack(spacing: 14) {
-                Text("📸").font(.system(size: 26))
-                    .frame(width: 52, height: 52)
-                    .background(Theme.C.carbs.opacity(0.14), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("Kühlschrank scannen").font(Theme.F.callout)
-                    Text("Fotos machen – wir füllen den Vorrat und schlagen Gerichte vor").font(Theme.F.micro)
-                        .foregroundStyle(Theme.C.text2).multilineTextAlignment(.leading)
+                VStack(spacing: 8) {
+                    Ill("binoculars").frame(width: 120)
+                    Text("Nichts gefunden").font(Theme.F.t2)
+                    Text("Versuch einen anderen Begriff.").font(Theme.F.small).foregroundStyle(Theme.C.ink2)
                 }
-                Spacer(minLength: 0)
-                Image(systemName: "chevron.right").font(.system(size: 12, weight: .bold)).foregroundStyle(Theme.C.text3)
+                .frame(maxWidth: .infinity)
             }
-            .foregroundStyle(Theme.C.text1)
-            .padding(16)
-            .card()
-        }
-        .buttonStyle(PressableStyle())
-    }
-}
-
-/// Angebot als Zeile (Suche).
-struct OfferRow: View {
-    let offer: OfferDTO
-
-    var body: some View {
-        let hue = Theme.hue(category: offer.category)
-        HStack(spacing: 12) {
-            RemoteImage(url: URL(string: offer.imageUrl)) { Text(hue.emoji).font(.system(size: 24)) }
-                .padding(6).frame(width: 52, height: 52).background(hue.tint, in: RoundedRectangle(cornerRadius: 14))
-            VStack(alignment: .leading, spacing: 3) {
-                Text(offer.title).font(.system(.subheadline, weight: .semibold)).lineLimit(1).foregroundStyle(Theme.C.text1)
-                StoreChip(chain: offer.chain)
-            }
-            Spacer()
-            VStack(alignment: .trailing, spacing: 2) {
-                Text(euro(offer.priceCents)).font(.system(.headline, design: .rounded, weight: .bold)).foregroundStyle(Theme.C.text1)
-                if let d = offer.discount { Text("−\(d) %").font(Theme.F.micro).foregroundStyle(Theme.C.deal) }
-            }
-        }
-        .padding(10)
-        .card(radius: Theme.R.tile)
-    }
-}
-
-/// Top-Angebote der Woche (größter Rabatt).
-struct DealsTeaser: View {
-    @Environment(AppStore.self) private var store
-
-    var body: some View {
-        let top = store.offers.filter { $0.discount != nil && !["drogerie", "haushalt"].contains($0.category) }
-            .sorted { ($0.discount ?? 0) > ($1.discount ?? 0) }.prefix(8)
-        if !top.isEmpty {
-            VStack(alignment: .leading, spacing: 10) {
-                Text("🔥 Top-Angebote").font(Theme.F.headline)
-                ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: 10) {
-                        ForEach(Array(top)) { o in
-                            NavigationLink { OfferDetailView(offer: o) } label: { MiniOffer(offer: o) }.buttonStyle(PressableStyle())
-                        }
-                    }
-                    .padding(.horizontal, 2)
-                }
-            }
-            .padding(16)
-            .card()
         }
     }
 }
 
-/// Zeile „Diese Woche“ (v3 `WeekRow`): Teller 56, Meta (heute in `deal`), Name, Preis/Zeit, Angebots-Pille oder Chevron.
-struct WeekRow: View {
-    let meal: MealDTO
-    var today = false
+/// Zeile im Start (S1 gescrollt): Kreis 48 mit Icon, Name Serif 17, Unterzeile 12, Chevron.
+private struct StartRow: View {
+    let icon: Icon8
+    let tint: Color
+    let name: String
+    let sub: String
 
     var body: some View {
-        let deals = meal.recipe.ingredients.filter { $0.offerId != nil }.count
         HStack(spacing: 14) {
-            Plate(url: mediaURL(meal.recipe.imageUrl), size: 56, seed: meal.recipe.title)
-            VStack(alignment: .leading, spacing: 2) {
-                Text("\(today ? "Heute" : Labels.days[meal.day]) · \(Labels.meal(meal.mealType))".uppercased())
-                    .font(.system(.caption, weight: .bold)).tracking(0.6)
-                    .foregroundStyle(today ? Theme.C.deal : Theme.C.text2)
-                Text(meal.recipe.title).font(.system(.headline, weight: .bold)).tracking(-0.34).lineLimit(2)
-                    .multilineTextAlignment(.leading).foregroundStyle(Theme.C.text1)
-                Text("\(euro(meal.costCents / max(Int(meal.basePortions), 1))) · \(meal.recipe.prepMinutes) min")
-                    .font(.footnote).foregroundStyle(Theme.C.text2)
+            Icon(icon).foregroundStyle(Theme.C.ink)
+                .frame(width: Theme.S.rowCircle, height: Theme.S.rowCircle).background(tint, in: Circle())
+            VStack(alignment: .leading, spacing: 1) {
+                Text(name).font(Theme.F.serif(17, relativeTo: .body)).lineLimit(2)
+                Text(sub).font(Theme.F.text(12, .semibold, relativeTo: .caption)).foregroundStyle(Theme.C.ink2).lineLimit(1)
             }
-            Spacer(minLength: 0)
-            if deals > 0 {
-                DealBadge(text: "\(deals) im Angebot")
-            } else {
-                Image(systemName: "chevron.right").font(.system(size: 13, weight: .bold)).foregroundStyle(Theme.C.text3)
-            }
+            .foregroundStyle(Theme.C.ink)
+            Spacer(minLength: 8)
+            Icon(.chev, size: 18).foregroundStyle(Theme.C.ink3)
         }
-        .padding(.vertical, 12)
+        .frame(minHeight: Theme.S.row)
+        .overlay(alignment: .top) { Hairline() }
         .contentShape(Rectangle())
     }
 }
 
-struct MealCardSmall: View {
-    let meal: MealDTO
+/// „Wochenrückblick KW 44“ → Story; lange drücken → Archiv; ab Sonntag beim ersten Öffnen einmal automatisch (55).
+private struct ReviewRow: View {
+    @Environment(AppStore.self) private var store
+    @State private var r: WeekReviewDTO?
+    @State private var archive = false
 
     var body: some View {
-        VStack(spacing: 4) {
-            Plate(url: mediaURL(meal.recipe.imageUrl), size: 96, seed: meal.recipe.title).padding(.top, -36)
-            Text(meal.recipe.title).font(.system(.subheadline, design: .rounded, weight: .bold)).lineLimit(2)
-                .multilineTextAlignment(.center).frame(minHeight: 36).foregroundStyle(Theme.C.text1)
-            Text("\(euro(meal.costCents)) · \(meal.recipe.prepMinutes) min").font(Theme.F.micro).foregroundStyle(Theme.C.text2)
+        VStack(spacing: 0) {
+            if let r {
+                Button { store.review = r.week } label: {
+                    StartRow(icon: .book, tint: Theme.C.blue1, name: "Wochenrückblick KW \(r.kw)",
+                             sub: "\(euro(r.money.spentCents)) · \(euro(r.money.savedCents + r.money.bonusCents)) gespart")
+                }
+                .buttonStyle(PressableStyle())
+                .contextMenu { Button("Alle Wochenrückblicke", systemImage: "book") { archive = true } }
+                .accessibilityAction(named: "Alle Wochenrückblicke") { archive = true }
+                .transition(.opacity)
+            }
         }
-        .padding(14)
-        .frame(width: 150)
-        .overlay(alignment: .topLeading) {
-            Text(Labels.days[meal.day].uppercased()).font(Theme.F.micro).foregroundStyle(Theme.C.accentDeep)
-                .padding(.horizontal, 7).frame(height: 20).background(Theme.C.accentSoft, in: Capsule()).padding(10)
+        .animation(Theme.spring, value: r)
+        .navigationDestination(isPresented: $archive) { ReviewArchiveView() }
+        .task {
+            guard let fresh = try? await store.review("") else { return }
+            r = fresh
+            let sunday = Calendar.current.component(.weekday, from: .now) == 1
+            if sunday, !store.demo, UserDefaults.standard.string(forKey: "reviewShown") != fresh.week {
+                UserDefaults.standard.set(fresh.week, forKey: "reviewShown")
+                store.review = fresh.week
+            }
         }
-        .card()
     }
 }
 
-/// Budget-Karte v3 (Tinte): geplant vs. Budget, Ersparnis-Pille, Balken in Limette.
-struct BudgetCard: View {
-    let plan: PlanDTO
-    let budgetCents: Int
-    @State private var progress = 0.0
+/// „N weitere Spar-Tipps“: nächste Woche günstiger (30) und Vorrat anlegen (31).
+private struct TipsSheet: View {
+    @Environment(\.dismiss) private var dismiss
 
     var body: some View {
-        let ratio = min(Double(plan.totalCents) / Double(max(budgetCents, 1)), 1)
-        let over = plan.totalCents > budgetCents
-        let left = budgetCents - plan.totalCents
-        VStack(alignment: .leading, spacing: 0) {
-            HStack {
-                Text("Budget KW \(plan.week.suffix(2))".uppercased()).font(.system(.caption2, weight: .bold)).tracking(0.7)
-                    .foregroundStyle(Theme.C.onInk3)
-                Spacer()
-                if plan.savedCents > 0 {
-                    Text("−\(euro(plan.savedCents)) gespart").font(.system(.caption, weight: .bold)).foregroundStyle(Theme.C.onLime)
-                        .padding(.horizontal, 10).frame(height: 26).background(Theme.C.lime, in: Capsule())
+        NavigationStack {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 28) {
+                    HStack(alignment: .top) {
+                        Text("Spar-Tipps").font(Theme.F.t2)
+                        Spacer()
+                        CloseButton { dismiss() }
+                    }
+                    NextWeekCard()
+                    StockupCard()
                 }
+                .padding(.horizontal, Theme.pagePadding)
+                .padding(.bottom, 24)
             }
-            HStack(alignment: .firstTextBaseline, spacing: 8) {
-                Text(euro(plan.totalCents)).font(.system(.largeTitle, weight: .black)).tracking(-1.4).monospacedDigit()
-                Text("von \(euro(budgetCents))").font(.system(.title3, weight: .semibold)).foregroundStyle(Theme.C.onInk2)
-            }
-            .foregroundStyle(.white).padding(.top, 8)
-            GeometryReader { g in
-                Capsule().fill(Theme.C.inkChipLine)
-                Capsule().fill(over ? Theme.C.danger : Theme.C.lime).frame(width: g.size.width * progress)
-            }
-            .frame(height: 12).padding(.top, 14).padding(.bottom, 10)
-            Text(over ? "\(euro(-left)) über Budget" : "Noch \(euro(left)) übrig")
-                .font(.footnote).foregroundStyle(Theme.C.onInk3)
+            .background(Theme.C.bg)
+            .toolbar(.hidden, for: .navigationBar)
         }
-        .padding(20)
-        .background(Theme.C.ink, in: RoundedRectangle(cornerRadius: Theme.R.card, style: .continuous))
-        .onAppear { withAnimation(.easeOut(duration: 0.9).delay(0.2)) { progress = ratio } }
-        .accessibilityElement(children: .combine)
+        .sheet8()
+    }
+}
+
+/// S1 Leer (auch Woche ohne Plan): Figur liegt auf dem Hügel, „Plan erstellen“ mit Pfeil (`a2-empty`).
+/// Während der Erstellung bzw. bei Fehler zeigt dieselbe Fläche Topf bzw. Fehler.
+struct PlanEmptyHero: View {
+    @Environment(AppStore.self) private var store
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    let action: () -> Void
+
+    var body: some View {
+        ZStack(alignment: .topLeading) {
+            if store.generating {
+                VStack(spacing: 0) {
+                    PotLoader().padding(.top, 140)
+                    Text("Dein Plan entsteht …").font(Theme.F.t2).padding(.top, 30)
+                    Text("Dauert meist unter einer Minute").font(Theme.F.text(14, .semibold, relativeTo: .subheadline))
+                        .foregroundStyle(Theme.C.ink2).padding(.top, 4)
+                }
+                .frame(maxWidth: .infinity)
+            } else if let error = store.error {
+                VStack(spacing: 10) {
+                    Ill("binoculars").frame(width: 180).padding(.top, 160)
+                    Text("Das hat nicht geklappt").font(Theme.F.t2)
+                    Text(error).font(Theme.F.text(14, .semibold, relativeTo: .subheadline)).foregroundStyle(Theme.C.ink2)
+                        .multilineTextAlignment(.center)
+                    PrimaryButton(title: "Erneut versuchen", icon: .refresh) { Task { await store.loadAll() } }.padding(.top, 8)
+                }
+                .padding(.horizontal, Theme.pagePadding)
+                .frame(maxWidth: .infinity)
+            } else {
+                empty
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .topLeading)
+        .containerRelativeFrame(.vertical, alignment: .top)
+    }
+
+    private var empty: some View {
+        TimelineView(.animation(paused: reduceMotion)) { ctx in
+            let t = reduceMotion ? 0 : ctx.date.timeIntervalSinceReferenceDate
+            let breathe = reduceMotion ? 0 : (1 - cos(2 * .pi * t / 4)) / 2  // 4 s hin und zurück
+            let nudge = Self.nudge(reduceMotion ? 1 : t.truncatingRemainder(dividingBy: 4) / 0.6)
+            ZStack(alignment: .topLeading) {
+                Circle().fill(Theme.C.blue1).frame(width: 510, height: 510).offset(x: -60, y: 470).accessibilityHidden(true)
+                Ill("lying").frame(width: 360)
+                    .scaleEffect(x: 1 + 0.012 * breathe, y: 1 + 0.025 * breathe, anchor: UnitPoint(x: 0.5, y: 0.85))
+                    .offset(x: 14, y: 330)
+                if !reduceMotion {
+                    zzz(t, delay: 0, size: 24, x: 300, y: 458)
+                    zzz(t, delay: 2.25, size: 18, x: 304, y: 466)
+                }
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Noch nichts\ngeplant.").font(Theme.F.serif(42, relativeTo: .largeTitle))
+                    Text("Kein Stress – in 30 Sekunden steht dein Plan.").font(Theme.F.text(17, .medium, relativeTo: .body))
+                        .foregroundStyle(Theme.C.ink2)
+                }
+                .padding(.horizontal, Theme.pagePadding).padding(.top, 66 + 40)
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+            .overlay(alignment: .bottom) {
+                Button(action: action) {
+                    HStack {
+                        Text("Plan erstellen").font(Theme.F.text(17, .extrabold, relativeTo: .headline)).foregroundStyle(Theme.C.ink)
+                        Spacer()
+                        Icon(.arrow).foregroundStyle(Theme.C.onInk).offset(x: 5 * nudge.arrow)
+                            .frame(width: 72, height: 72)
+                            .background(Theme.C.ink, in: Circle())
+                            .scaleEffect(nudge.scale).offset(y: nudge.y)
+                    }
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(PressableStyle())
+                .padding(.horizontal, Theme.pagePadding)
+                .padding(.bottom, 124)
+                .accessibilityLabel("Plan erstellen")
+            }
+        }
+        .clipped()
+    }
+
+    /// Knopf stupst alle 4 s an: hoch −10 (1,04), kurz +2, zurück; Pfeil 5 nach rechts.
+    private static func nudge(_ k: Double) -> (y: CGFloat, scale: CGFloat, arrow: CGFloat) {
+        guard k < 1 else { return (0, 1, 0) }
+        let y: Double = k < 0.4 ? -10 * Bezier.easeInOut(k / 0.4) : k < 0.7 ? -10 + 12 * Bezier.easeInOut((k - 0.4) / 0.3) : 2 - 2 * Bezier.easeInOut((k - 0.7) / 0.3)
+        let up = max(0, -y / 10)
+        return (CGFloat(y), CGFloat(1 + 0.04 * up), CGFloat(up))
+    }
+
+    /// „z“ steigt auf, wächst und verblasst (4,5 s).
+    private func zzz(_ t: Double, delay: Double, size: CGFloat, x: CGFloat, y: CGFloat) -> some View {
+        let raw = ((t - delay) / 4.5).truncatingRemainder(dividingBy: 1)
+        let p = raw < 0 ? raw + 1 : raw
+        return Text("z").font(Theme.F.serif(size)).foregroundStyle(Theme.C.ink)
+            .scaleEffect(0.6 + 0.5 * p)
+            .opacity(sin(.pi * p))
+            .offset(x: x + 26 * p, y: y - 72 * p)
+            .accessibilityHidden(true)
+    }
+}
+
+/// Schnell-Aktionen (a.html): Sheet aus dem „+“ im Start-Kopf. Für ContentView als Ersatz der alten `QuickActions`.
+struct QuickActionsSheet: View {
+    @Environment(\.dismiss) private var dismiss
+    let select: (QuickActions.Action) -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            HStack(alignment: .top) {
+                Text("Schnell-Aktionen").font(Theme.F.t2)
+                Spacer()
+                CloseButton { dismiss() }
+            }
+            VStack(spacing: 0) {
+                row(.sparkle, "Wochenplan erstellen", .plan)
+                row(.barcode, "Barcode scannen", .barcode)
+                row(.bag, "Zur Einkaufsliste", .list)
+                row(.edit, "Rezept anlegen", .recipe)
+            }
+            .padding(.top, 14)
+            PrimaryButton(title: "Kühlschrank scannen", icon: .cam) { pick(.scan) }.padding(.top, 18)
+        }
+        .padding(.horizontal, Theme.pagePadding)
+        .padding(.bottom, 16)
+        .sheet8()
+    }
+
+    private func pick(_ a: QuickActions.Action) {
+        dismiss()
+        select(a)
+    }
+
+    private func row(_ icon: Icon8, _ title: String, _ a: QuickActions.Action) -> some View {
+        Button { pick(a) } label: {
+            IRow(name: title) {
+                Icon(icon).foregroundStyle(Theme.C.ink)
+            } trail: {
+                Icon(.chev, size: 18).foregroundStyle(Theme.C.ink3)
+            }
+            .foregroundStyle(Theme.C.ink)
+        }
+        .buttonStyle(PressableStyle())
     }
 }

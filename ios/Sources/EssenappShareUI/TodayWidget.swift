@@ -104,12 +104,12 @@ public struct TodayEntry: TimelineEntry, Sendable {
         self.date = date; self.state = state; self.data = data; self.images = images; self.stale = stale
     }
 
-    /// Demo und Platzhalter: heute 9:41 (wie die Statusleiste der CI-Screenshots), damit immer das Mittagessen oben steht.
+    /// Demo und Platzhalter wie S39: heute 9:41 (Statusleiste der CI-Screenshots), oben das Abendessen.
     public static let demo = TodayEntry(date: Calendar.current.date(bySettingHour: 9, minute: 41, second: 0, of: .now) ?? .now, state: .ok, data: TodayData(
         week: TodayData.week(.now),
-        dishes: [TodayDish(recipeId: 1, title: "Chicken Tikka Masala", mealType: "mittag", day: TodayData.weekday(.now), minutes: 35, imageUrl: ""),
-                 TodayDish(recipeId: 2, title: "Linsen-Dal mit Spinat", mealType: "abend", day: TodayData.weekday(.now), minutes: 25, imageUrl: "")],
-        openCount: 6, openNames: ["Hähnchenbrust", "Feta", "Lachsfilet"], updated: .now))
+        dishes: [TodayDish(recipeId: 1, title: "Spaghetti Pomodoro", mealType: "abend", day: TodayData.weekday(.now), minutes: 25, imageUrl: ""),
+                 TodayDish(recipeId: 2, title: "Linsen-Dal mit Spinat", mealType: "mittag", day: TodayData.weekday(.now) + 1, minutes: 30, imageUrl: "")],
+        openCount: 6, openNames: ["Basmatireis", "Kaffee"], updated: .now))
 }
 
 // MARK: - Laden (läuft in der Erweiterung)
@@ -245,17 +245,19 @@ public actor TodayLoader {
     }
 }
 
-// MARK: - Ansichten
-
-/// Emoji zum Gericht – gleiche Auswahl wie der Teller der App (`Plate`).
-func dishEmoji(_ seed: String) -> String {
-    ["🍛", "🍲", "🍝", "🥗", "🍳", "🍣"][abs(seed.unicodeScalars.reduce(0) { h, c in h &* 31 &+ Int(c.value) }) % 6]
-}
+// MARK: - Ansichten (S39, e.html)
 
 /// Inhalt des Widgets je Größe. Die App rendert dieselbe Ansicht als Demo-Screen (`family` statt Umgebung).
 public struct TodayWidgetView: View {
     let entry: TodayEntry
     let family: WidgetFamily
+
+    // Mockup-Maße: Teller klein 96 aus der Ecke (−22), mittel 120 bei 16/19, Text ab 156
+    private let smallPlate: CGFloat = 96
+    private let smallPlateOut: CGFloat = -22
+    private let mediumPlate: CGFloat = 120
+    private let mediumText: CGFloat = 156
+    private let pad: CGFloat = 14
 
     public init(entry: TodayEntry, family: WidgetFamily) {
         self.entry = entry
@@ -270,101 +272,137 @@ public struct TodayWidgetView: View {
         let pick: (hero: TodayDish?, next: TodayDish?) = entry.data?.pick(at: entry.date) ?? (nil, nil)
         switch (family, entry.state) {
         case (.accessoryInline, _):
-            Text(pick.hero.map { d in "\(dishEmoji(d.title)) \(d.title) · \(d.minutes) min" } ?? (entry.state == .ok ? "Kein Gericht geplant" : "Kochpilot koppeln"))
+            Label(pick.hero.map { d in "\(d.title) · \(d.minutes) min" } ?? (entry.state == .ok ? "Kein Gericht geplant" : "Kochpilot koppeln"),
+                  systemImage: "fork.knife")
         case (.accessoryRectangular, _):
             rectangular(pick.hero)
         case (_, .unpaired(let error)):
-            message("🔗", "Widget bearbeiten → Code eingeben", error ?? "Code: Kochpilot › Einstellungen › Widget einrichten")
+            message("link", "Widget bearbeiten → Code eingeben", error ?? "Code: Kochpilot › Einstellungen › Widget einrichten")
         case (_, .failed(let error)):
-            message("📡", "Gerade kein Stand", error)
+            message("wifi.slash", "Gerade kein Stand", error)
         default:
             if let hero = pick.hero {
                 family == .systemMedium ? AnyView(medium(hero, pick.next)) : AnyView(small(hero))
             } else {
-                message("🗓️", "Noch kein Wochenplan", "In der App einen Plan erstellen.")
+                message("calendar", "Noch kein Wochenplan", "In der App einen Plan erstellen.")
             }
         }
     }
 
-    private func photo(_ dish: TodayDish) -> some View {
-        // Overlay statt ZStack: scaledToFill darf das Widget nicht verbreitern (sonst wird der Text links abgeschnitten)
-        ST.accentSoft.overlay {
+    /// Teller (`.plate`): Kreis-Foto, Rand 6 `card`, Schatten.
+    private func plate(_ dish: TodayDish, _ size: CGFloat) -> some View {
+        ST.plate.overlay {
             if let data = entry.images[dish.recipeId], let image = UIImage(data: data) {
                 Image(uiImage: image).resizable().scaledToFill()
             } else {
-                Text(dishEmoji(dish.title)).font(.system(size: 44))
+                Image(systemName: "fork.knife").font(.system(size: size * 0.3, weight: .light)).foregroundStyle(ST.ink3)
             }
         }
-        .clipped()
+        .frame(width: size, height: size)
+        .clipShape(Circle())
+        .padding(ST.plateRing)
+        .background(ST.card, in: Circle())
+        .shadow(color: ST.shadow.opacity(0.16), radius: 15, y: 14)
         .accessibilityHidden(true)
+    }
+
+    private func label(_ hero: TodayDish) -> some View {
+        Text(TodayData.label(hero, at: entry.date).uppercased())
+            .font(ST.text(10, .extrabold, relativeTo: .caption2)).tracking(0.8).foregroundStyle(ST.blue3)
+    }
+
+    private func minutes(_ hero: TodayDish) -> some View {
+        HStack(spacing: 4) {
+            Image(systemName: "clock").font(.system(size: 11, weight: .medium))
+            Text("\(hero.minutes) min")
+        }
+        .font(ST.text(12)).foregroundStyle(ST.ink2)
     }
 
     private func small(_ hero: TodayDish) -> some View {
         ZStack(alignment: .bottomLeading) {
-            photo(hero)
-            LinearGradient(colors: [.clear, .black.opacity(0.65)], startPoint: .center, endPoint: .bottom)
-            VStack(alignment: .leading, spacing: 2) {
-                Text(TodayData.label(hero, at: entry.date).uppercased()).font(ST.micro).foregroundStyle(.white.opacity(0.85))
-                Text(hero.title).font(ST.headline).foregroundStyle(.white).lineLimit(2)
-                Label("\(hero.minutes) min", systemImage: "clock").font(ST.caption).foregroundStyle(.white.opacity(0.85))
-                staleLine.foregroundStyle(.white.opacity(0.85))
+            Color.clear
+            VStack(alignment: .leading, spacing: 0) {
+                label(hero)
+                Text(hero.title).font(ST.serif(18, relativeTo: .headline)).foregroundStyle(ST.ink).lineLimit(2).padding(.top, 2)
+                minutes(hero).padding(.top, 4)
+                staleLine
             }
-            .padding(14)
+            .padding(pad)
         }
+        .overlay(alignment: .topTrailing) { plate(hero, smallPlate).offset(x: -smallPlateOut, y: smallPlateOut) }
         .widgetURL(URL(string: "essenapp://recipe/\(hero.recipeId)"))
     }
 
     private func medium(_ hero: TodayDish, _ next: TodayDish?) -> some View {
-        HStack(spacing: 14) {
-            photo(hero).frame(width: 130).clipShape(RoundedRectangle(cornerRadius: ST.tile, style: .continuous))
-            VStack(alignment: .leading, spacing: 4) {
-                Text(TodayData.label(hero, at: entry.date).uppercased()).font(ST.micro).foregroundStyle(ST.accentDeep)
-                Text(hero.title).font(ST.headline).foregroundStyle(ST.text1).lineLimit(2)
-                Label("\(hero.minutes) min", systemImage: "clock").font(ST.caption).foregroundStyle(ST.text2)
-                Spacer(minLength: 4)
+        HStack(alignment: .top, spacing: 0) {
+            plate(hero, mediumPlate - 2 * ST.plateRing)
+                .frame(width: mediumText - 16, alignment: .leading)
+                .padding(.leading, 16)
+                .frame(maxHeight: .infinity)
+            VStack(alignment: .leading, spacing: 0) {
+                label(hero)
+                Text(hero.title).font(ST.serif(19, relativeTo: .headline)).foregroundStyle(ST.ink).lineLimit(2).padding(.top, 2)
+                minutes(hero).padding(.top, 3)
+                Rectangle().fill(ST.line).frame(height: ST.hair).padding(.top, 6)
                 if let next {
-                    Text("Danach: \(next.title)").font(ST.caption).foregroundStyle(ST.text1).lineLimit(1)
+                    Text("Danach: \(next.title)").font(ST.text(11.5)).foregroundStyle(ST.ink).lineLimit(1).padding(.top, 5)
                 }
                 let open = entry.data?.openCount ?? 0
-                Text(open == 0 ? "🛒 Liste erledigt" : "🛒 \(open) offen · \(entry.data?.openNames.joined(separator: ", ") ?? "")")
-                    .font(ST.caption).foregroundStyle(ST.text2).lineLimit(1)
-                staleLine.foregroundStyle(ST.text3)
+                HStack(spacing: 4) {
+                    Image(systemName: "bag").font(.system(size: 11, weight: .medium))
+                    Text(open == 0 ? "Liste erledigt" : "\(open) offen · \(entry.data?.openNames.joined(separator: ", ") ?? "")").lineLimit(1)
+                }
+                .font(ST.text(11.5)).foregroundStyle(ST.ink).padding(.top, 3)
+                staleLine
+                Spacer(minLength: 0)
             }
-            Spacer(minLength: 0)
+            .padding(.top, pad).padding(.trailing, pad)
         }
-        .padding(12)
-        .background(ST.card)
         .widgetURL(URL(string: "essenapp://recipe/\(hero.recipeId)"))
     }
 
     @ViewBuilder private var staleLine: some View {
         if entry.stale, let updated = entry.data?.updated {
-            Label("Stand \(updated.formatted(.dateTime.hour().minute().locale(Locale(identifier: "de_DE"))))", systemImage: "wifi.slash").font(ST.micro)
+            Label("Stand \(updated.formatted(.dateTime.hour().minute().locale(Locale(identifier: "de_DE"))))", systemImage: "wifi.slash")
+                .font(ST.text(10, .bold)).foregroundStyle(ST.ink3).padding(.top, 3)
         }
     }
 
+    /// Sperrbildschirm rechteckig: „Heute · Abend“, Gericht, Zeit und offene Artikel.
     private func rectangular(_ hero: TodayDish?) -> some View {
         VStack(alignment: .leading, spacing: 1) {
             if let hero {
-                Text(TodayData.label(hero, at: entry.date)).font(ST.micro).widgetAccentable()
-                Text("\(dishEmoji(hero.title)) \(hero.title)").font(.headline).lineLimit(1)
-                Text("\(hero.minutes) min" + ((entry.data?.openCount ?? 0) > 0 ? " · 🛒 \(entry.data!.openCount) offen" : "")).font(ST.caption)
+                Text(TodayData.label(hero, at: entry.date)).font(ST.text(12, .extrabold)).widgetAccentable()
+                Text(hero.title).font(ST.text(15, .extrabold)).lineLimit(1)
+                HStack(spacing: 4) {
+                    Image(systemName: "clock").font(.system(size: 11, weight: .semibold))
+                    Text("\(hero.minutes) min")
+                    let open = entry.data?.openCount ?? 0
+                    if open > 0 {
+                        Text("·")
+                        Image(systemName: "bag").font(.system(size: 11, weight: .semibold))
+                        Text("\(open) offen")
+                    }
+                }
+                .font(ST.text(12, .bold))
             } else {
-                Text("Kochpilot").font(.headline).widgetAccentable()
-                Text(entry.state == .ok ? "Kein Gericht geplant" : "Widget bearbeiten → Code eingeben").font(ST.caption).lineLimit(2)
+                Text("Kochpilot").font(ST.text(15, .extrabold)).widgetAccentable()
+                Text(entry.state == .ok ? "Kein Gericht geplant" : "Widget bearbeiten → Code eingeben").font(ST.text(12, .bold)).lineLimit(2)
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 
-    private func message(_ emoji: String, _ title: String, _ text: String) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Text(emoji).font(.system(size: 28))
-            Text(title).font(ST.headline).foregroundStyle(ST.text1).lineLimit(2).minimumScaleFactor(0.8)
-            Text(text).font(ST.caption).foregroundStyle(ST.text2).lineLimit(3).minimumScaleFactor(0.8)
+    /// Ungekoppelt, Fehler, leer: blauer Kreis mit Symbol, Satz, Hinweis.
+    private func message(_ symbol: String, _ title: String, _ text: String) -> some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Image(systemName: symbol).font(.system(size: 15, weight: .medium)).foregroundStyle(ST.ink)
+                .frame(width: 36, height: 36).background(ST.blue1, in: Circle())
+            Text(title).font(ST.text(14, .extrabold)).foregroundStyle(ST.ink).lineLimit(2).minimumScaleFactor(0.8).padding(.top, 10)
+            Text(text).font(ST.text(10.5)).foregroundStyle(ST.ink2).lineLimit(3).minimumScaleFactor(0.8).padding(.top, 6)
         }
-        .padding(14)
+        .padding(pad)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-        .background(ST.card)
     }
 }

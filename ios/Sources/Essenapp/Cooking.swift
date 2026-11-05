@@ -399,24 +399,36 @@ final class VoiceControl {
 
 // MARK: S18 Kochmodus
 
-/// Vollbild, dunkel, Bildschirm bleibt an. Seite 0 Vorbereitung, dann ein Schritt pro Seite, zuletzt „Fertig! 🎉“.
+/// Kochmodus v8 (b.html S18, hell): Seite 0 Vorbereitung, dann ein Schritt pro Seite, zuletzt „Fertig!“. Bildschirm bleibt an.
 struct CookingView: View {
     let meal: MealDTO
-    var imagesLoading = false  // Schritt-Bilder entstehen noch → leere Plätze schimmern (9)
+    var imagesLoading = false  // Schritt-Bilder entstehen noch → leerer Teller schimmert (9)
     var factor = 1.0  // Portionen-Stepper aus S3
     var person: (emoji: String, factor: Double)?  // „Deine Portion“ aus S3
     let onFinish: () -> Void
     var onSubstitute: (MealDTO?) -> Void = { _ in }  // „Ersatz finden“ (7): gespeichertes Rezept → S3 übernimmt es
     @Environment(\.dismiss) private var dismiss
     @Environment(\.scenePhase) private var scenePhase
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @Environment(\.colorScheme) private var appScheme  // außerhalb des Kochmodus (der selbst immer dunkel ist)
     @State private var page = Demo.screen == "cooking" ? 2 : 0
     @State private var checked: Set<Int> = []
     @State private var timers = CookTimers()
     @State private var voice = VoiceControl()
     @State private var askPush = false
     @State private var substituting: Int?
+    @State private var started = Date.now
+
+    // Mockup-Maße (b.html S18), Bildschirm-Koordinaten inkl. Statusleiste 52
+    private enum M {
+        static let prepBlob = (x: 196.0, y: -70.0, size: 300.0)
+        static let arch = (x: -10.0, y: 480.0, w: 300.0, h: 420.0)
+        static let archTimer = (x: -10.0, y: 600.0, w: 260.0, h: 400.0)  // mit Timer: leerer, kleinerer Bogen
+        static let cook = (x: -6.0, y: 500.0, w: 290.0)
+        static let doneBlob = (x: -50.0, y: 60.0, size: 490.0)
+        static let donePlate = (x: 70.0, y: 140.0, size: 250.0)
+        static let doneTitle: CGFloat = 448 - 52  // ab Safe Area
+        static let doneStats: CGFloat = 578 - 52
+        static let timerBottom: CGFloat = 124 - 34  // über der Home-Leiste
+    }
 
     private var steps: [String] { meal.recipe.steps }
     private var last: Int { steps.count + 1 }
@@ -429,49 +441,29 @@ struct CookingView: View {
         }
     }
 
-    /// Foto oben: Schritt-Bild, sonst Rezeptfoto (v3, redesign-v3.md 6.1 S18).
-    private var photoURL: URL? {
-        if let i = stepIndex, let images = meal.recipe.stepImages, i < images.count, !images[i].isEmpty { return mediaURL(images[i]) }
-        return mediaURL(meal.recipe.imageUrl)
-    }
-
     var body: some View {
-        VStack(spacing: 0) {
-            Color.clear.frame(height: 306)
-                .overlay { RemoteImage(url: photoURL, contentMode: .fill) { Theme.C.inkRaised }.id(photoURL) .transition(.opacity) }
-                .clipped()
-                .overlay(alignment: .bottom) {
-                    GeometryReader { g in
-                        Capsule().fill(.white.opacity(0.3))
-                        Capsule().fill(Theme.C.lime).frame(width: g.size.width * Double(page) / Double(last))
-                    }
-                    .frame(height: 4).padding(.horizontal, 24).padding(.bottom, 24)
-                    .animation(Theme.spring, value: page)
-                    .accessibilityHidden(true)
+        ZStack(alignment: .topLeading) {
+            Group {
+                if page == 0 {
+                    prepPage
+                } else if let i = stepIndex {
+                    stepPage(i, steps[i])
+                } else {
+                    finishPage
                 }
-                .overlay(alignment: .top) { header.padding(.top, 52) }
-            VStack(spacing: 0) {
-                TabView(selection: $page) {
-                prepPage.tag(0)
-                ForEach(Array(steps.enumerated()), id: \.offset) { i, step in stepPage(i, step).tag(i + 1) }
-                finishPage.tag(last)
             }
-                .tabViewStyle(.page(indexDisplayMode: .never))
-                TimerBar(timers: timers).padding(.horizontal, Theme.pagePadding)
-                nav
-            }
-            .padding(.top, 26)
-            .background(Theme.C.inkSheet, in: UnevenRoundedRectangle(topLeadingRadius: 36, topTrailingRadius: 36, style: .continuous))
-            .padding(.top, -24)
+            .id(page)
+            .transition(.asymmetric(insertion: .opacity.combined(with: .offset(x: 30)), removal: .opacity))
         }
-        .ignoresSafeArea(edges: .top)
-        .background(Theme.C.cookBg.ignoresSafeArea())
-        .overlay {
-            if page == last && !reduceMotion { Confetti().allowsHitTesting(false).ignoresSafeArea() }
-        }
-        .overlay(alignment: .top) { banners.padding(.top, 70) }
-        .foregroundStyle(.white)
-        .environment(\.colorScheme, .dark)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .overlay(alignment: .bottom) { bottom }
+        .overlay(alignment: .top) { banner }
+        .backdrop8 { backdrop }
+        .contentShape(Rectangle())
+        .gesture(DragGesture(minimumDistance: 30).onEnded { v in  // Wischen wie früher die Seiten
+            if v.translation.width < -60 { go(page + 1) } else if v.translation.width > 60 { go(page - 1) }
+        })
+        .foregroundStyle(Theme.C.ink)
         .animation(Theme.spring, value: timers.timers)
         .animation(Theme.spring, value: timers.ringing)
         .animation(Theme.spring, value: voice.listening)
@@ -493,183 +485,252 @@ struct CookingView: View {
             CookTimers.cookingOpen = false
             voice.stop()
         }
+        .task {
+            while !Task.isCancelled {
+                timers.check()
+                try? await Task.sleep(for: .milliseconds(500))
+            }
+        }
         .sheet(isPresented: $askPush, onDismiss: { timers.rescheduleAll() }) {
             PushPermissionSheet(text: "Damit dein Timer klingelt, auch wenn das iPhone gesperrt ist oder du eine andere App offen hast.")
                 .presentationCornerRadius(Theme.R.sheet)
-                .foregroundStyle(Theme.C.text1).environment(\.colorScheme, appScheme)  // Sheet folgt dem App-Erscheinungsbild
         }
         .sheet(isPresented: Binding(get: { substituting != nil }, set: { on in if !on { substituting = nil } })) {
             if let i = substituting {
-                SubstituteSheet(meal: meal, index: i, done: onSubstitute)
-                    .presentationDetents([.medium, .large]).presentationCornerRadius(Theme.R.sheet)
-                    .foregroundStyle(Theme.C.text1).environment(\.colorScheme, appScheme)
+                SubstituteSheet(meal: meal, index: i, done: onSubstitute).presentationDetents([.medium, .large])
             }
         }
     }
 
-    // MARK: Teile
+    // MARK: Hintergrund
 
-    /// Oben auf dem Foto: ✕ links, laufender Timer rechts (Glas).
-    private var header: some View {
-        HStack {
-            Button { dismiss() } label: {
-                Image(systemName: "xmark").font(.system(size: 18, weight: .semibold))
-                    .frame(width: Theme.S.roundButton, height: Theme.S.roundButton)
+    @ViewBuilder private var backdrop: some View {
+        if page == 0 {
+            Color.clear.edgeForm(.circle, Theme.C.sage, width: M.prepBlob.size, height: M.prepBlob.size, left: M.prepBlob.x, top: M.prepBlob.y)
+        } else if let i = stepIndex {
+            if timers.timers.isEmpty {
+                Color.clear
+                    .pinned(left: M.cook.x, top: M.cook.y) { stepPicture(i) }
+                    .edgeForm(.arch, Theme.C.sage, width: M.arch.w, height: M.arch.h, left: M.arch.x, top: M.arch.y)
+            } else {
+                Color.clear.edgeForm(.arch, Theme.C.sage, width: M.archTimer.w, height: M.archTimer.h, left: M.archTimer.x, top: M.archTimer.y)
             }
-            .buttonStyle(PressableStyle()).glassDark()
-            .accessibilityLabel("Kochmodus schließen")
-            Spacer()
-            TimelineView(.periodic(from: .now, by: 1)) { context in
-                if let t = timers.timers.first(where: { !$0.rang }) {
-                    Label(CookTimer.clock(t.remaining(context.date)), systemImage: "clock")
-                        .font(.system(.subheadline, weight: .bold)).monospacedDigit()
-                        .padding(.horizontal, 16).frame(height: 44)
-                        .background(.black.opacity(0.45), in: Capsule())
-                        .accessibilityLabel("Timer \(t.name)")
-                }
-            }
-        }
-        .padding(.horizontal, Theme.pagePadding)
-    }
-
-    @ViewBuilder private var banners: some View {
-        VStack(spacing: 8) {
-            if voice.listening || voice.note != nil { VoicePill(voice: voice).transition(.scale.combined(with: .opacity)) }
-            if let name = timers.ringing {
-                Label("\(name) ist fertig!", systemImage: "timer")
-                    .font(Theme.F.headline)
-                    .padding(.horizontal, 18).frame(minHeight: 48)
-                    .background(Theme.C.lime, in: Capsule())
-                    .floatShadow()
-                    .transition(.move(edge: .top).combined(with: .opacity))
-            }
+        } else {
+            Color.clear
+                .pinned(left: M.donePlate.x, top: M.donePlate.y) { PlatePhoto(url: mediaURL(meal.recipe.imageUrl), size: M.donePlate.size) }
+                .edgeForm(.circle, Theme.C.blue, width: M.doneBlob.size, height: M.doneBlob.size, left: M.doneBlob.x, top: M.doneBlob.y)
         }
     }
+
+    /// Im Bogen: Schritt-Bild als Teller (9), solange es entsteht ein schimmernder Teller, sonst die Koch-Szene.
+    @ViewBuilder private func stepPicture(_ i: Int) -> some View {
+        let images = meal.recipe.stepImages ?? []
+        if i < images.count, !images[i].isEmpty {
+            PlatePhoto(url: mediaURL(images[i]), size: 220).padding(.leading, 35).padding(.top, 30)
+        } else if imagesLoading, i < images.count {
+            Skeleton8(width: 220, height: 220).clipShape(Circle()).padding(.leading, 35).padding(.top, 30)
+        } else {
+            Ill("cook").frame(width: M.cook.w)
+        }
+    }
+
+    // MARK: Seiten
 
     private var prepPage: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 12) {
-                Text("Vorbereitung").font(Theme.F.cookTitle).tracking(-1.2).frame(maxWidth: .infinity)
-                StepDots(count: steps.count, current: -1).frame(maxWidth: .infinity).padding(.top, 4)
-                Text("Alles bereitstellen und abhaken · \(checked.count) von \(ingredients.count)")
-                    .font(Theme.F.callout).foregroundStyle(Theme.C.cookText2)
-                    .contentTransition(.numericText())
-                    .padding(.vertical, 6)
-                ForEach(Array(ingredients.enumerated()), id: \.offset) { i, ing in
-                    let on = checked.contains(i)
-                    Button {
-                        withAnimation(Theme.spring) { if checked.remove(i) == nil { checked.insert(i) } }
-                    } label: {
-                        HStack(spacing: 14) {
-                            Image(systemName: on ? "checkmark.circle.fill" : "circle")
-                                .font(Theme.F.cookBody)
-                                .foregroundStyle(on ? Theme.C.lime : Theme.C.cookText2)
-                                .contentTransition(.symbolEffect(.replace))
-                            Text(ing.name).font(Theme.F.cookBody).strikethrough(on)
-                                .foregroundStyle(on ? Theme.C.cookText2 : .white)
-                                .multilineTextAlignment(.leading)
-                            Spacer()
-                            VStack(alignment: .trailing, spacing: 2) {
-                                Text(qty(ing.amount, ing.unit)).font(Theme.F.callout).monospacedDigit()
-                                if let person {
-                                    Text("\(person.emoji) \(qty(meal.recipe.ingredients[i].amount * person.factor, ing.unit))")
-                                        .font(Theme.F.micro).monospacedDigit().foregroundStyle(Theme.C.highlight)
-                                }
-                            }
-                            .foregroundStyle(on ? Theme.C.cookText2 : .white)
-                        }
-                        .padding(14)
-                        .background(Theme.C.cookSurface, in: RoundedRectangle(cornerRadius: Theme.R.tile, style: .continuous))
-                        .contentShape(Rectangle())
-                    }
-                    .buttonStyle(PressableStyle())
-                    .accessibilityAddTraits(on ? .isSelected : [])
-                    .contextMenu {  // lange drücken → Ersatz (7)
-                        Button("Ersatz finden", systemImage: "arrow.left.arrow.right") { substituting = i }
-                    }
-                    .accessibilityAction(named: "Ersatz finden") { substituting = i }
+            VStack(alignment: .leading, spacing: 0) {
+                HStack {
+                    CloseButton(label: "Kochmodus schließen") { dismiss() }.background(Theme.C.bg, in: Circle().inset(by: 2))
+                    Spacer()
+                    if voice.listening || voice.note != nil { VoicePill(voice: voice) }
+                    RoundIcon(icon: .mic, fill: voice.listening ? Theme.C.blue : nil,
+                              label: voice.listening ? "Sprachsteuerung aus" : "Sprachsteuerung an") { Task { await voice.toggle() } }
                 }
+                StatPair(label: "Vorbereitung", value: "\(checked.count)", size: 104, rest: " von \(ingredients.count)", restSize: 40)
+                    .padding(.top, 20)
+                Text("Erst alles bereitlegen.").font(Theme.F.t2).padding(.top, 28)
+                Text("für \(num(meal.basePortions * factor)) Portionen").font(Theme.F.text(13, .semibold, relativeTo: .footnote))
+                    .foregroundStyle(Theme.C.ink2).padding(.top, 4)
+                VStack(spacing: 0) {
+                    ForEach(Array(ingredients.enumerated()), id: \.offset) { i, ing in prepRow(i, ing) }
+                }
+                .padding(.top, 20)
             }
-            .padding(.horizontal, Theme.pagePadding).padding(.bottom, 16)
+            .padding(.horizontal, Theme.pagePadding)
+            .padding(.top, 14)
+            .padding(.bottom, 130)
         }
+        .scrollIndicators(.hidden)
         .sensoryFeedback(.success, trigger: checked)
+    }
+
+    private func prepRow(_ i: Int, _ ing: IngredientDTO) -> some View {
+        let on = checked.contains(i)
+        return Button {
+            withAnimation(Theme.spring) { if checked.remove(i) == nil { checked.insert(i) } }
+        } label: {
+            HStack(spacing: 14) {
+                CheckCircle(on: on)
+                VStack(alignment: .leading, spacing: 1) {
+                    Text(ing.name).font(Theme.F.text(16, .bold)).strikethrough(on).foregroundStyle(on ? Theme.C.ink3 : Theme.C.ink)
+                        .multilineTextAlignment(.leading)
+                    if let person {
+                        Text("du: \(qty(meal.recipe.ingredients[i].amount * person.factor, ing.unit))")
+                            .font(Theme.F.text(12, .semibold, relativeTo: .caption)).foregroundStyle(Theme.C.ink2)
+                    }
+                }
+                Spacer(minLength: 8)
+                Text(qty(ing.amount, ing.unit)).font(Theme.F.text(16, .extrabold)).monospacedDigit().foregroundStyle(Theme.C.ink)
+            }
+            .frame(minHeight: Theme.S.row)
+            .overlay(alignment: .top) { Hairline() }
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(PressableStyle())
+        .accessibilityAddTraits(on ? .isSelected : [])
+        .contextMenu {  // lange drücken → Ersatz (7)
+            Button("Ersatz finden", systemImage: "arrow.left.arrow.right") { substituting = i }
+        }
+        .accessibilityAction(named: "Ersatz finden") { substituting = i }
     }
 
     private func stepPage(_ i: Int, _ step: String) -> some View {
         let used = ingredients.filter { ing in CookParse.mentions(ing.name, in: step) }
         let name = CookParse.timerName(step, ingredients)
+        let (head, rest) = Self.split(step)
+        let number = { (n: Int) in n < 10 ? "0\(n)" : "\(n)" }
         return ScrollView {
             VStack(alignment: .leading, spacing: 0) {
-                Text("Schritt \(i + 1)").font(Theme.F.cookTitle).tracking(-1.2).frame(maxWidth: .infinity)
-                StepDots(count: steps.count, current: i).frame(maxWidth: .infinity).padding(.top, 16).padding(.bottom, 18)
-                ForEach(used, id: \.self) { ing in
-                    HStack {
-                        Text("\(ing.name)").font(.system(.body, weight: .semibold))
-                        Spacer()
-                        Text(qty(ing.amount, ing.unit)).foregroundStyle(Theme.C.onInk3).monospacedDigit()
-                    }
-                    .frame(minHeight: 46)
-                    .overlay(alignment: .bottom) { Theme.C.inkRaised.frame(height: 1) }
+                HStack {
+                    Button { go(page - 1) } label: { Icon(.back, size: 26).frame(width: 44, height: 44, alignment: .leading) }
+                        .buttonStyle(PressableStyle()).accessibilityLabel("Zurück")
+                    Spacer()
+                    stepPill
                 }
-                Text(step).font(Theme.F.cookStep).lineSpacing(8).foregroundStyle(Theme.C.cookText2)
-                    .fixedSize(horizontal: false, vertical: true).padding(.top, 16)
-                ForEach(Array(CookParse.durations(in: step).enumerated()), id: \.offset) { _, seconds in
-                    let running = timers.timers.contains { t in t.name == name && t.total == seconds && !t.rang }
-                    Button { startTimer(name, seconds) } label: {
-                        Label(running ? "\(name) läuft" : "\(name) · \(CookTimer.clock(seconds))", systemImage: "timer")
-                            .font(Theme.F.headline).foregroundStyle(running ? .white : Theme.C.onLime)
-                            .padding(.horizontal, 20).frame(minHeight: 52)
-                            .background(running ? Theme.C.cookSurface : Theme.C.lime, in: Capsule())
+                StatPair(label: "Schritt", value: number(i + 1), size: 112, rest: "/" + number(steps.count), restSize: 48)
+                    .padding(.top, 22)
+                Text(head).font(Theme.F.t1).fixedSize(horizontal: false, vertical: true).padding(.top, 22)
+                if !rest.isEmpty {
+                    Text(rest).font(Theme.F.text(17, .semibold, relativeTo: .body)).lineSpacing(8).foregroundStyle(Theme.C.ink2)
+                        .fixedSize(horizontal: false, vertical: true).padding(.top, 10)
+                }
+                let durations = CookParse.durations(in: step)
+                if !used.isEmpty || !durations.isEmpty {
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(spacing: 8) {
+                            ForEach(Array(durations.enumerated()), id: \.offset) { _, seconds in
+                                let running = timers.timers.contains { t in t.name == name && t.total == seconds && !t.rang }
+                                Chip8(title: running ? "\(name) läuft" : "Timer \(CookTimer.clock(seconds))", on: !running, icon: .clock) {
+                                    startTimer(name, seconds)
+                                }
+                                .disabled(running)
+                                .accessibilityLabel(running ? "Timer \(name) läuft" : "Timer \(name) \(CookTimer.clock(seconds)) starten")
+                            }
+                            ForEach(used, id: \.self) { ing in
+                                Text("\(ing.name) · \(qty(ing.amount, ing.unit))").font(Theme.F.chip).foregroundStyle(Theme.C.ink2)
+                                    .padding(.horizontal, 15).frame(height: Theme.S.chip)
+                                    .overlay(Capsule().strokeBorder(Theme.C.line, lineWidth: Theme.S.hair))
+                            }
+                        }
+                        .padding(.trailing, Theme.pagePadding)
                     }
-                    .buttonStyle(PressableStyle())
-                    .disabled(running)
-                    .padding(.top, 14)
-                    .accessibilityLabel(running ? "Timer \(name) läuft" : "Timer \(name) \(CookTimer.clock(seconds)) starten")
+                    .padding(.trailing, -Theme.pagePadding)
+                    .padding(.top, 24)
                 }
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.horizontal, 24).padding(.bottom, 12)
+            .padding(.horizontal, Theme.pagePadding)
+            .padding(.top, 14)
+            .padding(.bottom, 220)
+        }
+        .scrollIndicators(.hidden)
+    }
+
+    /// Oben rechts im Schritt: „hört zu …“ (Sprache an) oder die Restzeit des laufenden Timers.
+    @ViewBuilder private var stepPill: some View {
+        if voice.listening || voice.note != nil {
+            VoicePill(voice: voice).transition(.scale.combined(with: .opacity))
+        } else {
+            TimelineView(.periodic(from: .now, by: 1)) { context in
+                if let t = timers.timers.first(where: { !$0.rang }) {
+                    HStack(spacing: 6) {
+                        Icon(.clock, size: 16)
+                        Text(CookTimer.clock(t.remaining(context.date))).monospacedDigit()
+                    }
+                    .font(Theme.F.pill).foregroundStyle(Theme.C.ink)
+                    .padding(.horizontal, 12).frame(height: Theme.S.pill)
+                    .background(Theme.C.blue1, in: Capsule())
+                    .accessibilityElement(children: .combine)
+                    .accessibilityLabel("Timer \(t.name)")
+                }
+            }
         }
     }
 
     private var finishPage: some View {
-        VStack(spacing: 18) {
-            Spacer()
-            Plate(url: mediaURL(meal.recipe.imageUrl), size: 200, seed: meal.recipe.title)
-            Text("Fertig! 🎉").font(Theme.F.cookTitle)
-            Text("Guten Appetit! Bewerte das Gericht – danach ziehen wir die Zutaten vom Vorrat ab.")
-                .font(Theme.F.body).foregroundStyle(Theme.C.cookText2).multilineTextAlignment(.center)
-            Spacer()
+        let minutes = max(1, Int(Date.now.timeIntervalSince(started) / 60))
+        return ZStack(alignment: .topLeading) {
+            CloseButton(label: "Kochmodus schließen") { dismiss() }.background(Theme.C.bg, in: Circle().inset(by: 2))
+            VStack(alignment: .leading, spacing: 6) {
+                Text("Fertig!").font(Theme.F.serif(60, relativeTo: .largeTitle))
+                Text("\(meal.recipe.title) · \(num(meal.basePortions * factor)) Portionen").font(Theme.F.small).foregroundStyle(Theme.C.ink)
+            }
+            .padding(.top, M.doneTitle - 14)
+            StatNumber(label: "Gekocht in", value: "\(minutes) min", size: 44).padding(.top, M.doneStats - 14)
         }
         .padding(.horizontal, Theme.pagePadding)
+        .padding(.top, 14)
     }
 
-    /// Unten: Mikrofon 60 + „Nächster Schritt →“ (Limette). Zurück per Wischen oder Sprachbefehl.
-    private var nav: some View {
-        HStack(spacing: 10) {
-            Button { Task { await voice.toggle() } } label: {
-                Image(systemName: voice.listening ? "mic.fill" : "mic").font(.system(size: 20, weight: .semibold))
-                    .foregroundStyle(voice.listening ? Theme.C.onLime : .white)
-                    .frame(width: 60, height: 60)
-                    .background(voice.listening ? Theme.C.lime : Theme.C.inkRaised, in: Circle())
-                    .contentTransition(.symbolEffect(.replace))
-            }
-            .buttonStyle(PressableStyle())
-            .accessibilityLabel(voice.listening ? "Sprachsteuerung aus" : "Sprachsteuerung an")
-            Button { page == last ? onFinish() : go(page + 1) } label: {
-                HStack(spacing: 8) {
-                    Text(page == last ? "Bewerten ★" : page == 0 ? "Los geht's" : page == steps.count ? "Fertig" : "Nächster Schritt")
-                    if page < last { Image(systemName: "arrow.right") }
+    /// Unten: Timer-Kapseln, dann rechts „Los geht's“ + Pfeil (Vorbereitung), Mikro + Pfeil (Schritt) bzw. „Bewerten“ (Fertig).
+    @ViewBuilder private var bottom: some View {
+        if page == last {
+            PrimaryButton(title: "Bewerten", icon: .star) { onFinish() }
+                .padding(.horizontal, Theme.pagePadding).padding(.bottom, 6)
+        } else {
+            VStack(spacing: 0) {
+                if stepIndex != nil, !timers.timers.isEmpty {
+                    TimerBar(timers: timers).padding(.horizontal, Theme.pagePadding).padding(.bottom, M.timerBottom - 72)
                 }
-                .frame(minHeight: 60)
+                HStack(spacing: 0) {
+                    Spacer()
+                    if page == 0 {
+                        Text("Los geht's").font(Theme.F.text(16, .extrabold)).padding(.trailing, 14).accessibilityHidden(true)
+                    } else {
+                        RoundIcon(icon: .mic, size: 60, iconSize: 24, fill: voice.listening ? Theme.C.blue : nil,
+                                  label: voice.listening ? "Sprachsteuerung aus" : "Sprachsteuerung an") { Task { await voice.toggle() } }
+                            .padding(.trailing, 8)
+                    }
+                    RoundIcon(icon: .arrow, filled: true, size: 72, iconSize: 24,
+                              label: page == 0 ? "Los geht's" : page == steps.count ? "Fertig" : "Nächster Schritt") { go(page + 1) }
+                }
+                .padding(.horizontal, Theme.pagePadding)
             }
-            .buttonStyle(AccentButtonStyle())
+            .accessibilityAction(named: "Zurück") { go(page - 1) }
         }
-        .padding(.horizontal, 24).padding(.top, 10).padding(.bottom, 8)
-        .accessibilityAction(named: "Zurück") { go(page - 1) }
+    }
+
+    /// Timer abgelaufen: Tinten-Pille oben (`.toast`).
+    @ViewBuilder private var banner: some View {
+        if let name = timers.ringing {
+            HStack(spacing: 8) {
+                Icon(.clock, size: 18)
+                Text("\(name) ist fertig!")
+            }
+            .font(Theme.F.toast).foregroundStyle(Theme.C.onInk)
+            .padding(.horizontal, 18).padding(.vertical, 12)
+            .background(Theme.C.ink, in: Capsule())
+            .padding(.top, 60)
+            .transition(.move(edge: .top).combined(with: .opacity))
+        }
     }
 
     // MARK: Aktionen
+
+    /// Erster Satz groß (`t1`), der Rest als Erklärung darunter.
+    static func split(_ step: String) -> (String, String) {
+        guard let r = step.range(of: ". "), step[r.upperBound...].contains(where: \.isLetter) else { return (step, "") }
+        return (String(step[..<r.lowerBound]) + ".", String(step[r.upperBound...]))
+    }
 
     private func go(_ target: Int) {
         withAnimation(Theme.spring) { page = min(max(target, 0), last) }
@@ -716,7 +777,7 @@ struct CookingView: View {
     }
 }
 
-/// Schwebende Timer-Leiste: Glas-Kapseln mit Ring, Restzeit, Pause/+1 min/Stop.
+/// Timer-Kapseln (S18): Ring mit Pause/Weiter, Name, Restzeit; „…“ für +1 min und Stopp.
 struct TimerBar: View {
     let timers: CookTimers
 
@@ -726,84 +787,82 @@ struct TimerBar: View {
                 ForEach(timers.timers) { t in capsule(t, now: ctx.date).transition(.move(edge: .bottom).combined(with: .opacity)) }
             }
         }
-        .task {
-            while !Task.isCancelled {
-                timers.check()
-                try? await Task.sleep(for: .milliseconds(500))
-            }
-        }
     }
 
     private func capsule(_ t: CookTimer, now: Date) -> some View {
         let left = t.remaining(now)
         return HStack(spacing: 10) {
-            ZStack {
-                Circle().stroke(Theme.C.cookSurface, lineWidth: 4)
-                Circle().trim(from: 0, to: t.total > 0 ? 1 - Double(left) / Double(t.total) : 1)
-                    .stroke(t.rang ? Color.white : Theme.C.lime, style: StrokeStyle(lineWidth: 4, lineCap: .round))
-                    .rotationEffect(.degrees(-90))
+            Button { if !t.rang { timers.toggle(t.id) } } label: {
+                ZStack {
+                    Circle().stroke(Theme.C.line, lineWidth: 4)
+                    Circle().trim(from: 0, to: t.total > 0 ? 1 - Double(left) / Double(t.total) : 1)
+                        .stroke(Theme.C.blue3, style: StrokeStyle(lineWidth: 4, lineCap: .round))
+                        .rotationEffect(.degrees(-90))
+                    if !t.rang { Icon(t.end == nil ? .play : .pause, size: 16) }
+                }
+                .frame(width: 40, height: 40)
+                .frame(width: 48, height: 48)
+                .contentShape(Circle())
             }
-            .frame(width: 30, height: 30)
+            .buttonStyle(PressableStyle())
+            .disabled(t.rang)
+            .accessibilityLabel(t.end == nil ? "Fortsetzen" : "Pause")
             VStack(alignment: .leading, spacing: 0) {
-                Text(t.name).font(Theme.F.micro).foregroundStyle(Theme.C.cookText2).lineLimit(1)
-                Text(t.rang ? "fertig!" : CookTimer.clock(left)).font(Theme.F.cookTimer).monospacedDigit()
+                Text(t.name).font(Theme.F.text(13, .extrabold, relativeTo: .footnote)).lineLimit(1)
+                Text(t.rang ? "fertig!" : CookTimer.clock(left)).font(Theme.F.num(26)).tracking(Theme.F.numTracking(26)).monospacedDigit()
                     .contentTransition(.numericText(countsDown: true))
                     .phaseAnimator([1.0, 0.35]) { view, phase in view.opacity(t.rang ? phase : 1) }
             }
             Spacer(minLength: 0)
-            if !t.rang {
-                small(t.end == nil ? "play.fill" : "pause.fill", t.end == nil ? "Fortsetzen" : "Pause") { timers.toggle(t.id) }
+            Menu {
+                Button("Eine Minute mehr", systemImage: "plus") { timers.addMinute(t.id) }
+                Button("Timer stoppen", systemImage: "xmark", role: .destructive) { timers.stop(t.id) }
+            } label: {
+                Icon(.dots, size: 18).frame(width: Theme.S.close, height: Theme.S.close)
+                    .overlay(Circle().strokeBorder(Theme.C.line, lineWidth: Theme.S.hair))
+                    .frame(width: 44, height: 44).contentShape(Circle())
             }
-            Button { timers.addMinute(t.id) } label: {
-                Text("+1 min").font(Theme.F.micro).frame(minWidth: 44, minHeight: 44)
-            }
-            .buttonStyle(PressableStyle())
-            .accessibilityLabel("Eine Minute mehr")
-            small("xmark", "Timer \(t.name) stoppen") { timers.stop(t.id) }
+            .accessibilityLabel("Timer \(t.name): mehr Zeit oder stoppen")
         }
-        .padding(.leading, 12).padding(.trailing, 4)
-        .frame(minHeight: 56)
-        .glass(Capsule(), tint: t.rang ? Theme.C.lime.opacity(0.7) : nil)
+        .foregroundStyle(Theme.C.ink)
+        .padding(.horizontal, 10)
+        .frame(height: 68)
+        .background(Theme.C.card, in: Capsule())
+        .overlay(Capsule().strokeBorder(Theme.C.line, lineWidth: Theme.S.hair))
+        .floatShadow()
         .accessibilityElement(children: .contain)
         .accessibilityLabel("Timer \(t.name), \(t.rang ? "fertig" : CookTimer.clock(left))")
     }
-
-    private func small(_ symbol: String, _ label: String, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            Image(systemName: symbol).font(Theme.F.callout).frame(width: 44, height: 44)
-        }
-        .buttonStyle(PressableStyle())
-        .accessibilityLabel(label)
-    }
 }
 
-/// Glas-Pille „🎙 hört zu …“ mit Pegel; erkannter Befehl blinkt kurz.
+/// Pille „hört zu …“ mit Pegel (S18): `blue1`, Mikro, Text, fünf Pegel-Striche; erkannter Befehl blinkt kurz.
 struct VoicePill: View {
     let voice: VoiceControl
-    private let bars: [Float] = [0.5, 0.8, 1, 0.8, 0.5]
+    private let bars: [CGFloat] = [6, 12, 16, 9, 5]
 
     var body: some View {
         HStack(spacing: 8) {
-            Text("🎙")
+            Icon(.mic, size: 16)
             if let heard = voice.heard {
-                Text("„\(heard)“").foregroundStyle(Theme.C.lime)
-                    .phaseAnimator([1.0, 0.3, 1.0]) { view, phase in view.opacity(phase) }
+                Text("„\(heard)“").phaseAnimator([1.0, 0.3, 1.0]) { view, phase in view.opacity(phase) }
             } else if let note = voice.note, !voice.listening {
                 Text(note).lineLimit(2)
             } else {
                 Text("hört zu …")
-                HStack(spacing: 3) {
+                HStack(spacing: 2) {
                     ForEach(bars.indices, id: \.self) { i in
-                        Capsule().fill(Theme.C.lime).frame(width: 3, height: CGFloat(4 + 18 * voice.level * bars[i]))
+                        Capsule().fill(Theme.C.ink).frame(width: 3, height: max(3, bars[i] * CGFloat(0.3 + 0.7 * voice.level)))
                     }
                 }
-                .frame(height: 22)
+                .frame(height: 16)
                 .animation(.easeOut(duration: 0.1), value: voice.level)
             }
         }
-        .font(Theme.F.callout)
-        .padding(.horizontal, 16).frame(minHeight: 44)
-        .glass(Capsule())
+        .font(Theme.F.pill)
+        .foregroundStyle(Theme.C.ink)
+        .padding(.horizontal, 14)
+        .frame(minHeight: 36)
+        .background(Theme.C.blue1, in: Capsule())
         .accessibilityElement(children: .combine)
     }
 }

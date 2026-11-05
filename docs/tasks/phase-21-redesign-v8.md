@@ -6,13 +6,13 @@ Ablauf: erst Grundlage (21.1, ein Paket), dann die Screen-Gruppen A–F parallel
 
 ## 21.1 Grundlage iOS
 
-- [ ] 👤 Download freigegeben (2026-11-04): DM Serif Display, Manrope, Inter Tight (OFL, google/fonts) → feste Schnitte per `ios/tools/make_fonts.py` nach `Resources/fonts/`; Fraunces/JetBrains Mono raus
-- [ ] Illustrationen `docs/ui/mockups/ill-v7/*.webp` → `ios/Sources/Essenapp/Resources/ill/`
-- [ ] `Theme.swift` auf v8-Tokens (Farben, Schriften, Maße); App fest hell bis 21.2
-- [ ] `V8Components.swift`: alle Bausteine aus redesign-v8.md Abschnitt 3
-- [ ] `NotchTabBar` (Mulde, gleitend) ersetzt v3-Tab-Leiste; Papier-Korn raus
-- [ ] `PotLoader`, `Hop3`
-- [ ] Build in WSL grün
+- [x] 👤 Download freigegeben (2026-11-04): DM Serif Display, Manrope, Inter Tight (OFL, google/fonts) → feste Schnitte per `ios/tools/make_fonts.py` nach `Resources/fonts/`; Fraunces/JetBrains Mono raus
+- [x] Illustrationen `docs/ui/mockups/ill-v7/*.webp` → `ios/Sources/Essenapp/Resources/ill/`
+- [x] `Theme.swift` auf v8-Tokens (Farben, Schriften, Maße); alte Token-Namen auf v8 abgebildet; App fest hell bis 21.2
+- [x] `V8Components.swift`: alle Bausteine aus redesign-v8.md Abschnitt 3; Icons aus dem Mockup per `ios/tools/make_icons.py` → `Icons8.swift`
+- [x] `NotchTabBar` (Mulde, gleitend) ersetzt v3-Tab-Leiste; Papier-Korn raus
+- [x] `PotLoader`, `Hop3`
+- [x] Build in WSL grün
 
 ## 21.2 Dunkelmodus (Nutzerwunsch 2026-11-04: mitentwerfen)
 
@@ -41,8 +41,8 @@ Ablauf: erst Grundlage (21.1, ein Paket), dann die Screen-Gruppen A–F parallel
 
 ## 21.6 Web-PWA
 
-- [ ] `backend/app/web/static/app.css`: v8-Tokens, Schriften, Bausteine (Nav mit Mulde, Zeilen, Chips, Knöpfe)
-- [ ] Templates auf v8, Prüfung im Browser bei 390 px
+- [x] `backend/app/web/static/app.css`: v8-Tokens, Schriften, Bausteine (Nav mit Mulde, Zeilen, Chips, Knöpfe)
+- [x] Templates auf v8, Prüfung im Browser bei 390 px
 
 ## 21.7 Abschluss (DoD)
 
@@ -53,3 +53,5 @@ Ablauf: erst Grundlage (21.1, ein Paket), dann die Screen-Gruppen A–F parallel
 ## Offen / ohne Mockup
 
 (beim Bau gefundene Lücken hier eintragen)
+
+- PWA: keine eigenen Web-Mockups – zusammengesetzt aus S1/S2, S5b, S6.1, S37, Leer-Zustand; Einkaufsliste beginnt unter dem blauen Blatt (größere Lücke)

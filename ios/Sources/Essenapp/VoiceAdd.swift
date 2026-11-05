@@ -102,31 +102,43 @@ enum ListParse {
 
 // MARK: Oberfläche
 
-/// „Artikel hinzufügen“-Feld mit Mikrofon-Knopf (Haushaltsliste und einmalige Listen).
+/// „Artikel hinzufügen …“ als `.irow` (Haushaltsliste und einmalige Listen): Plus, Eingabe, Mikrofon.
 struct AddItemField: View {
     @Binding var text: String
     let add: () -> Void
     let voice: () -> Void
 
     var body: some View {
-        HStack(spacing: 10) {
-            HStack(spacing: 0) {
-                TextField("Artikel hinzufügen …", text: $text).onSubmit(add)
-                Button(action: voice) {
-                    Image(systemName: "mic.fill").font(.system(size: 16, weight: .semibold)).foregroundStyle(Theme.C.text2)
-                        .frame(width: 44, height: 44)
-                }
+        HStack(spacing: 14) {
+            Button(action: add) { Icon(.plus).tapArea() }
+                .buttonStyle(.plain)
+                .foregroundStyle(text.isEmpty ? Theme.C.ink3 : Theme.C.ink)
+                .accessibilityLabel("Hinzufügen")
+            TextField("", text: $text, prompt: Text("Artikel hinzufügen …").foregroundStyle(Theme.C.ink3))
+                .font(Theme.F.text(16))
+                .foregroundStyle(Theme.C.ink)
+                .submitLabel(.done)
+                .onSubmit(add)
+            Button(action: voice) { Icon(.mic).foregroundStyle(Theme.C.ink).tapArea() }
                 .buttonStyle(PressableStyle())
                 .accessibilityLabel("Per Sprache hinzufügen")
-            }
-            .padding(.leading, 16).padding(.trailing, 2).frame(height: 46)
-            .background(Theme.C.card, in: Capsule())
-            RoundIconButton(systemName: "plus", dark: true, label: "Hinzufügen", action: add)
         }
+        .frame(minHeight: Theme.S.row)
+        .overlay(alignment: .top) { Hairline() }
     }
 }
 
-/// Glas-Overlay der Sprach-Eingabe: Pegel, erkannter Text, Vorschau-Chips (antippen = entfernen), „Hinzufügen“.
+extension View {
+    /// Glas-Fläche (`.d-glass`): Creme 74 % über Weichzeichner, weicher Schatten.
+    func glass8<S: Shape>(_ shape: S) -> some View {
+        background(Theme.C.card.opacity(0.74), in: shape)
+            .background(.ultraThinMaterial, in: shape)
+            .shadow(color: Theme.C.ink.opacity(0.12), radius: 15, y: 10)
+    }
+}
+
+/// Sprach-Eingabe (d.html „Sprach-Eingabe“): Glas-Fläche unten, Pille „hört zu …“ mit Pegel, erkannter Satz,
+/// Vorschau-Chips (✕ entfernt), „3 hinzufügen“.
 struct VoiceAddOverlay: View {
     @Environment(AppStore.self) private var store
     @Environment(\.scenePhase) private var scenePhase
@@ -135,6 +147,8 @@ struct VoiceAddOverlay: View {
     @State private var voice = VoiceControl()
     @State private var earlier = ""  // Text vor einem Neustart des Mikrofons
     @State private var removed: Set<String> = []
+
+    private static let bars: [CGFloat] = [6, 14, 20, 10, 16, 7]  // Pegel-Striche aus dem Mockup
 
     private var spoken: String { [earlier, voice.transcript].filter { t in !t.isEmpty }.joined(separator: ", ") }
     private var preview: [ListParse.Item] {
@@ -147,62 +161,39 @@ struct VoiceAddOverlay: View {
 
     var body: some View {
         let items = preview
+        let shape = UnevenRoundedRectangle(topLeadingRadius: Theme.R.sheet, topTrailingRadius: Theme.R.sheet, style: .continuous)
         ZStack(alignment: .bottom) {
             Theme.C.scrim.ignoresSafeArea().onTapGesture(perform: close).transition(.opacity)
-            VStack(alignment: .leading, spacing: 14) {
+            VStack(alignment: .leading, spacing: 0) {
                 HStack {
-                    if voice.listening || voice.note != nil {
-                        VoicePill(voice: voice)
-                    } else {
-                        Button {
-                            earlier = spoken
-                            voice.transcript = ""
-                            Task { await voice.toggle() }
-                        } label: { Label("Weiter sprechen", systemImage: "mic.fill").font(Theme.F.callout) }
-                        .buttonStyle(PressableStyle())
-                        .padding(.horizontal, 16).frame(minHeight: 44).glass(Capsule())
-                    }
+                    pill
                     Spacer()
-                    RoundIconButton(systemName: "xmark", label: "Schließen", action: close)
+                    CloseButton(action: close)
                 }
                 Text(spoken.isEmpty ? "Sag z. B. „zwei Liter Milch, Eier und ein Brot“" : "„\(spoken)“")
-                    .font(Theme.F.body).foregroundStyle(spoken.isEmpty ? Theme.C.text2 : Theme.C.text1)
+                    .font(Theme.F.t2)
+                    .foregroundStyle(spoken.isEmpty ? Theme.C.ink2 : Theme.C.ink)
                     .fixedSize(horizontal: false, vertical: true)
+                    .padding(.top, 20)
                 if !items.isEmpty {
                     FlowLayout(spacing: 8) {
-                        ForEach(Array(items.enumerated()), id: \.offset) { _, entry in
-                            Button { withAnimation(Theme.spring) { _ = removed.insert(entry.label) } } label: {
-                                HStack(spacing: 6) {
-                                    Text(entry.label)
-                                    if let o = entry.offer { Text(Labels.chain(o.chain)).foregroundStyle(Theme.C.text2) }
-                                    Image(systemName: "xmark").font(.system(size: 10, weight: .bold)).foregroundStyle(Theme.C.text3)
-                                }
-                                .font(.system(.caption, weight: .semibold))
-                                .padding(.horizontal, 13).frame(minHeight: 34)
-                                .background(Theme.C.card, in: Capsule())
-                                .overlay(Capsule().strokeBorder(Theme.C.line, lineWidth: 0.5))
-                            }
-                            .buttonStyle(PressableStyle())
-                            .accessibilityLabel("\(entry.label) entfernen")
-                            .transition(.scale.combined(with: .opacity))
-                        }
+                        ForEach(Array(items.enumerated()), id: \.offset) { _, entry in chip(entry) }
                     }
+                    .padding(.top, 18)
                 }
-                Button(items.isEmpty ? "Hinzufügen" : "\(items.count) hinzufügen") {
+                PrimaryButton(title: items.isEmpty ? "Hinzufügen" : "\(items.count) hinzufügen", disabled: items.isEmpty) {
                     voice.stop()
                     add(items)
                 }
-                .buttonStyle(PrimaryButtonStyle())
-                .disabled(items.isEmpty)
-                .opacity(items.isEmpty ? 0.5 : 1)
+                .padding(.top, 24)
             }
-            .foregroundStyle(Theme.C.text1)
-            .padding(18)
-            .glass(RoundedRectangle(cornerRadius: Theme.R.sheet, style: .continuous))
-            .padding(.horizontal, 12)
-            .padding(.bottom, Theme.ctaAboveTabBar)
+            .padding(.top, 22).padding(.horizontal, Theme.pagePadding).padding(.bottom, 40)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .glass8(shape)
+            .ignoresSafeArea(edges: .bottom)
             .transition(.move(edge: .bottom).combined(with: .opacity))
         }
+        .hidesTabBar()
         .animation(Theme.spring, value: items)
         .animation(Theme.spring, value: voice.listening)
         .sensoryFeedback(.selection, trigger: removed)
@@ -223,14 +214,69 @@ struct VoiceAddOverlay: View {
         }
         .onDisappear { voice.stop() }
     }
+
+    /// Tinten-Pille 44 hoch: „hört zu …“ mit weißem Pegel; sonst Hinweis bzw. „Weiter sprechen“.
+    private var pill: some View {
+        Button {
+            guard !voice.listening else { return }
+            earlier = spoken
+            voice.transcript = ""
+            Task { await voice.toggle() }
+        } label: {
+            HStack(spacing: 6) {
+                Icon(.mic, size: 18)
+                if voice.listening {
+                    Text("hört zu …")
+                    HStack(spacing: 3) {
+                        ForEach(Self.bars.indices, id: \.self) { i in
+                            Capsule().fill(Theme.C.onInk).frame(width: 3, height: max(3, Self.bars[i] * CGFloat(0.4 + voice.level)))
+                        }
+                    }
+                    .frame(height: 22)
+                    .padding(.leading, 4)
+                    .animation(.easeOut(duration: 0.1), value: voice.level)
+                } else {
+                    Text(voice.note ?? "Weiter sprechen").lineLimit(2)
+                }
+            }
+            .font(Theme.F.text(15, .bold, relativeTo: .subheadline))
+            .foregroundStyle(Theme.C.onInk)
+            .padding(.horizontal, 18)
+            .frame(minHeight: 44)
+            .background(Theme.C.ink, in: Capsule())
+        }
+        .buttonStyle(PressableStyle())
+        .accessibilityLabel(voice.listening ? "Hört zu" : "Weiter sprechen")
+    }
+
+    /// `.d-chip`: Artikel, Laden grau, ✕ entfernt.
+    private func chip(_ entry: ListParse.Item) -> some View {
+        Button { withAnimation(Theme.spring) { _ = removed.insert(entry.label) } } label: {
+            HStack(spacing: 6) {
+                Text(entry.label).foregroundStyle(Theme.C.ink)
+                if let o = entry.offer { Text(Labels.chain(o.chain)).foregroundStyle(Theme.C.ink2) }
+                Icon(.x, size: 15).foregroundStyle(Theme.C.ink2)
+            }
+            .font(Theme.F.chip)
+            .padding(.leading, 14).padding(.trailing, 10)
+            .frame(minHeight: Theme.S.chip)
+            .background(Theme.C.card, in: Capsule())
+            .overlay(Capsule().strokeBorder(Theme.C.line, lineWidth: Theme.S.hair))
+            .tapArea(4)
+        }
+        .buttonStyle(PressableStyle())
+        .accessibilityLabel("\(entry.label) entfernen")
+        .transition(.scale.combined(with: .opacity))
+    }
 }
 
 extension AppStore {
     /// Gesprochene Artikel nacheinander anlegen (offline → Warteschlange, 66) und kurz bestätigen.
-    func addSpoken(_ items: [ListParse.Item], to listID: Int) async {
+    /// `chain`: Laden für Artikel ohne passendes Angebot (Laden-Liste S5b).
+    func addSpoken(_ items: [ListParse.Item], to listID: Int, chain: String = "") async {
         flash(items.count == 1 ? "„\(items[0].name)“ hinzugefügt" : "\(items.count) Sachen hinzugefügt")
         for i in items {
-            await addItem(name: i.name, amount: i.amount, unit: i.unit, chain: i.offer?.chain ?? "", offerId: i.offer?.id, to: listID)
+            await addItem(name: i.name, amount: i.amount, unit: i.unit, chain: i.offer?.chain ?? chain, offerId: i.offer?.id, to: listID)
         }
     }
 }

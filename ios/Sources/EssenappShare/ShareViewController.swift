@@ -9,7 +9,8 @@ import UniformTypeIdentifiers
 final class ShareViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
-        view.backgroundColor = shareBackground  // hell/dunkel wie ST.bg (68)
+        view.backgroundColor = shareBackground  // = ST.bg
+        overrideUserInterfaceStyle = .light  // v8 vorerst fest hell wie die App
         Task { @MainActor [weak self] in
             guard let self else { return }
             let (url, text) = await sharedContent()

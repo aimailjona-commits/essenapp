@@ -2,7 +2,8 @@ import SwiftUI
 
 // Feature 10: Rezept als Bildkarte teilen (1080×1350 px).
 
-/// Karte in 360×450 pt, gerendert mit Faktor 3. Feste Textgröße, damit Dynamic Type das Bild nicht sprengt.
+/// Karte in 360×450 pt, gerendert mit Faktor 3. Look wie die Bildkarte in f.html (Teilen-Sheet), Maße × 1,32 (272 → 360).
+/// Feste Textgröße, damit Dynamic Type das Bild nicht sprengt.
 struct RecipeShareCard: View {
     let meal: MealDTO
     let photo: UIImage?  // vorher geladen – AsyncImage rendert im ImageRenderer nicht
@@ -10,62 +11,74 @@ struct RecipeShareCard: View {
     private var recipe: RecipeDTO { meal.recipe }
 
     var body: some View {
-        let words = recipe.title.split(separator: " ")
-        let shown = Array(recipe.ingredients.prefix(10))
-        VStack(alignment: .leading, spacing: 8) {
-            Group {
-                if let photo {
-                    Image(uiImage: photo).resizable().scaledToFill().frame(width: 150, height: 150).clipShape(Circle()).floatShadow()
-                } else {
-                    Plate(url: nil, size: 150, seed: recipe.title)
+        let shown = Array(recipe.ingredients.prefix(8))
+        VStack(alignment: .leading, spacing: 0) {
+            VStack(alignment: .leading, spacing: 3) {
+                Text(recipe.title).font(Theme.F.serif(26)).lineLimit(3).minimumScaleFactor(0.8)
+                Text(Labels.meal(recipe.mealType)).font(Theme.F.text(14, .semibold)).foregroundStyle(Theme.C.ink2)
+            }
+            .frame(width: 190, alignment: .leading)
+            .frame(height: 150, alignment: .topLeading)
+            HStack(alignment: .top, spacing: 18) {
+                stat("Zeit", "\(recipe.prepMinutes) min")
+                stat("p. P.", euro(Int(Double(meal.costCents) / meal.basePortions)))
+                if let kcal = recipe.nutrition?.kcal { stat("kcal", "\(Int(kcal.rounded()))") }
+            }
+            VStack(spacing: 0) {
+                ForEach(shown, id: \.self) { ing in
+                    HStack {
+                        Text(ing.name).lineLimit(1)
+                        Spacer(minLength: 4)
+                        Text(qty(ing.amount * meal.scale, ing.unit)).foregroundStyle(Theme.C.ink2).monospacedDigit()
+                    }
+                    .font(Theme.F.text(13, .bold))
+                    .frame(height: 22)
+                    .overlay(alignment: .top) { Hairline() }
                 }
             }
-            .frame(maxWidth: .infinity)
-            (Text(words.prefix(1).joined()).font(.system(.title2, weight: .bold))
-                + Text(" " + words.dropFirst().joined(separator: " ")).font(.system(.title2, weight: .regular)).foregroundStyle(Theme.C.text2))
-                .lineLimit(2).minimumScaleFactor(0.8)
-            HStack(spacing: 12) {
-                Label("\(recipe.prepMinutes) min", systemImage: "clock")
-                if let kcal = recipe.nutrition?.kcal { Label("\(Int(kcal.rounded())) kcal", systemImage: "flame.fill") }
-                Label("\(euro(Int(Double(meal.costCents) / meal.basePortions))) / Portion", systemImage: "eurosign.circle")
-            }
-            .font(Theme.F.caption).foregroundStyle(Theme.C.text1)
-            HStack(alignment: .top, spacing: 12) {
-                ingredientColumn(Array(shown.prefix(5)))
-                ingredientColumn(Array(shown.dropFirst(5)))
-            }
-            .padding(12)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .card(radius: Theme.R.tile)
+            .padding(.top, 16)
             Spacer(minLength: 0)
-            HStack(spacing: 8) {
+            HStack {
+                HStack(spacing: 6) {
+                    Icon(.fork, size: 18)
+                    Text("Mit Essenapp geplant")
+                }
+                Spacer()
                 AppIconMark()
-                Text("Mit Kochpilot geplant").font(Theme.F.caption).foregroundStyle(Theme.C.text2)
             }
+            .font(Theme.F.text(14, .extrabold))
         }
-        .padding(22)
-        .frame(width: 360, height: 450)
-        .background(Theme.C.bg)
-        .foregroundStyle(Theme.C.text1)
+        .padding(24)
+        .frame(width: 360, height: 450, alignment: .topLeading)
+        .overlay(alignment: .topLeading) {
+            Group {
+                if let photo {
+                    Image(uiImage: photo).resizable().scaledToFill().plate(103).frame(width: 103, height: 103)
+                } else {
+                    PlatePhoto(url: nil, size: 103)
+                }
+            }
+            .offset(x: 235, y: 32)
+        }
+        .background(alignment: .topLeading) {
+            Circle().fill(Theme.C.blue).frame(width: 264, height: 264).offset(x: 185, y: -98)
+        }
+        .background(Theme.C.card)
+        .clipped()
+        .foregroundStyle(Theme.C.ink)
         .environment(\.dynamicTypeSize, .large)
         .environment(\.colorScheme, .light)
     }
 
-    private func ingredientColumn(_ items: [IngredientDTO]) -> some View {
+    /// Kleine `.stat`: Haarlinie in Tinte, Label 13/700, Zahl rechts.
+    private func stat(_ label: String, _ value: String) -> some View {
         VStack(alignment: .leading, spacing: 5) {
-            ForEach(items, id: \.self) { ing in
-                HStack(spacing: 6) {
-                    Circle().fill(Theme.C.accent).frame(width: 5, height: 5)
-                    Text(ing.name).lineLimit(1)
-                    Spacer(minLength: 4)
-                    Text(qty(ing.amount * meal.scale, ing.unit)).foregroundStyle(Theme.C.text2).monospacedDigit()
-                }
-            }
+            Hairline(color: Theme.C.ink)
+            Text(label).font(Theme.F.text(13, .bold))
+            Text(value).font(Theme.F.num(30)).tracking(Theme.F.numTracking(30)).lineLimit(1).minimumScaleFactor(0.6)
+                .frame(maxWidth: .infinity, alignment: .trailing)
         }
-        .font(Theme.F.micro)
-        .frame(maxWidth: .infinity, alignment: .leading)
     }
-
 }
 
 /// App-Icon aus dem Bundle (von xtool gesetzt), sonst Marken-Kachel – Fußzeile der Bildkarten (10, 55).
@@ -114,28 +127,46 @@ struct ImageShareSheet: View {
         return renderer.uiImage
     }
 
+    @Environment(\.dismiss) private var dismiss
+
     var body: some View {
-        VStack(spacing: 16) {
-            Text("Als Bild teilen").font(Theme.F.title).frame(maxWidth: .infinity, alignment: .leading)
-            if let image {
-                Image(uiImage: image).resizable().scaledToFit()
-                    .clipShape(RoundedRectangle(cornerRadius: Theme.R.tile, style: .continuous))
-                    .softShadow()
-                    .accessibilityLabel("Bildkarte \(name)")
-                    .transition(.scale(scale: 0.95).combined(with: .opacity))
-                Spacer(minLength: 0)
-                ShareLink(item: Image(uiImage: image), preview: SharePreview(name, image: Image(uiImage: image))) {
-                    Label("Teilen", systemImage: "square.and.arrow.up")
+        VStack(spacing: 0) {
+            HStack {
+                Text("Als Bild teilen").font(Theme.F.t2).foregroundStyle(Theme.C.ink)
+                Spacer()
+                CloseButton { dismiss() }
+            }
+            Group {
+                if let image {
+                    Image(uiImage: image).resizable().scaledToFit()
+                        .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+                        .shadow(color: Theme.C.ink.opacity(0.14), radius: 15, y: 14)
+                        .accessibilityLabel("Bildkarte \(name)")
+                        .transition(.scale(scale: 0.95).combined(with: .opacity))
+                } else {
+                    Skeleton8(height: 340).aspectRatio(0.8, contentMode: .fit)
                 }
-                .buttonStyle(PrimaryButtonStyle())
-            } else {
-                SkeletonCard(height: 420)
-                Spacer(minLength: 0)
+            }
+            .frame(maxWidth: 272 * 1.2, maxHeight: .infinity)
+            .padding(.top, 18)
+            if let image {
+                ShareLink(item: Image(uiImage: image), preview: SharePreview(name, image: Image(uiImage: image))) {
+                    HStack(spacing: 8) {
+                        Icon(.share, size: 20)
+                        Text("Teilen")
+                    }
+                    .font(Theme.F.button).foregroundStyle(Theme.C.onInk)
+                    .frame(maxWidth: .infinity, minHeight: Theme.S.button)
+                    .background(Theme.C.ink, in: Capsule())
+                }
+                .buttonStyle(PressableStyle())
+                .padding(.top, 22)
             }
         }
-        .padding(Theme.pagePadding)
+        .padding(.horizontal, Theme.pagePadding)
+        .padding(.bottom, 16)
         .frame(maxHeight: .infinity, alignment: .top)
-        .background(Theme.C.bg)
+        .sheet8()
         .animation(Theme.spring, value: image)
         .task { image = await render() }
     }

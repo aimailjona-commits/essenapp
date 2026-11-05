@@ -195,80 +195,72 @@ extension AppStore {
 
 // MARK: 12 Abwechslung
 
-/// Einstellungen › Präferenzen › „Abwechslung“: Karten mit Steppern/Schalter.
+/// Einstellungen › Präferenzen › „Abwechslung“ (e.html): Zeilen mit Steppern, Gruppen mit Abstand, Schalter am Ende.
 struct VarietyForm: View {
     @Binding var rules: VarietyDTO
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            VStack(alignment: .leading, spacing: 4) {
-                Label { Text("Abwechslung").font(Theme.F.headline) } icon: { Text("🔄") }
-                Text("Der Planer hält diese Regeln ein – Verstöße zeigt der Plan-Kopf.").font(Theme.F.caption).foregroundStyle(Theme.C.text2)
+        VStack(alignment: .leading, spacing: 28) {
+            VStack(spacing: 0) {
+                row("Pasta höchstens", "pro Woche", $rules.maxPasta, 0...14) { "\($0)×" }
+                row("Reis höchstens", "pro Woche", $rules.maxRice, 0...14) { "\($0)×" }
+                row("Kartoffeln höchstens", "pro Woche", $rules.maxPotato, 0...14) { "\($0)×" }
             }
-            .padding(.top, 6)
-            card("🍝", "Beilagen pro Woche") {
-                row("Pasta höchstens", $rules.maxPasta, 0...14) { n in "\(n)×" }
-                row("Reis höchstens", $rules.maxRice, 0...14) { n in "\(n)×" }
-                row("Kartoffeln höchstens", $rules.maxPotato, 0...14) { n in "\(n)×" }
+            VStack(spacing: 0) {
+                row("Fisch mindestens", "pro Woche", $rules.minFish, 0...3) { "\($0)×" }
+                row("Vegetarische Tage", "pro Woche", $rules.veggieDays, 0...7) { $0 == 1 ? "1 Tag" : "\($0) Tage" }
+                row("Rotes Fleisch höchstens", "pro Woche", $rules.maxRedMeat, 0...14) { "\($0)×" }
             }
-            card("🐟", "Fisch, Fleisch, Gemüse") {
-                row("Fisch mindestens", $rules.minFish, 0...3) { n in "\(n)×" }
-                row("Vegetarische Tage", $rules.veggieDays, 0...7) { n in n == 1 ? "1 Tag" : "\(n) Tage" }
-                row("Rotes Fleisch höchstens", $rules.maxRedMeat, 0...14) { n in "\(n)×" }
-            }
-            card("🔁", "Wiederholungen") {
-                row("Gleiches Gericht frühestens nach", $rules.repeatWeeks, 1...12) { n in n == 1 ? "1 Woche" : "\(n) Wochen" }
-                Toggle("Gleiche Küche nicht zwei Tage hintereinander", isOn: $rules.noSameCuisineRow)
-                    .font(Theme.F.callout).tint(Theme.C.accent)
-                    .sensoryFeedback(.selection, trigger: rules.noSameCuisineRow)
+            VStack(spacing: 0) {
+                row("Gleiches Gericht", "frühestens nach", $rules.repeatWeeks, 1...12) { $0 == 1 ? "1 Wo." : "\($0) Wo." }
+                Toggle(isOn: $rules.noSameCuisineRow) {
+                    Text("Gleiche Küche nicht zwei Tage hintereinander").font(Theme.F.text(15, .bold, relativeTo: .body))
+                        .foregroundStyle(Theme.C.ink)
+                }
+                .toggleStyle(.v8)
+                .frame(minHeight: 52)
+                .overlay(alignment: .top) { Hairline() }
+                .sensoryFeedback(.selection, trigger: rules.noSameCuisineRow)
             }
         }
     }
 
-    private func card(_ emoji: String, _ title: String, @ViewBuilder content: () -> some View) -> some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Label { Text(title).font(Theme.F.callout).foregroundStyle(Theme.C.text2) } icon: { Text(emoji) }
-            content()
-        }
-        .padding(16)
-        .card()
-    }
-
-    private func row(_ title: String, _ value: Binding<Int>, _ range: ClosedRange<Int>, _ text: @escaping (Int) -> String) -> some View {
+    private func row(_ title: String, _ sub: String, _ value: Binding<Int>, _ range: ClosedRange<Int>, _ text: @escaping (Int) -> String) -> some View {
         HStack(spacing: 10) {
-            Text(title).font(Theme.F.callout)
+            VStack(alignment: .leading, spacing: 1) {
+                Text(title).font(Theme.F.text(15, .bold, relativeTo: .body)).foregroundStyle(Theme.C.ink)
+                Text(sub).font(Theme.F.text(12, .semibold, relativeTo: .caption)).foregroundStyle(Theme.C.ink2)
+            }
             Spacer(minLength: 4)
-            Text(text(value.wrappedValue)).font(.system(.headline, design: .rounded, weight: .bold)).monospacedDigit()
-                .contentTransition(.numericText())
-            Stepper(title, value: value, in: range).labelsHidden()
+            Stepper8(value: value, range: range, format: text)
+                .accessibilityLabel(title)
         }
-        .animation(Theme.spring, value: value.wrappedValue)
-        .sensoryFeedback(.selection, trigger: value.wrappedValue)
+        .frame(minHeight: 52)
+        .overlay(alignment: .top) { Hairline() }
     }
 }
 
-/// Chip im Plan-Kopf: „✓ Abwechslung“ oder „⚠ 2× Pasta“ (weitere Verstöße im Menü).
+/// Pille im Tageskopf (S2 Tag): „✓ Abwechslung“ (sage) oder „2× Pasta“ (warn); weitere Verstöße im Menü.
 struct VarietyChip: View {
     let check: VarietyCheckDTO
 
     var body: some View {
-        let color = check.ok ? Theme.C.success : Theme.C.warning
-        let label = HStack(spacing: 4) {
-            Text(check.ok ? "✓ Abwechslung" : "⚠ \(check.issues.first ?? "Abwechslung")")
+        let label = HStack(spacing: 5) {
+            Icon(check.ok ? .check : .bell, size: 15)
+            Text(check.ok ? "Abwechslung" : check.issues.first ?? "Abwechslung")
             if check.issues.count > 1 {
-                Text("+\(check.issues.count - 1)").foregroundStyle(Theme.C.text2)
-                Image(systemName: "chevron.down").font(.system(size: 9, weight: .bold))
+                Text("+\(check.issues.count - 1)").foregroundStyle(Theme.C.ink2)
             }
         }
-        .font(Theme.F.micro)
-        .foregroundStyle(check.ok ? Theme.C.success : Theme.C.text1)
-        .padding(.horizontal, 10).frame(height: 28)
-        .background(color.opacity(0.16), in: Capsule())
+        .font(Theme.F.text(13, .bold, relativeTo: .footnote))
+        .foregroundStyle(Theme.C.ink)
+        .padding(.horizontal, 12).frame(height: 30)
+        .background(check.ok ? Theme.C.sage : Theme.C.warn, in: Capsule())
         .frame(minHeight: 44)
         .contentShape(Rectangle())
         Group {
             if check.issues.count > 1 {
-                Menu { ForEach(check.issues, id: \.self) { i in Text("⚠ \(i)") } } label: { label }
+                Menu { ForEach(check.issues, id: \.self) { i in Text(i) } } label: { label }
             } else {
                 label
             }
@@ -280,28 +272,23 @@ struct VarietyChip: View {
 
 // MARK: 19 Reste
 
-/// Plan-Kopf: „Reste: 3 verplant, 1 übrig (Sahne 100 ml)“ mit Vorschlag.
+/// Wochenplan: „Reste: 3 verplant, 1 übrig (Sahne 100 ml)“ mit Vorschlag.
 struct LeftoversCard: View {
     let leftovers: LeftoversDTO
 
     var body: some View {
         let left = leftovers.left
-        let rest = left.isEmpty ? "nichts übrig" : "\(left.count) übrig (\(left.map { l in "\(l.name) \(qty(l.amount, l.unit))" }.joined(separator: ", ")))"
-        HStack(alignment: .top, spacing: 12) {
-            Text("♻︎").font(.system(size: 20, weight: .bold)).foregroundStyle(Theme.C.success)
-                .frame(width: 40, height: 40)
-                .background(Theme.C.successSoft, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-                .accessibilityHidden(true)
-            VStack(alignment: .leading, spacing: 4) {
-                Text("Reste: \(leftovers.planned) verplant, \(rest)").font(Theme.F.callout)
-                ForEach(left, id: \.self) { l in
-                    Text("\(l.name): \(l.suggestion)").font(Theme.F.micro).foregroundStyle(Theme.C.text2)
-                }
+        let rest = left.isEmpty ? "nichts übrig" : "\(left.count) übrig"
+        VStack(alignment: .leading, spacing: 0) {
+            IRow(name: "Reste: \(leftovers.planned) verplant, \(rest)", sub: left.isEmpty ? nil : left.map { "\($0.name) \(qty($0.amount, $0.unit))" }.joined(separator: ", "),
+                 tint: Theme.C.sage) {
+                Icon(.refresh, size: 22).foregroundStyle(Theme.C.ink)
             }
-            Spacer(minLength: 0)
+            ForEach(left, id: \.self) { l in
+                Text("\(l.name): \(l.suggestion)").font(Theme.F.text(13, .semibold, relativeTo: .footnote)).foregroundStyle(Theme.C.ink2)
+                    .padding(.leading, Theme.S.rowCircle + 14).padding(.bottom, 6)
+            }
         }
-        .padding(14)
-        .card(radius: Theme.R.tile)
         .accessibilityElement(children: .combine)
     }
 }
@@ -337,58 +324,80 @@ struct RestsConfirmView: View {
 
     var body: some View {
         let chosen = rows.filter { r in r.checked && !r.name.trimmingCharacters(in: .whitespaces).isEmpty }
-        VStack(alignment: .leading, spacing: 12) {
-            Text("Reste in den Vorrat?").font(Theme.F.title)
+        VStack(alignment: .leading, spacing: 0) {
+            HStack(alignment: .top) {
+                Text("Reste in den Vorrat?").font(Theme.F.t2)
+                Spacer()
+                CloseButton(action: done)
+            }
             Text("Von angebrochenen Packungen bleibt etwas übrig – Menge prüfen, dann übernehmen.")
-                .font(Theme.F.caption).foregroundStyle(Theme.C.text2)
+                .font(Theme.F.text(14, .semibold, relativeTo: .subheadline)).foregroundStyle(Theme.C.ink2)
+                .lineSpacing(14 * 0.45 - 4).padding(.trailing, 20).padding(.top, 4)
             ScrollView {
-                VStack(spacing: 8) {
-                    ForEach($rows) { $r in row($r).appear() }
+                VStack(spacing: 0) {
+                    ForEach($rows) { $r in row($r) }
                 }
+                .padding(.top, 14)
             }
             .scrollDismissesKeyboard(.immediately)
-            Button(action: save) {
-                Text(saving ? "Übernehme …" : chosen.isEmpty ? "Nichts ausgewählt" : "\(chosen.count) in den Vorrat").contentTransition(.numericText())
-            }
-            .buttonStyle(PrimaryButtonStyle())
-            .disabled(chosen.isEmpty || saving).opacity(chosen.isEmpty ? 0.5 : 1)
-            Button("Nichts übrig", action: done).buttonStyle(SecondaryButtonStyle())
+            PlanBusyButton(title: chosen.isEmpty ? "Nichts ausgewählt" : "\(chosen.count) in den Vorrat", busy: saving, disabled: chosen.isEmpty, action: save)
+                .padding(.top, 18)
+            OutlineButton(title: "Nichts übrig", action: done).padding(.top, 10).padding(.bottom, 18)
         }
-        .padding(Theme.pagePadding)
+        .padding(.horizontal, Theme.pagePadding)
         .frame(maxHeight: .infinity, alignment: .top)
-        .background(Theme.C.bg)
+        .edgeForm(.quarter, Theme.C.sage, width: 130, height: 130, right: 0, top: -33)
         .transition(.opacity)
     }
 
+    /// Illustration für bekannte Zutaten, sonst Box-Icon.
+    private func ill(_ name: String) -> String? {
+        let n = name.lowercased()
+        let map = [("tomate", "tomato"), ("knoblauch", "garlic"), ("basilikum", "basil"), ("spaghetti", "pasta"), ("pasta", "pasta"), ("nudel", "pasta")]
+        return map.first { n.contains($0.0) }?.1
+    }
+
     private func row(_ r: Binding<RestRow>) -> some View {
-        let probe = PantryDTO(id: 0, name: r.wrappedValue.name, ingredientKey: "", amount: nil, unit: "", bestBefore: r.wrappedValue.bestBefore,
+        let v = r.wrappedValue
+        let probe = PantryDTO(id: 0, name: v.name, ingredientKey: "", amount: nil, unit: "", bestBefore: v.bestBefore,
                               isBasic: false, source: "rest", updatedAt: "")
-        return HStack(spacing: 10) {
+        return HStack(spacing: 12) {
             Button { withAnimation(Theme.spring) { r.wrappedValue.checked.toggle() } } label: {
-                Image(systemName: r.wrappedValue.checked ? "checkmark.circle.fill" : "circle")
-                    .font(.system(size: 24)).foregroundStyle(r.wrappedValue.checked ? Theme.C.accent : Theme.C.text3)
-                    .contentTransition(.symbolEffect(.replace))
-                    .frame(width: 44, height: 44)
+                CheckCircle(on: v.checked).frame(width: 44, height: 44).contentShape(Rectangle())
             }
-            .buttonStyle(PressableStyle())
-            .sensoryFeedback(.selection, trigger: r.wrappedValue.checked)
-            .accessibilityLabel(r.wrappedValue.checked ? "\(r.wrappedValue.name) übernehmen" : "\(r.wrappedValue.name) nicht übernehmen")
-            Text(probe.emoji).font(.system(size: 20))
-                .frame(width: 40, height: 40)
-                .background(Theme.hue(category: probe.category).tint, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-            VStack(alignment: .leading, spacing: 4) {
-                Text(r.wrappedValue.name).font(.system(.body, weight: .semibold)).lineLimit(1)
-                if let d = probe.daysLeft { ExpiryChip(days: d) }
+            .buttonStyle(.plain)
+            .sensoryFeedback(.selection, trigger: v.checked)
+            .accessibilityLabel(v.checked ? "\(v.name) übernehmen" : "\(v.name) nicht übernehmen")
+            ZStack {
+                if let i = ill(v.name) { Ill(i).frame(width: 46, height: 46) } else { Icon(.box, size: 20) }
             }
+            .frame(width: 42, height: 42)
+            .background(Theme.hue(category: probe.category).tint, in: Circle())
+            .opacity(v.checked ? 1 : 0.5)
+            VStack(alignment: .leading, spacing: 3) {
+                Text(v.name).font(Theme.F.text(15, .bold, relativeTo: .body)).lineLimit(1)
+                if let d = probe.daysLeft {
+                    Text(d >= 365 ? "\(d / 365) \(d >= 730 ? "Jahre" : "Jahr")" : d == 1 ? "1 Tag" : "\(d) Tage")
+                        .font(Theme.F.text(11, .bold, relativeTo: .caption2)).foregroundStyle(Theme.C.ink)
+                        .padding(.horizontal, 8).frame(height: 20)
+                        .background(d <= 3 ? Theme.C.warn : Theme.C.sage, in: Capsule())
+                }
+            }
+            .foregroundStyle(v.checked ? Theme.C.ink : Theme.C.ink3)
             Spacer(minLength: 4)
-            TextField("Menge", text: r.amount).keyboardType(.decimalPad)
-                .font(Theme.F.callout).monospacedDigit().multilineTextAlignment(.center)
-                .frame(width: 64, height: 36).background(Theme.C.surface, in: Capsule())
-            Text(r.wrappedValue.unit.isEmpty ? "" : Labels.unit(r.wrappedValue.unit)).font(Theme.F.caption).foregroundStyle(Theme.C.text2)
+            HStack(spacing: 3) {
+                TextField("Menge", text: r.amount).keyboardType(.decimalPad).multilineTextAlignment(.trailing)
+                    .fixedSize()
+                if !v.unit.isEmpty { Text(Labels.unit(v.unit)) }
+            }
+            .font(Theme.F.text(14, .bold, relativeTo: .subheadline)).monospacedDigit()
+            .foregroundStyle(v.checked ? Theme.C.ink : Theme.C.ink3)
+            .padding(.horizontal, 14).frame(minWidth: 76, minHeight: 38)
+            .background(Theme.C.card, in: Capsule())
+            .overlay(Capsule().strokeBorder(Theme.C.line, lineWidth: Theme.S.hair))
         }
-        .padding(10)
-        .card(radius: Theme.R.tile)
-        .opacity(r.wrappedValue.checked ? 1 : 0.6)
+        .frame(minHeight: 64)
+        .overlay(alignment: .top) { Hairline() }
     }
 
     private func save() {
@@ -410,42 +419,6 @@ struct RestsConfirmView: View {
     }
 }
 
-// MARK: Badges am Gericht (15, 19, 24)
-
-/// Unter einem Plan-Gericht: „🥡 Lunchbox · Jona“, „♻︎ Rest von Mo“, „+4 Gäste“ (antippen → Gäste-Sheet).
-struct MealBadges: View {
-    @Environment(AppStore.self) private var store
-    let meal: MealDTO
-    var onGuests: (() -> Void)?
-    var guestsOnly = false  // DayCard (v3) zeigt Lunchbox und Reste schon in Kopf und Infozeile
-
-    var body: some View {
-        let days = guestsOnly ? [] : (meal.rests ?? []).map(\.fromDay).filter { d in Labels.days.indices.contains(d) }.uniqued()
-        let guests = meal.guests ?? 0
-        let lunch = meal.mealType == "lunchbox" && !guestsOnly
-        if lunch || !days.isEmpty || guests > 0 || onGuests != nil {
-            let names = store.profiles.filter { p in meal.portions.contains { x in x.memberId == p.memberId } }.map(\.name)
-            FlowLayout(spacing: 6) {
-                if lunch { DealBadge(text: names.isEmpty ? "🥡 Lunchbox" : "🥡 Lunchbox · \(names.joined(separator: ", "))", style: .ok) }
-                ForEach(days, id: \.self) { d in DealBadge(text: "♻︎ Rest von \(Labels.days[d])", style: .ok) }
-                if let onGuests {
-                    Button(action: onGuests) {
-                        Label(guests > 0 ? "+\(guests) Gäste" : "Gäste", systemImage: "person.badge.plus")
-                            .font(Theme.F.micro).foregroundStyle(guests > 0 ? Theme.C.accentDeep : Theme.C.text1)
-                            .padding(.horizontal, 10).frame(height: 26)
-                            .background(guests > 0 ? Theme.C.accentSoft : Theme.C.surface, in: Capsule())
-                            .frame(minHeight: 44).contentShape(Rectangle())
-                    }
-                    .buttonStyle(PressableStyle())
-                    .accessibilityLabel(guests > 0 ? "\(guests) Gäste, ändern" : "Gäste hinzufügen")
-                } else if guests > 0 {
-                    DealBadge(text: "+\(guests) Gäste", style: .soft)
-                }
-            }
-        }
-    }
-}
-
 // MARK: 15 Gäste
 
 /// S28 „Gäste hinzufügen“ (aus dem Wochenplan): Stepper 0–20, Mengen + Liste werden ohne KI angepasst.
@@ -462,53 +435,69 @@ struct GuestsSheet: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            HStack(alignment: .top) {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Gäste hinzufügen").font(Theme.F.title)
-                    Text("\(Labels.dayNames[max(0, min(meal.day, 6))]) · \(Labels.meal(meal.mealType)): „\(meal.recipe.title)“")
-                        .font(Theme.F.caption).foregroundStyle(Theme.C.text2).lineLimit(2)
+        ScrollView {
+            VStack(alignment: .leading, spacing: 0) {
+                HStack(alignment: .top) {
+                    Text("Gäste hinzufügen").font(Theme.F.t2)
+                    Spacer()
+                    CloseButton { dismiss() }
                 }
-                Spacer()
-                RoundIconButton(systemName: "xmark", label: "Schließen") { dismiss() }
-            }
-            HStack(spacing: 12) {
-                Text("👥").font(.system(size: 26)).frame(width: 52, height: 52)
-                    .background(Theme.C.accentSoft, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
-                HStack(alignment: .firstTextBaseline, spacing: 6) {
-                    Text("+\(count)").font(.system(size: 40, weight: .bold, design: .rounded)).monospacedDigit()
-                        .contentTransition(.numericText())
-                    Text(count == 1 ? "Gast" : "Gäste").font(Theme.F.callout).foregroundStyle(Theme.C.text2)
+                Text("\(Labels.dayNames[max(0, min(meal.day, 6))]) · \(Labels.meal(meal.mealType)): „\(meal.recipe.title)“")
+                    .font(Theme.F.text(14, .semibold, relativeTo: .subheadline)).foregroundStyle(Theme.C.ink2).lineLimit(2)
+                PlanStat(label: "Gäste", icon: .users) { BigNumber("+\(count)", size: 96) }.padding(.top, 26)
+                HStack {
+                    Text("0 bis 20").font(Theme.F.text(13, .semibold, relativeTo: .footnote)).foregroundStyle(Theme.C.ink2)
+                    Spacer()
+                    bigStepper
                 }
-                Spacer()
-                Stepper("Gäste", value: $count, in: 0...20).labelsHidden()
-            }
-            .padding(16)
-            .card()
-            .animation(Theme.spring, value: count)
-            .sensoryFeedback(.selection, trigger: count)
-            Text("Mengen, Kosten und Einkaufsliste werden angepasst – ohne neue KI-Planung.")
-                .font(Theme.F.micro).foregroundStyle(Theme.C.text2)
-            Button(saving ? "Passe an …" : "Übernehmen") {
-                saving = true
-                Task {
-                    defer { saving = false }
-                    guard await store.setGuests(meal, count) else { return }
-                    store.flash(count == 0 ? "Gäste entfernt" : "Für +\(count) \(count == 1 ? "Gast" : "Gäste") angepasst")
-                    dismiss()
+                .padding(.top, 16)
+                Text("Mengen, Kosten und Einkaufsliste werden angepasst – ohne neue KI-Planung.")
+                    .font(Theme.F.text(14, .semibold, relativeTo: .subheadline)).foregroundStyle(Theme.C.ink2)
+                    .lineSpacing(14 * 0.5 - 4).padding(.top, 18)
+                PlanBusyButton(title: "Übernehmen", busy: saving, disabled: count == (meal.guests ?? 0)) {
+                    saving = true
+                    Task {
+                        defer { saving = false }
+                        guard await store.setGuests(meal, count) else { return }
+                        store.flash(count == 0 ? "Gäste entfernt" : "Für +\(count) \(count == 1 ? "Gast" : "Gäste") angepasst")
+                        dismiss()
+                    }
                 }
+                .padding(.top, 18)
             }
-            .buttonStyle(PrimaryButtonStyle())
-            .disabled(saving || count == (meal.guests ?? 0))
-            .opacity(count == (meal.guests ?? 0) ? 0.5 : 1)
+            .padding(.horizontal, Theme.pagePadding)
+            .padding(.bottom, 24)
         }
-        .padding(Theme.pagePadding)
-        .frame(maxHeight: .infinity, alignment: .top)
-        .background(Theme.C.bg)
+        .edgeForm(.circle, Theme.C.blue1, width: 250, height: 250, right: -90, top: 63)  // Mockup top 96 − 33
+        .sheet8()
+        .animation(Theme.spring, value: count)
+    }
+
+    /// Großer Stepper (S28): Höhe 48, Knöpfe 38, Zahl 18.
+    private var bigStepper: some View {
+        HStack(spacing: 20) {
+            knob(.minus, "weniger Gäste") { count = max(0, count - 1) }
+            Text("\(count)").font(Theme.F.text(18, .extrabold, relativeTo: .title3)).monospacedDigit().contentTransition(.numericText())
+            knob(.plus, "mehr Gäste") { count = min(20, count + 1) }
+        }
+        .padding(.horizontal, 5)
+        .frame(height: 48)
+        .overlay(Capsule().strokeBorder(Theme.C.line, lineWidth: Theme.S.hair))
+        .sensoryFeedback(.selection, trigger: count)
+        .accessibilityElement(children: .contain)
+    }
+
+    private func knob(_ icon: Icon8, _ label: String, _ action: @escaping () -> Void) -> some View {
+        Button { withAnimation(Theme.spring) { action() } } label: {
+            Icon(icon, size: 18).frame(width: 38, height: 38).background(Theme.C.card, in: Circle())
+                .frame(minWidth: 44, minHeight: 44).contentShape(Circle())
+        }
+        .buttonStyle(PressableStyle())
+        .accessibilityLabel(label)
     }
 }
 
-/// Plan-Generator: „+ Gäste“ je Tag/Mahlzeit; Tagespillen zeigen „+4“. Optional „Gäste-Budget extra“.
+/// Plan-Generator › Mehr Optionen › Gäste: Tageskreise mit „+4“, je Mahlzeit Stepper, „Gäste-Budget extra“.
 struct GuestPlanner: View {
     @Binding var guests: [String: Int]  // "Tag|Mahlzeit" → Anzahl
     @Binding var extraEuro: Double?  // nil = aus dem Wochenbudget
@@ -529,129 +518,90 @@ struct GuestPlanner: View {
     var body: some View {
         let selected = day.flatMap { d in days.contains(d) ? d : nil } ?? days.last ?? 0
         let total = Self.slots(guests, days: days, meals: meals).map(\.count).reduce(0, +)
-        VStack(alignment: .leading, spacing: 10) {
-            Label { Text("Gäste").font(Theme.F.headline) } icon: { Text("👥") }
-            Text("Tag wählen, dann „+ Gäste“ je Mahlzeit – Mengen und Kosten wachsen mit.")
-                .font(Theme.F.caption).foregroundStyle(Theme.C.text2)
-            HStack(spacing: 6) {
+        VStack(alignment: .leading, spacing: 0) {
+            HStack(spacing: 0) {
                 ForEach(0..<7, id: \.self) { d in
-                    let on = d == selected
-                    let active = days.contains(d)
-                    let n = meals.map { m in guests[Self.key(d, m)] ?? 0 }.reduce(0, +)
-                    Button { withAnimation(Theme.spring) { day = d } } label: {
-                        Text(Labels.days[d]).font(.system(.caption, design: .rounded, weight: .bold))
-                            .frame(maxWidth: .infinity, minHeight: 38)
-                            .foregroundStyle(on ? Theme.C.onAction : Theme.C.text1)
-                            .background(on ? Theme.C.action : Theme.C.surface, in: Circle())
-                            .overlay(alignment: .topTrailing) {
-                                if n > 0 && active {
-                                    Text("+\(n)").font(.system(size: 10, weight: .bold, design: .rounded)).foregroundStyle(.white)
-                                        .padding(.horizontal, 5).frame(height: 18)
-                                        .background(Theme.C.accent, in: Capsule())
-                                        .offset(x: 6, y: -6)
-                                        .transition(.scale.combined(with: .opacity))
-                                }
-                            }
-                    }
-                    .buttonStyle(PressableStyle())
-                    .disabled(!active).opacity(active ? 1 : 0.35)
-                    .accessibilityLabel("\(Labels.dayNames[d])\(n > 0 ? ", \(n) Gäste" : "")")
-                    .accessibilityAddTraits(on ? .isSelected : [])
+                    if d > 0 { Spacer(minLength: 2) }
+                    dayCircle(d, selected: selected)
                 }
             }
             .sensoryFeedback(.selection, trigger: selected)
             ForEach(meals, id: \.self) { m in
                 let k = Self.key(selected, m)
-                let n = guests[k] ?? 0
-                HStack(spacing: 10) {
-                    Text(Labels.meal(m)).font(Theme.F.callout)
+                HStack {
+                    Text("\(Labels.dayNames[selected]) · \(Labels.meal(m))").font(Theme.F.text(15, .bold, relativeTo: .body))
                     Spacer()
-                    Text(n == 0 ? "keine Gäste" : "+\(n) \(n == 1 ? "Gast" : "Gäste")")
-                        .font(Theme.F.caption).monospacedDigit().foregroundStyle(n == 0 ? Theme.C.text3 : Theme.C.accentDeep)
-                        .contentTransition(.numericText())
-                    Stepper("Gäste \(Labels.meal(m))", value: Binding(get: { n }, set: { v in guests[k] = v }), in: 0...20).labelsHidden()
+                    Stepper8(value: Binding(get: { guests[k] ?? 0 }, set: { v in guests[k] = v }), range: 0...20) { $0 == 0 ? "0" : "+\($0)" }
+                        .accessibilityLabel("Gäste \(Labels.dayNames[selected]) \(Labels.meal(m))")
                 }
-                .animation(Theme.spring, value: n)
-                .sensoryFeedback(.selection, trigger: n)
+                .frame(minHeight: Theme.S.row)
             }
             if total > 0 {
-                Divider()
-                Toggle("Gäste-Budget extra", isOn: Binding(get: { extraEuro != nil }, set: { on in
-                    withAnimation(Theme.spring) { extraEuro = on ? 20 : nil }
-                }))
-                .font(Theme.F.callout).tint(Theme.C.accent)
-                if let euroValue = extraEuro {
-                    HStack {
-                        Text("+ \(euro(Int(euroValue) * 100))").font(.system(.title3, design: .rounded, weight: .bold)).monospacedDigit()
+                Toggle(isOn: Binding(get: { extraEuro != nil }, set: { on in withAnimation(Theme.spring) { extraEuro = on ? 20 : nil } })) {
+                    VStack(alignment: .leading, spacing: 1) {
+                        Text("Gäste-Budget extra").font(Theme.F.text(15, .bold, relativeTo: .body)).foregroundStyle(Theme.C.ink)
+                        Text(extraEuro.map { "\(euro(Int($0) * 100)) zusätzlich" } ?? "aus dem Wochenbudget")
+                            .font(Theme.F.text(12, .semibold, relativeTo: .caption)).foregroundStyle(Theme.C.ink2)
                             .contentTransition(.numericText())
-                        Spacer()
                     }
-                    Slider(value: Binding(get: { euroValue }, set: { v in extraEuro = v }), in: 5...100, step: 5).tint(Theme.C.accent)
-                } else {
-                    Text("Ohne Extra-Budget zahlen die Gäste aus dem Wochenbudget.").font(Theme.F.micro).foregroundStyle(Theme.C.text2)
+                }
+                .toggleStyle(.v8)
+                .frame(minHeight: Theme.S.row)
+                .overlay(alignment: .top) { Hairline() }
+                if let e = extraEuro {
+                    HStack {
+                        Text("Betrag").font(Theme.F.text(15, .bold, relativeTo: .body))
+                        Spacer()
+                        Stepper8(value: Binding(get: { Int(e) / 5 }, set: { v in extraEuro = Double(v * 5) }), range: 1...20) { "\($0 * 5) €" }
+                            .accessibilityLabel("Gäste-Budget")
+                    }
+                    .frame(minHeight: Theme.S.row)
+                    .transition(.opacity)
                 }
             }
         }
-        .padding(16)
-        .card()
         .animation(Theme.spring, value: total)
     }
-}
 
-// MARK: 17 + 25 Generator-Zusätze, Start-Banner
-
-/// Plan-Generator: „Diese Woche im Angebot: …“ (Top-3, 17).
-struct TopOffersHint: View {
-    let offers: [OfferDTO]
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Label { Text("Diese Woche im Angebot").font(Theme.F.headline) } icon: { Text("🏷️") }
-            Text("Diese Woche im Angebot: \(offers.map(\.title).joined(separator: ", "))")
-                .font(Theme.F.caption).foregroundStyle(Theme.C.text2)
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 10) {
-                    ForEach(offers) { o in
-                        MiniOffer(offer: o).overlay(alignment: .topLeading) {
-                            if let d = o.discount { DealBadge(text: "−\(d) %").padding(6) }
-                        }
+    private func dayCircle(_ d: Int, selected: Int) -> some View {
+        let on = d == selected
+        let active = days.contains(d)
+        let n = meals.map { m in guests[Self.key(d, m)] ?? 0 }.reduce(0, +)
+        return Button { withAnimation(Theme.spring) { day = d } } label: {
+            Text(Labels.days[d]).font(Theme.F.text(13, .extrabold, relativeTo: .footnote))
+                .foregroundStyle(on ? Theme.C.onInk : Theme.C.ink2)
+                .frame(width: 38, height: 38)
+                .background(on ? Theme.C.ink : .clear, in: Circle())
+                .overlay { if !on { Circle().strokeBorder(Theme.C.line, lineWidth: Theme.S.hair) } }
+                .overlay(alignment: .topTrailing) {
+                    if n > 0 && active {
+                        Text("+\(n)").font(Theme.F.text(10, .extrabold, relativeTo: .caption2)).foregroundStyle(Theme.C.ink)
+                            .padding(.horizontal, 5).frame(height: 18)
+                            .background(Theme.C.blue, in: Capsule())
+                            .offset(x: 9, y: -7)
+                            .transition(.scale.combined(with: .opacity))
                     }
                 }
-                .padding(.horizontal, 2)
-            }
+                .frame(minWidth: 40, minHeight: 44)
+                .contentShape(Circle())
         }
-        .padding(16)
-        .card()
+        .buttonStyle(PressableStyle())
+        .disabled(!active).opacity(active ? 1 : 0.4)
+        .accessibilityLabel("\(Labels.dayNames[d])\(n > 0 ? ", \(n) Gäste" : "")")
+        .accessibilityAddTraits(on ? .isSelected : [])
     }
 }
 
-/// Plan-Generator: Special-Vorlage wählen (Festtagsmenü, Plätzchen-Back-Plan, Grillparty).
-struct SpecialPicker: View {
-    let specials: [SpecialDTO]
-    @Binding var selected: String?
+// MARK: 25 Specials, Start-Banner
 
+/// Plan-Generator: Beschreibung der Special-Vorlagen (Festtagsmenü, Plätzchen-Back-Plan, Grillparty).
+enum SpecialPicker {
     static let templates = ["festtagsmenue": "Vorspeise, Hauptgang und Dessert am Tag des Anlasses",
                             "plaetzchen": "Backen am Samstag und Sonntag",
                             "grillparty": "Grillgut mit Beilagen am Samstagabend"]
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Label { Text("Special").font(Theme.F.headline) } icon: { Text("✨") }
-            ChipFlow(items: [("", "Ohne")] + specials.map { s in (s.key, "\(s.emoji) \(s.templateName)") },
-                     selected: [selected ?? ""], color: Theme.C.accent) { k in selected = k.isEmpty ? nil : k }
-            if let s = specials.first(where: { s in s.key == selected }) {
-                Text("\(s.name) · \(Self.templates[s.template] ?? s.templateName)")
-                    .font(Theme.F.caption).foregroundStyle(Theme.C.text2)
-                    .transition(.opacity)
-            }
-        }
-        .padding(16)
-        .card()
-        .animation(Theme.spring, value: selected)
-    }
 }
 
-/// Start-Banner 14 Tage vor einem Anlass (25): „🎄 Weihnachten in 12 Tagen – Menü planen?“ → Generator mit Vorlage.
+/// Start-Zeile 14 Tage vor einem Anlass (25): „Weihnachten in 12 Tagen – Menü planen?“ → Generator mit Vorlage.
 struct SpecialBanner: View {
     let banner: SpecialDTO
     let open: () -> Void
@@ -660,20 +610,12 @@ struct SpecialBanner: View {
         let text = banner.text ?? banner.name
         let title = text.hasPrefix(banner.emoji) ? String(text.dropFirst(banner.emoji.count)).trimmingCharacters(in: .whitespaces) : text
         Button(action: open) {
-            HStack(spacing: 14) {
-                Text(banner.emoji).font(.system(size: 26))
-                    .frame(width: 52, height: 52)
-                    .background(Theme.C.accentSoft, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(title).font(Theme.F.callout).multilineTextAlignment(.leading)
-                    Text("\(banner.templateName) im Plan-Generator").font(Theme.F.micro).foregroundStyle(Theme.C.text2)
-                }
-                Spacer(minLength: 0)
-                Image(systemName: "chevron.right").font(.system(size: 12, weight: .bold)).foregroundStyle(Theme.C.text3)
+            IRow(name: title, sub: "\(banner.templateName) im Plan-Generator", tint: Theme.C.sand) {
+                Icon(.star, size: 22).foregroundStyle(Theme.C.ink)
+            } trail: {
+                Icon(.chev, size: 18).foregroundStyle(Theme.C.ink3)
             }
-            .foregroundStyle(Theme.C.text1)
-            .padding(16)
-            .card()
+            .foregroundStyle(Theme.C.ink)
         }
         .buttonStyle(PressableStyle())
         .accessibilityLabel(text)
@@ -697,46 +639,52 @@ struct NoMoodSheet: View {
     @State private var planFor: RecipeDTO?
     @State private var moved: MealDTO?  // ursprüngliches Gericht → „Auf morgen verschieben?“
     @State private var moveDay = 0
-    @State private var spin = false
-    @State private var step = 0
 
     var body: some View {
         NavigationStack {
-            VStack(alignment: .leading, spacing: 12) {
+            VStack(alignment: .leading, spacing: 0) {
                 HStack(alignment: .top) {
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("Keine Lust?").font(Theme.F.title)
-                        Text("Schnell & ohne Einkauf · höchstens 15 min").font(Theme.F.caption).foregroundStyle(Theme.C.text2)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Keine Lust?").font(Theme.F.t2)
+                        Text("Schnell & ohne Einkauf · höchstens 15 min").font(Theme.F.text(14, .semibold, relativeTo: .subheadline))
+                            .foregroundStyle(Theme.C.ink2)
                     }
                     Spacer()
-                    RoundIconButton(systemName: "xmark", label: "Schließen") { dismiss() }
+                    CloseButton { dismiss() }
                 }
-                .padding(.horizontal, Theme.pagePadding).padding(.top, 20)
+                .padding(.horizontal, Theme.pagePadding)
                 if pages.isEmpty {
-                    first.padding(.horizontal, Theme.pagePadding)
+                    first.padding(.horizontal, Theme.pagePadding).padding(.top, 20)
                 } else {
                     TabView(selection: $page) {
                         ForEach(pages.indices, id: \.self) { i in
                             ScrollView {
-                                VStack(spacing: 12) {
-                                    ForEach(Array(pages[i].enumerated()), id: \.element.id) { j, idea in card(idea).appear(delay: Double(j) * 0.08) }
+                                VStack(spacing: 0) {
+                                    ForEach(pages[i]) { idea in card(idea) }
                                 }
-                                .padding(.horizontal, Theme.pagePadding).padding(.bottom, 12)
+                                .padding(.horizontal, Theme.pagePadding).padding(.top, 14)
                             }
                             .tag(i)
                         }
                         more.padding(.horizontal, Theme.pagePadding).tag(pages.count)
                     }
                     .tabViewStyle(.page(indexDisplayMode: .never))
-                    Text(page < pages.count ? "Wischen für 3 weitere  ›" : "‹  zurück zu den Ideen")
-                        .font(Theme.F.caption).foregroundStyle(Theme.C.text2)
-                        .frame(maxWidth: .infinity).padding(.bottom, 12)
+                    HStack(spacing: 12) {
+                        Dots8(count: pages.count + 1, current: page)
+                        Text(page < pages.count ? "Wischen für 3 weitere ›" : "‹ zurück zu den Ideen")
+                            .font(Theme.F.text(14, .semibold, relativeTo: .subheadline)).foregroundStyle(Theme.C.ink2)
+                    }
+                    .frame(maxWidth: .infinity, minHeight: 52, alignment: .leading)
+                    .overlay(alignment: .top) { Hairline() }
+                    .padding(.horizontal, Theme.pagePadding).padding(.bottom, 12)
                 }
             }
             .frame(maxHeight: .infinity, alignment: .top)
+            .edgeForm(.circle, Theme.C.blue1, width: 230, height: 230, left: -100, top: 63)  // Mockup top 96 − 33
             .background(Theme.C.bg)
             .toolbar(.hidden, for: .navigationBar)
         }
+        .sheet8()
         .sensoryFeedback(.selection, trigger: page)
         .task { if pages.isEmpty && !loading { await load() } }
         .onChange(of: page) { _, p in
@@ -755,7 +703,7 @@ struct NoMoodSheet: View {
             Text("„\(m.recipe.title)“ – die Zutaten sind schon da. Spätere Gerichte rücken einen Tag weiter.")
         }
         .sheet(item: $planFor) { r in
-            PlanSlotSheet(recipeId: r.id, title: r.title).presentationDetents([.medium, .large]).presentationCornerRadius(Theme.R.sheet)
+            PlanSlotSheet(recipeId: r.id, title: r.title).presentationDetents([.medium, .large])
         }
     }
 
@@ -763,34 +711,39 @@ struct NoMoodSheet: View {
         moveDay == (moved?.day ?? -2) + 1 ? "Auf morgen verschieben?" : "Auf \(Labels.dayNames[max(0, min(moveDay, 6))]) verschieben?"
     }
 
+    /// Leer/Fehler (v8): Illustration, t2, Text, Knopf.
+    private func note(_ ill: String, _ title: String, _ text: String, button: String? = nil, _ action: @escaping () -> Void = {}) -> some View {
+        VStack(spacing: 10) {
+            Ill(ill).frame(width: 150, height: 150)
+            Text(title).font(Theme.F.t2).multilineTextAlignment(.center)
+            Text(text).font(Theme.F.text(14, .semibold, relativeTo: .subheadline)).foregroundStyle(Theme.C.ink2).multilineTextAlignment(.center)
+            if let button { PrimaryButton(title: button, action: action).padding(.top, 8) }
+        }
+        .frame(maxWidth: .infinity)
+    }
+
     /// Erste Seite: Laden, Fehler, leer.
     @ViewBuilder private var first: some View {
         if empty {
-            EmptyState(emoji: "🧺", title: "Vorrat ist leer", text: "Trag ein, was du zu Hause hast – dann finden wir schnelle Ideen ohne Einkauf.")
+            note("fridge", "Vorrat ist leer", "Trag ein, was du zu Hause hast – dann finden wir schnelle Ideen ohne Einkauf.")
         } else if let error {
-            ErrorState(message: error) { Task { await load() } }
+            note("binoculars", "Das hat nicht geklappt", error, button: "Erneut versuchen") { Task { await load() } }
         } else if exhausted {
-            EmptyState(emoji: "🤔", title: "Keine passende Idee", text: "Mit dem, was da ist, geht gerade nichts in 15 Minuten.")
+            note("binoculars", "Keine passende Idee", "Mit dem, was da ist, geht gerade nichts in 15 Minuten.")
         } else {
-            let steps = ["Vorrat ansehen", "Ideen sammeln", "Prüfen, ob alles da ist"]
-            VStack(spacing: 18) {
-                Plate(url: nil, size: 140, seed: "keine lust")
-                    .rotationEffect(.degrees(spin ? 360 : 0))
-                    .onAppear { withAnimation(.linear(duration: 6).repeatForever(autoreverses: false)) { spin = true } }
-                VStack(alignment: .leading, spacing: 12) {
-                    ForEach(Array(steps.enumerated()), id: \.offset) { i, s in
-                        Label(s, systemImage: i < step ? "checkmark.circle.fill" : "circle.dotted")
-                            .font(Theme.F.callout).foregroundStyle(i <= step ? Theme.C.text1 : Theme.C.text3)
-                            .contentTransition(.symbolEffect(.replace))
+            VStack(spacing: 0) {
+                ForEach(0..<3, id: \.self) { _ in
+                    HStack(spacing: 16) {
+                        Circle().fill(Theme.C.line).frame(width: 92, height: 92)
+                        VStack(alignment: .leading, spacing: 8) {
+                            Skeleton8(width: 160, height: 20)
+                            Skeleton8(width: 120, height: 12)
+                            Hop3().scaleEffect(0.8).frame(width: 110, alignment: .leading)
+                        }
+                        Spacer(minLength: 0)
                     }
-                }
-                .padding(18).frame(maxWidth: .infinity, alignment: .leading).card()
-            }
-            .padding(.top, 12)
-            .task {
-                while !Task.isCancelled && step < 2 {
-                    try? await Task.sleep(for: .seconds(2.5))
-                    withAnimation(Theme.spring) { step += 1 }
+                    .padding(.vertical, 14)
+                    .overlay(alignment: .top) { Hairline() }
                 }
             }
         }
@@ -800,43 +753,40 @@ struct NoMoodSheet: View {
     @ViewBuilder private var more: some View {
         VStack(spacing: 14) {
             if let error {
-                ErrorState(message: error) { Task { await load() } }
+                note("binoculars", "Das hat nicht geklappt", error, button: "Erneut versuchen") { Task { await load() } }
             } else if exhausted {
-                EmptyState(emoji: "🤔", title: "Mehr fällt uns gerade nicht ein", text: "Wisch zurück und nimm eine der Ideen.")
+                note("binoculars", "Mehr fällt uns gerade nicht ein", "Wisch zurück und nimm eine der Ideen.")
             } else {
-                SkeletonCard(height: 150)
-                SkeletonCard(height: 150)
-                Text("Weitere Ideen …").font(Theme.F.caption).foregroundStyle(Theme.C.text2)
+                Hop3().padding(.top, 40)
+                Text("Weitere Ideen …").font(Theme.F.text(14, .semibold, relativeTo: .subheadline)).foregroundStyle(Theme.C.ink2)
             }
         }
+        .padding(.top, 20)
         .frame(maxHeight: .infinity, alignment: .top)
     }
 
     private func card(_ idea: CookIdeaDTO) -> some View {
         let r = idea.recipe
-        return VStack(alignment: .leading, spacing: 12) {
+        return HStack(spacing: 16) {
             NavigationLink { SavedRecipeView(recipeId: r.id) } label: {
-                HStack(spacing: 14) {
-                    Plate(url: mediaURL(r.imageUrl), size: 76, seed: r.title)
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text(r.title).font(.system(.headline, design: .rounded, weight: .bold)).foregroundStyle(Theme.C.text1)
-                            .multilineTextAlignment(.leading)
-                        Text("\(r.prepMinutes) min · \(r.servings) Portionen").font(Theme.F.micro).foregroundStyle(Theme.C.text2)
-                        DealBadge(text: "Alles da ✓", style: .ok)
-                    }
-                    Spacer(minLength: 0)
-                    Image(systemName: "chevron.right").font(.system(size: 12, weight: .bold)).foregroundStyle(Theme.C.text3)
-                }
+                PlanPlate(url: mediaURL(r.imageUrl), size: 92)
             }
             .buttonStyle(PressableStyle())
-            Button { Task { await choose(r) } } label: {
-                if busy == r.id { ProgressView().tint(.white) } else { Label("Das koche ich heute", systemImage: "flame.fill") }
+            .accessibilityLabel("\(r.title) ansehen")
+            VStack(alignment: .leading, spacing: 4) {
+                Text(r.title).font(Theme.F.serif(21, relativeTo: .title3)).foregroundStyle(Theme.C.ink).lineLimit(2)
+                Text("\(r.prepMinutes) min · \(r.servings) Portionen · alles da")
+                    .font(Theme.F.text(13, .semibold, relativeTo: .footnote)).foregroundStyle(Theme.C.ink2)
+                PlanBusyButton(title: "Das koche ich heute", busy: busy == r.id, disabled: busy != nil && busy != r.id, small: true, blue: true) {
+                    Task { await choose(r) }
+                }
+                .fixedSize()
+                .padding(.top, 6)
             }
-            .buttonStyle(AccentButtonStyle())
-            .disabled(busy != nil)
+            Spacer(minLength: 0)
         }
-        .padding(14)
-        .card()
+        .padding(.vertical, 14)
+        .overlay(alignment: .top) { Hairline() }
     }
 
     private func load() async {
@@ -882,43 +832,70 @@ struct WeeklyBasicsView: View {
     @State private var adding = false
     @State private var sending = false
 
+    /// Nächster Montag („Mo, 10. Nov“).
+    private var nextMonday: String {
+        let cal = Calendar(identifier: .iso8601)
+        let d = cal.nextDate(after: .now, matching: DateComponents(weekday: 2), matchingPolicy: .nextTime) ?? .now
+        return d.formatted(.dateTime.weekday(.abbreviated).day().month(.abbreviated).locale(.de)).replacingOccurrences(of: ".", with: "")
+    }
+
     var body: some View {
-        ZStack(alignment: .bottom) {
-            Theme.C.bg.ignoresSafeArea()
-            ScrollView {
-                VStack(alignment: .leading, spacing: 14) {
-                    RoundIconButton(systemName: "chevron.left", label: "Zurück") { dismiss() }
-                    HStack(alignment: .bottom) {
-                        DisplayHeader(line1: "Frühstück", line2: "& Snacks")
-                        RoundIconButton(systemName: "plus", dark: true, label: "Basic hinzufügen") { adding = true }
-                    }
-                    Text("Deine Basics kommen jeden Montag automatisch auf die Haushaltsliste – im Angebot, wenn es in deinen Läden günstiger ist; was im Vorrat ist, wird abgezogen.")
-                        .font(Theme.F.caption).foregroundStyle(Theme.C.text2)
+        ScrollView {
+            VStack(alignment: .leading, spacing: 0) {
+                HStack {
+                    Button { dismiss() } label: { Icon(.back).frame(width: 44, height: 44, alignment: .leading).contentShape(Rectangle()) }
+                        .buttonStyle(.plain)
+                        .accessibilityLabel("Zurück")
+                    Spacer()
+                    CircleButton(icon: .plus, size: 44, filled: true, label: "Basic hinzufügen") { adding = true }
+                }
+                Text("Frühstück\n& Snacks").font(Theme.F.t1).padding(.top, 8)
+                Text("Kommt jeden Montag auf die Liste – im Angebot, wenn es günstiger ist; Vorrat wird abgezogen.")
+                    .font(Theme.F.text(14, .semibold, relativeTo: .subheadline)).foregroundStyle(Theme.C.ink2)
+                    .frame(maxWidth: 220, alignment: .leading).padding(.top, 8)
+                VStack(spacing: 0) {
                     if let basics {
                         if basics.isEmpty {
-                            EmptyState(emoji: "🥣", title: "Noch keine Basics",
-                                       text: "Z. B. Haferflocken 1.000 g, Joghurt 1.000 g, Brot, Bananen 6 Stück.",
-                                       buttonTitle: "Basic hinzufügen") { adding = true }
+                            VStack(spacing: 10) {
+                                Ill("bag").frame(width: 150, height: 150)
+                                Text("Noch keine Basics").font(Theme.F.t2)
+                                Text("Z. B. Haferflocken 1.000 g, Joghurt 1.000 g, Brot, Bananen 6 Stück.")
+                                    .font(Theme.F.text(14, .semibold, relativeTo: .subheadline)).foregroundStyle(Theme.C.ink2).multilineTextAlignment(.center)
+                                PrimaryButton(title: "Basic hinzufügen", icon: .plus) { adding = true }.padding(.top, 8)
+                            }
+                            .frame(maxWidth: .infinity)
                         }
-                        ForEach(Array(basics.enumerated()), id: \.element.id) { i, b in row(b).appear(delay: Double(i) * 0.04) }
+                        ForEach(basics) { b in row(b) }
                     } else if let error {
-                        ErrorState(message: error) { Task { await load() } }
+                        VStack(spacing: 10) {
+                            Ill("binoculars").frame(width: 150, height: 150)
+                            Text("Nicht geladen").font(Theme.F.t2)
+                            Text(error).font(Theme.F.text(14, .semibold, relativeTo: .subheadline)).foregroundStyle(Theme.C.ink2).multilineTextAlignment(.center)
+                            PrimaryButton(title: "Erneut versuchen", icon: .refresh) { Task { await load() } }.padding(.top, 8)
+                        }
+                        .frame(maxWidth: .infinity)
                     } else {
-                        ForEach(0..<4, id: \.self) { _ in SkeletonCard(height: 68) }
+                        ForEach(0..<4, id: \.self) { _ in Skeleton8(height: 52).padding(.vertical, 4) }
                     }
                 }
-                .padding(.horizontal, Theme.pagePadding)
-                .padding(.bottom, 16)
+                .padding(.top, 28)
             }
-            .refreshable { await load() }
-            .ctaBar {
-                if basics?.isEmpty == false {
-                    Button {
+            .padding(.horizontal, Theme.pagePadding)
+            .padding(.bottom, 180)
+            .edgeForm(.circle, Theme.C.sand, width: 300, height: 300, right: -110, top: -152)  // Mockup top −100 − Statusleiste 52
+            .pinned(right: -26, top: 14) { Ill("pot").frame(width: 190).accessibilityHidden(true) }
+        }
+        .background(Theme.C.bg)
+        .refreshable { await load() }
+        .ctaBar(bottom: 40) {
+            if basics?.isEmpty == false {
+                VStack(spacing: 14) {
+                    Text("Nächstes Mal automatisch: \(nextMonday)")
+                        .font(Theme.F.text(13, .semibold, relativeTo: .footnote)).foregroundStyle(Theme.C.ink2)
+                    PlanBusyButton(title: "Jetzt auf die Liste", icon: .bag, busy: sending) {
                         sending = true
                         Task { await store.basicsToList(); sending = false }
-                    } label: { Label(sending ? "Kommt auf die Liste …" : "Jetzt auf die Liste", systemImage: "cart.badge.plus") }
-                    .buttonStyle(PrimaryButtonStyle())
-                    .disabled(sending)
+                    }
                 }
             }
         }
@@ -932,20 +909,13 @@ struct WeeklyBasicsView: View {
         let probe = PantryDTO(id: b.id, name: b.name, ingredientKey: "", amount: b.amount, unit: b.unit, bestBefore: nil, isBasic: false,
                               source: "", updatedAt: "")
         return Button { editing = b } label: {
-            HStack(spacing: 12) {
-                Text(probe.emoji).font(.system(size: 22))
-                    .frame(width: 44, height: 44)
-                    .background(Theme.hue(category: probe.category).tint, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-                VStack(alignment: .leading, spacing: 3) {
-                    Text(b.name).font(.system(.body, weight: .semibold)).foregroundStyle(Theme.C.text1).lineLimit(1)
-                    Text(b.amount.map { a in "\(qty(a, b.unit.isEmpty ? "stk" : b.unit)) pro Woche" } ?? "ohne Menge · jede Woche")
-                        .font(Theme.F.micro).monospacedDigit().foregroundStyle(Theme.C.text2)
-                }
-                Spacer(minLength: 0)
-                Image(systemName: "chevron.right").font(.system(size: 12, weight: .bold)).foregroundStyle(Theme.C.text3)
+            IRow(name: b.name, sub: b.amount.map { a in "\(qty(a, b.unit.isEmpty ? "stk" : b.unit)) pro Woche" } ?? "ohne Menge · jede Woche",
+                 tint: Theme.hue(category: probe.category).tint) {
+                Icon(.box, size: 22).foregroundStyle(Theme.C.ink)
+            } trail: {
+                Icon(.chev, size: 18).foregroundStyle(Theme.C.ink3)
             }
-            .padding(12)
-            .card(radius: Theme.R.tile)
+            .foregroundStyle(Theme.C.ink)
         }
         .buttonStyle(PressableStyle())
         .contextMenu {
@@ -998,23 +968,18 @@ struct WeeklyBasicSheet: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 14) {
-                Text(basic == nil ? "Neues Basic" : "Basic ändern").font(Theme.F.title)
-                VStack(alignment: .leading, spacing: 12) {
-                    TextField("Name, z. B. Haferflocken", text: $name)
-                        .padding(12).background(Theme.C.surface, in: RoundedRectangle(cornerRadius: Theme.R.chip))
-                    TextField("Menge pro Woche (optional)", text: $amount).keyboardType(.decimalPad)
-                        .padding(12).background(Theme.C.surface, in: RoundedRectangle(cornerRadius: Theme.R.chip))
-                    Picker("Einheit", selection: $unit) {
-                        ForEach(ScanLabels.units, id: \.0) { u in Text(u.1).tag(u.0) }
-                    }
-                    .pickerStyle(.segmented)
+                HStack(alignment: .top) {
+                    Text(basic == nil ? "Neues Basic" : "Basic ändern").font(Theme.F.t2)
+                    Spacer()
+                    CloseButton { dismiss() }
                 }
-                .padding(16).card()
-                Button(action: save) { Text(saving ? "Speichere …" : basic == nil ? "Hinzufügen" : "Speichern") }
-                    .buttonStyle(PrimaryButtonStyle())
-                    .disabled(trimmed.isEmpty || saving).opacity(trimmed.isEmpty ? 0.5 : 1)
+                FieldBox(icon: .edit) { TextField("Name, z. B. Haferflocken", text: $name) }
+                FieldBox(icon: .box) { TextField("Menge pro Woche (optional)", text: $amount).keyboardType(.decimalPad) }
+                Segmented8(options: ScanLabels.units.map { ($0.0, $0.1) }, selection: $unit)
+                PlanBusyButton(title: basic == nil ? "Hinzufügen" : "Speichern", busy: saving, disabled: trimmed.isEmpty, action: save)
+                    .padding(.top, 4)
                 if let basic {
-                    Button("Löschen", role: .destructive) {
+                    Button {
                         Task {
                             do {
                                 try await store.deleteWeeklyBasic(basic.id)
@@ -1025,15 +990,19 @@ struct WeeklyBasicSheet: View {
                                 store.flash("Nicht gelöscht: \(error.localizedDescription)")
                             }
                         }
+                    } label: {
+                        HStack(spacing: 8) { Icon(.trash, size: 20); Text("Löschen") }
+                            .font(Theme.F.button2).foregroundStyle(Theme.C.deal)
+                            .frame(maxWidth: .infinity, minHeight: 44)
                     }
-                    .frame(maxWidth: .infinity, minHeight: 44)
+                    .buttonStyle(.plain)
                 }
             }
-            .padding(Theme.pagePadding)
+            .padding(.horizontal, Theme.pagePadding)
+            .padding(.bottom, 24)
         }
         .scrollDismissesKeyboard(.immediately)
-        .presentationBackground(Theme.C.bg)
-        .presentationCornerRadius(Theme.R.sheet)
+        .sheet8()
     }
 
     private func save() {

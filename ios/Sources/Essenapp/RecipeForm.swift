@@ -69,7 +69,8 @@ struct RecipeDraft {
     }
 }
 
-/// S17 Rezept-Formular: Schritt-für-Schritt-Sheet (Rezept · Zutaten · Zubereitung · Tags), anlegen oder bearbeiten.
+/// S17 Rezept-Formular (b.html): Sheet in vier Schritten (Rezept · Zutaten · Zubereitung · Tags), anlegen oder bearbeiten.
+/// Seite 3 und 4 haben kein Mockup – gebaut aus den v8-Bausteinen.
 struct RecipeFormSheet: View {
     @Environment(AppStore.self) private var store
     @Environment(\.dismiss) private var dismiss
@@ -84,6 +85,10 @@ struct RecipeFormSheet: View {
     @State private var newTag = ""
     @FocusState private var focus: UUID?  // aktive Zutat → Vorschläge darunter
 
+    // Mockup-Maße (b.html S17): Kreis im Sheet (left −110, top 150 ab Sheet-Oberkante; Griff-Bereich 33 abgezogen)
+    private static let blob = (x: -110.0, y: 117.0, size: 300.0)
+    private static let plate: CGFloat = 130
+
     init(editing: RecipeDTO? = nil, page: Int = 0) {
         self.editing = editing
         _page = State(initialValue: page)
@@ -95,18 +100,15 @@ struct RecipeFormSheet: View {
     private var canContinue: Bool { page == 0 ? d.validBasics : page == 1 ? d.validLines : true }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: 0) {
             HStack {
-                Text(editing == nil ? "Neues Rezept" : "Rezept bearbeiten").font(Theme.F.title)
+                Text(editing == nil ? "Neues Rezept" : "Rezept bearbeiten").font(Theme.F.t2).foregroundStyle(Theme.C.ink)
                 Spacer()
-                RoundIconButton(systemName: "xmark", label: "Schließen") { dismiss() }
+                CloseButton { dismiss() }
             }
-            HStack(spacing: 6) {
-                ForEach(0..<Self.pages.count, id: \.self) { i in
-                    Capsule().fill(i <= page ? Theme.C.action : Theme.C.surface).frame(height: 4)
-                }
-            }
-            Text("Schritt \(page + 1) von \(Self.pages.count) · \(Self.pages[page])").font(Theme.F.caption).foregroundStyle(Theme.C.text2)
+            StepBars(count: Self.pages.count, current: page).padding(.top, 14)
+            Text("Schritt \(page + 1) von \(Self.pages.count) · \(Self.pages[page])")
+                .font(Theme.F.text(13, .semibold, relativeTo: .footnote)).foregroundStyle(Theme.C.ink2).padding(.top, 8)
             Group {
                 switch page {
                 case 0: basicsPage
@@ -118,21 +120,15 @@ struct RecipeFormSheet: View {
             .frame(maxHeight: .infinity, alignment: .top)
             .transition(.opacity.combined(with: .move(edge: .trailing)))
             .id(page)
-            HStack(spacing: 10) {
-                if page > 0 {
-                    Button("Zurück") { withAnimation(Theme.spring) { page -= 1 } }
-                        .buttonStyle(SecondaryButtonStyle()).frame(maxWidth: 140)
-                }
-                Button(page < last ? "Weiter" : saving ? "Speichere …" : "Speichern") {
-                    if page < last { withAnimation(Theme.spring) { page += 1 } } else { save() }
-                }
-                .buttonStyle(PrimaryButtonStyle())
-                .disabled(!canContinue || saving)
-                .opacity(canContinue ? 1 : 0.5)
-            }
+            buttons
         }
-        .padding(Theme.pagePadding)
-        .background(Theme.C.bg)
+        .padding(.horizontal, Theme.pagePadding)
+        .pinned(left: Self.blob.x, top: Self.blob.y) {
+            Circle().fill(Theme.C.blue1).frame(width: Self.blob.size, height: Self.blob.size)
+                .opacity(page == 0 ? 1 : 0).accessibilityHidden(true)  // Kreis nur auf Seite 1 (Mockup)
+        }
+        .tint(Theme.C.blue3)  // Schreibmarke `.b-caret`
+        .sheet8()
         .sensoryFeedback(.selection, trigger: page)
         .onChange(of: pick) { load(pick) }
         .fullScreenCover(isPresented: $camera) {
@@ -150,169 +146,290 @@ struct RecipeFormSheet: View {
         }
     }
 
+    /// Unten fest: Seite 1 nur „Weiter“, danach „Zurück“ (1) und „Weiter“ (1,4).
+    private var buttons: some View {
+        GeometryReader { g in
+            HStack(spacing: 10) {
+                if page > 0 {
+                    OutlineButton(title: "Zurück") { withAnimation(Theme.spring) { page -= 1 } }
+                        .frame(width: (g.size.width - 10) / 2.4)
+                }
+                PrimaryButton(title: page < last ? "Weiter" : saving ? "Speichere …" : "Speichern", disabled: !canContinue || saving) {
+                    if page < last { withAnimation(Theme.spring) { page += 1 } } else { save() }
+                }
+            }
+        }
+        .frame(height: Theme.S.button)
+        .padding(.top, 12)
+    }
+
     // MARK: Seiten
 
     private var basicsPage: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 14) {
-                VStack(spacing: 12) {
+            VStack(alignment: .leading, spacing: 0) {
+                HStack(spacing: 26) {
                     Group {
                         if let photo {
-                            Image(uiImage: photo).resizable().scaledToFill().frame(width: 150, height: 150).clipShape(Circle()).floatShadow()
+                            Image(uiImage: photo).resizable().scaledToFill().plate(Self.plate).frame(width: Self.plate, height: Self.plate)
                         } else {
-                            Plate(url: mediaURL(editing?.imageUrl ?? ""), size: 150, seed: d.title)
+                            PlatePhoto(url: mediaURL(editing?.imageUrl ?? ""), size: Self.plate)
                         }
                     }
                     .accessibilityLabel(photo == nil ? "Rezeptfoto" : "Gewähltes Foto")
-                    HStack(spacing: 10) {
+                    VStack(spacing: 10) {
                         if UIImagePickerController.isSourceTypeAvailable(.camera) {
-                            Button { camera = true } label: { Label("Kamera", systemImage: "camera.fill") }
-                                .buttonStyle(SecondaryButtonStyle())
+                            Button { camera = true } label: { OutlineLabel(title: "Kamera", icon: .cam) }.buttonStyle(PressableStyle())
                         }
-                        PhotosPicker(selection: $pick, matching: .images) { Label("Fotos", systemImage: "photo.on.rectangle") }
-                            .buttonStyle(SecondaryButtonStyle())
+                        PhotosPicker(selection: $pick, matching: .images) { OutlineLabel(title: "Fotos", icon: .photo) }.buttonStyle(PressableStyle())
                     }
                 }
-                .frame(maxWidth: .infinity)
-                field("Titel") {
-                    TextField("z. B. Omas Linsensuppe", text: $d.title).font(.system(.title3, weight: .bold))
-                        .padding(12).background(Theme.C.card, in: RoundedRectangle(cornerRadius: Theme.R.chip))
+                .padding(.leading, Theme.S.plateRing)
+                FieldBox {
+                    TextField("", text: $d.title, prompt: Text("z. B. Omas Linsensuppe").foregroundStyle(Theme.C.ink2))
+                        .accessibilityLabel("Titel")
                 }
-                stepper("Portionen", "\(d.servings)", $d.servings, 1...20, 1)
-                stepper("Zeit", "\(d.prepMinutes) min", $d.prepMinutes, 5...600, 5)
-                field("Mahlzeit") {
-                    ChipFlow(items: Labels.mealTypes, selected: [d.mealType]) { m in d.mealType = m }
+                .padding(.top, 30)
+                row("Portionen") { Stepper8(value: $d.servings, range: 1...20) }.padding(.top, 12)
+                row("Zeit") {
+                    Stepper8(value: Binding(get: { d.prepMinutes / 5 }, set: { v in d.prepMinutes = v * 5 }), range: 1...120) { v in "\(v * 5) min" }
                 }
-                field("Küche") {
-                    ChipFlow(items: Labels.cuisines.map { ($0, $0) }, selected: [d.cuisine]) { c in d.cuisine = d.cuisine == c ? "" : c }
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 8) {
+                        ForEach(Labels.mealTypes, id: \.0) { key, title in
+                            Chip8(title: title, on: d.mealType == key) { withAnimation(Theme.spring) { d.mealType = key } }
+                        }
+                    }
+                    .padding(.trailing, Theme.pagePadding)
                 }
+                .padding(.trailing, -Theme.pagePadding)
+                .padding(.top, 26)  // 30 − Tapfläche
+                Menu {
+                    Button("Keine Angabe") { d.cuisine = "" }
+                    ForEach(Labels.cuisines, id: \.self) { c in Button(c) { d.cuisine = c } }
+                } label: {
+                    HStack(spacing: 8) {
+                        (Text("Küche").font(Theme.F.text(16, .extrabold))
+                            + Text(" · optional").font(Theme.F.text(16, .semibold)).foregroundColor(Theme.C.ink3))
+                            .foregroundStyle(Theme.C.ink)
+                        Spacer()
+                        Text(d.cuisine.isEmpty ? "–" : d.cuisine).font(Theme.F.text(16, .semibold)).foregroundStyle(Theme.C.ink2)
+                        Icon(.chev, size: 20).foregroundStyle(Theme.C.ink2)
+                    }
+                    .frame(minHeight: Theme.S.row)
+                    .overlay(alignment: .top) { Hairline() }
+                    .overlay(alignment: .bottom) { Hairline() }
+                    .contentShape(Rectangle())
+                }
+                .accessibilityLabel("Küche, optional: \(d.cuisine.isEmpty ? "keine" : d.cuisine)")
+                .padding(.top, 10)
             }
-            .padding(.vertical, 8)
+            .padding(.top, 28)
+            .padding(.bottom, 12)
         }
         .scrollDismissesKeyboard(.immediately)
     }
 
     private var ingredientsPage: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 10) {
-                ForEach($d.lines) { $line in
-                    VStack(alignment: .leading, spacing: 6) {
-                        HStack(spacing: 8) {
-                            TextField("Zutat", text: $line.name)
-                                .focused($focus, equals: line.id)
-                                .padding(12).background(Theme.C.card, in: RoundedRectangle(cornerRadius: Theme.R.chip))
-                            TextField("Menge", value: $line.amount, format: .number.locale(.de))
-                                .keyboardType(.decimalPad).multilineTextAlignment(.trailing)
-                                .frame(width: 60)
-                                .padding(12).background(Theme.C.card, in: RoundedRectangle(cornerRadius: Theme.R.chip))
-                            Menu {
-                                ForEach(Labels.units, id: \.0) { u in Button(u.1) { $line.wrappedValue.unit = u.0 } }
-                            } label: {
-                                Text(Labels.unit(line.unit)).font(Theme.F.callout).foregroundStyle(Theme.C.text1)
-                                    .frame(minWidth: 54, minHeight: 44).background(Theme.C.surface, in: Capsule())
-                            }
-                            .accessibilityLabel("Einheit: \(Labels.unit(line.unit))")
-                            Button { remove(line.id) } label: {
-                                Image(systemName: "minus.circle.fill").font(.system(size: 20)).foregroundStyle(Theme.C.text3)
-                                    .frame(width: 30, height: 44)
-                            }
-                            .accessibilityLabel("Zutat entfernen")
-                            .disabled(d.lines.count == 1)
-                        }
-                        if focus == line.id { suggestions(line.name) { name in $line.wrappedValue.name = name } }
+        List {
+            ForEach($d.lines) { $line in
+                let active = focus == line.id
+                VStack(alignment: .leading, spacing: 0) {
+                    HStack(spacing: 14) {
+                        TextField("", text: $line.name, prompt: Text("Zutat").foregroundStyle(Theme.C.ink3))
+                            .font(Theme.F.serif(18, relativeTo: .title3)).foregroundStyle(Theme.C.ink)
+                            .focused($focus, equals: line.id)
+                        amountPill($line)
                     }
+                    .frame(minHeight: Theme.S.row)
+                    .overlay(alignment: .top) { Hairline(color: active ? Theme.C.ink : Theme.C.line) }
+                    if active { suggestions(line.name) { name in $line.wrappedValue.name = name } }
                 }
-                Button(action: addLine) { Label("Zutat hinzufügen", systemImage: "plus") }
-                    .buttonStyle(SecondaryButtonStyle())
+                .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                    Button("Entfernen", role: .destructive) { remove(line.id) }.disabled(d.lines.count == 1)
+                }
+                .accessibilityAction(named: "Zutat entfernen") { if d.lines.count > 1 { remove(line.id) } }
+                .listRowInsets(EdgeInsets())
+                .listRowSeparator(.hidden)
+                .listRowBackground(Color.clear)
             }
-            .padding(.vertical, 8)
+            Button(action: addLine) {
+                HStack(spacing: 14) {
+                    Icon(.plus)
+                    Text("Zutat hinzufügen").font(Theme.F.text(16, .extrabold)).frame(maxWidth: .infinity, alignment: .leading)
+                }
+                .foregroundStyle(Theme.C.ink2)
+                .frame(minHeight: Theme.S.row)
+                .overlay(alignment: .top) { Hairline() }
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(PressableStyle())
+            .padding(.top, 28)
+            .listRowInsets(EdgeInsets())
+            .listRowSeparator(.hidden)
+            .listRowBackground(Color.clear)
         }
+        .listStyle(.plain)
+        .scrollContentBackground(.hidden)
+        .environment(\.defaultMinListRowHeight, 0)
+        .padding(.top, 28)
+    }
+
+    /// Menge als Pille (`.b-amt`): Zahl tippen, Einheit im Menü.
+    private func amountPill(_ line: Binding<RecipeDraft.Line>) -> some View {
+        HStack(spacing: 4) {
+            TextField("", value: line.amount, format: .number.locale(.de), prompt: Text("Menge").foregroundStyle(Theme.C.ink3))
+                .keyboardType(.decimalPad).multilineTextAlignment(.trailing)
+                .fixedSize()
+                .accessibilityLabel("Menge")
+            Menu {
+                ForEach(Labels.units, id: \.0) { u in Button(u.1) { line.wrappedValue.unit = u.0 } }
+            } label: {
+                HStack(spacing: 4) {
+                    Text(Labels.unit(line.wrappedValue.unit))
+                    Icon(.chev, size: 14).rotationEffect(.degrees(90))
+                }
+                .foregroundStyle(line.wrappedValue.amount == nil ? Theme.C.ink3 : Theme.C.ink)
+                .frame(minHeight: 44)
+                .contentShape(Rectangle())
+            }
+            .accessibilityLabel("Einheit: \(Labels.unit(line.wrappedValue.unit))")
+        }
+        .font(Theme.F.text(15, .extrabold))
+        .foregroundStyle(Theme.C.ink)
+        .padding(.horizontal, 12)
+        .frame(minWidth: 104, minHeight: 36, maxHeight: 36)
+        .background(Theme.C.card, in: Capsule())
+        .overlay(Capsule().strokeBorder(Theme.C.line, lineWidth: Theme.S.hair))
     }
 
     private var stepsPage: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Text("Zum Sortieren am Griff ziehen.").font(Theme.F.micro).foregroundStyle(Theme.C.text2)
+        VStack(alignment: .leading, spacing: 0) {
+            Text("Zum Sortieren am Griff ziehen, zum Löschen nach links wischen.")
+                .font(Theme.F.text(12, .semibold, relativeTo: .caption)).foregroundStyle(Theme.C.ink2)
             List {
                 ForEach($d.steps) { $step in
-                    HStack(alignment: .top, spacing: 10) {
-                        Text("\((d.steps.firstIndex(where: { s in s.id == step.id }) ?? 0) + 1)")
-                            .font(.system(.footnote, design: .rounded, weight: .bold)).foregroundStyle(Theme.C.onAction)
-                            .frame(width: 26, height: 26).background(Theme.C.action, in: Circle())
-                        TextField("Schritt beschreiben …", text: $step.text, axis: .vertical).lineLimit(1...6)
+                    HStack(alignment: .firstTextBaseline, spacing: 14) {
+                        let n = (d.steps.firstIndex(where: { s in s.id == step.id }) ?? 0) + 1
+                        Text(n < 10 ? "0\(n)" : "\(n)").font(Theme.F.num(22)).tracking(Theme.F.numTracking(22)).foregroundStyle(Theme.C.ink2)
+                            .frame(width: 34, alignment: .leading)
+                        TextField("", text: $step.text, prompt: Text("Schritt beschreiben …").foregroundStyle(Theme.C.ink3), axis: .vertical)
+                            .font(Theme.F.text(15, .semibold)).lineLimit(1...6)
                     }
-                    .listRowBackground(Theme.C.card)
+                    .padding(.vertical, 12)
+                    .overlay(alignment: .top) { Hairline() }
+                    .listRowInsets(EdgeInsets())
+                    .listRowSeparator(.hidden)
+                    .listRowBackground(Color.clear)
                 }
                 .onMove { d.steps.move(fromOffsets: $0, toOffset: $1) }
                 .onDelete { d.steps.remove(atOffsets: $0) }
+                Button { withAnimation(Theme.spring) { d.steps.append(RecipeDraft.Step()) } } label: {
+                    HStack(spacing: 14) {
+                        Icon(.plus)
+                        Text("Schritt hinzufügen").font(Theme.F.text(16, .extrabold)).frame(maxWidth: .infinity, alignment: .leading)
+                    }
+                    .foregroundStyle(Theme.C.ink2)
+                    .frame(minHeight: Theme.S.row)
+                    .overlay(alignment: .top) { Hairline() }
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(PressableStyle())
+                .listRowInsets(EdgeInsets())
+                .listRowSeparator(.hidden)
+                .listRowBackground(Color.clear)
             }
             .listStyle(.plain)
             .scrollContentBackground(.hidden)
-            .clipShape(RoundedRectangle(cornerRadius: Theme.R.tile, style: .continuous))
+            .environment(\.defaultMinListRowHeight, 0)
             .environment(\.editMode, .constant(.active))
-            Button { withAnimation(Theme.spring) { d.steps.append(RecipeDraft.Step()) } } label: {
-                Label("Schritt hinzufügen", systemImage: "plus")
-            }
-            .buttonStyle(SecondaryButtonStyle())
+            .padding(.top, 12)
         }
+        .padding(.top, 28)
     }
 
     private var tagsPage: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 14) {
-                Text("Tags helfen beim Suchen, z. B. „schnell“ oder „Meal Prep“.").font(Theme.F.caption).foregroundStyle(Theme.C.text2)
-                HStack(spacing: 8) {
-                    TextField("Tag hinzufügen", text: $newTag).submitLabel(.done).onSubmit(addTag)
-                        .padding(12).background(Theme.C.card, in: RoundedRectangle(cornerRadius: Theme.R.chip))
-                    RoundIconButton(systemName: "plus", dark: true, label: "Tag hinzufügen", action: addTag)
+            VStack(alignment: .leading, spacing: 0) {
+                Text("Tags helfen beim Suchen, z. B. „schnell“ oder „Meal Prep“.")
+                    .font(Theme.F.text(13, .semibold, relativeTo: .footnote)).foregroundStyle(Theme.C.ink2)
+                HStack(spacing: 10) {
+                    FieldBox {
+                        TextField("", text: $newTag, prompt: Text("Tag hinzufügen").foregroundStyle(Theme.C.ink2))
+                            .submitLabel(.done).onSubmit(addTag)
+                    }
+                    RoundIcon(icon: .plus, filled: true, label: "Tag hinzufügen", action: addTag)
                         .disabled(newTag.trimmingCharacters(in: .whitespaces).isEmpty)
                 }
+                .padding(.top, 14)
                 if !d.tags.isEmpty {
-                    ChipFlow(items: d.tags.map { ($0, "\($0)  ✕") }, selected: []) { t in d.tags.removeAll { x in x == t } }
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(spacing: 8) {
+                            ForEach(d.tags, id: \.self) { t in
+                                Chip8(title: t, on: true, icon: .x) { withAnimation(Theme.spring) { d.tags.removeAll { x in x == t } } }
+                                    .accessibilityLabel("Tag \(t) entfernen")
+                            }
+                        }
+                        .padding(.trailing, Theme.pagePadding)
+                    }
+                    .padding(.trailing, -Theme.pagePadding)
+                    .padding(.top, 10)
                 }
                 let count = d.lines.filter { l in !l.name.trimmingCharacters(in: .whitespaces).isEmpty }.count
-                Label("\(d.title) · \(count) Zutaten · \(d.steps.filter { s in !s.text.isEmpty }.count) Schritte", systemImage: "checkmark.circle.fill")
-                    .font(Theme.F.callout).foregroundStyle(Theme.C.text1)
-                    .padding(14).frame(maxWidth: .infinity, alignment: .leading).card(radius: Theme.R.tile)
+                HStack(spacing: 14) {
+                    CheckCircle(on: true)
+                    VStack(alignment: .leading, spacing: 1) {
+                        Text(d.title).font(Theme.F.rowName).foregroundStyle(Theme.C.ink).lineLimit(2)
+                        Text("\(count) Zutaten · \(d.steps.filter { s in !s.text.isEmpty }.count) Schritte")
+                            .font(Theme.F.text(13, .semibold, relativeTo: .footnote)).foregroundStyle(Theme.C.ink2)
+                    }
+                    Spacer(minLength: 0)
+                }
+                .frame(minHeight: Theme.S.row)
+                .overlay(alignment: .top) { Hairline() }
+                .overlay(alignment: .bottom) { Hairline() }
+                .padding(.top, 28)
             }
-            .padding(.vertical, 8)
+            .padding(.top, 28)
         }
     }
 
     // MARK: Bausteine
 
-    private func field(_ title: String, @ViewBuilder _ content: () -> some View) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Text(title).font(Theme.F.caption).foregroundStyle(Theme.C.text2)
-            content()
+    /// `.irow` mit Titel (800) links und Bedienelement rechts.
+    private func row(_ title: String, @ViewBuilder _ trail: () -> some View) -> some View {
+        HStack {
+            Text(title).font(Theme.F.text(16, .extrabold)).foregroundStyle(Theme.C.ink)
+            Spacer()
+            trail()
         }
+        .frame(minHeight: Theme.S.row)
+        .overlay(alignment: .top) { Hairline() }
     }
 
-    private func stepper(_ title: String, _ value: String, _ binding: Binding<Int>, _ range: ClosedRange<Int>, _ step: Int) -> some View {
-        Stepper(value: binding, in: range, step: step) {
-            HStack {
-                Text(title).font(Theme.F.callout).foregroundStyle(Theme.C.text2)
-                Spacer()
-                Text(value).font(.system(.headline, design: .rounded, weight: .bold)).monospacedDigit().contentTransition(.numericText())
-            }
-        }
-        .padding(12)
-        .card(radius: Theme.R.tile)
-    }
-
-    /// Vorschläge aus bekannten Zutaten (Plan, Vorrat).
-    private func suggestions(_ text: String, pick: @escaping (String) -> Void) -> some View {
+    /// Vorschläge aus bekannten Zutaten (Plan, Vorrat) unter der aktiven Zeile; der erste hervorgehoben.
+    @ViewBuilder private func suggestions(_ text: String, pick: @escaping (String) -> Void) -> some View {
         let t = text.trimmingCharacters(in: .whitespaces)
         let hits = t.isEmpty ? [] : Array(store.knownIngredients
             .filter { k in k.localizedCaseInsensitiveContains(t) && k.caseInsensitiveCompare(t) != .orderedSame }.prefix(6))
-        return ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 6) {
-                ForEach(hits, id: \.self) { k in
-                    Button(k) { pick(k) }
-                        .font(Theme.F.caption).foregroundStyle(Theme.C.text1)
-                        .padding(.horizontal, 12).frame(minHeight: 34)
-                        .background(Theme.C.accentSoft, in: Capsule())
+        if !hits.isEmpty {
+            Text("Aus Plan und Vorrat").font(Theme.F.text(12, .semibold, relativeTo: .caption)).foregroundStyle(Theme.C.ink2).padding(.top, 2)
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 8) {
+                    ForEach(Array(hits.enumerated()), id: \.offset) { i, k in
+                        Button { pick(k) } label: {
+                            Text(k).font(Theme.F.chip).foregroundStyle(i == 0 ? Theme.C.ink : Theme.C.ink2)
+                                .padding(.horizontal, 15).frame(height: Theme.S.chip)
+                                .background(i == 0 ? Theme.C.blue1 : .clear, in: Capsule())
+                                .overlay { if i > 0 { Capsule().strokeBorder(Theme.C.line, lineWidth: Theme.S.hair) } }
+                                .frame(minHeight: 44)
+                                .contentShape(Capsule())
+                        }
+                        .buttonStyle(PressableStyle())
+                    }
                 }
             }
+            .padding(.top, 4)
         }
     }
 
@@ -357,6 +474,24 @@ struct RecipeFormSheet: View {
                 store.flash("Nicht gespeichert: \(error.localizedDescription)")
             }
         }
+    }
+}
+
+/// `.btn2`-Look als Label (für Button und PhotosPicker).
+private struct OutlineLabel: View {
+    let title: String
+    let icon: Icon8
+
+    var body: some View {
+        HStack(spacing: 8) {
+            Icon(icon, size: 20)
+            Text(title)
+        }
+        .font(Theme.F.button2)
+        .foregroundStyle(Theme.C.ink)
+        .frame(maxWidth: .infinity, minHeight: Theme.S.button2)
+        .overlay(Capsule().strokeBorder(Theme.C.ink, lineWidth: Theme.S.hair))
+        .contentShape(Capsule())
     }
 }
 
