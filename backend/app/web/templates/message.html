@@ -1,8 +1,11 @@
 {% extends "base.html" %}
-{% block content %}
-<div class="card empty">
-  <div class="big">🔗</div>
-  <h2>{{ title }}</h2>
-  <p class="muted">{{ text }}</p>
+{% block deco %}
+<div class="deco" aria-hidden="true">
+  <div class="blob" style="left:-60px;bottom:-136px;width:510px;height:510px;background:var(--blue1)"></div>
+  <img class="ill" src="/static/ill/lying.webp" style="left:14px;bottom:245px;width:360px" alt="">
 </div>
+{% endblock %}
+{% block content %}
+<h1 class="t1" style="margin-top:40px;font-size:42px">{{ title }}</h1>
+<p style="color:var(--ink2);font-size:17px;margin-top:8px">{{ text }}</p>
 {% endblock %}

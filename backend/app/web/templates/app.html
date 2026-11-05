@@ -1,50 +1,86 @@
 {% extends "base.html" %}
+{% block deco %}
+<div class="deco" aria-hidden="true">
+{% if tab == "liste" %}
+  <div class="leaf" style="right:0;top:0;width:166px;height:270px;border-bottom-left-radius:110px;background:var(--blue)"></div>
+  <img class="ill" src="/static/ill/shopper.webp" style="right:6px;top:44px;width:144px" alt="">
+{% elif days %}
+  <div class="blob" style="right:-150px;top:110px;width:360px;height:360px;background:var(--blue1)"></div>
+  <img class="ill" src="/static/ill/table.webp" style="right:-10px;top:150px;width:210px" alt="">
+{% else %}
+  <div class="blob" style="left:-60px;bottom:-136px;width:510px;height:510px;background:var(--blue1)"></div>
+  <img class="ill" src="/static/ill/lying.webp" style="left:14px;bottom:245px;width:360px" alt="">
+{% endif %}
+</div>
+{% endblock %}
 {% block content %}
 {% if tab == "plan" %}
-<h1>Wochenplan<span>Hallo {{ member.name }}</span></h1>
+{% if days %}
+<div class="row between" style="align-items:flex-end">
+  <div><div class="small">Hallo {{ member.name }},</div><h1 class="t1">Deine Woche</h1></div>
+  <div class="num" style="font-size:30px">{{ days|length }}<span style="color:var(--ink3)">/7</span></div>
+</div>
+{% if plan %}
+<div style="width:170px;margin-top:64px">
+  <div class="stat"><span class="lbl">Einkauf<br>gesamt</span><span class="num" style="font-size:36px">{{ plan.total_cents|euro }}</span></div>
+  <div class="stat mute" style="margin-top:10px"><span class="lbl">Gespart</span><span class="num" style="font-size:28px;color:var(--deal)">{{ plan.saved_cents|euro }}</span></div>
+</div>
+{% endif %}
 {% for day, entries in days %}
-<h2>{{ day }}</h2>
+<h2 class="day">{{ day }}</h2>
 {% for e in entries %}
-<details class="card meal">
+<details class="meal">
   <summary>
-    <span class="emoji" aria-hidden="true">🍽️</span>
-    <span>
-      <span class="muted">{{ meals.get(e.meal_type, e.meal_type) }} · ⏱ {{ e.recipe.prep_minutes }} min · <span class="price">{{ e.cost_cents|euro }}</span></span><br>
-      <span class="title">{{ e.recipe.title }}</span>
+    <span class="plate a-mini" style="width:64px;height:64px{% if e.recipe.image_url %};background-image:url('{{ e.recipe.image_url }}'){% endif %}">
+      {% if not e.recipe.image_url %}<svg class="i" aria-hidden="true"><use href="#i-fork"/></svg>{% endif %}</span>
+    <span style="flex:1;min-width:0">
+      <span class="lbl" style="color:var(--ink)">{{ meals.get(e.meal_type, e.meal_type) }} · {{ e.recipe.prep_minutes }} min</span>
+      <span class="t2" style="display:block">{{ e.recipe.title }}</span>
+      <span class="small" style="display:block">{{ e.cost_cents|euro }}</span>
     </span>
-    <span class="chev" aria-hidden="true">›</span>
+    <svg class="i chev" aria-hidden="true"><use href="#i-chev"/></svg>
   </summary>
   <div class="body">
-    {% if e.recipe.description %}<p class="muted">{{ e.recipe.description }}</p>{% endif %}
-    <h2>Zutaten für {{ e.recipe.servings }}</h2>
-    <ul>
-      {% for i in e.recipe.ingredients %}
-      <li>{{ i|ing }} {{ i.name }}</li>
-      {% endfor %}
-    </ul>
-    <h2>Zubereitung</h2>
-    <ol>{% for s in e.recipe.steps %}<li>{{ s }}</li>{% endfor %}</ol>
+    {% if e.recipe.description %}<p class="text">{{ e.recipe.description }}</p>{% endif %}
+    <div class="head">Zutaten für {{ e.recipe.servings }}</div>
+    {% for i in e.recipe.ingredients %}
+    <div class="irow s"><span class="nm">{{ i.name }}</span><span class="v">{{ i|ing }}</span></div>
+    {% endfor %}
+    <div class="head">Zubereitung</div>
+    {% for s in e.recipe.steps %}<div class="step"><span class="num">{{ loop.index }}</span><span>{{ s }}</span></div>{% endfor %}
   </div>
 </details>
 {% endfor %}
-{% else %}
-<div class="card empty">
-  <div class="big">🗓️</div>
-  <h2>Noch kein Wochenplan</h2>
-  <p class="muted">Sobald ein Plan erstellt ist, steht er hier.</p>
-</div>
 {% endfor %}
-{% if plan %}<p class="muted">Einkauf gesamt {{ plan.total_cents|euro }} · gespart {{ plan.saved_cents|euro }}</p>{% endif %}
 {% else %}
-<h1>Einkaufsliste<span>gemeinsam abhaken</span></h1>
-<form class="add" hx-post="/app/items" hx-target="#list" hx-swap="outerHTML" hx-on::after-request="this.reset()">
-  <input type="text" name="name" maxlength="100" required placeholder="Artikel hinzufügen" aria-label="Artikel">
-  <button type="submit" aria-label="Hinzufügen">+</button>
-</form>
-<div hx-get="/app/list" hx-trigger="load" hx-swap="outerHTML"><p class="muted">Lädt …</p></div>
+<h1 class="t1" style="margin-top:40px;font-size:42px">Noch nichts<br>geplant.</h1>
+<p style="color:var(--ink2);font-size:17px;margin-top:8px">Sobald ein Plan erstellt ist, steht er hier.</p>
 {% endif %}
-<nav class="tabs">
-  <a href="/app?tab=plan" class="{{ 'active' if tab == 'plan' }}"><span class="ico">🗓️</span>Wochenplan</a>
-  <a href="/app?tab=liste" class="{{ 'active' if tab == 'liste' }}"><span class="ico">🛒</span>Einkauf</a>
+{% else %}
+<div style="min-height:256px"><div class="small">gemeinsam abhaken</div><h1 class="t1">Einkauf</h1>
+<div id="stat"></div></div>
+<form class="row add" hx-post="/app/items" hx-target="#list" hx-swap="outerHTML" hx-on::after-request="this.reset()">
+  <svg class="i" aria-hidden="true"><use href="#i-plus"/></svg>
+  <input type="text" name="name" maxlength="100" required placeholder="Artikel hinzufügen" aria-label="Artikel">
+  <button class="circle" type="submit" aria-label="Hinzufügen"><svg class="i" aria-hidden="true"><use href="#i-arrow"/></svg></button>
+</form>
+<div hx-get="/app/list" hx-trigger="load" hx-swap="outerHTML"><p class="small" style="margin-top:16px">Lädt …</p></div>
+{% endif %}
+<nav class="nav" data-on="{{ 1 if tab == 'liste' else 0 }}">
+  <a href="/app?tab=plan" aria-label="Wochenplan"{% if tab == 'plan' %} aria-current="page"{% endif %}><svg class="i" aria-hidden="true"><use href="#i-cal"/></svg></a>
+  <a href="/app?tab=liste" aria-label="Einkauf"{% if tab == 'liste' %} aria-current="page"{% endif %}><svg class="i" aria-hidden="true"><use href="#i-bag"/></svg></a>
 </nav>
+<script>
+  // Mulde unter dem aktiven Symbol, Kreis-Mitte = Mulden-Mitte (Logik aus mockups/redesign-v8.html, Tabs über die Breite verteilt)
+  const nav = document.querySelector(".nav"), tabs = [...nav.querySelectorAll("a")], on = +nav.dataset.on, T = 34, R = 38;
+  function drawNav() {
+    const W = nav.clientWidth, x = i => W / tabs.length * (i + .5), c = x(on);
+    const d = `M0 ${T}H${c - R - 16}Q${c - R} ${T} ${c - R} ${T + 12}A${R} ${R} 0 0 0 ${c + R} ${T + 12}Q${c + R} ${T} ${c + R + 16} ${T}H${W}V120H0Z`;
+    nav.querySelector("svg.bar")?.remove();
+    nav.insertAdjacentHTML("afterbegin", `<svg class="bar" viewBox="0 0 ${W} 120" aria-hidden="true"><path d="${d}" fill="#fff"/></svg>`);
+    tabs.forEach((t, i) => { t.classList.toggle("on", i === on); t.style.left = x(i) + "px"; t.style.top = (i === on ? T + 12 : T + 34) + "px"; });
+  }
+  drawNav();
+  addEventListener("resize", drawNav);
+</script>
 {% endblock %}

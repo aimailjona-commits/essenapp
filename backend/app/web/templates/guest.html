@@ -1,19 +1,27 @@
 {% extends "base.html" %}
 {% block title %}{{ lst.name }} – Kochpilot{% endblock %}
+{% block deco %}
+<div class="deco" aria-hidden="true">
+  <div class="leaf" style="right:0;top:0;width:166px;height:270px;border-bottom-left-radius:110px;background:var(--blue)"></div>
+  <img class="ill" src="/static/ill/shopper.webp" style="right:6px;top:44px;width:144px" alt="">
+</div>
+{% endblock %}
 {% block content %}
-<h1>{{ lst.name }}<span>gemeinsame Liste</span></h1>
+<div style="min-height:256px"><div class="small">gemeinsame Liste</div><h1 class="t1" style="padding-right:150px">{{ lst.name }}</h1>
+<div id="stat"></div></div>
 <input type="hidden" id="guest" name="guest">
-<form class="add" hx-post="{{ base }}/items" hx-target="#list" hx-swap="outerHTML" hx-include="#guest" hx-on::after-request="this.reset()">
+<form class="row add" hx-post="{{ base }}/items" hx-target="#list" hx-swap="outerHTML" hx-include="#guest" hx-on::after-request="this.reset()">
+  <svg class="i" aria-hidden="true"><use href="#i-plus"/></svg>
   <input type="text" name="name" maxlength="100" required placeholder="Artikel hinzufügen" aria-label="Artikel">
-  <button type="submit" aria-label="Hinzufügen">+</button>
+  <button class="circle" type="submit" aria-label="Hinzufügen"><svg class="i" aria-hidden="true"><use href="#i-arrow"/></svg></button>
 </form>
-<div hx-get="{{ base }}/list" hx-trigger="load" hx-swap="outerHTML"><p class="muted">Lädt …</p></div>
+<div hx-get="{{ base }}/list" hx-trigger="load" hx-swap="outerHTML"><p class="small" style="margin-top:16px">Lädt …</p></div>
 
-<div class="overlay" id="ask" hidden>
-  <form class="card" id="ask-form">
-    <h2>Wie heißt du?</h2>
-    <p class="muted">Damit die anderen sehen, wer was abgehakt hat.</p>
-    <input type="text" id="ask-name" maxlength="50" required placeholder="Dein Name" autocomplete="given-name">
+<div class="scrim" id="ask" hidden>
+  <form class="sheet" id="ask-form">
+    <h2 class="t2">Wie heißt du?</h2>
+    <p class="text">Damit die anderen sehen, wer was abgehakt hat.</p>
+    <input class="field" type="text" id="ask-name" maxlength="50" required placeholder="Dein Name" autocomplete="given-name" aria-label="Dein Name">
     <button class="btn" type="submit">Los geht's</button>
   </form>
 </div>

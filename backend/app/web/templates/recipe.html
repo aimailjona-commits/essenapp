@@ -1,29 +1,34 @@
 {% extends "base.html" %}
 {% block title %}{{ recipe.title }} – Kochpilot{% endblock %}
+{% block deco %}
+<div class="deco" aria-hidden="true">
+  <div class="blob" style="right:-110px;top:40px;width:320px;height:320px;background:var(--blue1)"></div>
+</div>
+{% endblock %}
 {% block content %}
-{% if recipe.image_url %}<img class="hero" src="{{ recipe.image_url }}" alt="">{% endif %}
-<h1>{{ recipe.title }}<span>von {{ origin }}</span></h1>
-{% if recipe.description %}<p>{{ recipe.description }}</p>{% endif %}
-<p class="muted">⏱ {{ recipe.prep_minutes }} min · 🍽 {{ recipe.servings }} Portionen</p>
+<div class="t2">Geteiltes Rezept</div>
+{% if recipe.image_url %}<div class="plate" role="img" aria-label="{{ recipe.title }}" style="width:180px;height:180px;margin:18px auto 0;background-image:url('{{ recipe.image_url }}')"></div>{% endif %}
+<h1 class="t2" style="margin-top:24px;font-size:28px">{{ recipe.title }}</h1>
+<div class="row" style="margin-top:10px"><span class="chip"><svg class="i" style="width:18px" aria-hidden="true"><use href="#i-users"/></svg>von {{ origin }}</span></div>
+<div class="small" style="font-size:13px;margin-top:8px">{{ recipe.prep_minutes }} min · {{ recipe.servings }} Portionen{% if recipe.steps %} · {{ recipe.steps|length }} Schritte{% endif %}</div>
+{% if recipe.description %}<p class="text" style="margin-top:8px">{{ recipe.description }}</p>{% endif %}
 
+<div style="margin-top:24px">
 {% if imported %}
-<div class="card">✓ Liegt jetzt in den Rezepten von {{ member.household.name }}.</div>
+<div class="irow" style="border-bottom:1.5px solid var(--line)"><span class="ck on" aria-hidden="true"><svg class="i"><use href="#i-check"/></svg></span><span class="nm">Liegt jetzt in den Rezepten von {{ member.household.name }}.</span></div>
 {% elif member %}
 <form method="post" action="/r/{{ code }}/import"><button class="btn" type="submit">In meine Rezepte übernehmen</button></form>
 {% else %}
 <a class="btn" href="essenapp://import-recipe/{{ code }}">In meine Rezepte übernehmen</a>
-<p class="muted center">Öffnet Kochpilot. Ohne App: erst den Einladungslink deines Haushalts öffnen, dann diesen Link.</p>
+<p class="small center" style="font-size:13px;margin-top:10px">Öffnet Kochpilot. Ohne App: erst den Einladungslink deines Haushalts öffnen, dann diesen Link.</p>
 {% endif %}
-
-<h2>Zutaten</h2>
-<div class="card">
-  <ul class="plain">
-  {% for i in recipe.ingredients %}<li><span>{{ i.name }}</span><span class="muted">{{ i | ing }}</span></li>{% endfor %}
-  </ul>
 </div>
+
+<div class="head">Zutaten</div>
+{% for i in recipe.ingredients %}<div class="irow s"><span class="nm">{{ i.name }}</span><span class="v">{{ i | ing }}</span></div>{% endfor %}
 {% if recipe.steps %}
-<h2>Schritte</h2>
-<div class="card"><ol>{% for s in recipe.steps %}<li>{{ s }}</li>{% endfor %}</ol></div>
+<div class="head">Zubereitung</div>
+{% for s in recipe.steps %}<div class="step"><span class="num">{{ loop.index }}</span><span>{{ s }}</span></div>{% endfor %}
 {% endif %}
-<p class="muted center">Mit Kochpilot geplant</p>
+<p class="small center" style="font-size:13px;margin-top:32px">Mit Kochpilot geplant</p>
 {% endblock %}

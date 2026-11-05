@@ -1,18 +1,27 @@
 {% extends "base.html" %}
 {% block title %}{{ household.name }} – Kochpilot{% endblock %}
+{% block deco %}
+<div class="deco" aria-hidden="true">
+  <div class="blob" style="left:-150px;top:-150px;width:580px;height:580px;background:var(--blue)"></div>
+  <img class="ill" src="/static/ill/shopper.webp" style="left:40px;top:80px;width:320px" alt="">
+</div>
+{% endblock %}
 {% block content %}
-<h1>Willkommen bei<span>{{ household.name }}</span></h1>
-<form class="card" method="post" action="/app/join/{{ code }}">
-  <p>Du wurdest eingeladen. Wie heißt du? Dein Name steht bei allem, was du auf der Einkaufsliste hinzufügst oder abhakst.</p>
-  <input type="text" name="member_name" maxlength="50" required placeholder="Dein Name" autocomplete="given-name">
-  <button class="btn" type="submit">Beitreten</button>
+<div style="padding-top:440px">
+  <div class="small">Willkommen bei</div>
+  <h1 class="t1" style="margin-top:8px">{{ household.name }}</h1>
+</div>
+<form method="post" action="/app/join/{{ code }}">
+  <p class="text" style="margin-top:10px">Du wurdest eingeladen. Wie heißt du? Dein Name steht bei allem, was du auf der Einkaufsliste hinzufügst oder abhakst.</p>
+  <input class="field" style="margin-top:20px" type="text" name="member_name" maxlength="50" required placeholder="Dein Name" autocomplete="given-name" aria-label="Dein Name">
+  <button class="btn" style="margin-top:12px" type="submit">Beitreten</button>
 </form>
 {% if days %}
-<h2>Wochenplan</h2>
+<div class="sec2" style="margin-top:36px">Wochenplan</div>
 {% for day, entries in days %}
-<div class="card">
-  <div class="muted">{{ day }}</div>
-  {% for e in entries %}<div class="title">{{ e.recipe.title }}</div>{% endfor %}
+<div class="irow" style="align-items:baseline;gap:12px;padding:16px 0">
+  <span class="t2" style="font-size:19px;width:104px;flex:none">{{ day }}</span>
+  <span style="font-weight:700">{% for e in entries %}{{ e.recipe.title }}{% if not loop.last %}<br>{% endif %}{% endfor %}</span>
 </div>
 {% endfor %}
 {% endif %}

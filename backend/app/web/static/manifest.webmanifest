@@ -4,7 +4,7 @@
   "lang": "de",
   "start_url": "/app",
   "display": "standalone",
-  "background_color": "#F3F3F3",
-  "theme_color": "#F3F3F3",
+  "background_color": "#F3EEE4",
+  "theme_color": "#F3EEE4",
   "icons": [{"src": "/static/icon.png", "sizes": "1024x1024", "type": "image/png", "purpose": "any"}]
 }

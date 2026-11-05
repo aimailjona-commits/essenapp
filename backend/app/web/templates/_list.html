@@ -1,24 +1,23 @@
-<div id="list" hx-get="{{ base }}/list" hx-trigger="every 10s" hx-swap="outerHTML" hx-target="this" hx-include="#guest">
-  <p class="muted">{{ open_count }} von {{ lst.items|length }} offen</p>
+<div id="stat" hx-swap-oob="true" style="width:190px;margin-top:24px">
+  <div class="stat"><span class="lbl">Offen</span><span class="num" style="font-size:44px">{{ open_count }}<span style="color:var(--ink3);font-size:26px">/{{ lst.items|length }}</span></span></div>
+</div>
+<div id="list" hx-get="{{ base }}/list" hx-trigger="every 10s" hx-swap="outerHTML" hx-target="this"{% if base != "/app" %} hx-include="#guest"{% endif %}>
   {% for chain, items in groups %}
-  <div class="chain">{{ chain }}</div>
-  <div class="card items">
-    {% for i in items %}
-    <button class="item{% if i.checked %} done{% endif %}" hx-post="{{ base }}/items/{{ i.id }}/toggle" hx-target="#list"
-            hx-swap="outerHTML" aria-pressed="{{ 'true' if i.checked else 'false' }}">
-      <span class="check" aria-hidden="true">{% if i.checked %}✓{% endif %}</span>
-      <span class="name">{{ i.name }}
-        <span class="meta">{% if i.checked %}✓ {{ i.checked_by }}{% elif i.source == "manual" %}von {{ i.added_by }}{% endif %}</span>
-      </span>
-      <span class="qty">{{ i|qty }}</span>
-    </button>
-    {% endfor %}
-  </div>
+  <div class="sec2">{{ chain }}</div>
+  {% for i in items %}
+  <button class="item irow{% if i.checked %} done{% endif %}" hx-post="{{ base }}/items/{{ i.id }}/toggle" hx-target="#list"
+          hx-swap="outerHTML" aria-pressed="{{ 'true' if i.checked else 'false' }}">
+    <span class="ck{% if i.checked %} on{% endif %}" aria-hidden="true">{% if i.checked %}<svg class="i"><use href="#i-check"/></svg>{% endif %}</span>
+    <span class="nm">{{ i.name }}
+      <span class="meta">{% if i.checked %}✓ {{ i.checked_by }}{% elif i.source == "manual" %}von {{ i.added_by }}{% endif %}</span>
+    </span>
+    <span class="v">{{ i|qty }}</span>
+  </button>
+  {% endfor %}
   {% else %}
-  <div class="card empty">
-    <div class="big">🛒</div>
-    <h2>Die Liste ist leer</h2>
-    <p class="muted">Füge oben einen Artikel hinzu.</p>
+  <div style="margin-top:28px">
+    <div class="t2">Die Liste ist leer</div>
+    <p class="text" style="margin-top:6px">Füge oben einen Artikel hinzu.</p>
   </div>
   {% endfor %}
 </div>
