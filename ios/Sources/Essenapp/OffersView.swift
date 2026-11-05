@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 /// S4 Angebote v8 „Tinte & Bogen“ (diese/nächste Woche, Kategorien, Filter-Sheet, Drogerie mit Monatsaktionen, Leer)
 /// und Umschalter zur Merkliste (S10, `WatchListView`). Mockup: docs/ui/mockups/v8-parts/c.html, Kern S4 in redesign-v8.html.
@@ -839,7 +840,6 @@ struct OfferDetailView: View {
         static let top: CGFloat = 14
         static let titleWidth: CGFloat = 200  // Titel läuft nicht in die Zeichnung
         static let titleSize: CGFloat = 34  // .t1
-        static let glyph: CGFloat = 0.44  // mittlere Zeichenbreite der Serif in em
         static let infoRow: CGFloat = 50
         static let bottom: CGFloat = 120  // Platz für den festen Knopf
     }
@@ -921,13 +921,21 @@ struct OfferDetailView: View {
         .background(Theme.C.bg.ignoresSafeArea(edges: .top))
     }
 
+    /// t1 inkl. Dynamic Type, aber so klein, dass das längste Wort (echt gemessen) in eine Zeile passt:
+    /// Umbruch nur zwischen Wörtern, nie mitten im Wort.
+    private var titleSize: CGFloat {
+        let size = UIFontMetrics(forTextStyle: .largeTitle).scaledValue(for: L.titleSize)
+        guard let font = UIFont(name: "DMSerifDisplay-Regular", size: size) else { return size }
+        let widest = offer.title.split(whereSeparator: \.isWhitespace)
+            .map { (String($0) as NSString).size(withAttributes: [.font: font]).width }.max() ?? 0
+        return widest > L.titleWidth ? floor(size * L.titleWidth / widest * 0.98) : size  // 2 % Luft für Rundung
+    }
+
     private var top: some View {
         VStack(alignment: .leading, spacing: 0) {
             if let d = offer.discount { DealPill(text: "−\(d) %").padding(.top, 30) }
-            // Längstes Wort passt in eine Zeile: Umbruch nur zwischen Wörtern
-            let word = offer.title.split(separator: " ").map(\.count).max() ?? 1
             Text(offer.title)
-                .font(Theme.F.serif(min(L.titleSize, L.titleWidth / (CGFloat(word) * L.glyph)), relativeTo: .largeTitle))
+                .font(.custom("DMSerifDisplay-Regular", fixedSize: titleSize))
                 .lineLimit(3)
                 .frame(maxWidth: L.titleWidth, alignment: .leading)
                 .padding(.top, 8)

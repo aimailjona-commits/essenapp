@@ -898,7 +898,8 @@ private enum S3Layout {
     static let stepNum: CGFloat = 22, stepNumWidth: CGFloat = 34, stepText: CGFloat = 15, stepLine: CGFloat = 15 * 0.45 - 3
     static let ratingsTop: CGFloat = 32, ratingsListTop: CGFloat = 10, ratingNum: CGFloat = 34, star: CGFloat = 14
     static let fixBottom: CGFloat = 30, cookCircle: CGFloat = 64, cookIcon: CGFloat = 22, fixCircle: CGFloat = 56, fixGap: CGFloat = 10
-    static let fade: CGFloat = 160, importedFade: CGFloat = 120
+    // Mockup 160 bzw. 120; 200, damit der volle `bg`-Teil (ab 45 %) über die Oberkante der Leiste (30 + 64) reicht
+    static let fade: CGFloat = 200
 
     static var head: Font { Theme.F.text(16, .extrabold, relativeTo: .headline) }  // font-weight 800 (16)
     static var small13: Font { Theme.F.text(13, .semibold, relativeTo: .footnote) }
@@ -978,7 +979,7 @@ extension RecipeDetailView {
         }
         .foregroundStyle(Theme.C.ink)
         .padding(.horizontal, Theme.pagePadding)
-        .padding(.bottom, Theme.ctaAboveTabBar)  // .scr padding-bottom 120: Platz für die feste Leiste
+        .padding(.bottom, S3Layout.fade)  // Platz für feste Leiste + Verlauf, letzte Zeile bleibt lesbar
         .frame(maxWidth: .infinity, alignment: .leading)
         .pinned(right: imported ? S3Layout.importedPlateRight : S3Layout.plateRight,
                 top: imported ? S3Layout.importedPlateTop : S3Layout.plateTop) {
@@ -1122,14 +1123,27 @@ extension RecipeDetailView {
                 let amount = qty(ing.amount * factor, ing.unit)
                 // Feature 1: Zutat antippen → Angebot (oder passende Angebote)
                 Button { if let offer { openOffer = offer } else { searchIngredient = ing } } label: {
-                    IRow(name: ing.name, sub: imported ? amount : nil, tint: ingredientTint(ing.name, offer: offer, index: index)) {
-                        ingredientArt(ing.name)
-                    } trail: {
-                        HStack(spacing: 14) {
-                            ingredientBadge(ing, offer: offer, rest: rest)
-                            if !imported { Text(amount).font(S3Layout.amount).lineLimit(1).contentTransition(.numericText()) }
+                    // wie `IRow`, aber Name einzeilig (verkleinert statt mitten im Wort umzubrechen)
+                    HStack(spacing: 14) {
+                        ingredientArt(ing.name).frame(width: Theme.S.rowCircle, height: Theme.S.rowCircle)
+                            .background(ingredientTint(ing.name, offer: offer, index: index), in: Circle())
+                        VStack(alignment: .leading, spacing: 1) {
+                            Text(ing.name).font(Theme.F.rowName).lineLimit(1).minimumScaleFactor(0.6)
+                            if imported {
+                                Text(amount).font(S3Layout.small13).foregroundStyle(Theme.C.ink2).lineLimit(1)
+                                    .contentTransition(.numericText())
+                            }
+                        }
+                        .layoutPriority(1)
+                        Spacer(minLength: 8)
+                        ingredientBadge(ing, offer: offer, rest: rest).fixedSize()
+                        if !imported {
+                            Text(amount).font(S3Layout.amount).lineLimit(1).fixedSize().contentTransition(.numericText())
                         }
                     }
+                    .frame(minHeight: Theme.S.row)
+                    .overlay(alignment: .top) { Hairline() }
+                    .contentShape(Rectangle())
                     .foregroundStyle(Theme.C.ink)
                 }
                 .buttonStyle(PressableStyle())
@@ -1347,13 +1361,11 @@ extension RecipeDetailView {
     /// Teil 2/3 (gescrollt): blauer Kreis 56 + „★ Gekocht – bewerten“. Darüber Verlauf in `bg`.
     fileprivate var bottomBar: some View {
         ZStack(alignment: .bottom) {
-            if deep || imported {
-                LinearGradient(stops: [.init(color: Theme.C.bg.opacity(0), location: 0), .init(color: Theme.C.bg, location: 0.45)],
-                               startPoint: .top, endPoint: .bottom)
-                    .frame(height: deep ? S3Layout.fade : S3Layout.importedFade)
-                    .allowsHitTesting(false)
-                    .transition(.opacity)
-            }
+            // Verlauf immer (auch Teil 1), damit Zeilen nicht unter der Leiste durchscheinen; voll `bg` ab 45 %
+            LinearGradient(stops: [.init(color: Theme.C.bg.opacity(0), location: 0), .init(color: Theme.C.bg, location: 0.45)],
+                           startPoint: .top, endPoint: .bottom)
+                .frame(height: S3Layout.fade)
+                .allowsHitTesting(false)
             Group {
                 if deep {
                     HStack(spacing: S3Layout.fixGap) {
