@@ -103,7 +103,7 @@ struct MainView: View {
     @State private var allOpen = ["quick", "alles"].contains(Demo.screen ?? "")  // „Alles“ aus dem „+“ (v9 2A)
     @State private var showRecipes = false  // Meine Rezepte (unter „+“, früher eigener Tab)
     @State private var showGenerator = ["generator", "generating", "singlestore", "generatorMore"].contains(Demo.screen ?? "")  // „Überrasch mich“
-    @State private var planWeek = ["swipe", "match", "auswahl", "verteilen", "magnicht"].contains(Demo.screen ?? "")  // Swipe-Stapel (20)
+    @State private var planWeek = ["swipe", "match", "auswahl", "verteilen", "magnicht", "dishmenu"].contains(Demo.screen ?? "")  // Swipe-Stapel (20)
     @State private var showRecipeForm = false  // essenapp://recipe/new (S17)
     @State private var deepAchievements = false  // Push „Neuer Erfolg“ (54)
     @State private var sharedCode: String? = Demo.screen == "sharedrecipe" ? Demo.sharedRecipe.code : nil  // essenapp://import-recipe/<code> (56)

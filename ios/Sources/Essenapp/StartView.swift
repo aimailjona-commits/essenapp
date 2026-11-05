@@ -412,19 +412,13 @@ struct StartView: View {
 
 /// Heute (1A): Gericht mit Teller rechts und der festen Gericht-Leiste Kochen · Tauschen · Liste · Teilen · Mehr.
 private struct TodayBlock: View {
-    @Environment(AppStore.self) private var store
     let meal: MealDTO
     let toList: () -> Void
-    @State private var choosing = false
-    @State private var shareCard = false
-    @State private var shareLink = false
     @State private var noMood = false
-    @State private var guests = false
 
     private enum K {
         static let width: CGFloat = 190
         static let plate: CGFloat = 190, plateRight: CGFloat = -30, plateTop: CGFloat = -70
-        static let act: CGFloat = 46, actWidth: CGFloat = 56
     }
 
     var body: some View {
@@ -435,67 +429,34 @@ private struct TodayBlock: View {
                     .multilineTextAlignment(.leading).lineLimit(4).minimumScaleFactor(0.7)
             }
             .buttonStyle(.plain)
+            .dishPress(dish)
             .frame(width: K.width, alignment: .leading)
             (Text("\(meal.recipe.prepMinutes) min · \(euro(PlanWeek.perPortion(meal))) p. P.")
                 + (deals > 0 ? Text(" · ") + Text("\(deals) im Angebot").foregroundStyle(Theme.C.deal) : Text("")))
                 .font(Theme.F.text(13, .semibold, relativeTo: .footnote)).foregroundStyle(Theme.C.ink2)
                 .frame(width: K.width, alignment: .leading)
                 .padding(.top, 6)
-            HStack(spacing: 0) {
-                NavigationLink { RecipeDetailView(meal: meal) } label: { act(.play, "Kochen", go: true) }
-                    .buttonStyle(PressableStyle())
-                Spacer(minLength: 4)
-                Button { choosing = true } label: { act(.swap, "Tauschen") }.buttonStyle(PressableStyle())
-                Spacer(minLength: 4)
-                Button(action: toList) { act(.bag, "Liste") }.buttonStyle(PressableStyle())
-                Spacer(minLength: 4)
-                Button { shareCard = true } label: { act(.share, "Teilen") }.buttonStyle(PressableStyle())
-                Spacer(minLength: 4)
-                Menu {
-                    Button("Keine Lust?", systemImage: "moon.zzz") { noMood = true }
-                    Button("Gäste", systemImage: "person.2") { guests = true }
-                    Button("Als Link teilen", systemImage: "link") { shareLink = true }
-                } label: { act(.dots, "Mehr") }
-            }
-            .padding(.top, 20)
+            DishActionBar(dish: dish).padding(.top, 20)
         }
         .padding(.horizontal, Theme.pagePadding)
         .frame(maxWidth: .infinity, alignment: .leading)
         .pinned(right: K.plateRight, top: K.plateTop) {
             PlanPlate(url: mediaURL(meal.recipe.imageUrl), size: K.plate)
         }
-        .modifier(RerollDialog(meal: meal, isPresented: $choosing) { direction, wish in
-            Task { await store.reroll(meal, direction: direction, wish: wish) }
-        })
-        .sheet(isPresented: $shareCard) { ShareCardSheet(meal: meal).presentationDetents([.large]).presentationCornerRadius(Theme.R.sheet) }
-        .sheet(isPresented: $shareLink) {
-            RecipeLinkSheet(recipeId: meal.recipe.id, title: meal.recipe.title).presentationDetents([.medium, .large])
-                .presentationCornerRadius(Theme.R.sheet)
-        }
         .sheet(isPresented: $noMood) { NoMoodSheet().presentationDetents([.large]) }
-        .sheet(isPresented: $guests) { GuestsSheet(meal: meal).presentationDetents([.height(466), .large]) }
     }
 
-    /// Knopf der Gericht-Leiste (`.f9-acts`): Kreis 46 mit Tinten-Rand (Kochen gefüllt), Beschriftung 11.
-    private func act(_ icon: Icon8, _ title: String, go: Bool = false) -> some View {
-        VStack(spacing: 5) {
-            Icon(icon, size: 19)
-                .foregroundStyle(go ? Theme.C.onInk : Theme.C.ink)
-                .frame(width: K.act, height: K.act)
-                .background(go ? Theme.C.ink : Theme.C.bg, in: Circle())
-                .overlay { if !go { Circle().strokeBorder(Theme.C.ink, lineWidth: Theme.S.hair) } }
-            Text(title).font(Theme.F.text(11, .extrabold, relativeTo: .caption2)).foregroundStyle(Theme.C.ink)
-        }
-        .frame(width: K.actWidth)
-        .contentShape(Rectangle())
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel(title)
+    /// Gemeinsame Gericht-Leiste (22.2); „Keine Lust?“ bleibt im Menü, Liste schon drauf → Tab Einkauf.
+    private var dish: Dish {
+        var d = Dish(meal)
+        d.openList = toList
+        d.custom[.noMood] = { noMood = true }
+        return d
     }
 }
 
 /// Angebots-Karte (1A „Angebote für dich“): Laden, Rabatt, Name, Preis; Merken · Auf Liste · Rezepte damit.
 private struct StartOfferCard: View {
-    @Environment(AppStore.self) private var store
     let offer: OfferDTO
 
     private enum K {
@@ -503,12 +464,9 @@ private struct StartOfferCard: View {
         static let art: CGFloat = 120, artRight: CGFloat = -26, artTop: CGFloat = -18
         static let img: CGFloat = 96, imgLeft: CGFloat = 10, imgTop: CGFloat = 18
         static let nameTop: CGFloat = 62
-        static let mini: CGFloat = 32
     }
 
     var body: some View {
-        let watched = store.watch(for: offer) != nil
-        let listed = store.isOnList(offer)
         VStack(alignment: .leading, spacing: 0) {
             HStack(spacing: 6) {
                 StoreLogo(chain: offer.chain, size: 30)
@@ -526,19 +484,7 @@ private struct StartOfferCard: View {
             }
             .buttonStyle(.plain)
             .padding(.top, K.nameTop)
-            HStack(spacing: 6) {
-                Button { Task { await store.toggleWatch(offer) } } label: { mini(.heart, on: watched) }
-                    .buttonStyle(PressableStyle())
-                    .accessibilityLabel(watched ? "Von der Merkliste entfernen" : "Auf die Merkliste")
-                Button { store.addToList(offer) } label: { mini(listed ? .check : .plus, go: true) }
-                    .buttonStyle(PressableStyle())
-                    .disabled(listed)
-                    .accessibilityLabel(listed ? "Auf der Einkaufsliste" : "Auf die Einkaufsliste")
-                NavigationLink { OfferDetailView(offer: offer) } label: { mini(.book) }
-                    .buttonStyle(PressableStyle())
-                    .accessibilityLabel("Rezepte damit")
-            }
-            .padding(.top, 10)
+            OfferActions(offer: offer).padding(.top, 10)
         }
         .padding(14)
         .frame(width: K.width, alignment: .leading)
@@ -553,16 +499,6 @@ private struct StartOfferCard: View {
         }
         .background(Theme.C.card)
         .clipShape(RoundedRectangle(cornerRadius: K.radius, style: .continuous))
-    }
-
-    /// `.f9-mini`: Kreis 32 (Haarlinie, gemerkt = Blau, Liste = Tinte); Tap-Fläche 44.
-    private func mini(_ icon: Icon8, on: Bool = false, go: Bool = false) -> some View {
-        Icon(icon, size: 15)
-            .foregroundStyle(go ? Theme.C.onInk : Theme.C.ink)
-            .frame(width: K.mini, height: K.mini)
-            .background(go ? Theme.C.ink : on ? Theme.C.blue : Theme.C.bg, in: Circle())
-            .overlay { if !go && !on { Circle().strokeBorder(Theme.C.line, lineWidth: Theme.S.hair) } }
-            .padding(6).contentShape(Rectangle()).padding(-6)
     }
 }
 

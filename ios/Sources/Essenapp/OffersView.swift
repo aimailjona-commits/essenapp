@@ -828,9 +828,8 @@ struct OfferArt: View {
 }
 
 /// Angebotskachel (v9 `.c9-tc`): Fläche `card`, Bildfeld in Formfarbe mit Zeichnung oder Produktfoto auf weißem Plättchen,
-/// Rabatt oben links, „+“ unten rechts = Zur Liste (a1-add), Name, Preis mit altem Preis, Menge · Frist, Gericht aus dem Plan.
+/// Rabatt oben links, unten rechts `OfferActions` (Merken · Auf Liste mit Flug a1-add · Rezepte damit), Name, Preis mit altem Preis, Menge · Frist, Gericht aus dem Plan.
 struct OfferTile: View {
-    @Environment(AppStore.self) private var store
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     let offer: OfferDTO
     var dish: String?  // „Passt zu deiner Woche“: Gericht, das die Zutat nutzt
@@ -847,13 +846,10 @@ struct OfferTile: View {
         static let art: CGFloat = 80
         static let photo: CGFloat = 92  // weißes Plättchen
         static let text: CGFloat = 4
-        static let plus: CGFloat = 32
-        static let plusRing: CGFloat = 3
-        static let plusOffset = CGSize(width: -2, height: 18)  // Kreis 32: rechts 8, unten −12; Tap-Fläche 44
+        static let actionsOffset = CGSize(width: -8, height: 12)  // Kreise 32: rechts 8, unten −12
     }
 
     var body: some View {
-        let onList = store.isOnList(offer)
         let photo = OfferArt.hasPhoto(offer.title, url: offer.imageUrl)
         let size = photo ? L.photo : L.art
         let sub = [offer.amountText, offer.startsLater ? "ab \(weekdayDay(offer.validFrom))" : "bis \(weekdayDay(offer.validTo))"]
@@ -875,7 +871,9 @@ struct OfferTile: View {
                     }
                     .padding(L.pad)
                 }
-                .overlay(alignment: .bottomTrailing) { plus(onList).offset(L.plusOffset) }
+                .overlay(alignment: .bottomTrailing) {
+                    OfferActions(offer: offer, ring: Theme.C.card) { flown() }.offset(L.actionsOffset)
+                }
             Text(offer.title).font(Theme.F.serif(17, relativeTo: .headline)).lineLimit(2)
                 .padding(.top, 10).padding(.horizontal, L.text)
             HStack(alignment: .firstTextBaseline, spacing: 4) {
@@ -910,36 +908,15 @@ struct OfferTile: View {
         .accessibilityElement(children: .contain)
     }
 
-    private func plus(_ onList: Bool) -> some View {
-        Button {
-            guard !onList else { return }
-            store.addToList(offer)
-            guard !reduceMotion else { return }
-            onAdd?(artFrame)
-            gone = true
-            Task {
-                try? await Task.sleep(for: .seconds(0.6))
-                withAnimation(.spring(response: 0.4, dampingFraction: 0.55)) { gone = false }
-            }
-        } label: {
-            Icon(onList ? .check : .plus, size: 16)
-                .foregroundStyle(Theme.C.onInk)
-                .frame(width: L.plus, height: L.plus)
-                .background(Theme.C.ink, in: Circle())
-                .overlay(Circle().stroke(Theme.C.card, lineWidth: L.plusRing).padding(-L.plusRing / 2))
-                .keyframeAnimator(initialValue: 1.0, trigger: onList) { v, s in v.scaleEffect(s) } keyframes: { _ in
-                    KeyframeTrack {
-                        LinearKeyframe(reduceMotion ? 1 : 0.7, duration: 0.01)
-                        CubicKeyframe(reduceMotion ? 1 : 1.15, duration: 0.2)
-                        CubicKeyframe(1, duration: 0.14)
-                    }
-                }
-                .frame(width: 44, height: 44)
-                .contentShape(Circle())
+    /// Nach „Auf Liste“: Zeichnung fliegt zur Nav und springt danach zurück (a1-add).
+    private func flown() {
+        guard !reduceMotion else { return }
+        onAdd?(artFrame)
+        gone = true
+        Task {
+            try? await Task.sleep(for: .seconds(0.6))
+            withAnimation(.spring(response: 0.4, dampingFraction: 0.55)) { gone = false }
         }
-        .buttonStyle(PressableStyle())
-        .sensoryFeedback(.success, trigger: onList)
-        .accessibilityLabel(onList ? "Auf der Einkaufsliste" : "Zur Einkaufsliste")
     }
 }
 
@@ -1320,7 +1297,7 @@ struct OfferDetailView: View {
 
     /// „Passt zu“: Gerichte im Plan, die dieses Angebot nutzen – Teller über dem Kreis links.
     @ViewBuilder private var meals: some View {
-        let meals = store.plan?.entries.filter { $0.recipe.ingredients.contains { $0.offerId == offer.id } } ?? []
+        let meals = store.meals(using: offer)
         if !meals.isEmpty {
             VStack(alignment: .leading, spacing: 0) {
                 Text("Passt zu").font(Theme.F.t2)

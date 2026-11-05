@@ -23,8 +23,8 @@ Mockups: [`docs/ui/mockups/redesign-v9-entwurf.html`](../ui/mockups/redesign-v9-
 
 ## 22.2 Gleiche Knöpfe überall (Mockup `f.html` Abschnitt 3)
 
-- [ ] Gericht-Aktionsleiste (Kochen · Tauschen · Liste · Teilen · Mehr) + ein gemeinsames Gericht-Menü, in Woche, Start, Rezepte, Swipe
-- [ ] Angebots-Aktionen (Merken · Auf Liste · Rezepte damit) in jeder Angebotszeile
+- [x] Gericht-Aktionsleiste (Kochen · Tauschen · Liste · Teilen · Mehr) + ein gemeinsames Gericht-Menü, in Woche, Start, Rezepte, Swipe
+- [x] Angebots-Aktionen (Merken · Auf Liste · Rezepte damit) in jeder Angebotszeile (`OfferActions.swift`; „Rezepte damit“ = Plan-Gerichte mit diesem Angebot)
 
 ## 22.2b Mehr per Sprache (Nutzerwunsch 2026-11-05)
 

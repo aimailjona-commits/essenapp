@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kühlschrankfee Entwurf</title>
+<link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:wght@500&family=Inter+Tight:wght@600&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet">
+<style>
+/* Entwurf: neuer Name „Fridgefairy / Kühlschrankfee“ – Logo, App-Icon, Maskottchen und Zustands-Illustrationen im v8/v9-Stil. Bilder: fee-v1/ (fal Nano Banana 2, Stil-Vorlage ill-v7). */
+:root{--bg:#FFFFFF;--card:#F5F5F3;--ink:#151515;--ink2:#7C776D;--ink3:#B9B3A7;--line:#DCD5C7;--blue:#AFC4F2;--blue1:#DCE5F8;--blue3:#7C9BE6;--sage:#CFE3D2;--rose:#F2CFC8;--sand:#E7DCC5;--page:#ECEAE5}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:"Manrope",system-ui,sans-serif;font-weight:600;background:var(--page);color:var(--ink);-webkit-font-smoothing:antialiased}
+.serif{font-family:"Crimson Pro",serif;font-weight:500}
+.head{max-width:1300px;margin:0 auto;padding:48px 24px 8px}
+.head h1{font-family:"Crimson Pro",serif;font-weight:500;font-size:48px;line-height:1.05}
+.head p{color:#5b574f;margin-top:12px;max-width:860px;line-height:1.6;font-size:15px}
+h2{font-family:"Crimson Pro",serif;font-weight:500;font-size:32px;max-width:1300px;margin:48px auto 4px;padding:0 24px}
+.sub{max-width:1300px;margin:0 auto;padding:0 24px;color:#5b574f;font-size:14px}
+.grid{display:flex;flex-wrap:wrap;gap:28px;max-width:1300px;margin:20px auto 0;padding:0 24px}
+.tile{background:#fff;border-radius:28px;padding:28px;flex:1 1 360px;display:flex;flex-direction:column;align-items:center;gap:14px;text-align:center}
+.tile .cap{font-size:13px;color:var(--ink2);line-height:1.5}
+.tile .cap b{display:block;color:var(--ink);font-size:15px}
+.lockup{display:flex;align-items:center;gap:14px}
+.lockup img{width:92px}
+.lockup .w{font-family:"Crimson Pro",serif;font-weight:500;font-size:44px;letter-spacing:-.01em;line-height:1}
+.lockup .w i{font-style:normal;color:var(--blue3)}
+.lockup.sm img{width:44px}.lockup.sm .w{font-size:26px}
+.lockup.dark{background:var(--ink);color:#fff;padding:14px 22px;border-radius:999px}
+.icons{display:flex;align-items:flex-end;gap:18px}
+.icons img{border-radius:22.5%;box-shadow:0 10px 24px rgba(0,0,0,.12)}
+.mascot{display:flex;gap:10px}.mascot img{width:220px}
+
+.screens{display:flex;flex-wrap:wrap;gap:44px 32px;justify-content:center;padding:24px 16px 80px;max-width:1400px;margin:0 auto}
+.screen{width:390px;max-width:100%}
+.caption{margin-top:16px;font-size:13px;color:#55524b;line-height:1.55}
+.caption b{display:block;color:var(--ink);font-family:"Crimson Pro",serif;font-weight:500;font-size:21px;margin-bottom:2px}
+.phone{position:relative;width:390px;max-width:100%;height:844px;background:var(--bg);border-radius:54px;overflow:hidden;box-shadow:0 30px 60px rgba(40,30,20,.14)}
+.sb{position:absolute;top:0;left:0;right:0;height:52px;display:flex;align-items:center;justify-content:space-between;padding:8px 34px 0;font-weight:800;font-size:16px;z-index:5}
+.sb .island{position:absolute;left:50%;top:11px;transform:translateX(-50%);width:122px;height:35px;background:#000;border-radius:20px}
+.homebar{position:absolute;bottom:8px;left:50%;transform:translateX(-50%);width:134px;height:5px;border-radius:3px;background:var(--ink);z-index:5}
+.blob{position:absolute;border-radius:50%;z-index:0}
+.c{position:absolute;inset:0;padding:96px 28px 60px;display:flex;flex-direction:column;align-items:center;text-align:center;z-index:1}
+.c .ill{width:300px;margin-top:40px}
+.t1{font-family:"Crimson Pro",serif;font-weight:500;font-size:34px;line-height:1.1;margin-top:18px}
+.small{font-size:15px;color:var(--ink2);line-height:1.5;margin-top:10px;max-width:300px}
+.btn{height:56px;border-radius:999px;background:var(--ink);color:#fff;font-weight:800;font-size:16px;display:flex;align-items:center;justify-content:center;width:100%;margin-top:auto}
+.btn2{height:52px;border-radius:999px;box-shadow:inset 0 0 0 1.5px var(--ink);font-weight:800;font-size:15px;display:flex;align-items:center;justify-content:center;width:100%;margin-top:10px}
+.bar{width:220px;height:8px;border-radius:99px;background:var(--blue1);margin-top:22px;overflow:hidden}
+.bar span{display:block;height:100%;width:40%;border-radius:99px;background:var(--ink);animation:load 2.2s ease-in-out infinite}
+.lbl{font-size:11px;font-weight:800;letter-spacing:.08em;color:var(--ink2);text-transform:uppercase}
+.float{animation:float 2.4s ease-in-out infinite}
+.pop{animation:pop .6s cubic-bezier(.3,1.5,.6,1) both}
+.wob{animation:wob 3s ease-in-out infinite;transform-origin:50% 90%}
+@keyframes float{50%{transform:translateY(-12px)}}
+@keyframes load{0%{transform:translateX(-100%)}100%{transform:translateX(260%)}}
+@keyframes pop{from{transform:scale(.7);opacity:0}}
+@keyframes wob{25%{transform:rotate(-2deg)}75%{transform:rotate(2deg)}}
+@media (prefers-reduced-motion:reduce){.float,.pop,.wob,.bar span{animation:none}}
+.splash{background:var(--blue)}
+.splash .c{justify-content:center}
+.splash .c .ill{width:180px;height:180px;margin:0;padding:22px;background:#fff;border-radius:50%;object-fit:contain}
+.splash .w{font-family:"Crimson Pro",serif;font-weight:500;font-size:44px;margin-top:10px}
+</style>
+</head>
+<body>
+<div class="head">
+  <h1>Fridgefairy · Kühlschrankfee</h1>
+  <p>Entwurf für den neuen Namen. Logo, App-Icon und eine Fee als Maskottchen – gezeichnet im gleichen Tusche-Stil wie die bestehenden Illustrationen (Tinte, Pastellblau, Grau). Darunter sieben Zustände, in denen sie in der App auftauchen könnte. Alles nur Vorschau, in der App ist noch nichts geändert.</p>
+</div>
+
+<h2>Logo</h2>
+<p class="sub">Zeichen + Schriftzug in Crimson Pro (unsere Titel-Schrift). Zwei Zeichen-Varianten, beide Namen zum Vergleich.</p>
+<div class="grid">
+  <div class="tile">
+    <div class="lockup"><img src="fee-v1/logo-a.webp" alt=""><span class="w">Fridge<i>fairy</i></span></div>
+    <div class="lockup"><img src="fee-v1/logo-a.webp" alt=""><span class="w">Kühlschrank<i>fee</i></span></div>
+    <div class="lockup sm dark"><img src="fee-v1/logo-a.webp" alt=""><span class="w">Fridgefairy</span></div>
+    <div class="cap"><b>Logo A – kleiner Kühlschrank</b>Rund, kompakt, gut klein lesbar</div>
+  </div>
+  <div class="tile">
+    <div class="lockup"><img src="fee-v1/logo-b.webp" alt=""><span class="w">Fridge<i>fairy</i></span></div>
+    <div class="lockup"><img src="fee-v1/logo-b.webp" alt=""><span class="w">Kühlschrank<i>fee</i></span></div>
+    <div class="lockup sm dark"><img src="fee-v1/logo-b.webp" alt=""><span class="w">Kühlschrankfee</span></div>
+    <div class="cap"><b>Logo B – Kühlschrank mit zwei Türen</b>Klassischer, etwas höher, mehr „Kühlschrank“</div>
+  </div>
+</div>
+
+<h2>App-Icon</h2>
+<p class="sub">Je groß (Home-Bildschirm) und klein (Einstellungen, Spotlight).</p>
+<div class="grid">
+  <div class="tile"><div class="icons"><img src="fee-v1/icon-a.png" width="180" alt=""><img src="fee-v1/icon-a.png" width="60" alt=""><img src="fee-v1/icon-a.png" width="40" alt=""></div><div class="cap"><b>Icon A – Tür offen, Licht an</b>Schmetterlings-Flügel, warmes Licht</div></div>
+  <div class="tile"><div class="icons"><img src="fee-v1/icon-b.png" width="180" alt=""><img src="fee-v1/icon-b.png" width="60" alt=""><img src="fee-v1/icon-b.png" width="40" alt=""></div><div class="cap"><b>Icon B – verspielte Flügel</b>Geschwungene Flügel, feiner</div></div>
+</div>
+
+<h2>Die Fee</h2>
+<p class="sub">Maskottchen: Schürze in Pastellblau, Löffel im Dutt, Schneebesen als Zauberstab.</p>
+<div class="grid"><div class="tile"><div class="mascot"><img src="fee-v1/fee-a.webp" alt=""><img src="fee-v1/fee-b.webp" alt=""></div><div class="cap"><b>Links A, rechts B</b>B ist die Vorlage für alle Szenen unten</div></div></div>
+
+<h2>In der App</h2>
+<div class="screens">
+
+  <div class="screen"><div class="phone splash">
+    <div class="sb"><span>9:41</span><div class="island"></div><span></span></div>
+    <div class="c"><img class="ill float" src="fee-v1/logo-b.webp" alt=""><div class="w">Kühlschrankfee</div><div class="small" style="color:var(--ink)">Deine Woche aus den Prospekten</div></div>
+    <div class="homebar"></div></div>
+    <div class="caption"><b>Startbild (Splash)</b>Blauer Grund, Logo schwebt leicht.</div></div>
+
+  <div class="screen"><div class="phone">
+    <div class="sb"><span>9:41</span><div class="island"></div><span></span></div>
+    <div class="blob" style="width:420px;height:420px;background:var(--blue1);right:-160px;top:120px"></div>
+    <div class="c"><img class="ill float" src="fee-v1/laden-a.webp" alt=""><div class="t1">Die Fee zaubert<br>deine Woche …</div><div class="small">7 Gerichte aus 5 Prospekten</div><div class="bar"><span></span></div></div>
+    <div class="homebar"></div></div>
+    <div class="caption"><b>Laden – Woche planen</b>Ersetzt den Topf-Lader bei langen Aktionen. Fee schwebt, Balken läuft.</div></div>
+
+  <div class="screen"><div class="phone">
+    <div class="sb"><span>9:41</span><div class="island"></div><span></span></div>
+    <div class="blob" style="width:380px;height:380px;background:var(--sand);left:-150px;top:90px"></div>
+    <div class="c"><img class="ill wob" src="fee-v1/prospekt.webp" alt=""><div class="t1">Prospekte werden<br>gelesen</div><div class="small">Rewe, Edeka, Aldi, Penny, Lidl</div><div class="bar"><span></span></div></div>
+    <div class="homebar"></div></div>
+    <div class="caption"><b>Laden – Angebote holen</b>Fee blättert, Blätter wackeln.</div></div>
+
+  <div class="screen"><div class="phone">
+    <div class="sb"><span>9:41</span><div class="island"></div><span></span></div>
+    <div class="blob" style="width:440px;height:440px;background:var(--blue1);left:-120px;top:70px"></div>
+    <div class="c"><img class="ill pop" src="fee-v1/leer.webp" alt=""><div class="t1">Dein Vorrat ist leer</div><div class="small">Nur eine Zitrone. Trag ein, was da ist – die Fee plant drumherum.</div><div class="btn">Vorrat eintragen</div></div>
+    <div class="homebar"></div></div>
+    <div class="caption"><b>Leer – Vorrat</b></div></div>
+
+  <div class="screen"><div class="phone">
+    <div class="sb"><span>9:41</span><div class="island"></div><span></span></div>
+    <div class="blob" style="width:400px;height:400px;background:var(--sage);right:-140px;top:110px"></div>
+    <div class="c"><img class="ill" src="fee-v1/schlaf.webp" alt=""><div class="t1">Noch nichts geplant</div><div class="small">Die Fee schläft noch. Weck sie, dann plant sie deine Woche.</div><div class="btn">Woche planen</div></div>
+    <div class="homebar"></div></div>
+    <div class="caption"><b>Leer – Woche</b></div></div>
+
+  <div class="screen"><div class="phone">
+    <div class="sb"><span>9:41</span><div class="island"></div><span></span></div>
+    <div class="blob" style="width:420px;height:420px;background:var(--blue1);left:-140px;top:90px"></div>
+    <div class="c"><img class="ill pop" src="fee-v1/erfolg.webp" alt=""><div class="lbl" style="margin-top:22px">Erledigt</div><div class="t1" style="margin-top:6px">Alles eingekauft!</div><div class="small">23 Sachen · 12,49 € gespart</div><div class="btn">Zur Woche</div></div>
+    <div class="homebar"></div></div>
+    <div class="caption"><b>Erfolg – Einkauf fertig</b>Springt kurz auf.</div></div>
+
+  <div class="screen"><div class="phone">
+    <div class="sb"><span>9:41</span><div class="island"></div><span></span></div>
+    <div class="blob" style="width:400px;height:400px;background:var(--rose);right:-150px;top:100px"></div>
+    <div class="c"><img class="ill" src="fee-v1/fehler.webp" alt=""><div class="t1">Kein Zauber gerade</div><div class="small">Keine Verbindung zum Server. Prüf dein Internet und versuch es nochmal.</div><div class="btn">Nochmal versuchen</div></div>
+    <div class="homebar"></div></div>
+    <div class="caption"><b>Fehler / offline</b></div></div>
+
+  <div class="screen"><div class="phone">
+    <div class="sb"><span>9:41</span><div class="island"></div><span></span></div>
+    <div class="blob" style="width:460px;height:460px;background:var(--blue);left:-35px;top:60px"></div>
+    <div class="c"><img class="ill pop" src="fee-v1/hallo.webp" alt=""><div class="t1">Hallo, ich bin<br>deine Kühlschrankfee</div><div class="small">Ich lese die Prospekte und plane deine Woche – günstig und lecker.</div><div class="btn">Los geht's</div><div class="btn2">Ich hab schon ein Konto</div></div>
+    <div class="homebar"></div></div>
+    <div class="caption"><b>Willkommen</b>Erster Start.</div></div>
+
+</div>
+</body>
+</html>

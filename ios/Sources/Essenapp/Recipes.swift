@@ -176,7 +176,8 @@ struct MyRecipesList: View {
     @State private var deals: [RecipeCard] = []
     @State private var error: String?
     @State private var creating = false
-    @State private var planning: RecipeCard?
+    @State private var dish: Dish?  // langes Drücken → Gericht-Menü (22.2)
+    @State private var dishAction: DishAction?
     @State private var importing = false  // „Link einfügen“ (S22)
     @State private var opened: Int?  // importiertes Rezept öffnen
     @Namespace private var zoom  // a2-open: Teller wächst ins Rezept
@@ -240,9 +241,7 @@ struct MyRecipesList: View {
             .presentationDetents([.large]).presentationCornerRadius(Theme.R.sheet)
         }
         .navigationDestination(item: $opened) { id in SavedRecipeView(recipeId: id) }
-        .sheet(item: $planning) { card in
-            PlanSlotSheet(recipeId: card.id, title: card.title).presentationDetents([.medium, .large])
-        }
+        .modifier(DishHost(dish: dish, action: $dishAction))
     }
 
     private var chips: some View {
@@ -342,7 +341,7 @@ struct MyRecipesList: View {
             PlateHeart(on: card.favorite) { toggle(card) }
                 .offset(x: 6 + Self.plate + 10 - 34 - 5, y: -4 - 5)  // 34er-Kreis in 44er-Tapfläche
         }
-        .contextMenu { Button("Diese Woche einplanen", systemImage: "calendar.badge.plus") { planning = card } }
+        .dishPress { openMenu(card) }  // Gericht-Menü (u. a. Einplanen, früher Kontextmenü)
     }
 
     @ViewBuilder private func badge(_ card: RecipeCard) -> some View {
@@ -362,6 +361,18 @@ struct MyRecipesList: View {
             self.error = error.localizedDescription
         }
         deals = (try? await store.recipeDeals()) ?? deals
+    }
+
+    /// Rezept laden (wie S3), dann Gericht-Menü öffnen.
+    private func openMenu(_ card: RecipeCard) {
+        Task {
+            do {
+                dish = Dish(try await store.savedMeal(card.id))
+                dishAction = .menu
+            } catch {
+                store.flash("Rezept nicht geladen: \(error.localizedDescription)")
+            }
+        }
     }
 
     private func toggle(_ card: RecipeCard) {

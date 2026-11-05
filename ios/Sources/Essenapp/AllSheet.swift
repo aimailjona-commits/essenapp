@@ -274,16 +274,20 @@ struct AllSheet: View {
             }
             if !offers.isEmpty { SectionLabel("Angebote").padding(.top, 18).padding(.bottom, 6) }
             ForEach(Array(offers)) { offer in
-                NavigationLink { OfferDetailView(offer: offer) } label: {
-                    IRow(name: offer.title, sub: "\(Labels.chain(offer.chain)) · \(euro(offer.priceCents))",
-                         tint: Theme.hue(category: offer.category).tint) {
-                        RemoteImage(url: URL(string: offer.imageUrl)) { Icon(.tag, size: 22) }.padding(6).clipShape(Circle())
-                    } trail: {
-                        if let d = offer.discount { DealPill(text: "−\(d) %") }
+                HStack(spacing: 8) {
+                    NavigationLink { OfferDetailView(offer: offer) } label: {
+                        IRow(name: offer.title, sub: "\(Labels.chain(offer.chain)) · \(euro(offer.priceCents))",
+                             tint: Theme.hue(category: offer.category).tint, line: false) {
+                            RemoteImage(url: URL(string: offer.imageUrl)) { Icon(.tag, size: 22) }.padding(6).clipShape(Circle())
+                        } trail: {
+                            if let d = offer.discount { DealPill(text: "−\(d) %") }
+                        }
+                        .foregroundStyle(Theme.C.ink)
                     }
-                    .foregroundStyle(Theme.C.ink)
+                    .buttonStyle(PressableStyle())
+                    OfferActions(offer: offer)
                 }
-                .buttonStyle(PressableStyle())
+                .overlay(alignment: .top) { Hairline() }
             }
             if features.isEmpty && meals.isEmpty && offers.isEmpty {
                 VStack(spacing: 8) {

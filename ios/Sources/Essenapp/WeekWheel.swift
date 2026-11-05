@@ -144,6 +144,7 @@ struct WeekWheel<More: View>: View {
                     .rotationEffect(.degrees(reduceMotion ? 0 : (Double(d) - Double(p)) * WK.turn))
                 }
                 .buttonStyle(PressableStyle())
+                .dishPress(main)
                 .padding(.leading, WK.plateX - WK.textX + (WK.plate - plate) / 2).padding(.top, WK.plateY)
                 .accessibilityLabel("\(Labels.dayNames[d]), \(date(d)), Tag im Detail")
 
@@ -165,19 +166,21 @@ struct WeekWheel<More: View>: View {
                 let deals = PlanWeek.deals(m)
                 Text("\(Labels.meal(m.mealType)) · \(m.recipe.prepMinutes) min".uppercased())
                     .font(Theme.F.lbl).tracking(11 * 0.08).foregroundStyle(Theme.C.ink)
-                Text(m.recipe.title).font(Theme.F.serif(23)).lineLimit(3).padding(.top, 4)
-                HStack(alignment: .bottom) {
-                    VStack(alignment: .leading, spacing: 4) {
-                        BigNumber(euro(PlanWeek.perPortion(m)), size: 38)
-                        (Text("p. P.") + Text(deals > 0 ? " · " : "") + Text(deals > 0 ? "\(deals) im Angebot" : "").foregroundStyle(Theme.C.deal))
-                            .font(Theme.F.text(12, .semibold, relativeTo: .caption)).foregroundStyle(Theme.C.ink)
-                    }
-                    Spacer(minLength: 8)
-                    NavigationLink { RecipeDetailView(meal: m) } label: { PlanInkCircle(icon: .play, size: 46, iconSize: 16) }
-                        .buttonStyle(PressableStyle())
-                        .accessibilityLabel("\(m.recipe.title) öffnen")
+                NavigationLink { RecipeDetailView(meal: m) } label: {
+                    Text(m.recipe.title).font(Theme.F.serif(23)).foregroundStyle(Theme.C.ink)
+                        .multilineTextAlignment(.leading).lineLimit(2)
+                }
+                .buttonStyle(.plain)
+                .padding(.top, 4)
+                .accessibilityHint("Rezept öffnen")
+                VStack(alignment: .leading, spacing: 4) {
+                    BigNumber(euro(PlanWeek.perPortion(m)), size: 38)
+                    (Text("p. P.") + Text(deals > 0 ? " · " : "") + Text(deals > 0 ? "\(deals) im Angebot" : "").foregroundStyle(Theme.C.deal))
+                        .font(Theme.F.text(12, .semibold, relativeTo: .caption)).foregroundStyle(Theme.C.ink)
                 }
                 .padding(.top, 10)
+                // Gericht-Leiste klein (22.2), ersetzt den ▶-Kreis; Kreise 32 in 44er-Tap-Fläche
+                DishActionBar(dish: Dish(m), style: .small).padding(.top, 4)
             } else {
                 Text("FREI").font(Theme.F.lbl).tracking(11 * 0.08).foregroundStyle(Theme.C.ink)
                 Text("Nichts geplant").font(Theme.F.serif(23)).padding(.top, 4)
@@ -205,6 +208,7 @@ struct WeekWheel<More: View>: View {
                 .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
+            .dishPress(second)  // zweite Mahlzeit: Gericht-Menü per langem Drücken (Zeile hat keinen Platz für die Leiste)
         } else if let main {
             // shortcut: es gibt keinen Endpunkt „Gericht in freien Slot“, daher öffnet die Zeile den Tag
             Button { openDay(d) } label: {

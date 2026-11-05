@@ -304,7 +304,6 @@ private struct DayDetailView: View {
     let day: Int
     @State private var person: Int?  // „Für:“ (48), nil = ich
     @State private var noMood = false
-    @State private var guestsFor: MealDTO?
 
     var body: some View {
         let meals = PlanWeek.sorted(store.plan, day)
@@ -326,7 +325,7 @@ private struct DayDetailView: View {
                     Text("Für \(Labels.dayNames[day]) ist nichts geplant.").font(Theme.F.small).foregroundStyle(Theme.C.ink2).padding(.top, 30)
                 }
                 ForEach(Array(meals.enumerated()), id: \.offset) { i, m in
-                    DayMealRow(meal: m) { guestsFor = m }.padding(.top, i == 0 ? 30 : 28)
+                    DayMealRow(meal: m).padding(.top, i == 0 ? 30 : 28)
                 }
                 DayValues(day: day, person: $person).padding(.top, 36)
                 if day == store.today && !meals.isEmpty {
@@ -341,7 +340,6 @@ private struct DayDetailView: View {
         .background(Theme.C.bg)
         .toolbar(.hidden, for: .navigationBar)
         .sheet(isPresented: $noMood) { NoMoodSheet().presentationDetents([.large]) }
-        .sheet(item: $guestsFor) { m in GuestsSheet(meal: m).presentationDetents([.height(466), .large]) }
     }
 }
 
@@ -350,7 +348,6 @@ private struct DayMealRow: View {
     @Environment(AppStore.self) private var store
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     let meal: MealDTO
-    let guests: () -> Void
     @State private var rolling = false
     @State private var choosing = false  // Würfel → Richtung wählen (19.3)
     @State private var replacing = false  // „ersetzen durch eigenes Rezept“ → S19
@@ -372,40 +369,48 @@ private struct DayMealRow: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             Text(meta.uppercased()).font(Theme.F.lbl).tracking(11 * 0.08).foregroundStyle(Theme.C.ink)
-            HStack(spacing: 12) {
+            HStack(alignment: .top, spacing: 12) {
                 NavigationLink { RecipeDetailView(meal: meal) } label: {
-                    HStack(spacing: 12) {
-                        ZStack {
-                            if rolling {
-                                Hop3().scaleEffect(0.9).transition(.opacity)
-                            } else {
-                                PlanPlate(url: mediaURL(meal.recipe.imageUrl), size: 64).id(meal.recipe.id).transition(diceTransition)
-                            }
+                    ZStack {
+                        if rolling {
+                            Hop3().scaleEffect(0.9).transition(.opacity)
+                        } else {
+                            PlanPlate(url: mediaURL(meal.recipe.imageUrl), size: 64).id(meal.recipe.id).transition(diceTransition)
                         }
-                        .frame(width: 64, height: 64)
+                    }
+                    .frame(width: 64, height: 64)
+                }
+                .buttonStyle(.plain)
+                .accessibilityHidden(true)  // gleicher Weg wie der Titel
+                VStack(alignment: .leading, spacing: 0) {
+                    NavigationLink { RecipeDetailView(meal: meal) } label: {
                         VStack(alignment: .leading, spacing: 2) {
                             Text(meal.recipe.title).font(Theme.F.serif(17, relativeTo: .headline)).lineLimit(1)
                                 .foregroundStyle(Theme.C.ink).contentTransition(.opacity)
                             Text(sub).font(Theme.F.text(13, .semibold, relativeTo: .footnote)).foregroundStyle(Theme.C.ink2)
                                 .lineLimit(1).contentTransition(.numericText())
                         }
-                        .opacity(rolling ? 0 : 1)
-                        Spacer(minLength: 0)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .contentShape(Rectangle())
                     }
-                    .contentShape(Rectangle())
+                    .buttonStyle(.plain)
+                    .opacity(rolling ? 0 : 1)
+                    // `.f9-mini` margin-top 10, Kreise 32 in 44er-Tap-Fläche → 6 pt weniger
+                    if meal.id != nil { DishActionBar(dish: dish, style: .small).padding(.top, 4) }
                 }
-                .buttonStyle(.plain)
-                if meal.id != nil { actions }
             }
         }
-        .contextMenu {
-            if meal.id != nil {
-                Button((meal.guests ?? 0) > 0 ? "Gäste ändern" : "Gäste hinzufügen", systemImage: "person.2", action: guests)
-            }
-        }
-        .accessibilityAction(named: "Gäste hinzufügen", guests)
-        .modifier(RerollDialog(meal: meal, isPresented: $choosing) { roll(direction: $0, wish: $1) })
+        .dishPress(dish)
+        .modifier(RerollDialog(meal: meal, isPresented: $choosing, onReplace: { replacing = true }) { roll(direction: $0, wish: $1) })
         .sheet(isPresented: $replacing) { PlanSlotSheet(entry: meal).presentationDetents([.medium, .large]) }
+        .sensoryFeedback(.impact(weight: .light), trigger: meal.locked)
+    }
+
+    /// Tauschen läuft über den eigenen Würfel-Dialog (Teller fliegt, Zutaten hüpfen).
+    private var dish: Dish {
+        var d = Dish(meal)
+        d.custom[.swap] = { if !rolling { choosing = true } }
+        return d
     }
 
     private var diceTransition: AnyTransition {
@@ -415,38 +420,6 @@ private struct DayMealRow: View {
                 .animation(.spring(response: 0.55, dampingFraction: 0.62)),
             removal: .modifier(active: PlanFly(x: -130, deg: -120, opacity: 0), identity: PlanFly())
                 .animation(.timingCurve(0.5, 0, 0.9, 0.5, duration: 0.35)))
-    }
-
-    /// 2×2 Aktionen (`.a-acts`): Kreise 34, Tap-Fläche 44.
-    private var actions: some View {
-        Grid(horizontalSpacing: -4, verticalSpacing: -4) {
-            GridRow {
-                act(.heart, on: meal.recipe.favorite, meal.recipe.favorite ? "Aus Favoriten entfernen" : "Als Favorit merken") {
-                    Task { _ = await store.toggleFavorite(meal.recipe.id, current: meal.recipe.favorite) }
-                }
-                act(.swap, on: false, "Durch eigenes Rezept ersetzen") { replacing = true }
-            }
-            GridRow {
-                act(.lock, on: meal.locked, meal.locked ? "Lösen" : "Fixieren") { Task { await store.setLocked(meal, !meal.locked) } }
-                act(.dice, on: rolling, "Neu würfeln") { if !meal.locked, !rolling { choosing = true } }
-                    .opacity(meal.locked ? 0.35 : 1)
-            }
-        }
-        .sensoryFeedback(.impact(weight: .light), trigger: meal.locked)
-    }
-
-    private func act(_ icon: Icon8, on: Bool, _ label: String, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            Icon(icon, size: 17).foregroundStyle(on ? Theme.C.onInk : Theme.C.ink)
-                .frame(width: 34, height: 34)
-                .background(on ? Theme.C.ink : .clear, in: Circle())
-                .overlay { if !on { Circle().strokeBorder(Theme.C.line, lineWidth: Theme.S.hair) } }
-                .frame(width: 44, height: 44)
-                .contentShape(Circle())
-        }
-        .buttonStyle(PressableStyle())
-        .accessibilityLabel(label)
-        .accessibilityAddTraits(on ? .isSelected : [])
     }
 
     private func roll(direction: String?, wish: String) {
@@ -598,7 +571,13 @@ struct RecipeDetailView: View {
     @State private var titleHeight: CGFloat = 0  // gemessen: langer Titel schiebt den Teller nach unten
     @Environment(\.openURL) private var openURL
 
-    init(meal: MealDTO) { given = meal }
+    @State private var autoCook: Bool  // „Kochen“ aus der Gericht-Leiste: Kochmodus gleich öffnen
+    @State private var dishAction: DishAction?  // „…“ → Gericht-Menü (22.2)
+
+    init(meal: MealDTO, cook: Bool = false) {
+        given = meal
+        _autoCook = State(initialValue: cook)
+    }
 
     /// Plan-Gericht immer im aktuellen Stand des Plans (Ersatz, Gäste, Würfeln ändern es).
     private var meal: MealDTO { swapped ?? given.id.flatMap { id in store.plan?.entries.first { e in e.id == id } } ?? given }
@@ -651,6 +630,13 @@ struct RecipeDetailView: View {
         .toolbar(.hidden, for: .navigationBar)
         .task(id: "\(store.recipesVersion)-\(recipe.id)") { await loadInfo() }
         .task(id: recipe.id) { await pollStepImages() }
+        .task {
+            guard autoCook else { return }
+            autoCook = false
+            try? await Task.sleep(for: .milliseconds(400))  // erst nach dem Einblenden präsentieren
+            cooking = true
+        }
+        .modifier(DishHost(dish: dish, action: $dishAction))
         .fullScreenCover(isPresented: $cooking, onDismiss: {
             if rateAfterCooking { rateAfterCooking = false; showRating = true }  // Abschluss → Bewertung + Vorrat (S8)
         }) {
@@ -872,34 +858,37 @@ extension RecipeDetailView {
         .accessibilityLabel("Rezept teilen")
     }
 
-    /// Alles ohne eigenen Platz im Mockup: Einplanen, Würfeln, Mag ich nicht, Bewerten, Liste, Bearbeiten/Löschen, Nie-Liste, Fehler.
+    /// „…“ öffnet das gemeinsame Gericht-Menü (22.2); Abläufe dieser Seite (Würfeln mit Ersatz, Kochmodus …) bleiben die eigenen.
     fileprivate var moreMenu: some View {
-        Menu {
-            Button("Einplanen", systemImage: "calendar.badge.plus") { planIt = true }
-            if meal.id != nil {  // Plan-Gericht: Würfeln bzw. Ersatz (19.3)
-                Button(rolling ? "Würfelt …" : "Ändern", systemImage: "dice") { choosing = true }.disabled(rolling)
-            }
-            Button("Mag ich nicht", systemImage: "hand.thumbsdown") { disliking = true }
-            Button("Gekocht – bewerten", systemImage: "star") { showRating = true }
-            Button("Angebotszutaten zur Liste", systemImage: "bag") {
-                let offers = recipe.ingredients.compactMap { ing in store.offers.first { $0.id == ing.offerId } }
-                withAnimation(Theme.spring) { offers.forEach { o in store.addToList(o) } }
-                if offers.isEmpty { store.flash("Keine Angebotszutaten") }
-            }
-            if recipe.source != "ai" {  // eigene und importierte Rezepte
-                Button("Bearbeiten", systemImage: "pencil") { editing = true }
-                Button("Löschen", systemImage: "trash", role: .destructive) { confirmDelete = true }
-            }
-            if details.hidden == true {  // 19.9: Nie-Liste zurücknehmen (R15)
-                Button("Wieder vorschlagen", systemImage: "arrow.uturn.backward") {
-                    Task { if let r = await store.unhide(recipe.id) { info = r } }
-                }
-            }
-            Button("Fehler melden", systemImage: "exclamationmark.bubble") { reporting = true }  // R13
-        } label: {
+        Button { dishAction = .menu } label: {
             Icon(.dots).foregroundStyle(Theme.C.ink).frame(width: 44, height: 44).contentShape(Rectangle())
         }
-        .accessibilityLabel("Weitere Aktionen")
+        .buttonStyle(PressableStyle())
+        .accessibilityLabel("Gericht-Menü")
+    }
+
+    /// Gericht für Leiste/Menü: Kochen, Tauschen, Einplanen, Bewerten, Mag ich nicht über die Zustände dieser Seite.
+    fileprivate var dish: Dish {
+        var d = Dish(meal)
+        d.custom[.cook] = { cooking = true }
+        d.custom[.share] = { shareCard = true }
+        d.custom[.shareLink] = { shareLink = true }
+        if meal.id != nil, !rolling { d.custom[.swap] = { choosing = true } }  // Plan-Gericht: Würfeln bzw. Ersatz (19.3)
+        d.custom[.plan] = { planIt = true }
+        d.custom[.rate] = { showRating = true }
+        d.custom[.dislike] = { disliking = true }
+        d.custom[.favorite] = { toggleFavorite() }
+        if recipe.source != "ai" {  // eigene und importierte Rezepte
+            d.extras.append(DishExtra(title: "Bearbeiten", icon: .edit) { editing = true })
+            d.extras.append(DishExtra(title: "Löschen", icon: .trash, red: true) { confirmDelete = true })
+        }
+        if details.hidden == true {  // 19.9: Nie-Liste zurücknehmen (R15)
+            d.extras.append(DishExtra(title: "Wieder vorschlagen", icon: .refresh) {
+                Task { if let r = await store.unhide(recipe.id) { info = r } }
+            })
+        }
+        d.extras.append(DishExtra(title: "Fehler melden", icon: .bell) { reporting = true })  // R13
+        return d
     }
 
     // MARK: Teil 1

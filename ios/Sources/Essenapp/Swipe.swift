@@ -95,6 +95,8 @@ struct SwipeView: View {
     @State private var flying: Int?  // Karte, deren Foto gerade fliegt (ausgeblendet)
     @State private var photo = CGRect.zero
     @State private var slotFrames: [Int: CGRect] = [:]
+    @State private var dish: Dish?  // langes Drücken auf die Karte → Gericht-Menü (22.2)
+    @State private var dishAction: DishAction?
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     private struct Flight { var url: URL?; var rect: CGRect }
@@ -158,6 +160,12 @@ struct SwipeView: View {
                     .position(x: flight.rect.midX, y: flight.rect.midY)
                     .allowsHitTesting(false)
             }
+        }
+        .modifier(DishHost(dish: dish, action: $dishAction))
+        .task {  // Demo „dishmenu“: Gericht-Menü offen über der ersten Karte
+            guard Demo.screen == "dishmenu", let c = deck?.cards.first else { return }
+            dish = cardDish(c, try? await store.savedMeal(Demo.savedRecipe.id))
+            dishAction = .menu
         }
         .modifier(DislikeDialog(ingredients: disliking?.ingredients ?? [],
                                 isPresented: $dislikeOpen,
@@ -369,6 +377,28 @@ struct SwipeView: View {
             .accessibilityAction(named: "Diese Woche") { decide(card, "ja") }
             .accessibilityAction(named: "Nicht") { decide(card, "nein") }
             .accessibilityAction(named: "Mag ich nicht") { decide(card, "mag_nicht") }
+            .dishPress { openMenu(card) }
+    }
+
+    /// Gericht-Menü zur Karte: Einplanen = „Diese Woche“ (nächster freier Tag), Mag ich nicht = Stapel-Grund; KI-Karten ohne Rezept
+    /// haben nur diese beiden, gespeicherte Rezepte alles Übrige.
+    private func openMenu(_ card: SwipeCardDTO) {
+        Task {
+            var meal: MealDTO?
+            if let id = card.recipeId { meal = try? await store.savedMeal(id) }
+            dish = cardDish(card, meal)
+            dishAction = .menu
+        }
+    }
+
+    private func cardDish(_ card: SwipeCardDTO, _ meal: MealDTO?) -> Dish {
+        var d = Dish(meal: meal, title: card.title, imageUrl: card.imageUrl, sub: "\(card.prepMinutes) min · \(euro(card.costCents)) p. P.")
+        d.custom[.plan] = { decide(card, "ja") }
+        d.custom[.dislike] = { decide(card, "mag_nicht") }
+        if let deck, let day = rail(deck).first(where: { $0.open && $0.card == nil })?.day {
+            d.hints[.plan] = "\(Labels.days[day]) · \(Labels.meal(card.mealType))"
+        }
+        return d
     }
 
     private func decision(_ t: CGSize) -> String? {
