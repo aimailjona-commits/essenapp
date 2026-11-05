@@ -6,8 +6,8 @@ import UIKit
 /// Fest hell wie die App, bis das Dunkel-Mockup v8 freigegeben ist.
 public enum ST {
     // Farben (= Theme.C)
-    public static let bg = Color(hex: 0xF3EEE4)
-    public static let card = Color(hex: 0xFBF8F2)
+    public static let bg = Color(hex: 0xFFFFFF)
+    public static let card = Color(hex: 0xF5F5F3)
     public static let ink = Color(hex: 0x151515)
     public static let ink2 = Color(hex: 0x7C776D)
     public static let ink3 = Color(hex: 0xB9B3A7)
@@ -43,7 +43,7 @@ public enum ST {
     public enum W { case medium, semibold, bold, extrabold }
 
     public static func serif(_ size: CGFloat, relativeTo style: Font.TextStyle = .title) -> Font {
-        .custom("DMSerifDisplay-Regular", size: size, relativeTo: style)
+        .custom("CrimsonProV8-Medium", size: size, relativeTo: style)
     }
 
     public static func text(_ size: CGFloat, _ weight: W = .semibold, relativeTo style: Font.TextStyle = .body) -> Font {
@@ -102,7 +102,7 @@ public enum ST {
 }
 
 /// Hintergrund der Erweiterung, bevor SwiftUI steht (ShareViewController).
-public let shareBackground = UIColor(hex: 0xF3EEE4)
+public let shareBackground = UIColor(hex: 0xFFFFFF)
 
 extension Color {
     init(hex: UInt32) {

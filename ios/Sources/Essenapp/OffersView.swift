@@ -963,7 +963,7 @@ struct OfferDetailView: View {
     /// Umbruch nur zwischen Wörtern, nie mitten im Wort.
     private func titleSize(_ width: CGFloat) -> CGFloat {
         let size = UIFontMetrics(forTextStyle: .largeTitle).scaledValue(for: L.titleSize)
-        guard let font = UIFont(name: "DMSerifDisplay-Regular", size: size) else { return size }
+        guard let font = UIFont(name: Theme.F.serifName, size: size) else { return size }
         let widest = offer.title.split(whereSeparator: \.isWhitespace)
             .map { (String($0) as NSString).size(withAttributes: [.font: font]).width }.max() ?? 0
         return widest > width ? floor(size * width / widest * 0.98) : size  // 2 % Luft für Rundung
@@ -976,7 +976,7 @@ struct OfferDetailView: View {
                 VStack(alignment: .leading, spacing: 0) {
                     if let d = offer.discount { DealPill(text: "−\(d) %").padding(.top, 30) }
                     Text(offer.title)
-                        .font(.custom("DMSerifDisplay-Regular", fixedSize: titleSize(titleWidth)))
+                        .font(.custom(Theme.F.serifName, fixedSize: titleSize(titleWidth)))
                         .lineLimit(3)
                         .frame(maxWidth: titleWidth, alignment: .leading)
                         .padding(.top, 8)

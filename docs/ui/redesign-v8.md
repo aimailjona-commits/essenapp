@@ -29,8 +29,8 @@ Aufgaben: [`docs/tasks/phase-21-redesign-v8.md`](../tasks/phase-21-redesign-v8.m
 
 | Token | Hex | CSS |
 |---|---|---|
-| `bg` | `#F3EEE4` | `--bg` Seitengrund |
-| `card` | `#FBF8F2` | `--card` Felder, Teller-Rand, Sheet-Innenflächen |
+| `bg` | `#FFFFFF` (E99, vorher `#F3EEE4`) | `--bg` Seitengrund |
+| `card` | `#F5F5F3` (E99, vorher `#FBF8F2`) | `--card` Felder, Teller-Rand, Sheet-Innenflächen |
 | `ink` | `#151515` | `--ink` Text 1, Knöpfe, aktive Chips |
 | `ink2` | `#7C776D` | `--ink2` Text 2, Labels |
 | `ink3` | `#B9B3A7` | `--ink3` Text 3, inaktiv, Griff |
@@ -51,7 +51,7 @@ Dunkelmodus: erst Mockup → Freigabe (Phase 21.2), dann Werte hier ergänzen. B
 
 | Token | Schrift | Gebrauch |
 |---|---|---|
-| `F.serif(size)` | DM Serif Display 400 | `.t1` 34/1.1, `.t2` 24/1.12, Zeilen-Namen 19, Tage 19, Titel bis 46 |
+| `F.serif(size)` | Crimson Pro 500 (E99, vorher DM Serif Display) | `.t1` 34/1.1, `.t2` 24/1.12, Zeilen-Namen 19, Tage 19, Titel bis 46 |
 | `F.text(size, weight)` | Manrope 500/600/700/800 | Grundtext 600; `.small` 15/600, `.lbl` 11/800 +0.08em, `.sec2` 13/800 +0.06em, Knöpfe 16/800 |
 | `F.num(size)` | Inter Tight 600 (500 wo im Mockup) | `.num`, Laufweite −0.05em, Zeilenhöhe 0.92 |
 

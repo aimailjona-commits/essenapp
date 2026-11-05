@@ -1,5 +1,5 @@
 /* v8 „Tinte & Bogen“: Werte wie docs/ui/redesign-v8.md bzw. docs/ui/mockups/redesign-v8.html (nur hell, E98) */
-@font-face { font-family: "DM Serif Display"; src: url(fonts/DMSerifDisplay-Regular.ttf) format("truetype"); font-weight: 400; font-display: swap; }
+@font-face { font-family: "Crimson Pro"; src: url(fonts/CrimsonProV8-Medium.ttf) format("truetype"); font-weight: 400; font-display: swap; }
 @font-face { font-family: "Manrope"; src: url(fonts/ManropeV8-Medium.ttf) format("truetype"); font-weight: 500; font-display: swap; }
 @font-face { font-family: "Manrope"; src: url(fonts/ManropeV8-SemiBold.ttf) format("truetype"); font-weight: 600; font-display: swap; }
 @font-face { font-family: "Manrope"; src: url(fonts/ManropeV8-Bold.ttf) format("truetype"); font-weight: 700; font-display: swap; }
@@ -8,7 +8,7 @@
 @font-face { font-family: "Inter Tight"; src: url(fonts/InterTightV8-SemiBold.ttf) format("truetype"); font-weight: 600; font-display: swap; }
 
 :root {
-  --bg: #F3EEE4; --card: #FBF8F2; --ink: #151515; --ink2: #7C776D; --ink3: #B9B3A7; --line: #DCD5C7;
+  --bg: #FFFFFF; --card: #F5F5F3; --ink: #151515; --ink2: #7C776D; --ink3: #B9B3A7; --line: #DCD5C7;
   --blue: #AFC4F2; --blue1: #DCE5F8; --blue3: #7C9BE6; --sage: #CFE3D2; --rose: #F2CFC8; --sand: #E7DCC5; --deal: #E0603F;
   color-scheme: light;
 }
@@ -29,8 +29,8 @@ img.ill { display: block; }
 .small { font-size: 15px; color: var(--ink2); font-weight: 600; }
 .lbl { font-size: 11px; font-weight: 800; letter-spacing: .08em; color: var(--ink2); text-transform: uppercase; }
 .sec2 { font-weight: 800; font-size: 13px; letter-spacing: .06em; color: var(--ink2); margin: 22px 0 4px; text-transform: uppercase; }
-.t1 { font-family: "DM Serif Display", serif; font-weight: 400; font-size: 34px; line-height: 1.1; }
-.t2 { font-family: "DM Serif Display", serif; font-weight: 400; font-size: 24px; line-height: 1.12; }
+.t1 { font-family: "Crimson Pro", serif; font-weight: 400; font-size: 34px; line-height: 1.1; }
+.t2 { font-family: "Crimson Pro", serif; font-weight: 400; font-size: 24px; line-height: 1.12; }
 .num { font-family: "Inter Tight", sans-serif; font-weight: 600; letter-spacing: -.05em; line-height: .92; font-variant-numeric: tabular-nums; }
 .head { font-weight: 800; margin: 28px 0 6px; }
 .text { font-size: 15px; line-height: 1.5; color: var(--ink2); }
@@ -75,7 +75,7 @@ img.ill { display: block; }
 .ck.on { background: var(--ink); border-color: var(--ink); color: #fff; }
 
 /* Wochenplan */
-.day { font-family: "DM Serif Display", serif; font-weight: 400; font-size: 19px; margin: 30px 0 8px; }
+.day { font-family: "Crimson Pro", serif; font-weight: 400; font-size: 19px; margin: 30px 0 8px; }
 .meal { border-top: 1.5px solid var(--line); }
 .meal summary { list-style: none; display: flex; align-items: center; gap: 12px; padding: 14px 0; cursor: pointer; }
 .meal summary::-webkit-details-marker { display: none; }

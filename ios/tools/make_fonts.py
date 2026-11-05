@@ -5,7 +5,7 @@ darum werden die gebrauchten Gewichte hier einmal als statische TTFs erzeugt.
 
 Aufruf: uv run --no-project --with fonttools python ios/tools/make_fonts.py <quellordner> ios/Sources/Essenapp/Resources/fonts
 Quellen (OFL, google/fonts): Manrope[wght].ttf als Manrope.ttf, InterTight[wght].ttf als InterTight.ttf.
-DM Serif Display ist statisch und wird unverändert kopiert (DMSerifDisplay-Regular.ttf).
+CrimsonPro[wght].ttf als CrimsonPro.ttf (Titel, E99).
 """
 import sys
 from pathlib import Path
@@ -21,6 +21,7 @@ INSTANCES = {
     "ManropeV8-ExtraBold": ("Manrope.ttf", {"wght": 800}),  # Labels, Knöpfe
     "InterTightV8-Medium": ("InterTight.ttf", {"wght": 500}),
     "InterTightV8-SemiBold": ("InterTight.ttf", {"wght": 600}),  # große Zahlen
+    "CrimsonProV8-Medium": ("CrimsonPro.ttf", {"wght": 500}),  # Titel
 }
 
 

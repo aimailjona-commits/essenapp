@@ -7,8 +7,8 @@ import UIKit
 enum Theme {
     enum C {
         // v8-Grundfarben (redesign-v8.md Abschnitt 2)
-        static let bg = Color(hex: 0xF3EEE4)
-        static let card = Color(hex: 0xFBF8F2)
+        static let bg = Color(hex: 0xFFFFFF)  // Weiß statt Beige (E99)
+        static let card = Color(hex: 0xF5F5F3)  // ganz helles Grau, setzt sich von Weiß ab (E99)
         static let ink = Color(hex: 0x151515)
         static let ink2 = Color(hex: 0x7C776D)
         static let ink3 = Color(hex: 0xB9B3A7)
@@ -118,13 +118,14 @@ enum Theme {
         return palette[(rest.firstIndex(of: chain) ?? 0) % palette.count]
     }
 
-    /// Schriften (redesign-v8.md Abschnitt 2): DM Serif Display (Titel), Manrope (Text), Inter Tight (große Zahlen).
+    /// Schriften (redesign-v8.md Abschnitt 2): Crimson Pro Medium (Titel, E99), Manrope (Text), Inter Tight (große Zahlen).
     /// Feste Schnitte (ios/tools/make_fonts.py), Größen wachsen mit Dynamic Type über `relativeTo`.
     enum F {
         enum W { case medium, semibold, bold, extrabold }
 
+        static let serifName = "CrimsonProV8-Medium"
         static func serif(_ size: CGFloat, relativeTo style: Font.TextStyle = .title) -> Font {
-            .custom("DMSerifDisplay-Regular", size: size, relativeTo: style)
+            .custom(serifName, size: size, relativeTo: style)
         }
 
         static func text(_ size: CGFloat, _ weight: W = .semibold, relativeTo style: Font.TextStyle = .body) -> Font {
